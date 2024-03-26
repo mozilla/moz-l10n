@@ -29,6 +29,7 @@ classifiers = [
 requires-python = "~= 3.10"
 dependencies = [
   "fluent.syntax ~= 0.19.0",
+  "iniparse ~= 0.5",
 ]
 
 [project.urls]
