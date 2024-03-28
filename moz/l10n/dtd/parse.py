@@ -66,7 +66,7 @@ def dtd_parse(source: str) -> Resource[str, None]:
                     comment = ""
                 entries.append(entry)
                 has_prev_entries = True
-        nc = match.group(1).strip()
+        nc = match.group(1).strip().replace("\r\n", "\n")
         comment = f"{comment}\n{nc}" if comment else nc
         if comment:
             if not at_newline and has_prev_entries:
