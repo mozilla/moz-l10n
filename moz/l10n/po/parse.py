@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from collections import OrderedDict
-from typing import cast
 
 from polib import pofile
 
@@ -49,9 +48,7 @@ def po_parse(source: str) -> Resource[tuple[str, ...], PoMetadataType]:
         if pe.comment:
             meta.append(Metadata("extracted-comments", pe.comment))
         if pe.occurrences:
-            meta.append(
-                Metadata("references", cast(list[tuple[str, str]], pe.occurrences))
-            )
+            meta.append(Metadata("references", pe.occurrences))
         if pe.flags:
             meta.append(Metadata("flags", pe.flags))
         if pe.msgid_plural:
