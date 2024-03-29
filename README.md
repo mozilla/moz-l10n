@@ -10,9 +10,10 @@ so that operations like linting and [transforms](./moz/l10n/transform/) can be a
 Parsers and serializers are provided for a number of formats,
 using common and well-established libraries to take care of the details.
 A unified API for these is provided,
-such that `FORMAT_parse(source)` will always accept `str` input,
+such that `FORMAT_parse(text)` will always accept `str` input,
 and `FORMAT_serialize(resource)` will always provide a `str` iterator.
-All the serializers accept a `trim_comments` argument,
+All the serializers accept a `trim_comments` argument
+which leaves out comments from the serialized result,
 but additional input types and options vary by format.
 
 The Message and Resource representations are drawn from work done for the
