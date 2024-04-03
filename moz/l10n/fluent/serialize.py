@@ -115,11 +115,10 @@ def fluent_astify(
                 entry_comment = comment(entry)
                 if len(entry.id) == 1:  # value
                     cur_id = entry.id[0]
-                    id = ftl.Identifier(cur_id)
                     cur = (
-                        ftl.Term(id, value)
-                        if cur_id[0] == "-"
-                        else ftl.Message(id, value)
+                        ftl.Term(ftl.Identifier(cur_id[1:]), value)
+                        if cur_id.startswith("-")
+                        else ftl.Message(ftl.Identifier(cur_id), value)
                     )
                     if entry_comment:
                         cur.comment = ftl.Comment(entry_comment)
@@ -127,12 +126,11 @@ def fluent_astify(
                 elif len(entry.id) == 2:  # attribute
                     if cur is None or entry.id[0] != cur_id:
                         cur_id = entry.id[0]
-                        id = ftl.Identifier(cur_id)
-                        if cur_id[0] == "-":
+                        if cur_id.startswith("-"):
                             value = ftl.Pattern([ftl.Placeable(ftl.StringLiteral(""))])
-                            cur = ftl.Term(id, value)
+                            cur = ftl.Term(ftl.Identifier(cur_id[1:]), value)
                         else:
-                            cur = ftl.Message(id)
+                            cur = ftl.Message(ftl.Identifier(cur_id))
                         if entry_comment:
                             cur.comment = ftl.Comment(entry_comment)
                         body.append(cur)

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
@@ -409,3 +410,369 @@ class TestFluent(TestCase):
     def test_junk(self):
         with self.assertRaisesRegex(Exception, 'Expected token: "="'):
             fluent_parse("msg = value\n# Comment\nLine of junk")
+
+    def test_file(self):
+        bytes = files("tests.data").joinpath("demo.ftl").read_bytes()
+        res = fluent_parse(bytes, fluent_parse_message)
+        entries = [
+            Entry(
+                id=["title"],
+                value=PatternMessage(["About Localization"]),
+                comment="Simple string",
+            ),
+            Entry(
+                id=["feedbackUninstallCopy"],
+                value=PatternMessage(
+                    [
+                        "Your participation in Firefox Test Pilot means\na lot! Please check out our other experiments,\nand stay tuned for more to come."
+                    ]
+                ),
+                comment="Multiline string: press Shift + Enter to insert new line",
+            ),
+            Entry(
+                id=["emailOptInInput", "placeholder"],
+                value=PatternMessage(["email goes here :)"]),
+                comment="Attributes: in original string",
+            ),
+            Entry(
+                id=["file-menu", "label"],
+                value=PatternMessage(["File"]),
+                comment="Attributes: access keys",
+            ),
+            Entry(
+                id=["file-menu", "accesskey"],
+                value=PatternMessage(["F"]),
+            ),
+            Entry(
+                id=["other-file-menu", "aria-label"],
+                value=PatternMessage(
+                    [Expression("file-menu.label", FunctionAnnotation("message"))],
+                ),
+            ),
+            Entry(
+                id=["other-file-menu", "accesskey"],
+                value=PatternMessage(
+                    [Expression("file-menu.accesskey", FunctionAnnotation("message"))],
+                ),
+            ),
+            Entry(
+                id=["shotIndexNoExpirationSymbol"],
+                value=PatternMessage(["∞"]),
+                comment="Value and an attribute",
+            ),
+            Entry(
+                id=["shotIndexNoExpirationSymbol", "title"],
+                value=PatternMessage(["This shot does not expire"]),
+            ),
+            Entry(
+                id=["delete-all-message"],
+                value=SelectMessage(
+                    selectors=[
+                        Expression(VariableRef("num"), FunctionAnnotation("number"))
+                    ],
+                    variants={
+                        ("one",): ["Delete this download?"],
+                        (CatchallKey("other"),): [
+                            "Delete ",
+                            Expression(VariableRef("num")),
+                            " downloads?",
+                        ],
+                    },
+                ),
+                comment="Plurals",
+            ),
+            Entry(
+                id=["delete-all-message-special-cases"],
+                value=SelectMessage(
+                    selectors=[
+                        Expression(VariableRef("num"), FunctionAnnotation("number"))
+                    ],
+                    variants={
+                        ("12",): ["Delete this dozen of downloads?"],
+                        ("2",): ["Delete this pair of downloads?"],
+                        ("1",): ["Delete this download?"],
+                        (CatchallKey("other"),): [
+                            "Delete ",
+                            Expression(VariableRef("num")),
+                            " downloads?",
+                        ],
+                    },
+                ),
+                comment="Plurals with custom values",
+            ),
+            Entry(
+                id=["today-is"],
+                value=PatternMessage(
+                    [
+                        "Today is ",
+                        Expression(
+                            VariableRef("date"),
+                            FunctionAnnotation(
+                                "datetime",
+                                {"month": "long", "year": "numeric", "day": "numeric"},
+                            ),
+                        ),
+                    ],
+                ),
+                comment="DATETIME Built-in function",
+            ),
+            Entry(
+                id=["default-content-process-count", "label"],
+                value=PatternMessage([Expression(VariableRef("num")), " (default)"]),
+                comment="Soft Launch",
+            ),
+            Entry(
+                id=["platform"],
+                value=SelectMessage(
+                    selectors=[Expression(None, FunctionAnnotation("platform"))],
+                    variants={
+                        ("win",): ["Options"],
+                        (CatchallKey("other"),): ["Preferences"],
+                    },
+                ),
+                comment="PLATFORM() selector",
+            ),
+            Entry(
+                id=["number"],
+                value=SelectMessage(
+                    selectors=[
+                        Expression(
+                            VariableRef("var"),
+                            FunctionAnnotation("number", {"type": "ordinal"}),
+                        )
+                    ],
+                    variants={
+                        ("1",): ["first"],
+                        ("one",): [Expression(VariableRef("var")), "st"],
+                        (CatchallKey("other"),): [Expression(VariableRef("var")), "nd"],
+                    },
+                ),
+                comment="NUMBER() selector",
+            ),
+            Entry(
+                id=["platform-attribute", "title"],
+                value=SelectMessage(
+                    selectors=[Expression(None, FunctionAnnotation("platform"))],
+                    variants={
+                        ("win",): ["Options"],
+                        (CatchallKey("other"),): ["Preferences"],
+                    },
+                ),
+                comment="PLATFORM() selector in attribute",
+            ),
+            Entry(
+                id=["download-choose-folder", "label"],
+                value=SelectMessage(
+                    selectors=[Expression(None, FunctionAnnotation("platform"))],
+                    variants={
+                        ("macos",): ["Choose…"],
+                        (CatchallKey("other"),): ["Browse…"],
+                    },
+                ),
+                comment="Double selector in attributes",
+            ),
+            Entry(
+                id=["download-choose-folder", "accesskey"],
+                value=SelectMessage(
+                    selectors=[Expression(None, FunctionAnnotation("platform"))],
+                    variants={("macos",): ["e"], (CatchallKey("other"),): ["o"]},
+                ),
+            ),
+            Entry(
+                id=["selector-multi"],
+                value=SelectMessage(
+                    selectors=[
+                        Expression(VariableRef("num"), FunctionAnnotation("number")),
+                        Expression(VariableRef("gender"), FunctionAnnotation("string")),
+                    ],
+                    variants={
+                        ("one", "feminine"): ["There is one email for her"],
+                        ("one", CatchallKey("masculine")): [
+                            "There is one email for him"
+                        ],
+                        (CatchallKey("other"), "feminine"): [
+                            "There are many emails for her"
+                        ],
+                        (CatchallKey("other"), CatchallKey("masculine")): [
+                            "There are many emails for him"
+                        ],
+                    },
+                ),
+                comment="Multiple selectors",
+            ),
+            Entry(
+                id=["-term"],
+                value=PatternMessage(["Term"]),
+                comment="Term",
+            ),
+            Entry(
+                id=["term-reference"],
+                value=PatternMessage(
+                    [
+                        "Term ",
+                        Expression("-term", FunctionAnnotation("message")),
+                        " Reference",
+                    ],
+                ),
+                comment="TermReference",
+            ),
+            Entry(
+                id=["string-expression"],
+                value=PatternMessage([Expression("")]),
+                comment="StringExpression",
+            ),
+            Entry(
+                id=["number-expression"],
+                value=PatternMessage(
+                    [Expression("5", FunctionAnnotation("number"))],
+                ),
+                comment="NumberExpression",
+            ),
+            Entry(
+                id=["attribute-expression"],
+                value=PatternMessage(
+                    [Expression("my_id.title", FunctionAnnotation("message"))],
+                ),
+                comment="MessageReference with attribute (was: AttributeExpression)",
+            ),
+            Entry(
+                id=["selector-nested"],
+                value=SelectMessage(
+                    selectors=[
+                        Expression(VariableRef("gender"), FunctionAnnotation("string")),
+                        Expression(VariableRef("num"), FunctionAnnotation("number")),
+                    ],
+                    variants={
+                        ("masculine", "one"): ["There is one email for him"],
+                        ("masculine", CatchallKey("other")): [
+                            "There are many emails for him"
+                        ],
+                        (CatchallKey("feminine"), "one"): [
+                            "There is one email for her"
+                        ],
+                        (
+                            CatchallKey("feminine"),
+                            CatchallKey("other"),
+                        ): ["There are many emails for her"],
+                    },
+                ),
+                comment="Nested selectors",
+            ),
+        ]
+        self.assertEqual(res, Resource(sections=[Section(id=[], entries=entries)]))
+        self.assertEqual(
+            "".join(fluent_serialize(res)),
+            dedent(
+                """\
+                # Simple string
+                title = About Localization
+                # Multiline string: press Shift + Enter to insert new line
+                feedbackUninstallCopy =
+                    Your participation in Firefox Test Pilot means
+                    a lot! Please check out our other experiments,
+                    and stay tuned for more to come.
+                # Attributes: in original string
+                emailOptInInput =
+                    .placeholder = email goes here :)
+                # Attributes: access keys
+                file-menu =
+                    .label = File
+                    .accesskey = F
+                other-file-menu =
+                    .aria-label = { file-menu.label }
+                    .accesskey = { file-menu.accesskey }
+                # Value and an attribute
+                shotIndexNoExpirationSymbol = ∞
+                    .title = This shot does not expire
+                # Plurals
+                delete-all-message =
+                    { NUMBER($num) ->
+                        [one] Delete this download?
+                       *[other] Delete { $num } downloads?
+                    }
+                # Plurals with custom values
+                delete-all-message-special-cases =
+                    { NUMBER($num) ->
+                        [1] Delete this download?
+                        [2] Delete this pair of downloads?
+                        [12] Delete this dozen of downloads?
+                       *[other] Delete { $num } downloads?
+                    }
+                # DATETIME Built-in function
+                today-is = Today is { DATETIME($date, month: "long", year: "numeric", day: "numeric") }
+                # Soft Launch
+                default-content-process-count =
+                    .label = { $num } (default)
+                # PLATFORM() selector
+                platform =
+                    { PLATFORM() ->
+                        [win] Options
+                       *[other] Preferences
+                    }
+                # NUMBER() selector
+                number =
+                    { NUMBER($var, type: "ordinal") ->
+                        [1] first
+                        [one] { $var }st
+                       *[other] { $var }nd
+                    }
+                # PLATFORM() selector in attribute
+                platform-attribute =
+                    .title =
+                        { PLATFORM() ->
+                            [win] Options
+                           *[other] Preferences
+                        }
+                # Double selector in attributes
+                download-choose-folder =
+                    .label =
+                        { PLATFORM() ->
+                            [macos] Choose…
+                           *[other] Browse…
+                        }
+                    .accesskey =
+                        { PLATFORM() ->
+                            [macos] e
+                           *[other] o
+                        }
+                # Multiple selectors
+                selector-multi =
+                    { NUMBER($num) ->
+                        [one]
+                            { $gender ->
+                                [feminine] There is one email for her
+                               *[masculine] There is one email for him
+                            }
+                       *[other]
+                            { $gender ->
+                                [feminine] There are many emails for her
+                               *[masculine] There are many emails for him
+                            }
+                    }
+                # Term
+                -term = Term
+                # TermReference
+                term-reference = Term { -term } Reference
+                # StringExpression
+                string-expression = { "" }
+                # NumberExpression
+                number-expression = { 5 }
+                # MessageReference with attribute (was: AttributeExpression)
+                attribute-expression = { my_id.title }
+                # Nested selectors
+                selector-nested =
+                    { $gender ->
+                        [masculine]
+                            { NUMBER($num) ->
+                                [one] There is one email for him
+                               *[other] There are many emails for him
+                            }
+                       *[feminine]
+                            { NUMBER($num) ->
+                                [one] There is one email for her
+                               *[other] There are many emails for her
+                            }
+                    }
+                """
+            ),
+        )

@@ -114,7 +114,7 @@ def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
     filter: list[Key | None] = [None] * len(selectors)
     msg_variants: dict[tuple[Key, ...], msg.Pattern]
     if selectors:
-        key_lists = [list(sd[2]) for sd in sel_data]
+        key_lists = [list(dict.fromkeys(sd[2])) for sd in sel_data]
         for keys in key_lists:
             keys.sort(key=lambda k: (k[2], not k[1]))
         msg_variants = {key: [] for key in product(*key_lists)}
@@ -188,8 +188,8 @@ def message_key(key: Key) -> str | msg.CatchallKey:
 
 def find_selectors(
     pattern: ftl.Pattern,
-    result: list[tuple[msg.Expression, list[ftl.InlineExpression], set[Key]]],
-) -> list[tuple[msg.Expression, list[ftl.InlineExpression], set[Key]]]:
+    result: list[tuple[msg.Expression, list[ftl.InlineExpression], list[Key]]],
+) -> list[tuple[msg.Expression, list[ftl.InlineExpression], list[Key]]]:
     for el in pattern.elements:
         if isinstance(el, ftl.Placeable) and isinstance(
             el.expression, ftl.SelectExpression
@@ -199,12 +199,11 @@ def find_selectors(
             msg_sel = select_expression(ftl_sel, keys)
             prev = next((x for x in result if x[0] == msg_sel), None)
             if prev:
-                _, ftl_list, key_set = prev
+                _, ftl_list, key_list = prev
                 ftl_list.append(ftl_sel)
-                for key in keys:
-                    key_set.add(key)
+                key_list += keys
             else:
-                result.append((msg_sel, [ftl_sel], set(keys)))
+                result.append((msg_sel, [ftl_sel], keys))
             for v in el.expression.variants:
                 find_selectors(v.value, result)
     return result
@@ -268,7 +267,7 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
         arg: str | msg.VariableRef | None
         if not ftl_arg:
             arg = None
-        if isinstance(ftl_arg, ftl.NumberLiteral) or isinstance(
+        elif isinstance(ftl_arg, ftl.NumberLiteral) or isinstance(
             ftl_arg, ftl.StringLiteral
         ):
             arg = literal_value(ftl_arg)
