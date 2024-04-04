@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from importlib.resources import files
-from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.po import po_parse, po_serialize
@@ -22,20 +21,18 @@ from moz.l10n.resource import Entry, Metadata, Resource, Section
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
 
+source = files("tests.data").joinpath("foo.po").read_bytes().decode("utf-8")
+
 
 class TestPo(TestCase):
-    def test_file(self):
-        bytes = files("tests.data").joinpath("foo.po").read_bytes()
-        res = po_parse(bytes.decode("utf-8"))
+    def test_parse(self):
+        res = po_parse(source)
         self.assertEqual(
             res,
             Resource(
-                comment=dedent(
-                    """\
-                    Test translation file.
-                    Any copyright is dedicated to the Public Domain.
-                    http://creativecommons.org/publicdomain/zero/1.0/"""
-                ),
+                comment="Test translation file.\n"
+                "Any copyright is dedicated to the Public Domain.\n"
+                "http://creativecommons.org/publicdomain/zero/1.0/",
                 meta=[
                     Metadata("Project-Id-Version", "foo"),
                     Metadata("POT-Creation-Date", "2008-02-06 16:25-0500"),
@@ -86,6 +83,8 @@ class TestPo(TestCase):
             ),
         )
 
+    def test_serialize(self):
+        res = po_parse(source)
         self.assertEqual(
             "".join(po_serialize(res)),
             r"""# Test translation file.
@@ -129,6 +128,8 @@ msgstr "translated string"
 """,
         )
 
+    def test_trim_comments(self):
+        res = po_parse(source)
         self.assertEqual(
             "".join(po_serialize(res, trim_comments=True)),
             r"""#
@@ -164,6 +165,8 @@ msgstr "translated string"
 """,
         )
 
+    def test_obsolete(self):
+        res = po_parse(source)
         res.sections[0].entries[0].meta.append(Metadata("obsolete", True))
         res.sections[0].entries[2].meta = []
         self.assertEqual(
