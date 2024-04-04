@@ -31,5 +31,8 @@ msgctxt "context"
 msgid "original string"
 msgstr "translated string"
 
+#~ msgid "obsolete string"
+#~ msgstr "translated string"
+
 msgid "other string"
 msgstr "translated string"

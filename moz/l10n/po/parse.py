@@ -18,7 +18,7 @@ from polib import pofile
 
 from ..resource import Entry, Metadata, Resource, Section
 
-PoMetadataType = str | list[str] | list[tuple[str, str]]
+PoMetadataType = bool | str | list[str] | list[tuple[str, str]]
 """
 All resource-level metadata has `str` values matching the .po header fields.
 
@@ -49,6 +49,8 @@ def po_parse(source: str) -> Resource[tuple[str, ...], PoMetadataType]:
             meta.append(Metadata("extracted-comments", pe.comment))
         if pe.occurrences:
             meta.append(Metadata("references", pe.occurrences))
+        if pe.obsolete:
+            meta.append(Metadata("obsolete", True))
         if pe.flags:
             meta.append(Metadata("flags", pe.flags))
         if pe.msgid_plural:

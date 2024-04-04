@@ -70,7 +70,10 @@ def po_serialize(
                 if not trim_comments:
                     pe.tcomment = entry.comment.rstrip()
                 for m in entry.meta:
-                    if m.key == "plural":
+                    if m.key == "obsolete":
+                        if m.value:
+                            pe.obsolete = True
+                    elif m.key == "plural":
                         pe.msgid_plural = str(m.value)
                     elif not trim_comments:
                         if m.key == "translator-comments":
@@ -92,16 +95,17 @@ def po_serialize(
                                 )
                         elif m.key == "flags":
                             pe.flags = (
-                                [m.value]
-                                if isinstance(m.value, str)
+                                [str(m.value)]
+                                if isinstance(m.value, (bool, str))
                                 else [str(flag) for flag in m.value]
                             )
                         else:
                             raise ValueError(
                                 f'Unsupported meta entry "{m.key}" for {entry.id}: {m.value}'
                             )
-                yield "\n"
-                yield pe.__unicode__(wrapwidth=wrapwidth)
+                if not pe.obsolete or not trim_comments:
+                    yield "\n"
+                    yield pe.__unicode__(wrapwidth=wrapwidth)
             else:
                 raise ValueError(
                     f"Standalone comments are not supported: {entry.comment}"

@@ -70,6 +70,11 @@ class TestPo(TestCase):
                                     "%d prevedena sporočila",
                                 ),
                             ),
+                            Entry(
+                                ["obsolete string"],
+                                meta=[Metadata("obsolete", True)],
+                                value=("translated string",),
+                            ),
                             Entry(["other string"], ("translated string",)),
                         ],
                     ),
@@ -81,7 +86,6 @@ class TestPo(TestCase):
             ),
         )
 
-        self.maxDiff = None
         self.assertEqual(
             "".join(po_serialize(res)),
             r"""# Test translation file.
@@ -112,6 +116,9 @@ msgstr[0] "%d prevedenih sporočil"
 msgstr[1] "%d prevedeno sporočilo"
 msgstr[2] "%d prevedeni sporočili"
 msgstr[3] "%d prevedena sporočila"
+
+#~ msgid "obsolete string"
+#~ msgstr "translated string"
 
 msgid "other string"
 msgstr "translated string"
@@ -147,6 +154,51 @@ msgstr[0] "%d prevedenih sporočil"
 msgstr[1] "%d prevedeno sporočilo"
 msgstr[2] "%d prevedeni sporočili"
 msgstr[3] "%d prevedena sporočila"
+
+msgid "other string"
+msgstr "translated string"
+
+msgctxt "context"
+msgid "original string"
+msgstr "translated string"
+""",
+        )
+
+        res.sections[0].entries[0].meta.append(Metadata("obsolete", True))
+        res.sections[0].entries[2].meta = []
+        self.assertEqual(
+            "".join(po_serialize(res)),
+            r"""# Test translation file.
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: foo\n"
+"POT-Creation-Date: 2008-02-06 16:25-0500\n"
+"PO-Revision-Date: 2008-02-09 15:23+0200\n"
+"Last-Translator: Foo Bar <foobar@example.org>\n"
+"Language-Team: Fake <fake@example.org>\n"
+"Language: sl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n%100==4 ? 3 : 0);\n"
+
+#~ msgid "original string"
+#~ msgstr "translated string"
+
+#: src/msgfmt.c:876
+#, c-format
+msgid "%d translated message"
+msgid_plural "%d translated messages"
+msgstr[0] "%d prevedenih sporočil"
+msgstr[1] "%d prevedeno sporočilo"
+msgstr[2] "%d prevedeni sporočili"
+msgstr[3] "%d prevedena sporočila"
+
+msgid "obsolete string"
+msgstr "translated string"
 
 msgid "other string"
 msgstr "translated string"
