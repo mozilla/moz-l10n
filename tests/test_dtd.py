@@ -22,11 +22,12 @@ from moz.l10n.resource import Comment, Entry, Resource, Section
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
 
+source = files("tests.data").joinpath("accounts.dtd").read_bytes().decode("utf-8")
+
 
 class TestDtd(TestCase):
-    def testFile(self):
-        bytes = files("tests.data").joinpath("accounts.dtd").read_bytes()
-        res = dtd_parse(bytes.decode())
+    def test_parse(self):
+        res = dtd_parse(source)
         self.assertEqual(
             res,
             Resource(
@@ -92,6 +93,9 @@ class TestDtd(TestCase):
                 "   - file, You can obtain one at http://mozilla.org/MPL/2.0/.",
             ),
         )
+
+    def test_serialize(self):
+        res = dtd_parse(source)
         res.sections[0].entries.insert(0, Entry(["foo"], '"bar"'))
         self.assertEqual(
             "".join(dtd_serialize(res)),
@@ -138,11 +142,12 @@ class TestDtd(TestCase):
             ),
         )
 
+    def test_trim_comments(self):
+        res = dtd_parse(source)
         self.assertEqual(
             "".join(dtd_serialize(res, trim_comments=True)),
             dedent(
                 """\
-                <!ENTITY foo '"bar"'>
                 <!ENTITY accounts.title "Accounts - &brandShortName;">
                 <!ENTITY accountsWindow.title "Instant messaging status">
                 <!ENTITY accountManager.newAccount.label "New Account">
@@ -171,6 +176,8 @@ class TestDtd(TestCase):
             ),
         )
 
+    def test_invalid_key(self):
+        res = dtd_parse(source)
         res.sections[0].entries.insert(0, Entry(["fail me"], "bar"))
         with self.assertRaises(ValueError):
             "".join(dtd_serialize(res))

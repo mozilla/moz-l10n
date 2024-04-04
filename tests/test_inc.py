@@ -22,11 +22,12 @@ from moz.l10n.resource import Comment, Entry, Resource, Section
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
 
+source = files("tests.data").joinpath("defines.inc").read_bytes().decode("utf-8")
+
 
 class TestInc(TestCase):
-    def testFile(self):
-        bytes = files("tests.data").joinpath("defines.inc").read_bytes()
-        res = inc_parse(bytes.decode())
+    def test_parse(self):
+        res = inc_parse(source)
         self.assertEqual(
             res,
             Resource(
@@ -54,6 +55,8 @@ class TestInc(TestCase):
             ),
         )
 
+    def test_serialize(self):
+        res = inc_parse(source)
         self.assertEqual(
             "".join(inc_serialize(res)),
             dedent(
@@ -74,6 +77,8 @@ class TestInc(TestCase):
             ),
         )
 
+    def test_trim_comments(self):
+        res = inc_parse(source)
         self.assertEqual(
             "".join(inc_serialize(res, trim_comments=True)),
             dedent(

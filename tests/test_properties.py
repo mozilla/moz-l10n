@@ -21,7 +21,7 @@ from moz.l10n.resource import Entry, Resource, Section
 
 
 class TestProperties(TestCase):
-    def testBackslashes(self):
+    def test_backslashes(self):
         src = r"""one_line = This is one line
 two_line = This is the first \
 of two lines
@@ -61,10 +61,14 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
 """,
         )
 
-    def testProperties(self):
+    def test_whitespace(self):
         # port of netwerk/test/PropertiesTest.cpp
         bytes = files("tests.data").joinpath("test.properties").read_bytes()
         res = properties_parse(bytes)
+        cc0 = (
+            "Any copyright is dedicated to the Public Domain.\n"
+            "http://creativecommons.org/publicdomain/zero/1.0/"
+        )
         self.assertEqual(
             res,
             Resource(
@@ -72,12 +76,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                     Section(
                         [],
                         [
-                            Entry(
-                                ["1"],
-                                "1",
-                                comment="Any copyright is dedicated to the Public Domain.\n"
-                                "http://creativecommons.org/publicdomain/zero/1.0/",
-                            ),
+                            Entry(["1"], "1", comment=cc0),
                             Entry(["2"], "2"),
                             Entry(["3"], "3"),
                             Entry(["4"], "4"),
