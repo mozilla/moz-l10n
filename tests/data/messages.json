@@ -1,0 +1,36 @@
+{
+  "SourceString": {
+    "message": "Translated String",
+    "description": "Sample comment"
+  },
+
+  "MultipleComments": {
+    "message": "Translated Multiple Comments",
+    "description": "First comment",
+    "description": "Second comment"
+  },
+
+  "NoCommentsorSources": {
+    "message": "Translated No Comments or Sources"
+  },
+
+  "placeholders": {
+    "message": "Hello$$$ $1YOUR_NAME$ at $2",
+    "description": "Peer greeting",
+    "placeholders": {
+      "1your_name": {
+        "content": "$1",
+        "example": "Cira"
+      }
+    }
+  },
+
+  "repeated_ref": {
+    "message": "$foo$ and $Foo$",
+    "placeholders": {
+      "foo": {
+        "content": "$1"
+      }
+    }
+  }
+}
