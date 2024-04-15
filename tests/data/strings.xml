@@ -10,7 +10,8 @@
   <string name="three">value</string>
   <!-- bar -->
   <!-- foo -->
-  <string name="four" translatable="false">multi-line comment</string>
+  <string name="four">multi-line comment</string>
+  <string name="five" translatable="false">@string/three</string>
 
   <!-- standalone -->
 

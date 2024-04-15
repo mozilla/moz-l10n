@@ -216,10 +216,17 @@ def parse_plurals(
     return msg
 
 
+resource_ref = compile(r"@(?:\w+:)?\w+/\w+|\?(?:\w+:)?(\w+/)?\w+")
+
+
 def parse_pattern(el: etree._Element) -> Iterator[str | Expression | Markup]:
     children = list(el)
     if not children or all(isinstance(child, etree._Entity) for child in children):
         text = el.text or ""
+        if not children and resource_ref.fullmatch(text):
+            # https://developer.android.com/guide/topics/resources/providing-resources#ResourcesFromXml
+            yield Expression(VariableRef(text), FunctionAnnotation("reference"))
+            return
         entities: list[Expression] = []
         for ent in cast(list[etree._Entity], children):
             # Spaces need to be collapsed while accounting for entities,

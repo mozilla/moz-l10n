@@ -69,6 +69,17 @@ class TestAndroid(TestCase):
                                 ["four"],
                                 PatternMessage(["multi-line comment"]),
                                 comment="bar\n\nfoo",
+                            ),
+                            Entry(
+                                ["five"],
+                                PatternMessage(
+                                    [
+                                        Expression(
+                                            VariableRef("@string/three"),
+                                            FunctionAnnotation("reference"),
+                                        )
+                                    ]
+                                ),
                                 meta=[Metadata("translatable", "false")],
                             ),
                             Comment("standalone"),
@@ -280,7 +291,8 @@ class TestAndroid(TestCase):
 
                     foo
                   -->
-                  <string name="four" translatable="false">multi-line comment</string>
+                  <string name="four">multi-line comment</string>
+                  <string name="five" translatable="false">@string/three</string>
                   <!-- standalone -->
 
                   <string name="welcome">Welcome to <b>&foo;</b>!</string>
@@ -334,7 +346,8 @@ class TestAndroid(TestCase):
                   <string name="one"></string>
                   <string name="two"></string>
                   <string name="three">value</string>
-                  <string name="four" translatable="false">multi-line comment</string>
+                  <string name="four">multi-line comment</string>
+                  <string name="five" translatable="false">@string/three</string>
                   <string name="welcome">Welcome to <b>&foo;</b>!</string>
                   <string name="placeholders">Hello, %1$s! You have %2$d new messages.</string>
                   <string name="escape_html">Hello, %1$s! You have &lt;b&gt;%2$d new messages&lt;/b&gt;.</string>

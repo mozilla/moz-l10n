@@ -30,7 +30,7 @@ from ..message import (
     VariableRef,
 )
 from ..resource import Entry, Metadata, Resource
-from .parse import plural_categories, xml_name
+from .parse import plural_categories, resource_ref, xml_name
 
 
 def android_serialize(
@@ -241,6 +241,17 @@ def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
 
 def set_pattern(el: etree._Element, pattern: Pattern) -> None:
     node: etree._Element | None
+    if len(pattern) == 1 and isinstance(pattern[0], Expression):
+        annot = pattern[0].annotation
+        if isinstance(annot, FunctionAnnotation) and annot.name == "reference":
+            # A "string" could be an Android resource reference,
+            # which should not have its @ or ? sigil escaped.
+            arg = pattern[0].arg
+            if isinstance(arg, VariableRef) and resource_ref.fullmatch(arg.name):
+                el.text = arg.name
+                return
+            else:
+                raise ValueError(f"Invalid reference value: {arg}")
     if any(isinstance(part, Markup) for part in pattern):
         # For HTML content, do not apply Android escaping
         # but do build a proper nested tree of elements.
