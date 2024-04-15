@@ -146,6 +146,14 @@ class TestAndroid(TestCase):
                                 PatternMessage([" \u0020 \u2008 \u2003"]),
                             ),
                             Entry(["control_chars"], PatternMessage(["\u0000 \u0001"])),
+                            Entry(["single_quote"], PatternMessage(["They're great"])),
+                            Entry(
+                                ["double_quotes"], PatternMessage(['They are "great"'])
+                            ),
+                            Entry(
+                                ["both_quotes"],
+                                PatternMessage(['They\'re really "great"']),
+                            ),
                             Entry(
                                 ["foo"],
                                 PatternMessage(
@@ -214,7 +222,7 @@ class TestAndroid(TestCase):
                                     strings. Your translators will know which strings are actually
                                     needed for their language. Always include %d in "one" because
                                     translators will need to use %d for languages where "one"
-                                    doesn't mean 1 (as explained above)."""
+                                    doesn't mean 1."""
                                 ),
                             ),
                             Entry(
@@ -302,6 +310,9 @@ class TestAndroid(TestCase):
                   <string name="ws_quoted">"   \\u8200 \\u8195"</string>
                   <string name="ws_escaped">"   \\u8200 \\u8195"</string>
                   <string name="control_chars">\\u0000 \\u0001</string>
+                  <string name="single_quote">"They're great"</string>
+                  <string name="double_quotes">They are \\"great\\"</string>
+                  <string name="both_quotes">"They're really \\"great\\""</string>
                   <string name="foo">Foo Bar &lt;a href=\\"foo\\?id=%s\\"&gt;baz&lt;/a&gt; is cool</string>
                   <string name="busy">Sorry, &foo; is &lt;i&gt;not available&lt;/i&gt; just now.</string>
                   <string-array name="planets_array">
@@ -316,7 +327,7 @@ class TestAndroid(TestCase):
                       strings. Your translators will know which strings are actually
                       needed for their language. Always include %d in "one" because
                       translators will need to use %d for languages where "one"
-                      doesn't mean 1 (as explained above).
+                      doesn't mean 1.
                     -->
                     <item quantity="one">%d song found.</item>
                     <item quantity="other">%d songs found.</item>
@@ -355,6 +366,9 @@ class TestAndroid(TestCase):
                   <string name="ws_quoted">"   \\u8200 \\u8195"</string>
                   <string name="ws_escaped">"   \\u8200 \\u8195"</string>
                   <string name="control_chars">\\u0000 \\u0001</string>
+                  <string name="single_quote">"They're great"</string>
+                  <string name="double_quotes">They are \\"great\\"</string>
+                  <string name="both_quotes">"They're really \\"great\\""</string>
                   <string name="foo">Foo Bar &lt;a href=\\"foo\\?id=%s\\"&gt;baz&lt;/a&gt; is cool</string>
                   <string name="busy">Sorry, &foo; is &lt;i&gt;not available&lt;/i&gt; just now.</string>
                   <string-array name="planets_array">
