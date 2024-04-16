@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from collections.abc import Callable, Iterable, Iterator
-from re import DOTALL, compile, fullmatch, sub
-from typing import cast
+from re import compile
 
 from lxml import etree
 
@@ -31,6 +30,8 @@ from ..message import (
 from ..resource import Comment, Entry, Metadata, Resource, Section
 
 plural_categories = ("zero", "one", "two", "few", "many", "other")
+xliff_ns = "urn:oasis:names:tc:xliff:document:1.2"
+xliff_g = f"{{{xliff_ns}}}g"
 xml_name_start = r":A-Z_a-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\U00010000-\U000EFFFF"
 xml_name_rest = r".0-9\xB7\u0300-\u036F\u203F-\u2040-"
 xml_name = compile(f"[{xml_name_start}][{xml_name_start}{xml_name_rest}]*")
@@ -69,6 +70,11 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
 
     All XML, Android, and printf escapes are unescaped
     except for %n, which has a platform-dependent meaning.
+
+    Spans of text and entities wrapped in an <xliff:g>
+    will be parsed as expressions with a "translate": "no" attribute.
+    Spans including elements will be wrapped with open/close markup
+    with a similar attribute.
     """
     parser = etree.XMLParser(resolve_entities=False)
     root = etree.fromstring(
@@ -84,6 +90,8 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
         root_comments.reverse()
         res.comment = comment_str(root_comments)
     res.meta = [Metadata(k, v) for k, v in root.attrib.items()]
+    for ns, url in root.nsmap.items():
+        res.meta.append(Metadata(f"xmlns:{ns}" if ns else "xmlns", url))
     entries = res.sections[0].entries
 
     dtd = root.getroottree().docinfo.internalDTD
@@ -93,7 +101,7 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
             name = entity.name
             if not name:
                 raise ValueError(f"Unnamed entity: {entity}")
-            value: Message = PatternMessage(list(parse_entity(entity.content)))
+            value: Message = PatternMessage(list(parse_entity_value(entity.content)))
             entities.append(Entry([name], value))
         if entities:
             res.sections.insert(0, Section(["!ENTITY"], entities))
@@ -154,11 +162,14 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
     return res
 
 
+dash_indent = compile(r" .+(\n   - .*)+ ")
+
+
 def comment_str(body: list[str | None]) -> str:
     lines: list[str] = []
     for comment in body:
         if comment:
-            if fullmatch(r" .+(\n   - .*)+ ", comment):
+            if dash_indent.fullmatch(comment):
                 # A dash is considered as a part of the indent if it's aligned
                 # with the last dash of <!-- in a top-level comment.
                 lines.append(comment.replace("\n   - ", "\n").strip(" "))
@@ -169,13 +180,13 @@ def comment_str(body: list[str | None]) -> str:
     return "\n\n".join(lines).strip("\n")
 
 
-entity_re = compile(f"&({xml_name.pattern});")
+entity_ref = compile(f"&({xml_name.pattern});")
 
 
-def parse_entity(src: str | None) -> Iterator[str | Expression]:
+def parse_entity_value(src: str | None) -> Iterator[str | Expression]:
     if src:
         pos = 0
-        for m in entity_re.finditer(src):
+        for m in entity_ref.finditer(src):
             start = m.start()
             if start > pos:
                 yield src[pos:start]
@@ -220,120 +231,184 @@ resource_ref = compile(r"@(?:\w+:)?\w+/\w+|\?(?:\w+:)?(\w+/)?\w+")
 
 
 def parse_pattern(el: etree._Element) -> Iterator[str | Expression | Markup]:
-    children = list(el)
-    if not children or all(isinstance(child, etree._Entity) for child in children):
-        text = el.text or ""
-        if not children and resource_ref.fullmatch(text):
-            # https://developer.android.com/guide/topics/resources/providing-resources#ResourcesFromXml
-            yield Expression(VariableRef(text), FunctionAnnotation("reference"))
-            return
-        entities: list[Expression] = []
-        for ent in cast(list[etree._Entity], children):
-            # Spaces need to be collapsed while accounting for entities,
-            # so temporarily replace each with a NUL character,
-            # which is unrepresentable in XML.
-            entities.append(
-                Expression(VariableRef(ent.name), FunctionAnnotation("entity"))
+    if len(el) == 0 and el.text and resource_ref.fullmatch(el.text):
+        # https://developer.android.com/guide/topics/resources/providing-resources#ResourcesFromXml
+        yield Expression(VariableRef(el.text), FunctionAnnotation("reference"))
+    else:
+        flat = flatten(el)
+        spaced = parse_quotes(flat)
+        yield from parse_inline(spaced)
+
+
+def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
+    if el.text:
+        yield el.text
+    for child in el:
+        if isinstance(child, etree._Entity):
+            yield Expression(VariableRef(child.name), FunctionAnnotation("entity"))
+        else:
+            name = (
+                f"{child.prefix}:{etree.QName(child.tag).localname}"
+                if child.prefix
+                else child.tag
             )
-            text += "\0" + (ent.tail or "")
-        if text:
-            text = collapse_spaces(text)
-            yield from parse_inline(text, entities)
-    else:
-        # Contains HTML elements, so pass through contents without escaping
-        if el.text:
-            yield el.text
-        for child in children:
-            yield from parse_element(child)
+            if child.tag == xliff_g:
+                body = list(flatten(child))
+                if any(
+                    isinstance(gc, Expression)
+                    and gc.attributes.get("translate", None) == "no"
+                    or isinstance(gc, Markup)
+                    for gc in body
+                ):
+                    # Any <xliff:g> around elements needs to be rendered explicitly
+                    yield Markup("open", name, dict(child.attrib), {"translate": "no"})
+                    yield from body
+                    yield Markup("close", name, attributes={"translate": "no"})
+                else:
+                    id = child.get("id", None)
+                    for gc in body:
+                        if isinstance(gc, str):
+                            options: dict[str, str | VariableRef] = dict(child.attrib)
+                            attr: dict[str, str | VariableRef | None] = {
+                                "translate": "no"
+                            }
+                            if id:
+                                del options["id"]
+                                arg: str | VariableRef | None = VariableRef(id)
+                                attr["source"] = gc
+                            elif gc.startswith(("%", "{")):
+                                arg = VariableRef(gc)
+                            else:
+                                arg = gc
+                            yield Expression(
+                                arg,
+                                FunctionAnnotation(name, options) if options else None,
+                                attr,
+                            )
+                        else:
+                            gc.attributes["translate"] = "no"
+                            gc.annotation.options = dict(child.attrib)  # type: ignore[union-attr]
+                            yield gc
+            else:
+                yield Markup("open", name, options=dict(child.attrib))
+                yield from flatten(child)
+                yield Markup("close", name)
+        if child.tail:
+            yield child.tail
 
 
-def parse_element(el: etree._Element) -> Iterator[str | Expression | Markup]:
-    if isinstance(el, etree._Entity):
-        yield Expression(VariableRef(el.name), FunctionAnnotation("entity"))
-    else:
-        yield Markup(kind="open", name=el.tag, options=dict(el.attrib))
-        if el.text:
-            yield el.text
-        for child in el:
-            yield from parse_element(child)
-        yield Markup(kind="close", name=el.tag)
-    if el.tail:
-        yield el.tail
+double_quote = compile(r'(?<!\\)"')
+spaces = compile(r"\s+")
 
 
-quotes_re = compile(r'(?<!\\)"(.*?)(?<!\\)"', flags=DOTALL)
+def parse_quotes(
+    iter: Iterator[str | Expression | Markup],
+) -> Iterator[str | Expression | Markup]:
+    stack: list[str | Expression] = []
 
+    def collapse_stack() -> Iterator[str | Expression | Markup]:
+        yield '"'
+        for part in stack:
+            yield spaces.sub(" ", part) if isinstance(part, str) else part
 
-def collapse_spaces(src: str) -> str:
-    """
-    Outside "double quoted" parts, collapse all whitespace to one space.
-    """
-    res = ""
-    pos = 0
-    for m in quotes_re.finditer(src):
-        res += sub(r"\s+", " ", src[pos : m.start()]) + m[1]
-        pos = m.end()
-    if pos < len(src):
-        res += sub(r"\s+", " ", src[pos:])
-    return res
+    for part in iter:
+        if isinstance(part, str):
+            pos = 0
+            quoted = bool(stack)
+            for m in double_quote.finditer(part):
+                prev = part[pos : m.start()]
+                if quoted:
+                    if stack:
+                        yield from stack
+                        stack.clear()
+                    if prev:
+                        yield prev
+                elif prev:
+                    yield spaces.sub(" ", prev)
+                quoted = not quoted
+                pos = m.end()
+            last = part[pos:]
+            if quoted:
+                stack.append(last)
+            elif last:
+                yield spaces.sub(" ", last)
+        elif stack:
+            if (
+                isinstance(part, Markup)
+                or part.attributes.get("translate", None) == "no"
+            ):
+                yield from collapse_stack()
+                stack.clear()
+                yield part
+            else:  # Expression
+                stack.append(part)
+        else:
+            yield part
+    if stack:
+        yield from collapse_stack()
 
 
 inline_re = compile(
-    r"(\0)|"
-    r"""\\([@?nt'"])|"""
+    r"""\\([@?nt'"\\])|"""
     r"\\u([0-9]{4})|"
     r"(<[^%>]+>)|"
     r"(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%]|[tT][a-zA-Z]))"
 )
 
 
-def parse_inline(src: str, entities: list[Expression]) -> Iterator[str | Expression]:
-    cur = ""
-    pos = 0
-    for m in inline_re.finditer(src):
-        cur += src[pos : m.start()]
-        if m[1]:
-            # XML entity
-            if cur:
-                yield cur
-                cur = ""
-            yield entities.pop(0)
-        elif m[2]:
-            # Special character
-            c = m[2]
-            cur += "\n" if c == "n" else "\t" if c == "t" else c
-        elif m[3]:
-            # Unicode escape
-            cur += chr(int(m[3]))
-        elif m[4]:
-            # Escaped HTML element, e.g. &lt;b>
-            # HTML elements containing internal % formatting are not wrapped as literals
-            if cur:
-                yield cur
-                cur = ""
-            yield Expression(m[4], FunctionAnnotation("html"))
-        elif m[5]:
-            conversion = m[6]
-            if conversion == "%":
-                # Literal %
-                cur += "%"
-            else:
-                # Placeholder
-                if cur:
-                    yield cur
-                    cur = ""
-                exp = Expression(VariableRef(m[5]))
-                if conversion in ("b", "B"):
-                    exp.annotation = FunctionAnnotation("boolean")
-                elif conversion in ("c", "C", "s", "S"):
-                    exp.annotation = FunctionAnnotation("string")
-                elif conversion in ("d", "h", "H", "o", "x", "X"):
-                    exp.annotation = FunctionAnnotation("integer")
-                elif conversion in ("a", "A", "e", "E", "f", "g", "G"):
-                    exp.annotation = FunctionAnnotation("number")
-                elif conversion[0] in ("t", "T"):
-                    exp.annotation = FunctionAnnotation("datetime")
-                yield exp
-        pos = m.end()
-    if cur or pos < len(src):
-        yield cur + src[pos:]
+def parse_inline(
+    iter: Iterator[str | Expression | Markup],
+) -> Iterator[str | Expression | Markup]:
+    acc = ""
+    for part in iter:
+        if not isinstance(part, str):
+            if acc:
+                yield acc
+                acc = ""
+            yield part
+        else:
+            pos = 0
+            for m in inline_re.finditer(part):
+                start = m.start()
+                if start > pos:
+                    acc += part[pos:start]
+                if m[1]:
+                    # Special character
+                    c = m[1]
+                    acc += "\n" if c == "n" else "\t" if c == "t" else c
+                elif m[2]:
+                    # Unicode escape
+                    acc += chr(int(m[2]))
+                elif m[3]:
+                    # Escaped HTML element, e.g. &lt;b>
+                    # HTML elements containing internal % formatting are not wrapped as literals
+                    if acc:
+                        yield acc
+                        acc = ""
+                    yield Expression(m[3], FunctionAnnotation("html"))
+                else:
+                    conversion = m[5]
+                    if conversion == "%":
+                        # Literal %
+                        acc += "%"
+                    else:
+                        # Placeholder
+                        if acc:
+                            yield acc
+                            acc = ""
+                        exp = Expression(VariableRef(m[4]))
+                        if conversion in ("b", "B"):
+                            exp.annotation = FunctionAnnotation("boolean")
+                        elif conversion in ("c", "C", "s", "S"):
+                            exp.annotation = FunctionAnnotation("string")
+                        elif conversion in ("d", "h", "H", "o", "x", "X"):
+                            exp.annotation = FunctionAnnotation("integer")
+                        elif conversion in ("a", "A", "e", "E", "f", "g", "G"):
+                            exp.annotation = FunctionAnnotation("number")
+                        elif conversion[0] in ("t", "T"):
+                            exp.annotation = FunctionAnnotation("datetime")
+                        yield exp
+                pos = m.end()
+            acc += part[pos:]
+    if acc:
+        yield acc

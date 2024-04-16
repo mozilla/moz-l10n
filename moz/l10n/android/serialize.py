@@ -22,7 +22,6 @@ from ..message import (
     CatchallKey,
     Expression,
     FunctionAnnotation,
-    Markup,
     Message,
     Pattern,
     PatternMessage,
@@ -30,7 +29,7 @@ from ..message import (
     VariableRef,
 )
 from ..resource import Entry, Metadata, Resource
-from .parse import plural_categories, resource_ref, xml_name
+from .parse import plural_categories, resource_ref, xliff_g, xliff_ns, xml_name
 
 
 def android_serialize(
@@ -50,21 +49,39 @@ def android_serialize(
     Multi-part message identifiers are only supported for <string-array>
     values, for which the second part must be convertible to an int.
 
-    Except for "entity", function annotations are ignored.
-    Expression and markup attributes are ignored.
-    Non-entity expressions are not supported together with Markup.
+    Expressions with a "translate": "no" attribute
+    will be wrapped with an <xliff:g> element.
+    If such an expression includes a "source" attribute,
+    that will be used as the element body
+    instead of the literal string or variable name;
+    any variable name will be assigned to the element's "id" attribute.
 
-    Yields the entire XML result as a single string.
+    Markup with a "translate": "no" attribute on both the open and close elements
+    will be rendered as <xliff:g> elements.
+
+    Except for "entity" and "reference", function annotations are ignored.
     """
 
     yield '<?xml version="1.0" encoding="utf-8"?>\n'
     if resource.comment and not trim_comments:
         yield f"\n<!--{comment_body(resource.comment, 0)}-->\n\n"
 
-    entities = ""
-    root = etree.Element(
-        "resources", attrib={m.key: str(m.value) for m in resource.meta}
-    )
+    # The nsmap needs to be set during creation
+    # https://bugs.launchpad.net/lxml/+bug/555602
+    root_nsmap: dict[str | None, str] = {}
+    root_attrib = {}
+    for m in resource.meta:
+        k = m.key
+        v = str(m.value)
+        if k == "xmlns":
+            root_nsmap[None] = v
+        elif k.startswith("xmlns:"):
+            root_nsmap[k[6:]] = v
+        else:
+            root_attrib[k] = v
+    root = etree.Element("resources", attrib=root_attrib, nsmap=root_nsmap)
+
+    entities = []
     string_array = None
     for section in resource.sections:
         if section.meta:
@@ -75,7 +92,7 @@ def android_serialize(
             if section.id == ["!ENTITY"]:
                 for entry in section.entries:
                     if isinstance(entry, Entry):
-                        entities += "\n  " + entity_definition(entry)
+                        entities.append(entity_definition(entry))
                 continue
             else:
                 raise ValueError(f"Unsupported section id: {section.id}")
@@ -113,6 +130,8 @@ def android_serialize(
             elif not trim_comments:
                 add_comment(string_array or root, entry.comment, True)
 
+    etree.cleanup_namespaces(root, {"xliff": xliff_ns})
+
     # Can't use the built-in pretty-printing,
     # as standalone comments need a trailing empty line.
     if len(root) == 0:
@@ -133,7 +152,10 @@ def android_serialize(
         root[-1].tail = "\n"
 
     if entities:
-        yield f"<!DOCTYPE resources [{entities}\n]>\n"
+        yield "<!DOCTYPE resources [\n"
+        for entity in entities:
+            yield f"  {entity}\n"
+        yield "]>\n"
     yield etree.tostring(root, encoding="unicode", method="html")
     yield "\n"
 
@@ -232,7 +254,8 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
 
 def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
     if isinstance(msg, str):
-        el.text = escape_str(msg).replace("\x00", r"\u0000")
+        el.text = escape_backslash(msg)
+        escape_doublequote(el)
     elif isinstance(msg, PatternMessage) and not msg.declarations:
         set_pattern(el, msg.pattern)
     else:
@@ -252,83 +275,81 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
                 return
             else:
                 raise ValueError(f"Invalid reference value: {arg}")
-    if any(isinstance(part, Markup) for part in pattern):
-        # For HTML content, do not apply Android escaping
-        # but do build a proper nested tree of elements.
-        parent = el
-        node = None
-        for part in pattern:
-            if isinstance(part, str):
-                if node is None:
-                    parent.text = parent.text + part if parent.text else part
-                else:
-                    node.tail = node.tail + part if node.tail else part
-            elif isinstance(part, Expression):
-                ent_name = entity_name(part)
-                if ent_name:
-                    node = etree.Entity(ent_name)
-                    parent.append(node)
-                else:
-                    raise ValueError(f"Unsupported expression: {part}")
-            elif any(isinstance(value, VariableRef) for value in part.options.values()):
-                raise ValueError(f"Unsupported markup with variable option: {part}")
+
+    parent = el
+    node = None
+    for part in pattern:
+        if isinstance(part, str):
+            esc = escape_backslash(part)
+            if node is None:
+                parent.text = parent.text + esc if parent.text else esc
             else:
-                attrib = cast(dict[str, str], part.options)
-                if part.kind == "standalone":
-                    node = etree.SubElement(parent, part.name, attrib=attrib)
-                elif part.kind == "open":
-                    parent = etree.SubElement(parent, part.name, attrib=attrib)
-                    node = None
-                elif parent != el and part.name == parent.tag:  # kind == 'close'
-                    node = parent
-                    parent = cast(etree._Element, parent.getparent())
-                else:
-                    raise ValueError(f"Improper element nesting for {part} in {parent}")
-    else:
-        # We're building a single string, but it may include XML entity references.
-        # To still apply escaping to the whole string at once
-        # (and thereby detect a need to "quote" it),
-        # we first build the string with NUL as a sentinel value for entities
-        # (and literal null characters), then escape it, and then
-        # insert the entity references as appropriate.
-        src = ""
-        entities: list[str | etree._Entity] = []
-        for part in pattern:
-            if isinstance(part, str):
-                src += part
-                nulls = part.count("\x00")
-                if nulls:
-                    entities += (r"\u0000",) * nulls
-            elif isinstance(part, Expression):
-                ent_name = entity_name(part)
+                node.tail = node.tail + esc if node.tail else esc
+        elif isinstance(part, Expression):
+            ent_name = entity_name(part)
+            if part.attributes.get("translate", None) == "no":
+                # <xliff:g>
+                arg = part.arg
+                attrib = {"id": arg.name} if isinstance(arg, VariableRef) else {}
+                if isinstance(part.annotation, FunctionAnnotation):
+                    for k, v in part.annotation.options.items():
+                        attrib[k] = str(v)
+                nsmap = {"xliff": xliff_ns} if not el.nsmap.get("xliff", None) else None
+                node = etree.SubElement(parent, xliff_g, attrib=attrib, nsmap=nsmap)
                 if ent_name:
-                    entities.append(etree.Entity(ent_name))
-                    src += "\x00"
-                elif isinstance(part.arg, str):
-                    src += part.arg
+                    if "id" in node.attrib:
+                        del node.attrib["id"]
+                    node.append(etree.Entity(ent_name))
+                elif "source" in part.attributes:
+                    source = part.attributes["source"]
+                    if source:
+                        node.text = str(source)
+                else:
+                    if isinstance(arg, str):
+                        node.text = escape_backslash(arg)
+                    elif isinstance(arg, VariableRef):
+                        if "id" in node.attrib:
+                            del node.attrib["id"]
+                        node.text = arg.name
+            elif ent_name:
+                node = etree.Entity(ent_name)
+                parent.append(node)
+            else:
+                source = None
+                if isinstance(part.arg, str):
+                    source = escape_backslash(part.arg)
                 elif isinstance(part.arg, VariableRef):
-                    src += part.arg.name
+                    source = part.arg.name
+                if source is not None:
+                    if node is None:
+                        parent.text = parent.text + source if parent.text else source
+                    else:
+                        node.tail = node.tail + source if node.tail else source
                 else:
                     raise ValueError(f"Unsupported expression: {part}")
-        res = escape_str(src)
-        if not entities:
-            el.text = res
-        elif all(isinstance(ent, str) for ent in entities):
-            el.text = res.replace("\x00", r"\u0000")
+        elif any(isinstance(value, VariableRef) for value in part.options.values()):
+            raise ValueError(f"Unsupported markup with variable option: {part}")
         else:
-            strings = res.split("\x00")
-            el.text = strings.pop(0)
-            node = None
-            for ent, string in zip(entities, strings, strict=True):
-                if isinstance(ent, str):
-                    if node:
-                        node.tail += ent + string  # type: ignore[operator]
-                    else:
-                        el.text += ent + string
-                else:
-                    node = ent
-                    node.tail = string
-                    el.append(node)
+            if part.attributes.get("translate", None) == "no":
+                name = f"{{{xliff_ns}}}g"
+            elif ":" in part.name:
+                ns, local = part.name.split(":", 1)
+                xmlns = el.nsmap.get(ns, xliff_ns if ns == "xliff" else ns)
+                name = f"{{{xmlns}}}{local}"
+            else:
+                name = part.name
+            attrib = cast(dict[str, str], part.options)
+            if part.kind == "standalone":
+                node = etree.SubElement(parent, name, attrib=attrib)
+            elif part.kind == "open":
+                parent = etree.SubElement(parent, name, attrib=attrib)
+                node = None
+            elif parent != el and name == parent.tag:  # kind == 'close'
+                node = parent
+                parent = cast(etree._Element, parent.getparent())
+            else:
+                raise ValueError(f"Improper element nesting for {part} in {parent}")
+    escape_doublequote(el)
 
 
 def entity_name(part: Expression) -> str | None:
@@ -346,18 +367,31 @@ def entity_name(part: Expression) -> str | None:
 
 # Special Android characters
 android_escape = str.maketrans(
-    {"\\": r"\u0092", "@": r"\@", "?": r"\?", "\n": r"\n", "\t": r"\t", '"': r"\""}
+    {"\\": r"\\", "\n": r"\n", "\t": r"\t", "'": r"\'", '"': r"\"", "%": r"%%"}
 )
 
 # Control codes are not valid in XML, and nonstandard whitespace is hard to see.
-# Not including NUL here because that's used as a stand-in for entities.
-control_chars_re = compile(r"[\x01-\x19\x7F-\x9F]|[^\S ]")
-
-# Content requiring double quotes: multiple spaces and straight apostrophes
-quoted_re = compile(r"  |'")
+control_chars = compile(r"[\x00-\x19\x7F-\x9F]|[^\S ]")
 
 
-def escape_str(src: str) -> str:
+def escape_backslash(src: str) -> str:
     res = src.translate(android_escape)
-    res = control_chars_re.sub(lambda m: f"\\u{ord(m.group()):04d}", res)
-    return f'"{res}"' if quoted_re.search(res) else res
+    return control_chars.sub(lambda m: f"\\u{ord(m.group()):04d}", res)
+
+
+def escape_doublequote(el: etree._Element, root: bool = True) -> None:
+    if el.text and ("  " in el.text):
+        el.text = f'"{el.text}"'
+    for child in el:
+        escape_doublequote(child, False)
+        if child.tail and "  " in child.tail:
+            child.tail = f'"{child.tail}"'
+    if root:
+        if el.text and el.text.startswith((" ", "@", "?")):
+            el.text = f'"{el.text}"'
+        if len(el) > 0:
+            last = el[-1]
+            if last.tail and last.tail.endswith(" "):
+                last.tail = f'"{last.tail}"'
+        elif el.text and el.text.endswith(" "):
+            el.text = f'"{el.text}"'
