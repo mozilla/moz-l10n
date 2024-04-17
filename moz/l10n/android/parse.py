@@ -57,6 +57,7 @@ xml_name = compile(f"[{xml_name_start}][{xml_name_start}{xml_name_rest}]*")
 #
 # For more information, see:
 # https://developer.android.com/guide/topics/resources/string-resource
+# https://developer.android.com/guide/topics/resources/localization#mark-message-parts
 
 
 def android_parse(source: str | bytes) -> Resource[Message, str]:
