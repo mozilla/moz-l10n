@@ -16,7 +16,15 @@ from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
-from moz.l10n.message import Expression, Markup, PatternMessage
+from moz.l10n.message import (
+    CatchallKey,
+    Expression,
+    FunctionAnnotation,
+    Markup,
+    PatternMessage,
+    SelectMessage,
+    VariableRef,
+)
 from moz.l10n.resource import Comment, Entry, Metadata, Resource, Section
 from moz.l10n.xliff import xliff_parse, xliff_serialize
 
@@ -26,6 +34,7 @@ from moz.l10n.xliff import xliff_parse, xliff_serialize
 hello = files("tests.data").joinpath("hello.xliff").read_bytes()
 angular = files("tests.data").joinpath("angular.xliff").read_bytes()
 icu_docs = files("tests.data").joinpath("icu-docs.xliff").read_bytes()
+xcode = files("tests.data").joinpath("xcode.xliff").read_bytes()
 
 
 class TestXliff1(TestCase):
@@ -33,28 +42,24 @@ class TestXliff1(TestCase):
         res = xliff_parse(hello)
         assert res == Resource(
             meta=[
-                Metadata(key="version", value="1.2"),
-                Metadata(key="xmlns", value="urn:oasis:names:tc:xliff:document:1.2"),
+                Metadata("version", "1.2"),
+                Metadata("xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
             ],
             sections=[
                 Section(
                     id=["hello.txt"],
                     meta=[
-                        Metadata(key="source-language", value="en"),
-                        Metadata(key="target-language", value="fr"),
-                        Metadata(key="datatype", value="plaintext"),
+                        Metadata("source-language", "en"),
+                        Metadata("target-language", "fr"),
+                        Metadata("datatype", "plaintext"),
                     ],
                     entries=[
                         Entry(
                             id=["hi"],
                             meta=[
-                                Metadata(key="source/.", value="Hello world"),
-                                Metadata(
-                                    key="2,alt-trans/0,target/xml:lang", value="es"
-                                ),
-                                Metadata(
-                                    key="2,alt-trans/0,target/.", value="Hola mundo"
-                                ),
+                                Metadata("source/.", "Hello world"),
+                                Metadata("2,alt-trans/0,target/xml:lang", "es"),
+                                Metadata("2,alt-trans/0,target/.", "Hola mundo"),
                             ],
                             value=PatternMessage(["Bonjour le monde"]),
                         )
@@ -66,7 +71,6 @@ class TestXliff1(TestCase):
     def test_serialize_hello(self):
         res = xliff_parse(hello)
         ser = "".join(xliff_serialize(res))
-        print(ser)
         assert ser == dedent(
             """\
             <?xml version="1.0" encoding="utf-8"?>
@@ -90,16 +94,16 @@ class TestXliff1(TestCase):
         res = xliff_parse(angular)
         assert res == Resource(
             meta=[
-                Metadata(key="version", value="1.2"),
-                Metadata(key="xmlns", value="urn:oasis:names:tc:xliff:document:1.2"),
+                Metadata("version", "1.2"),
+                Metadata("xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
             ],
             sections=[
                 Section(
                     id=["ng2.template"],
                     meta=[
-                        Metadata(key="source-language", value="en"),
-                        Metadata(key="target-language", value="fi"),
-                        Metadata(key="datatype", value="plaintext"),
+                        Metadata("source-language", "en"),
+                        Metadata("target-language", "fi"),
+                        Metadata("datatype", "plaintext"),
                     ],
                     entries=[
                         Entry(
@@ -107,29 +111,27 @@ class TestXliff1(TestCase):
                             value=PatternMessage(["\n  Hei i18n!\n"]),
                             comment="An introduction header for this sample",
                             meta=[
-                                Metadata(key="datatype", value="html"),
-                                Metadata(key="source/.", value="\n  Hello i18n!\n"),
+                                Metadata("datatype", "html"),
+                                Metadata("source/.", "\n  Hello i18n!\n"),
+                                Metadata("2,context-group/purpose", "location"),
                                 Metadata(
-                                    key="2,context-group/purpose", value="location"
+                                    "2,context-group/0,context/context-type",
+                                    "sourcefile",
                                 ),
                                 Metadata(
-                                    key="2,context-group/0,context/context-type",
-                                    value="sourcefile",
+                                    "2,context-group/0,context/.",
+                                    "app/app.component.ts",
                                 ),
                                 Metadata(
-                                    key="2,context-group/0,context/.",
-                                    value="app/app.component.ts",
+                                    "2,context-group/1,context/context-type",
+                                    "linenumber",
                                 ),
-                                Metadata(
-                                    key="2,context-group/1,context/context-type",
-                                    value="linenumber",
-                                ),
-                                Metadata(key="2,context-group/1,context/.", value="3"),
-                                Metadata(key="note/priority", value="1"),
-                                Metadata(key="note/from", value="description"),
-                                Metadata(key="4,note/priority", value="1"),
-                                Metadata(key="4,note/from", value="meaning"),
-                                Metadata(key="4,note/.", value="User welcome"),
+                                Metadata("2,context-group/1,context/.", "3"),
+                                Metadata("note/priority", "1"),
+                                Metadata("note/from", "description"),
+                                Metadata("4,note/priority", "1"),
+                                Metadata("4,note/from", "meaning"),
+                                Metadata("4,note/.", "User welcome"),
                             ],
                         ),
                         Entry(
@@ -149,17 +151,15 @@ class TestXliff1(TestCase):
                                 ],
                             ),
                             meta=[
-                                Metadata(key="datatype", value="html"),
+                                Metadata("datatype", "html"),
                                 Metadata(
-                                    key="source/.",
-                                    value="{VAR_PLURAL, plural, =0 {just now} =1 {one minute ago} other {",
+                                    "source/.",
+                                    "{VAR_PLURAL, plural, =0 {just now} =1 {one minute ago} other {",
                                 ),
-                                Metadata(key="source/0,x/id", value="INTERPOLATION"),
-                                Metadata(
-                                    key="source/0,x/equiv-text", value="{{minutes}}"
-                                ),
-                                Metadata(key="source/.", value=" minutes ago} }"),
-                                Metadata(key="2,note/.", value=""),
+                                Metadata("source/0,x/id", "INTERPOLATION"),
+                                Metadata("source/0,x/equiv-text", "{{minutes}}"),
+                                Metadata("source/.", " minutes ago} }"),
+                                Metadata("2,note/.", ""),
                             ],
                         ),
                     ],
@@ -205,34 +205,30 @@ class TestXliff1(TestCase):
         res = xliff_parse(icu_docs)
         assert res == Resource(
             meta=[
-                Metadata(key="version", value="1.2"),
+                Metadata("version", "1.2"),
                 Metadata(
-                    key="xsi:schemaLocation",
-                    value="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd",
+                    "xsi:schemaLocation",
+                    "urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd",
                 ),
-                Metadata(key="xmlns", value="urn:oasis:names:tc:xliff:document:1.2"),
-                Metadata(
-                    key="xmlns:xsi", value="http://www.w3.org/2001/XMLSchema-instance"
-                ),
+                Metadata("xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
+                Metadata("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
             ],
             sections=[
                 Section(
                     id=["en.txt"],
                     meta=[
-                        Metadata(key="xml:space", value="preserve"),
-                        Metadata(key="source-language", value="en"),
-                        Metadata(key="datatype", value="x-icu-resource-bundle"),
-                        Metadata(key="date", value="2007-06-15T23:20:43Z"),
-                        Metadata(
-                            key="header/0,tool/tool-id", value="genrb-3.3-icu-3.7.1"
-                        ),
-                        Metadata(key="header/0,tool/tool-name", value="genrb"),
+                        Metadata("xml:space", "preserve"),
+                        Metadata("source-language", "en"),
+                        Metadata("datatype", "x-icu-resource-bundle"),
+                        Metadata("date", "2007-06-15T23:20:43Z"),
+                        Metadata("header/0,tool/tool-id", "genrb-3.3-icu-3.7.1"),
+                        Metadata("header/0,tool/tool-name", "genrb"),
                     ],
                     entries=[],
                 ),
                 Section(
                     id=["en.txt", "en"],
-                    meta=[Metadata(key="restype", value="x-icu-table")],
+                    meta=[Metadata("restype", "x-icu-table")],
                     entries=[
                         Comment(
                             "The resources for a fictious Hello World application. The application displays a single window with a logo and the hello message."
@@ -241,9 +237,9 @@ class TestXliff1(TestCase):
                             id=["authors"],
                             value=PatternMessage([]),
                             meta=[
-                                Metadata(key="resname", value="authors"),
-                                Metadata(key="restype", value="x-icu-alias"),
-                                Metadata(key="source/.", value="root/authors"),
+                                Metadata("resname", "authors"),
+                                Metadata("restype", "x-icu-alias"),
+                                Metadata("source/.", "root/authors"),
                             ],
                         ),
                         Entry(
@@ -251,8 +247,8 @@ class TestXliff1(TestCase):
                             value=PatternMessage([]),
                             comment="This is the message that the application displays to the user.",
                             meta=[
-                                Metadata(key="resname", value="hello"),
-                                Metadata(key="source/.", value="Hello, world!"),
+                                Metadata("resname", "hello"),
+                                Metadata("source/.", "Hello, world!"),
                             ],
                         ),
                         Entry(
@@ -261,17 +257,16 @@ class TestXliff1(TestCase):
                                 [Expression(None, attributes={"bin-unit": None})]
                             ),
                             meta=[
-                                Metadata(key="resname", value="logo"),
-                                Metadata(key="mime-type", value="image"),
-                                Metadata(key="restype", value="x-icu-binary"),
-                                Metadata(key="translate", value="no"),
+                                Metadata("resname", "logo"),
+                                Metadata("mime-type", "image"),
+                                Metadata("restype", "x-icu-binary"),
+                                Metadata("translate", "no"),
                                 Metadata(
-                                    key="!",
-                                    value="The logo to be displayed in the application window.",
+                                    "!",
+                                    "The logo to be displayed in the application window.",
                                 ),
                                 Metadata(
-                                    key="1,bin-source/0,external-file/href",
-                                    value="logo.gif",
+                                    "1,bin-source/0,external-file/href", "logo.gif"
                                 ),
                             ],
                         ),
@@ -281,25 +276,20 @@ class TestXliff1(TestCase):
                                 [Expression(None, attributes={"bin-unit": None})]
                             ),
                             meta=[
-                                Metadata(key="resname", value="md5_sum"),
-                                Metadata(key="mime-type", value="application"),
-                                Metadata(key="restype", value="x-icu-binary"),
-                                Metadata(key="translate", value="no"),
+                                Metadata("resname", "md5_sum"),
+                                Metadata("mime-type", "application"),
+                                Metadata("restype", "x-icu-binary"),
+                                Metadata("translate", "no"),
+                                Metadata("!", "The MD5 checksum of the application."),
                                 Metadata(
-                                    key="!",
-                                    value="The MD5 checksum of the application.",
+                                    "1,bin-source/0,internal-file/form", "application"
                                 ),
                                 Metadata(
-                                    key="1,bin-source/0,internal-file/form",
-                                    value="application",
+                                    "1,bin-source/0,internal-file/crc", "187654673"
                                 ),
                                 Metadata(
-                                    key="1,bin-source/0,internal-file/crc",
-                                    value="187654673",
-                                ),
-                                Metadata(
-                                    key="1,bin-source/0,internal-file/.",
-                                    value="BCFE765BE0FDFAB22C5F9EFD12C52ABC",
+                                    "1,bin-source/0,internal-file/.",
+                                    "BCFE765BE0FDFAB22C5F9EFD12C52ABC",
                                 ),
                             ],
                         ),
@@ -308,8 +298,8 @@ class TestXliff1(TestCase):
                 Section(
                     id=["en.txt", "en", "menus"],
                     meta=[
-                        Metadata(key="resname", value="menus"),
-                        Metadata(key="restype", value="x-icu-table"),
+                        Metadata("resname", "menus"),
+                        Metadata("restype", "x-icu-table"),
                     ],
                     entries=[
                         Comment("The application menus."),
@@ -318,16 +308,16 @@ class TestXliff1(TestCase):
                 Section(
                     id=["en.txt", "en", "menus", "menus_help_menu"],
                     meta=[
-                        Metadata(key="resname", value="help_menu"),
-                        Metadata(key="restype", value="x-icu-table"),
+                        Metadata("resname", "help_menu"),
+                        Metadata("restype", "x-icu-table"),
                     ],
                     entries=[
                         Entry(
                             id=["menus_help_menu_name"],
                             value=PatternMessage([]),
                             meta=[
-                                Metadata(key="resname", value="name"),
-                                Metadata(key="source/.", value="Help"),
+                                Metadata("resname", "name"),
+                                Metadata("source/.", "Help"),
                             ],
                         )
                     ],
@@ -341,19 +331,19 @@ class TestXliff1(TestCase):
                         "menus_help_menu_items",
                     ],
                     meta=[
-                        Metadata(key="resname", value="items"),
-                        Metadata(key="restype", value="x-icu-array"),
+                        Metadata("resname", "items"),
+                        Metadata("restype", "x-icu-array"),
                     ],
                     entries=[
                         Entry(
                             id=["menus_help_menu_items_0"],
                             value=PatternMessage([]),
-                            meta=[Metadata(key="source/.", value="Help Topics")],
+                            meta=[Metadata("source/.", "Help Topics")],
                         ),
                         Entry(
                             id=["menus_help_menu_items_1"],
                             value=PatternMessage([]),
-                            meta=[Metadata(key="source/.", value="About Hello World")],
+                            meta=[Metadata("source/.", "About Hello World")],
                         ),
                     ],
                 ),
@@ -410,6 +400,266 @@ class TestXliff1(TestCase):
                       </group>
                     </group>
                   </group>
+                </body>
+              </file>
+            </xliff>
+            """
+        )
+
+    def test_parse_xcode(self):
+        res = xliff_parse(xcode)
+        assert res == Resource(
+            meta=[
+                Metadata("version", "1.2"),
+                Metadata(
+                    "xsi:schemaLocation",
+                    "urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd",
+                ),
+                Metadata("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+                Metadata("xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
+            ],
+            sections=[
+                Section(
+                    id=["xcode1/en.lproj/Localizable.strings"],
+                    meta=[
+                        Metadata("source-language", "en"),
+                        Metadata("target-language", "it"),
+                        Metadata("datatype", "plaintext"),
+                        Metadata("header/0,tool/tool-id", "com.apple.dt.xcode"),
+                        Metadata("header/0,tool/tool-name", "Xcode"),
+                        Metadata("header/0,tool/tool-version", "15.2"),
+                        Metadata("header/0,tool/build-num", "15C500b"),
+                    ],
+                    entries=[
+                        Entry(
+                            id=[
+                                "[KeyFile/Delete/Confirm/text] Delete key file?\n Make sure you have a backup."
+                            ],
+                            value=PatternMessage(
+                                [
+                                    "Eliminare il file chiave?\nAssicurati di avere una copia."
+                                ]
+                            ),
+                            comment="Message to confirm deletion of a key file.",
+                            meta=[
+                                Metadata("xml:space", "preserve"),
+                                Metadata(
+                                    "source/.",
+                                    "Delete key file?\n Make sure you have a backup.",
+                                ),
+                                Metadata("target/state", "translated"),
+                            ],
+                        )
+                    ],
+                ),
+                Section(
+                    id=["xcode1/en.lproj/Localizable.stringsdict"],
+                    meta=[
+                        Metadata("source-language", "en"),
+                        Metadata("target-language", "it"),
+                        Metadata("datatype", "plaintext"),
+                        Metadata("header/0,tool/tool-id", "com.apple.dt.xcode"),
+                        Metadata("header/0,tool/tool-name", "Xcode"),
+                        Metadata("header/0,tool/tool-version", "15.2"),
+                        Metadata("header/0,tool/build-num", "15C500b"),
+                    ],
+                    entries=[
+                        Entry(
+                            id=["[Generic/Count/EntriesSelected]"],
+                            value=SelectMessage(
+                                selectors=[
+                                    Expression(
+                                        VariableRef("GenericCountEntriesSelected"),
+                                        FunctionAnnotation("number"),
+                                        {"source": None},
+                                    )
+                                ],
+                                variants={
+                                    ("one",): [
+                                        Expression(
+                                            VariableRef("%d"),
+                                            FunctionAnnotation("integer"),
+                                        ),
+                                        " voce selezionata",
+                                    ],
+                                    (CatchallKey("other"),): [
+                                        Expression(
+                                            VariableRef("%d"),
+                                            FunctionAnnotation("integer"),
+                                        ),
+                                        " voci selezionate",
+                                    ],
+                                },
+                            ),
+                            meta=[
+                                Metadata("one/source/.", "%d entry selected"),
+                                Metadata("one/target/state", "translated"),
+                                Metadata("other/source/.", "%d entries selected"),
+                                Metadata("other/target/state", "translated"),
+                            ],
+                        ),
+                        Entry(
+                            id=["[Generic/Count/Threads]"],
+                            value=SelectMessage(
+                                selectors=[
+                                    Expression(
+                                        VariableRef("GenericCountThreads"),
+                                        FunctionAnnotation("number"),
+                                        {"source": None},
+                                    )
+                                ],
+                                variants={
+                                    ("one",): [
+                                        Expression(
+                                            VariableRef("%d"),
+                                            FunctionAnnotation("integer"),
+                                        ),
+                                        " thread",
+                                    ],
+                                    (CatchallKey(value="other"),): [
+                                        Expression(
+                                            VariableRef("%d"),
+                                            FunctionAnnotation("integer"),
+                                        ),
+                                        " thread",
+                                    ],
+                                },
+                            ),
+                            meta=[
+                                Metadata("one/source/.", "%d thread"),
+                                Metadata("one/target/state", "translated"),
+                                Metadata("other/source/.", "%d threads"),
+                                Metadata("other/target/state", "translated"),
+                            ],
+                        ),
+                    ],
+                ),
+                Section(
+                    id=["xcode2/en.lproj/Localizable.stringsdict"],
+                    meta=[
+                        Metadata("source-language", "en"),
+                        Metadata("target-language", "en"),
+                        Metadata("datatype", "plaintext"),
+                    ],
+                    entries=[
+                        Entry(
+                            id=["followed_by_three_and_others"],
+                            meta=[
+                                Metadata("format/xml:space", "preserve"),
+                                Metadata("one/xml:space", "preserve"),
+                                Metadata(
+                                    "one/source/.",
+                                    "Followed by %2$@, %3$@, %4$@ & %1$d other",
+                                ),
+                                Metadata("other/xml:space", "preserve"),
+                                Metadata(
+                                    "other/source/.",
+                                    "Followed by %2$@, %3$@, %4$@ & %1$d others",
+                                ),
+                            ],
+                            value=SelectMessage(
+                                selectors=[
+                                    Expression(
+                                        VariableRef("OTHERS"),
+                                        FunctionAnnotation("number"),
+                                        {"source": "%#@OTHERS@"},
+                                    )
+                                ],
+                                variants={
+                                    ("one",): [
+                                        "Followed by ",
+                                        Expression(VariableRef("%2$@")),
+                                        ", ",
+                                        Expression(VariableRef("%3$@")),
+                                        ", ",
+                                        Expression(VariableRef("%4$@")),
+                                        " & ",
+                                        Expression(
+                                            VariableRef("%1$d"),
+                                            FunctionAnnotation("integer"),
+                                        ),
+                                        " other",
+                                    ],
+                                    (CatchallKey("other"),): [
+                                        "Followed by ",
+                                        Expression(VariableRef("%2$@")),
+                                        ", ",
+                                        Expression(VariableRef("%3$@")),
+                                        ", ",
+                                        Expression(VariableRef("%4$@")),
+                                        " & ",
+                                        Expression(
+                                            VariableRef("%1$d"),
+                                            FunctionAnnotation("integer"),
+                                        ),
+                                        " others",
+                                    ],
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+    def test_serialize_xcode(self):
+        res = xliff_parse(xcode)
+        ser = "".join(xliff_serialize(res))
+        assert ser == dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <xliff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
+              <file original="xcode1/en.lproj/Localizable.strings" source-language="en" target-language="it" datatype="plaintext">
+                <header>
+                  <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.2" build-num="15C500b"/>
+                </header>
+                <body>
+                  <trans-unit id="[KeyFile/Delete/Confirm/text] Delete key file?&#10; Make sure you have a backup." xml:space="preserve">
+                    <source>Delete key file?
+             Make sure you have a backup.</source>
+                    <target state="translated">Eliminare il file chiave?
+            Assicurati di avere una copia.</target>
+                    <note>Message to confirm deletion of a key file.</note>
+                  </trans-unit>
+                </body>
+              </file>
+              <file original="xcode1/en.lproj/Localizable.stringsdict" source-language="en" target-language="it" datatype="plaintext">
+                <header>
+                  <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.2" build-num="15C500b"/>
+                </header>
+                <body>
+                  <trans-unit id="/[Generic/Count/EntriesSelected]:dict/GenericCountEntriesSelected:dict/one:dict/:string">
+                    <source>%d entry selected</source>
+                    <target state="translated">%d voce selezionata</target>
+                  </trans-unit>
+                  <trans-unit id="/[Generic/Count/EntriesSelected]:dict/GenericCountEntriesSelected:dict/other:dict/:string">
+                    <source>%d entries selected</source>
+                    <target state="translated">%d voci selezionate</target>
+                  </trans-unit>
+                  <trans-unit id="/[Generic/Count/Threads]:dict/GenericCountThreads:dict/one:dict/:string">
+                    <source>%d thread</source>
+                    <target state="translated">%d thread</target>
+                  </trans-unit>
+                  <trans-unit id="/[Generic/Count/Threads]:dict/GenericCountThreads:dict/other:dict/:string">
+                    <source>%d threads</source>
+                    <target state="translated">%d thread</target>
+                  </trans-unit>
+                </body>
+              </file>
+              <file original="xcode2/en.lproj/Localizable.stringsdict" source-language="en" target-language="en" datatype="plaintext">
+                <body>
+                  <trans-unit id="/followed_by_three_and_others:dict/NSStringLocalizedFormatKey:dict/:string" xml:space="preserve">
+                    <source>%#@OTHERS@</source>
+                    <target>%#@OTHERS@</target>
+                  </trans-unit>
+                  <trans-unit id="/followed_by_three_and_others:dict/OTHERS:dict/one:dict/:string" xml:space="preserve">
+                    <source>Followed by %2$@, %3$@, %4$@ &amp; %1$d other</source>
+                    <target>Followed by %2$@, %3$@, %4$@ &amp; %1$d other</target>
+                  </trans-unit>
+                  <trans-unit id="/followed_by_three_and_others:dict/OTHERS:dict/other:dict/:string" xml:space="preserve">
+                    <source>Followed by %2$@, %3$@, %4$@ &amp; %1$d others</source>
+                    <target>Followed by %2$@, %3$@, %4$@ &amp; %1$d others</target>
+                  </trans-unit>
                 </body>
               </file>
             </xliff>

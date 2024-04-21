@@ -14,19 +14,15 @@
 
 from collections.abc import Iterator
 from re import compile
+from typing import cast
 
 from lxml import etree
 
-from ..message import Expression, Markup, Message, PatternMessage, VariableRef
+from ..message import Expression, Message, PatternMessage
 from ..resource import Comment, Entry, Metadata, Resource, Section
-
-xliff_ns = (
-    None,
-    "urn:oasis:names:tc:xliff:document:1.0",
-    "urn:oasis:names:tc:xliff:document:1.1",
-    "urn:oasis:names:tc:xliff:document:1.2",
-)
-xml_ns = "http://www.w3.org/XML/1998/namespace"
+from .common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
+from .parse_trans_unit import parse_trans_unit
+from .parse_xcode import parse_xliff_stringsdict
 
 
 def xliff_parse(source: str | bytes) -> Resource[Message, str]:
@@ -127,6 +123,13 @@ def xliff_parse(source: str | bytes) -> Resource[Message, str]:
                 raise ValueError(f"Missing <body> in <file>: {file}")
             elif body.text and not body.text.isspace():
                 raise ValueError(f"Unexpected text in <body>: {body.text}")
+
+            if file_name.endswith(".stringsdict"):
+                plural_entries = parse_xliff_stringsdict(ns, body)
+                if plural_entries is not None:
+                    entries += cast(list[Entry[Message, str] | Comment], plural_entries)
+                    continue
+
             for unit in body:
                 if isinstance(unit, etree._Comment):
                     entries.append(Comment(comment_str(unit.text)))
@@ -185,68 +188,6 @@ def parse_bin_unit(unit: etree._Element) -> Entry[Message, str]:
     return Entry([id], msg, meta=meta)
 
 
-def parse_trans_unit(unit: etree._Element) -> Entry[Message, str]:
-    id = unit.attrib.get("id", None)
-    if id is None:
-        raise ValueError(f'Missing "id" attribute for <trans-unit>: {unit}')
-    meta = attrib_as_metadata(unit, None, ("id",))
-    if unit.text and not unit.text.isspace():
-        raise ValueError(f"Unexpected text in <trans-unit>: {unit.text}")
-
-    target = None
-    note = None
-    for idx, el in enumerate(unit):
-        if isinstance(el, etree._Comment):
-            meta.append(Metadata("!", el.text))
-        else:
-            q = etree.QName(el.tag)
-            name = q.localname if q.namespace in xliff_ns else q.text
-            if name == "target":
-                if target:
-                    raise ValueError(f"Duplicate <target> in <trans-unit> {id}: {unit}")
-                target = el
-                meta += attrib_as_metadata(el, "target/")
-            elif name == "note" and note is None and el.text:
-                note = el
-                note_attrib = attrib_as_metadata(el, "note/")
-                if note_attrib:
-                    meta += note_attrib
-                elif idx < len(el) - 1:
-                    # If there are elements after this <note>,
-                    # add a marker for its relative position.
-                    meta.append(Metadata("note/.", ""))
-            else:
-                base = (
-                    f"{name}/"
-                    if name in ("source", "seg-source")
-                    else f"{idx},{pretty_name(el, el.tag)}/"
-                )
-                meta += element_as_metadata(el, base, True)
-        if el.tail and not el.tail.isspace():
-            raise ValueError(f"Unexpected text in <body>: {el.tail}")
-
-    comment = "" if note is None else note.text or ""
-    msg = PatternMessage([] if target is None else list(parse_pattern(target)))
-    return Entry([id], msg, comment, meta)
-
-
-def parse_pattern(el: etree._Element) -> Iterator[str | Markup]:
-    if el.text:
-        yield el.text
-    for child in el:
-        q = etree.QName(child.tag)
-        name = q.localname if q.namespace in xliff_ns else q.text
-        options: dict[str, str | VariableRef] = dict(child.attrib)
-        if name in ("x", "bx", "ex"):
-            yield Markup("standalone", name, options)
-        elif isinstance(child.tag, str):
-            yield Markup("open", name, options)
-            yield from parse_pattern(child)
-            yield Markup("close", name)
-        if child.tail:
-            yield child.tail
-
-
 dash_indent = compile(r" .+(\n   - .*)+ ")
 
 
@@ -265,57 +206,3 @@ def comment_str(body: list[str] | str) -> str:
                     "\n".join(line.strip() for line in comment.splitlines()).strip("\n")
                 )
     return "\n\n".join(lines).strip("\n")
-
-
-def element_as_metadata(
-    el: etree._Element, base: str, with_attrib: bool
-) -> Iterator[Metadata[str]]:
-    is_empty = True
-    if with_attrib:
-        am = attrib_as_metadata(el, base)
-        if am:
-            yield from am
-            is_empty = False
-    if el.text and not el.text.isspace():
-        yield Metadata(f"{base}.", el.text)
-        is_empty = False
-    for idx, child in enumerate(el):
-        if isinstance(child, etree._Comment):
-            yield Metadata(f"{base}!", child.text)
-        elif isinstance(child.tag, str):
-            name = pretty_name(child, child.tag)
-            yield from element_as_metadata(child, f"{base}{idx},{name}/", True)
-        else:
-            raise ValueError(f"Unsupported metadata element at {base}{idx}: {el}")
-        if child.tail and not child.tail.isspace():
-            yield Metadata(f"{base}.", child.tail)
-        is_empty = False
-    if is_empty and with_attrib:
-        yield Metadata(f"{base}.", "")
-
-
-def attrib_as_metadata(
-    el: etree._Element, base: str | None = None, exclude: tuple[str] | None = None
-) -> list[Metadata[str]]:
-    res = []
-    for key, value in el.attrib.items():
-        if not exclude or key not in exclude:
-            pk = pretty_name(el, key)
-            res.append(Metadata(base + pk if base else pk, value))
-    return res
-
-
-def pretty_name(el: etree._Element, name: str) -> str:
-    if not name.startswith("{"):
-        return name
-    q = etree.QName(name)
-    ns = q.namespace
-    if ns in xliff_ns:
-        return q.localname
-    if ns == xml_ns:
-        return f"xml:{q.localname}"
-    ns_key = next(iter(k for k, v in el.nsmap.items() if v == ns), None)
-    if ns_key:
-        return f"{ns_key}:{q.localname}"
-    else:
-        raise ValueError(f"Name with unknown namespace: {name}")
