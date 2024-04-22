@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from collections.abc import Iterator
 from re import compile
 from typing import cast
@@ -37,26 +38,7 @@ def xliff_parse(source: str | bytes) -> Resource[Message, str]:
     and its comment the first <note>.
     Other elements and attributes are represented by metadata.
 
-    Metadata keys encode XML element data.
-    They have the following shape:
-
-    ```
-        key = *path_part ('.' | '!' | xml_id)
-        path_part = [digits ','] xml_id) '/'
-        xml_id = xml_name | xml_name ':' xml_name
-    ```
-
-    Each `path_part` represents a possibly namespaced element.
-    The starting `digits` (or any other content in that position) is ignored;
-    its only function is to differentiate adjacent elements with the same name.
-
-    A key ending with `.` represents text content,
-    and a key ending with `!` represents a comment.
-    Other keys represent attribute values.
-
-    The attribute and element names may be of the form `ns:foo`,
-    in which case the resource should have an `xmlns:ns` metadata entry
-    with its URI value.
+    Metadata keys encode XML element data, using XPath expressions as keys.
     """
     root = etree.fromstring(source.encode() if isinstance(source, str) else source)
     version = root.attrib.get("version", None)
@@ -82,7 +64,7 @@ def xliff_parse(source: str | bytes) -> Resource[Message, str]:
         res.comment = comment_str(root_comments)
     res.meta = attrib_as_metadata(root)
     for key, uri in root.nsmap.items():
-        res.meta.append(Metadata(f"xmlns:{key}" if key else "xmlns", uri))
+        res.meta.append(Metadata(f"@xmlns:{key}" if key else "@xmlns", uri))
 
     comment: list[str] = []
     for file in root:
@@ -101,7 +83,7 @@ def xliff_parse(source: str | bytes) -> Resource[Message, str]:
                 if isinstance(child, etree._Comment):
                     entries.append(Comment(comment_str(child.text)))
                 elif child.tag == f"{ns}header":
-                    meta += element_as_metadata(child, "header/", True)
+                    meta += element_as_metadata(child, "header", True)
                 elif child.tag == f"{ns}body":
                     if body:
                         raise ValueError(f"Duplicate <body> in <file>: {file}")
@@ -162,7 +144,8 @@ def parse_group(
     # To ensure that nested groups are ordered by path
     yield Section(path, entries, meta=meta)
 
-    for idx, unit in enumerate(group):
+    seen: dict[str, int] = defaultdict(int)
+    for unit in group:
         if isinstance(unit, etree._Comment):
             entries.append(Comment(comment_str(unit.text)))
         elif unit.tag == f"{ns}trans-unit":
@@ -173,7 +156,10 @@ def parse_group(
             yield from parse_group(ns, path, unit)
         else:
             name = pretty_name(unit, unit.tag)
-            meta += element_as_metadata(unit, f"{idx},{name}/", True)
+            idx = seen[name] + 1
+            unit_base = f"{name}[{idx}]" if idx > 1 else name
+            meta += element_as_metadata(unit, unit_base, True)
+            seen[name] = idx
         if unit.tail and not unit.tail.isspace():
             raise ValueError(f"Unexpected text in <group>: {unit.tail}")
 

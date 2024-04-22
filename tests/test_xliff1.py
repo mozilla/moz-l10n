@@ -42,24 +42,24 @@ class TestXliff1(TestCase):
         res = xliff_parse(hello)
         assert res == Resource(
             meta=[
-                Metadata("version", "1.2"),
-                Metadata("xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
+                Metadata("@version", "1.2"),
+                Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
             ],
             sections=[
                 Section(
                     id=["hello.txt"],
                     meta=[
-                        Metadata("source-language", "en"),
-                        Metadata("target-language", "fr"),
-                        Metadata("datatype", "plaintext"),
+                        Metadata("@source-language", "en"),
+                        Metadata("@target-language", "fr"),
+                        Metadata("@datatype", "plaintext"),
                     ],
                     entries=[
                         Entry(
                             id=["hi"],
                             meta=[
-                                Metadata("source/.", "Hello world"),
-                                Metadata("2,alt-trans/0,target/xml:lang", "es"),
-                                Metadata("2,alt-trans/0,target/.", "Hola mundo"),
+                                Metadata("source", "Hello world"),
+                                Metadata("alt-trans/target/@xml:lang", "es"),
+                                Metadata("alt-trans/target", "Hola mundo"),
                             ],
                             value=PatternMessage(["Bonjour le monde"]),
                         )
@@ -94,16 +94,16 @@ class TestXliff1(TestCase):
         res = xliff_parse(angular)
         assert res == Resource(
             meta=[
-                Metadata("version", "1.2"),
-                Metadata("xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
+                Metadata("@version", "1.2"),
+                Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
             ],
             sections=[
                 Section(
                     id=["ng2.template"],
                     meta=[
-                        Metadata("source-language", "en"),
-                        Metadata("target-language", "fi"),
-                        Metadata("datatype", "plaintext"),
+                        Metadata("@source-language", "en"),
+                        Metadata("@target-language", "fi"),
+                        Metadata("@datatype", "plaintext"),
                     ],
                     entries=[
                         Entry(
@@ -111,27 +111,27 @@ class TestXliff1(TestCase):
                             value=PatternMessage(["\n  Hei i18n!\n"]),
                             comment="An introduction header for this sample",
                             meta=[
-                                Metadata("datatype", "html"),
-                                Metadata("source/.", "\n  Hello i18n!\n"),
-                                Metadata("2,context-group/purpose", "location"),
+                                Metadata("@datatype", "html"),
+                                Metadata("source", "\n  Hello i18n!\n"),
+                                Metadata("context-group/@purpose", "location"),
                                 Metadata(
-                                    "2,context-group/0,context/context-type",
+                                    "context-group/context/@context-type",
                                     "sourcefile",
                                 ),
                                 Metadata(
-                                    "2,context-group/0,context/.",
+                                    "context-group/context",
                                     "app/app.component.ts",
                                 ),
                                 Metadata(
-                                    "2,context-group/1,context/context-type",
+                                    "context-group/context[2]/@context-type",
                                     "linenumber",
                                 ),
-                                Metadata("2,context-group/1,context/.", "3"),
-                                Metadata("note/priority", "1"),
-                                Metadata("note/from", "description"),
-                                Metadata("4,note/priority", "1"),
-                                Metadata("4,note/from", "meaning"),
-                                Metadata("4,note/.", "User welcome"),
+                                Metadata("context-group/context[2]", "3"),
+                                Metadata("note/@priority", "1"),
+                                Metadata("note/@from", "description"),
+                                Metadata("note[2]/@priority", "1"),
+                                Metadata("note[2]/@from", "meaning"),
+                                Metadata("note[2]", "User welcome"),
                             ],
                         ),
                         Entry(
@@ -151,15 +151,15 @@ class TestXliff1(TestCase):
                                 ],
                             ),
                             meta=[
-                                Metadata("datatype", "html"),
+                                Metadata("@datatype", "html"),
                                 Metadata(
-                                    "source/.",
+                                    "source",
                                     "{VAR_PLURAL, plural, =0 {just now} =1 {one minute ago} other {",
                                 ),
-                                Metadata("source/0,x/id", "INTERPOLATION"),
-                                Metadata("source/0,x/equiv-text", "{{minutes}}"),
-                                Metadata("source/.", " minutes ago} }"),
-                                Metadata("2,note/.", ""),
+                                Metadata("source/x/@id", "INTERPOLATION"),
+                                Metadata("source/x/@equiv-text", "{{minutes}}"),
+                                Metadata("source", " minutes ago} }"),
+                                Metadata("note", ""),
                             ],
                         ),
                     ],
@@ -205,30 +205,30 @@ class TestXliff1(TestCase):
         res = xliff_parse(icu_docs)
         assert res == Resource(
             meta=[
-                Metadata("version", "1.2"),
+                Metadata("@version", "1.2"),
                 Metadata(
-                    "xsi:schemaLocation",
+                    "@xsi:schemaLocation",
                     "urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd",
                 ),
-                Metadata("xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
-                Metadata("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+                Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
+                Metadata("@xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
             ],
             sections=[
                 Section(
                     id=["en.txt"],
                     meta=[
-                        Metadata("xml:space", "preserve"),
-                        Metadata("source-language", "en"),
-                        Metadata("datatype", "x-icu-resource-bundle"),
-                        Metadata("date", "2007-06-15T23:20:43Z"),
-                        Metadata("header/0,tool/tool-id", "genrb-3.3-icu-3.7.1"),
-                        Metadata("header/0,tool/tool-name", "genrb"),
+                        Metadata("@xml:space", "preserve"),
+                        Metadata("@source-language", "en"),
+                        Metadata("@datatype", "x-icu-resource-bundle"),
+                        Metadata("@date", "2007-06-15T23:20:43Z"),
+                        Metadata("header/tool/@tool-id", "genrb-3.3-icu-3.7.1"),
+                        Metadata("header/tool/@tool-name", "genrb"),
                     ],
                     entries=[],
                 ),
                 Section(
                     id=["en.txt", "en"],
-                    meta=[Metadata("restype", "x-icu-table")],
+                    meta=[Metadata("@restype", "x-icu-table")],
                     entries=[
                         Comment(
                             "The resources for a fictious Hello World application. The application displays a single window with a logo and the hello message."
@@ -237,9 +237,9 @@ class TestXliff1(TestCase):
                             id=["authors"],
                             value=PatternMessage([]),
                             meta=[
-                                Metadata("resname", "authors"),
-                                Metadata("restype", "x-icu-alias"),
-                                Metadata("source/.", "root/authors"),
+                                Metadata("@resname", "authors"),
+                                Metadata("@restype", "x-icu-alias"),
+                                Metadata("source", "root/authors"),
                             ],
                         ),
                         Entry(
@@ -247,8 +247,8 @@ class TestXliff1(TestCase):
                             value=PatternMessage([]),
                             comment="This is the message that the application displays to the user.",
                             meta=[
-                                Metadata("resname", "hello"),
-                                Metadata("source/.", "Hello, world!"),
+                                Metadata("@resname", "hello"),
+                                Metadata("source", "Hello, world!"),
                             ],
                         ),
                         Entry(
@@ -257,17 +257,15 @@ class TestXliff1(TestCase):
                                 [Expression(None, attributes={"bin-unit": None})]
                             ),
                             meta=[
-                                Metadata("resname", "logo"),
-                                Metadata("mime-type", "image"),
-                                Metadata("restype", "x-icu-binary"),
-                                Metadata("translate", "no"),
+                                Metadata("@resname", "logo"),
+                                Metadata("@mime-type", "image"),
+                                Metadata("@restype", "x-icu-binary"),
+                                Metadata("@translate", "no"),
                                 Metadata(
-                                    "!",
+                                    "comment()",
                                     "The logo to be displayed in the application window.",
                                 ),
-                                Metadata(
-                                    "1,bin-source/0,external-file/href", "logo.gif"
-                                ),
+                                Metadata("bin-source/external-file/@href", "logo.gif"),
                             ],
                         ),
                         Entry(
@@ -276,19 +274,19 @@ class TestXliff1(TestCase):
                                 [Expression(None, attributes={"bin-unit": None})]
                             ),
                             meta=[
-                                Metadata("resname", "md5_sum"),
-                                Metadata("mime-type", "application"),
-                                Metadata("restype", "x-icu-binary"),
-                                Metadata("translate", "no"),
-                                Metadata("!", "The MD5 checksum of the application."),
+                                Metadata("@resname", "md5_sum"),
+                                Metadata("@mime-type", "application"),
+                                Metadata("@restype", "x-icu-binary"),
+                                Metadata("@translate", "no"),
                                 Metadata(
-                                    "1,bin-source/0,internal-file/form", "application"
+                                    "comment()", "The MD5 checksum of the application."
                                 ),
                                 Metadata(
-                                    "1,bin-source/0,internal-file/crc", "187654673"
+                                    "bin-source/internal-file/@form", "application"
                                 ),
+                                Metadata("bin-source/internal-file/@crc", "187654673"),
                                 Metadata(
-                                    "1,bin-source/0,internal-file/.",
+                                    "bin-source/internal-file",
                                     "BCFE765BE0FDFAB22C5F9EFD12C52ABC",
                                 ),
                             ],
@@ -298,8 +296,8 @@ class TestXliff1(TestCase):
                 Section(
                     id=["en.txt", "en", "menus"],
                     meta=[
-                        Metadata("resname", "menus"),
-                        Metadata("restype", "x-icu-table"),
+                        Metadata("@resname", "menus"),
+                        Metadata("@restype", "x-icu-table"),
                     ],
                     entries=[
                         Comment("The application menus."),
@@ -308,16 +306,16 @@ class TestXliff1(TestCase):
                 Section(
                     id=["en.txt", "en", "menus", "menus_help_menu"],
                     meta=[
-                        Metadata("resname", "help_menu"),
-                        Metadata("restype", "x-icu-table"),
+                        Metadata("@resname", "help_menu"),
+                        Metadata("@restype", "x-icu-table"),
                     ],
                     entries=[
                         Entry(
                             id=["menus_help_menu_name"],
                             value=PatternMessage([]),
                             meta=[
-                                Metadata("resname", "name"),
-                                Metadata("source/.", "Help"),
+                                Metadata("@resname", "name"),
+                                Metadata("source", "Help"),
                             ],
                         )
                     ],
@@ -331,19 +329,19 @@ class TestXliff1(TestCase):
                         "menus_help_menu_items",
                     ],
                     meta=[
-                        Metadata("resname", "items"),
-                        Metadata("restype", "x-icu-array"),
+                        Metadata("@resname", "items"),
+                        Metadata("@restype", "x-icu-array"),
                     ],
                     entries=[
                         Entry(
                             id=["menus_help_menu_items_0"],
                             value=PatternMessage([]),
-                            meta=[Metadata("source/.", "Help Topics")],
+                            meta=[Metadata("source", "Help Topics")],
                         ),
                         Entry(
                             id=["menus_help_menu_items_1"],
                             value=PatternMessage([]),
-                            meta=[Metadata("source/.", "About Hello World")],
+                            meta=[Metadata("source", "About Hello World")],
                         ),
                     ],
                 ),
@@ -410,25 +408,25 @@ class TestXliff1(TestCase):
         res = xliff_parse(xcode)
         assert res == Resource(
             meta=[
-                Metadata("version", "1.2"),
+                Metadata("@version", "1.2"),
                 Metadata(
-                    "xsi:schemaLocation",
+                    "@xsi:schemaLocation",
                     "urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd",
                 ),
-                Metadata("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
-                Metadata("xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
+                Metadata("@xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+                Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
             ],
             sections=[
                 Section(
                     id=["xcode1/en.lproj/Localizable.strings"],
                     meta=[
-                        Metadata("source-language", "en"),
-                        Metadata("target-language", "it"),
-                        Metadata("datatype", "plaintext"),
-                        Metadata("header/0,tool/tool-id", "com.apple.dt.xcode"),
-                        Metadata("header/0,tool/tool-name", "Xcode"),
-                        Metadata("header/0,tool/tool-version", "15.2"),
-                        Metadata("header/0,tool/build-num", "15C500b"),
+                        Metadata("@source-language", "en"),
+                        Metadata("@target-language", "it"),
+                        Metadata("@datatype", "plaintext"),
+                        Metadata("header/tool/@tool-id", "com.apple.dt.xcode"),
+                        Metadata("header/tool/@tool-name", "Xcode"),
+                        Metadata("header/tool/@tool-version", "15.2"),
+                        Metadata("header/tool/@build-num", "15C500b"),
                     ],
                     entries=[
                         Entry(
@@ -442,12 +440,12 @@ class TestXliff1(TestCase):
                             ),
                             comment="Message to confirm deletion of a key file.",
                             meta=[
-                                Metadata("xml:space", "preserve"),
+                                Metadata("@xml:space", "preserve"),
                                 Metadata(
-                                    "source/.",
+                                    "source",
                                     "Delete key file?\n Make sure you have a backup.",
                                 ),
-                                Metadata("target/state", "translated"),
+                                Metadata("target/@state", "translated"),
                             ],
                         )
                     ],
@@ -455,13 +453,13 @@ class TestXliff1(TestCase):
                 Section(
                     id=["xcode1/en.lproj/Localizable.stringsdict"],
                     meta=[
-                        Metadata("source-language", "en"),
-                        Metadata("target-language", "it"),
-                        Metadata("datatype", "plaintext"),
-                        Metadata("header/0,tool/tool-id", "com.apple.dt.xcode"),
-                        Metadata("header/0,tool/tool-name", "Xcode"),
-                        Metadata("header/0,tool/tool-version", "15.2"),
-                        Metadata("header/0,tool/build-num", "15C500b"),
+                        Metadata("@source-language", "en"),
+                        Metadata("@target-language", "it"),
+                        Metadata("@datatype", "plaintext"),
+                        Metadata("header/tool/@tool-id", "com.apple.dt.xcode"),
+                        Metadata("header/tool/@tool-name", "Xcode"),
+                        Metadata("header/tool/@tool-version", "15.2"),
+                        Metadata("header/tool/@build-num", "15C500b"),
                     ],
                     entries=[
                         Entry(
@@ -492,10 +490,10 @@ class TestXliff1(TestCase):
                                 },
                             ),
                             meta=[
-                                Metadata("one/source/.", "%d entry selected"),
-                                Metadata("one/target/state", "translated"),
-                                Metadata("other/source/.", "%d entries selected"),
-                                Metadata("other/target/state", "translated"),
+                                Metadata("one/source", "%d entry selected"),
+                                Metadata("one/target/@state", "translated"),
+                                Metadata("other/source", "%d entries selected"),
+                                Metadata("other/target/@state", "translated"),
                             ],
                         ),
                         Entry(
@@ -526,10 +524,10 @@ class TestXliff1(TestCase):
                                 },
                             ),
                             meta=[
-                                Metadata("one/source/.", "%d thread"),
-                                Metadata("one/target/state", "translated"),
-                                Metadata("other/source/.", "%d threads"),
-                                Metadata("other/target/state", "translated"),
+                                Metadata("one/source", "%d thread"),
+                                Metadata("one/target/@state", "translated"),
+                                Metadata("other/source", "%d threads"),
+                                Metadata("other/target/@state", "translated"),
                             ],
                         ),
                     ],
@@ -537,23 +535,23 @@ class TestXliff1(TestCase):
                 Section(
                     id=["xcode2/en.lproj/Localizable.stringsdict"],
                     meta=[
-                        Metadata("source-language", "en"),
-                        Metadata("target-language", "en"),
-                        Metadata("datatype", "plaintext"),
+                        Metadata("@source-language", "en"),
+                        Metadata("@target-language", "en"),
+                        Metadata("@datatype", "plaintext"),
                     ],
                     entries=[
                         Entry(
                             id=["followed_by_three_and_others"],
                             meta=[
-                                Metadata("format/xml:space", "preserve"),
-                                Metadata("one/xml:space", "preserve"),
+                                Metadata("format/@xml:space", "preserve"),
+                                Metadata("one/@xml:space", "preserve"),
                                 Metadata(
-                                    "one/source/.",
+                                    "one/source",
                                     "Followed by %2$@, %3$@, %4$@ & %1$d other",
                                 ),
-                                Metadata("other/xml:space", "preserve"),
+                                Metadata("other/@xml:space", "preserve"),
                                 Metadata(
-                                    "other/source/.",
+                                    "other/source",
                                     "Followed by %2$@, %3$@, %4$@ & %1$d others",
                                 ),
                             ],

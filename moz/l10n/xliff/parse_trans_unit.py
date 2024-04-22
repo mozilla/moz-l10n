@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from collections.abc import Iterator
 
 from lxml import etree
@@ -31,33 +32,32 @@ def parse_trans_unit(unit: etree._Element) -> Entry[Message, str]:
 
     target = None
     note = None
-    for idx, el in enumerate(unit):
+    seen: dict[str, int] = defaultdict(int)
+    for el in unit:
         if isinstance(el, etree._Comment):
-            meta.append(Metadata("!", el.text))
+            meta.append(Metadata("comment()", el.text))
         else:
-            q = etree.QName(el.tag)
-            name = q.localname if q.namespace in xliff_ns else q.text
+            name = pretty_name(el, el.tag)
             if name == "target":
                 if target:
                     raise ValueError(f"Duplicate <target> in <trans-unit> {id}: {unit}")
                 target = el
-                meta += attrib_as_metadata(el, "target/")
+                meta += attrib_as_metadata(el, "target")
             elif name == "note" and note is None and el.text:
                 note = el
-                note_attrib = attrib_as_metadata(el, "note/")
+                note_attrib = attrib_as_metadata(el, "note")
                 if note_attrib:
                     meta += note_attrib
-                elif idx < len(el) - 1:
+                elif el != unit[-1]:
                     # If there are elements after this <note>,
                     # add a marker for its relative position.
-                    meta.append(Metadata("note/.", ""))
+                    meta.append(Metadata("note", ""))
+                seen[name] += 1
             else:
-                base = (
-                    f"{name}/"
-                    if name in ("source", "seg-source")
-                    else f"{idx},{pretty_name(el, el.tag)}/"
-                )
+                idx = seen[name] + 1
+                base = f"{name}[{idx}]" if idx > 1 else name
                 meta += element_as_metadata(el, base, True)
+                seen[name] = idx
         if el.tail and not el.tail.isspace():
             raise ValueError(f"Unexpected text in <trans-unit>: {el.tail}")
 

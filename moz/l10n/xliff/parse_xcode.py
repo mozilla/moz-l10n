@@ -79,17 +79,17 @@ def parse_xliff_stringsdict(
         )
         meta: list[Metadata[str]] = []
         if plural.format_key:
-            meta += attrib_as_metadata(plural.format_key.unit, "format/", ("id",))
+            meta += attrib_as_metadata(plural.format_key.unit, "format", ("id",))
             if plural.format_key.target is not None:
-                meta += attrib_as_metadata(plural.format_key.target, "format/target/")
+                meta += attrib_as_metadata(plural.format_key.target, "format/target")
         variants: Variants = {}
         for key, variant in plural.variants.items():
-            meta += attrib_as_metadata(variant.unit, f"{key}/", ("id",))
-            meta.append(Metadata(f"{key}/source/.", variant.source.text or ""))
+            meta += attrib_as_metadata(variant.unit, key, ("id",))
+            meta.append(Metadata(f"{key}/source", variant.source.text or ""))
             if variant.target is None:
                 pattern_src = None
             else:
-                meta += attrib_as_metadata(variant.target, f"{key}/target/")
+                meta += attrib_as_metadata(variant.target, f"{key}/target")
                 pattern_src = variant.target.text
             variants[(CatchallKey("other") if key == "other" else key,)] = list(
                 parse_pattern(pattern_src)

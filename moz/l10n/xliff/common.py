@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from collections.abc import Iterator
 
 from lxml.etree import QName, _Comment, _Element
@@ -31,27 +32,33 @@ def element_as_metadata(
     el: _Element, base: str, with_attrib: bool
 ) -> Iterator[Metadata[str]]:
     is_empty = True
+    seen: dict[str, int] = defaultdict(int)
     if with_attrib:
         am = attrib_as_metadata(el, base)
         if am:
             yield from am
             is_empty = False
     if el.text and not el.text.isspace():
-        yield Metadata(f"{base}.", el.text)
+        yield Metadata(base, el.text)
         is_empty = False
-    for idx, child in enumerate(el):
+    for child in el:
         if isinstance(child, _Comment):
-            yield Metadata(f"{base}!", child.text)
+            yield Metadata(f"{base}/comment()" if base else "comment()", child.text)
         elif isinstance(child.tag, str):
             name = pretty_name(child, child.tag)
-            yield from element_as_metadata(child, f"{base}{idx},{name}/", True)
+            idx = seen[name] + 1
+            child_base = f"{base}/{name}" if base else name
+            if idx > 1:
+                child_base += f"[{idx}]"
+            yield from element_as_metadata(child, child_base, True)
+            seen[name] = idx
         else:
-            raise ValueError(f"Unsupported metadata element at {base}{idx}: {el}")
+            raise ValueError(f"Unsupported metadata element in {base}: {el}")
         if child.tail and not child.tail.isspace():
-            yield Metadata(f"{base}.", child.tail)
+            yield Metadata(base, child.tail)
         is_empty = False
     if is_empty and with_attrib:
-        yield Metadata(f"{base}.", "")
+        yield Metadata(base, "")
 
 
 def attrib_as_metadata(
@@ -60,8 +67,9 @@ def attrib_as_metadata(
     res = []
     for key, value in el.attrib.items():
         if not exclude or key not in exclude:
-            pk = pretty_name(el, key)
-            res.append(Metadata(base + pk if base else pk, value))
+            name = pretty_name(el, key)
+            pk = f"{base}/@{name}" if base else f"@{name}"
+            res.append(Metadata(pk, value))
     return res
 
 
