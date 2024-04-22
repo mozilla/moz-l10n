@@ -91,11 +91,11 @@ def xliff_serialize(
             parent_key += (id_part,)
             if parent == root:
                 file = etree.SubElement(root, "file", {"original": id_part})
-                assign_metadata(file, section.meta)
+                assign_metadata(file, section.meta, trim_comments)
                 parent = etree.SubElement(file, "body")
             else:
                 parent = etree.SubElement(parent, "group", {"id": id_part})
-                assign_metadata(parent, section.meta)
+                assign_metadata(parent, section.meta, trim_comments)
             prev[parent_key] = parent
         indent = 2 * len(section.id)
         if section.comment:
@@ -105,8 +105,9 @@ def xliff_serialize(
         indent += 2
         for entry in section.entries:
             if isinstance(entry, Comment):
-                comment_str = comment_body(entry.comment, indent)
-                parent.append(etree.Comment(comment_str))
+                if not trim_comments:
+                    comment_str = comment_body(entry.comment, indent)
+                    parent.append(etree.Comment(comment_str))
                 continue
 
             if len(entry.id) != 1:
@@ -126,14 +127,14 @@ def xliff_serialize(
 
             if isinstance(entry.value, SelectMessage):
                 if section.id[0].endswith(".stringsdict"):
-                    add_xliff_stringsdict_plural(parent, entry)  # type: ignore [arg-type]
+                    add_xliff_stringsdict_plural(parent, entry, trim_comments)  # type: ignore [arg-type]
                     continue
                 else:
                     fn = section.id[0]
                     raise ValueError(f"Unsupported SelectMessage {id} in file: {fn}")
 
             unit = etree.SubElement(parent, tag, {"id": id})
-            assign_metadata(unit, entry.meta)
+            assign_metadata(unit, entry.meta, trim_comments)
 
             msg = entry.value
             target = None
@@ -161,7 +162,7 @@ def xliff_serialize(
                 else:
                     set_pattern(target, msg.pattern)
 
-            if entry.comment:
+            if entry.comment and not trim_comments:
                 note = unit.find("note")
                 if note is None:
                     if target is None:
@@ -178,7 +179,7 @@ def xliff_serialize(
 
 
 def add_xliff_stringsdict_plural(
-    parent: etree._Element, entry: Entry[SelectMessage, str]
+    parent: etree._Element, entry: Entry[SelectMessage, str], trim_comments: bool
 ) -> None:
     if entry.comment:
         raise ValueError(f"Unsupported comment on SelectMessage: {entry.comment}")
@@ -205,7 +206,7 @@ def add_xliff_stringsdict_plural(
     if sel_source:
         xcode_id = f"{id_base}/NSStringLocalizedFormatKey:dict/:string"
         unit = etree.SubElement(parent, "trans-unit", {"id": xcode_id})
-        assign_metadata(unit, meta, meta_base)
+        assign_metadata(unit, meta, trim_comments, meta_base)
         source = unit.find("source")
         if source is None:
             first = unit[0] if len(unit) > 0 else None
@@ -248,7 +249,7 @@ def add_xliff_stringsdict_plural(
         unit = etree.SubElement(parent, "trans-unit", {"id": xcode_id})
         meta_base = f"{key}/"
         meta = [m for m in entry.meta if m.key.startswith(meta_base)]
-        assign_metadata(unit, meta, meta_base)
+        assign_metadata(unit, meta, trim_comments, meta_base)
         source = unit.find("source")
         if source is None:
             raise ValueError(f"Missing {key}/source metadata for {id}")
@@ -260,7 +261,7 @@ def add_xliff_stringsdict_plural(
 
 
 def assign_metadata(
-    el: etree._Element, meta: list[Metadata[str]], base: str = ""
+    el: etree._Element, meta: list[Metadata[str]], trim_comments: bool, base: str = ""
 ) -> None:
     key_start = len(base)
     done: list[str] = []
@@ -288,13 +289,14 @@ def assign_metadata(
             name = key[0:name_end]
             if "[" in name:
                 name = name[: name.index("[")]
-            child = etree.SubElement(el, clark_name(el.nsmap, name))
             child_root = base + key[0:name_end]
             child_base = f"{child_root}/"
             child_meta = [
                 m for m in meta if m.key == child_root or m.key.startswith(child_base)
             ]
-            assign_metadata(child, child_meta, child_base)
+            if not trim_comments or name != "note":
+                child = etree.SubElement(el, clark_name(el.nsmap, name))
+                assign_metadata(child, child_meta, trim_comments, child_base)
             done.append(child_base)
 
 

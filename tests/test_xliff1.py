@@ -404,6 +404,59 @@ class TestXliff1(TestCase):
             """
         )
 
+    def test_trim_comments(self):
+        res = xliff_parse(icu_docs)
+        ser = "".join(xliff_serialize(res, trim_comments=True))
+        assert ser == dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+              <file original="en.txt" xml:space="preserve" source-language="en" datatype="x-icu-resource-bundle" date="2007-06-15T23:20:43Z">
+                <header>
+                  <tool tool-id="genrb-3.3-icu-3.7.1" tool-name="genrb"/>
+                </header>
+                <body>
+                  <group id="en" restype="x-icu-table">
+                    <trans-unit id="authors" resname="authors" restype="x-icu-alias">
+                      <source>root/authors</source>
+                    </trans-unit>
+                    <trans-unit id="hello" resname="hello">
+                      <source>Hello, world!</source>
+                    </trans-unit>
+                    <bin-unit id="logo" resname="logo" mime-type="image" restype="x-icu-binary" translate="no">
+                      <!--The logo to be displayed in the application window.-->
+                      <bin-source>
+                        <external-file href="logo.gif"/>
+                      </bin-source>
+                    </bin-unit>
+                    <bin-unit id="md5_sum" resname="md5_sum" mime-type="application" restype="x-icu-binary" translate="no">
+                      <!--The MD5 checksum of the application.-->
+                      <bin-source>
+                        <internal-file form="application" crc="187654673">BCFE765BE0FDFAB22C5F9EFD12C52ABC</internal-file>
+                      </bin-source>
+                    </bin-unit>
+                    <group id="menus" resname="menus" restype="x-icu-table">
+                      <group id="menus_help_menu" resname="help_menu" restype="x-icu-table">
+                        <trans-unit id="menus_help_menu_name" resname="name">
+                          <source>Help</source>
+                        </trans-unit>
+                        <group id="menus_help_menu_items" resname="items" restype="x-icu-array">
+                          <trans-unit id="menus_help_menu_items_0">
+                            <source>Help Topics</source>
+                          </trans-unit>
+                          <trans-unit id="menus_help_menu_items_1">
+                            <source>About Hello World</source>
+                          </trans-unit>
+                        </group>
+                      </group>
+                    </group>
+                  </group>
+                </body>
+              </file>
+            </xliff>
+            """
+        )
+
     def test_parse_xcode(self):
         res = xliff_parse(xcode)
         assert res == Resource(
