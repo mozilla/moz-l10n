@@ -19,12 +19,11 @@ from lxml.etree import QName, _Comment, _Element
 
 from ..resource import Metadata
 
-xliff_ns = (
-    None,
+xliff_ns = {
     "urn:oasis:names:tc:xliff:document:1.0",
     "urn:oasis:names:tc:xliff:document:1.1",
     "urn:oasis:names:tc:xliff:document:1.2",
-)
+}
 xml_ns = "http://www.w3.org/XML/1998/namespace"
 
 
@@ -78,7 +77,7 @@ def pretty_name(el: _Element, name: str) -> str:
         return name
     q = QName(name)
     ns = q.namespace
-    if ns in xliff_ns:
+    if not ns or ns in xliff_ns:
         return q.localname
     if ns == xml_ns:
         return f"xml:{q.localname}"

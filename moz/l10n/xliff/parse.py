@@ -44,11 +44,12 @@ def xliff_parse(source: str | bytes) -> Resource[Message, str]:
     version = root.attrib.get("version", None)
     if version not in ("1.0", "1.1", "1.2"):
         raise ValueError(f"Unsupported <xliff> version: {version}")
-    ns = root.nsmap.get(None, None)
-    if ns in xliff_ns:
-        ns = f"{{{ns}}}" if ns else ""
-    else:
-        raise ValueError(f"Unsupported namespace: {ns}")
+    ns = root.nsmap.get(None, "")
+    if ns:
+        if ns in xliff_ns:
+            ns = f"{{{ns}}}"
+        else:
+            raise ValueError(f"Unsupported namespace: {ns}")
 
     if root.tag != f"{ns}xliff":
         raise ValueError(f"Unsupported root node: {root}")

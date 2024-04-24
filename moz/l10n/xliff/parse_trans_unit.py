@@ -71,7 +71,8 @@ def parse_pattern(el: etree._Element) -> Iterator[str | Markup]:
         yield el.text
     for child in el:
         q = etree.QName(child.tag)
-        name = q.localname if q.namespace in xliff_ns else q.text
+        ns = q.namespace
+        name = q.localname if not ns or ns in xliff_ns else q.text
         options: dict[str, str | VariableRef] = dict(child.attrib)
         if name in ("x", "bx", "ex"):
             yield Markup("standalone", name, options)
