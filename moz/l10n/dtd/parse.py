@@ -36,7 +36,7 @@ re_entity = compile(
 re_comment = compile(r"\<!\s*--(.*?)--\s*\>", MULTILINE | DOTALL)
 
 
-def dtd_parse(source: str) -> Resource[str, None]:
+def dtd_parse(source: str | bytes) -> Resource[str, None]:
     """
     Parse a .dtd file into a message resource
     """
@@ -45,6 +45,8 @@ def dtd_parse(source: str) -> Resource[str, None]:
     pos = 0
     at_newline = True
     comment: str = ""
+    if not isinstance(source, str):
+        source = source.decode()
     for match in re_comment.finditer(source):
         cstart = match.start(0)
         has_prev_entries = False

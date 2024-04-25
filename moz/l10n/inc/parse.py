@@ -19,7 +19,7 @@ from ..resource import Comment, Entry, Resource, Section
 re_define = compile(r"#define[ \t]+(\w+)(?:[ \t](.*))?")
 
 
-def inc_parse(source: str) -> Resource[str, None]:
+def inc_parse(source: str | bytes) -> Resource[str, None]:
     """
     Parse a .inc file into a message resource.
 
@@ -27,6 +27,8 @@ def inc_parse(source: str) -> Resource[str, None]:
     """
     entries: list[Entry[str, None] | Comment] = []
     comment: str = ""
+    if not isinstance(source, str):
+        source = source.decode()
     for line in source.splitlines():
         if not line or line.isspace():
             if comment:

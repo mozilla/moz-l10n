@@ -23,26 +23,31 @@ from ..resource import Comment, Entry, Resource, Section, V
 
 @overload
 def ini_parse(
-    source: TextIO | str,
+    source: TextIO | str | bytes,
     parse_message: Callable[[str], str] | None = None,
 ) -> Resource[str, None]: ...
 
 
 @overload
 def ini_parse(
-    source: TextIO | str,
+    source: TextIO | str | bytes,
     parse_message: Callable[[str], V],
 ) -> Resource[V, None]: ...
 
 
 def ini_parse(
-    source: TextIO | str,
+    source: TextIO | str | bytes,
     parse_message: Callable[[str], V] | None = None,
 ) -> Resource[V, None]:
     """
     Parse an .ini file into a message resource
     """
-    file = StringIO(source) if isinstance(source, str) else source
+    if isinstance(source, str):
+        file: TextIO = StringIO(source)
+    elif isinstance(source, bytes):
+        file = StringIO(source.decode())
+    else:
+        file = source
     cfg = ini.INIConfig(file, optionxformvalue=None)
 
     resource = Resource[V, None]([])

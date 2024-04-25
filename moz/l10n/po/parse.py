@@ -31,11 +31,11 @@ Messages may include the following metadata:
 """
 
 
-def po_parse(source: str) -> Resource[tuple[str, ...], PoMetadataType]:
+def po_parse(source: str | bytes) -> Resource[tuple[str, ...], PoMetadataType]:
     """
     Parse a .po or .pot file into a message resource
     """
-    pf = pofile(source)
+    pf = pofile(source if isinstance(source, str) else source.decode())
     res_comment = pf.header.lstrip("\n").rstrip()
     res_meta: list[Metadata[PoMetadataType]] = [
         Metadata(key, value.strip()) for key, value in pf.metadata.items()
