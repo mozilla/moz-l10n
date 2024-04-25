@@ -42,6 +42,7 @@ profile = "black"
 
 [tool.mypy]
 exclude = "^tests/"
+explicit_package_bases = true
 strict = true
 
 [[tool.mypy.overrides]]
