@@ -17,11 +17,10 @@ from typing import Iterator
 from polib import POEntry, POFile
 
 from ..resource import Entry, Resource
-from .parse import PoMetadataType
 
 
 def po_serialize(
-    resource: Resource[tuple[str, ...], PoMetadataType],
+    resource: Resource[tuple[str, ...], str],
     trim_comments: bool = False,
     wrapwidth: int = 78,
 ) -> Iterator[str]:
@@ -71,34 +70,22 @@ def po_serialize(
                     pe.tcomment = entry.comment.rstrip()
                 for m in entry.meta:
                     if m.key == "obsolete":
-                        if m.value:
-                            pe.obsolete = True
+                        pe.obsolete = m.value != "false"
                     elif m.key == "plural":
-                        pe.msgid_plural = str(m.value)
+                        pe.msgid_plural = m.value
                     elif not trim_comments:
                         if m.key == "translator-comments":
-                            cs = str(m.value).lstrip("\n").rstrip()
+                            cs = (m.value).lstrip("\n").rstrip()
                             pe.tcomment = f"{pe.tcomment}\n{cs}" if pe.tcomment else cs
                         elif m.key == "extracted-comments":
-                            pe.comment = str(m.value).lstrip("\n").rstrip()
-                        elif m.key == "references":
-                            if isinstance(m.value, (tuple, list)) and all(
-                                isinstance(ref, tuple)
-                                and isinstance(ref[0], str)
-                                and isinstance(ref[1], (int, str))
-                                for ref in m.value
-                            ):
-                                pe.occurrences = m.value  # type: ignore[assignment]
-                            else:
-                                raise ValueError(
-                                    f"Unsupported references metadata for {entry.id}: {m.value}"
-                                )
-                        elif m.key == "flags":
-                            pe.flags = (
-                                [str(m.value)]
-                                if isinstance(m.value, (bool, str))
-                                else [str(flag) for flag in m.value]
+                            pe.comment = (m.value).lstrip("\n").rstrip()
+                        elif m.key == "reference":
+                            pos = m.value.split(":", 1)
+                            pe.occurrences.append(
+                                (pos[0], pos[1]) if len(pos) == 2 else (m.value, "")
                             )
+                        elif m.key == "flag":
+                            pe.flags.append(m.value)
                         else:
                             raise ValueError(
                                 f'Unsupported meta entry "{m.key}" for {entry.id}: {m.value}'

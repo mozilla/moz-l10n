@@ -18,41 +18,37 @@ from polib import pofile
 
 from ..resource import Entry, Metadata, Resource, Section
 
-PoMetadataType = bool | str | list[str] | list[tuple[str, str]]
-"""
-All resource-level metadata has `str` values matching the .po header fields.
 
-Messages may include the following metadata:
-- "translator-comments": `str`
-- "extracted-comments": `str`
-- "references": `list[tuple[str, str]]`
-- "flags": `list[str]`
-- "plural": `str`
-"""
-
-
-def po_parse(source: str | bytes) -> Resource[tuple[str, ...], PoMetadataType]:
+def po_parse(source: str | bytes) -> Resource[tuple[str, ...], str]:
     """
     Parse a .po or .pot file into a message resource
+
+    Messages may include the following metadata:
+    - `translator-comments`
+    - `extracted-comments`
+    - `reference`: `f"{file}:{line}"`, separately for each reference
+    - `obsolete`: `""`
+    - `flag`: separately for each flag
+    - `plural`
     """
     pf = pofile(source if isinstance(source, str) else source.decode())
     res_comment = pf.header.lstrip("\n").rstrip()
-    res_meta: list[Metadata[PoMetadataType]] = [
+    res_meta: list[Metadata[str]] = [
         Metadata(key, value.strip()) for key, value in pf.metadata.items()
     ]
-    sections: dict[str | None, Section[tuple[str, ...], PoMetadataType]] = OrderedDict()
+    sections: dict[str | None, Section[tuple[str, ...], str]] = OrderedDict()
     for pe in pf:
-        meta: list[Metadata[PoMetadataType]] = []
+        meta: list[Metadata[str]] = []
         if pe.tcomment:
             meta.append(Metadata("translator-comments", pe.tcomment))
         if pe.comment:
             meta.append(Metadata("extracted-comments", pe.comment))
-        if pe.occurrences:
-            meta.append(Metadata("references", pe.occurrences))
+        for file, line in pe.occurrences:
+            meta.append(Metadata("reference", f"{file}:{line}"))
         if pe.obsolete:
-            meta.append(Metadata("obsolete", True))
-        if pe.flags:
-            meta.append(Metadata("flags", pe.flags))
+            meta.append(Metadata("obsolete", "true"))
+        for flag in pe.flags:
+            meta.append(Metadata("flag", flag))
         if pe.msgid_plural:
             meta.append(Metadata("plural", pe.msgid_plural))
         if pe.msgstr_plural:

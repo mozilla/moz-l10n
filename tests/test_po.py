@@ -56,8 +56,8 @@ class TestPo(TestCase):
                             Entry(
                                 ["%d translated message"],
                                 meta=[
-                                    Metadata("references", [("src/msgfmt.c", "876")]),
-                                    Metadata("flags", ["c-format"]),
+                                    Metadata("reference", "src/msgfmt.c:876"),
+                                    Metadata("flag", "c-format"),
                                     Metadata("plural", "%d translated messages"),
                                 ],
                                 value=(
@@ -69,7 +69,7 @@ class TestPo(TestCase):
                             ),
                             Entry(
                                 ["obsolete string"],
-                                meta=[Metadata("obsolete", True)],
+                                meta=[Metadata("obsolete", "true")],
                                 value=("translated string",),
                             ),
                             Entry(["other string"], ("translated string",)),

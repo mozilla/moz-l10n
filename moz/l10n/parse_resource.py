@@ -20,7 +20,7 @@ from .inc.parse import inc_parse
 from .ini.parse import ini_parse
 from .message import Message
 from .plain.parse import plain_parse
-from .po.parse import PoMetadataType, po_parse
+from .po.parse import po_parse
 from .properties.parse import properties_parse
 from .resource import Resource
 from .webext.parse import webext_parse
@@ -33,7 +33,7 @@ def parse_resource(
     Resource[str, None]
     | Resource[Message, str]
     | Resource[Message, None]
-    | Resource[tuple[str, ...], PoMetadataType]
+    | Resource[tuple[str, ...], str]
 ):
     """
     Parse a Resource from its string representation.
