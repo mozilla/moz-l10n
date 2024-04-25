@@ -15,6 +15,13 @@
 from importlib.resources import files
 from unittest import TestCase
 
+from moz.l10n.message import (
+    Expression,
+    FunctionAnnotation,
+    PatternMessage,
+    SelectMessage,
+    VariableRef,
+)
 from moz.l10n.po import po_parse, po_serialize
 from moz.l10n.resource import Entry, Metadata, Resource, Section
 
@@ -52,7 +59,10 @@ class TestPo(TestCase):
                     Section(
                         id=[],
                         entries=[
-                            Entry(["original string"], ("translated string",)),
+                            Entry(
+                                ["original string"],
+                                PatternMessage(["translated string"]),
+                            ),
                             Entry(
                                 ["%d translated message"],
                                 meta=[
@@ -60,24 +70,39 @@ class TestPo(TestCase):
                                     Metadata("flag", "c-format"),
                                     Metadata("plural", "%d translated messages"),
                                 ],
-                                value=(
-                                    "%d prevedenih sporočil",
-                                    "%d prevedeno sporočilo",
-                                    "%d prevedeni sporočili",
-                                    "%d prevedena sporočila",
+                                value=SelectMessage(
+                                    [
+                                        Expression(
+                                            VariableRef("n"),
+                                            FunctionAnnotation("number"),
+                                        )
+                                    ],
+                                    {
+                                        ("0",): ["%d prevedenih sporočil"],
+                                        ("1",): ["%d prevedeno sporočilo"],
+                                        ("2",): ["%d prevedeni sporočili"],
+                                        ("3",): ["%d prevedena sporočila"],
+                                    },
                                 ),
                             ),
                             Entry(
                                 ["obsolete string"],
                                 meta=[Metadata("obsolete", "true")],
-                                value=("translated string",),
+                                value=PatternMessage(["translated string"]),
                             ),
-                            Entry(["other string"], ("translated string",)),
+                            Entry(
+                                ["other string"], PatternMessage(["translated string"])
+                            ),
                         ],
                     ),
                     Section(
                         id=["context"],
-                        entries=[Entry(["original string"], ("translated string",))],
+                        entries=[
+                            Entry(
+                                ["original string"],
+                                PatternMessage(["translated string"]),
+                            )
+                        ],
                     ),
                 ],
             ),

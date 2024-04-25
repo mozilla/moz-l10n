@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from polib import POEntry, POFile
 
+from ..message import FunctionAnnotation, Message, PatternMessage, SelectMessage
 from ..resource import Entry, Resource
 
 
 def po_serialize(
-    resource: Resource[tuple[str, ...], str],
+    resource: Resource[Message, str],
     trim_comments: bool = False,
     wrapwidth: int = 78,
 ) -> Iterator[str]:
@@ -51,20 +52,38 @@ def po_serialize(
         for entry in section.entries:
             if isinstance(entry, Entry):
                 pe = POEntry(msgctxt=context, msgid=".".join(entry.id))
-                if isinstance(entry.value, str):
-                    pe.msgstr = entry.value
-                elif isinstance(entry.value, tuple) and all(
-                    isinstance(v, str) for v in entry.value
+                msg = entry.value
+                if (
+                    isinstance(msg, PatternMessage)
+                    and not msg.declarations
+                    and len(msg.pattern) == 1
+                    and isinstance(msg.pattern[0], str)
                 ):
-                    if len(entry.value) == 1:
-                        pe.msgstr = entry.value[0]
+                    pe.msgstr = msg.pattern[0]
+                elif (
+                    isinstance(msg, SelectMessage)
+                    and not msg.declarations
+                    and len(msg.selectors) == 1
+                    and isinstance(msg.selectors[0].annotation, FunctionAnnotation)
+                    and msg.selectors[0].annotation.name == "number"
+                    and not msg.selectors[0].annotation.options
+                    and all(
+                        len(keys) == 1
+                        and len(pattern) == 1
+                        and isinstance(pattern[0], str)
+                        for keys, pattern in msg.variants.items()
+                    )
+                ):
+                    values: list[str] = [
+                        pattern[0] for pattern in msg.variants.values()  # type: ignore[misc]
+                    ]
+                    if len(values) == 1:
+                        pe.msgstr = values[0]
                     else:
-                        pe.msgstr_plural = {
-                            idx: str for idx, str in enumerate(entry.value)
-                        }
+                        pe.msgstr_plural = {idx: str for idx, str in enumerate(values)}
                 else:
                     raise Exception(
-                        f"Value for {entry.id} is not a string or tuple of strings: {entry.value}"
+                        f"Value for {entry.id} is not supported: {entry.value}"
                     )
                 if not trim_comments:
                     pe.tcomment = entry.comment.rstrip()

@@ -16,10 +16,19 @@ from collections import OrderedDict
 
 from polib import pofile
 
+from ..message import (
+    Expression,
+    FunctionAnnotation,
+    Message,
+    PatternMessage,
+    SelectMessage,
+    VariableRef,
+    Variants,
+)
 from ..resource import Entry, Metadata, Resource, Section
 
 
-def po_parse(source: str | bytes) -> Resource[tuple[str, ...], str]:
+def po_parse(source: str | bytes) -> Resource[Message, str]:
     """
     Parse a .po or .pot file into a message resource
 
@@ -36,7 +45,7 @@ def po_parse(source: str | bytes) -> Resource[tuple[str, ...], str]:
     res_meta: list[Metadata[str]] = [
         Metadata(key, value.strip()) for key, value in pf.metadata.items()
     ]
-    sections: dict[str | None, Section[tuple[str, ...], str]] = OrderedDict()
+    sections: dict[str | None, Section[Message, str]] = OrderedDict()
     for pe in pf:
         meta: list[Metadata[str]] = []
         if pe.tcomment:
@@ -54,9 +63,16 @@ def po_parse(source: str | bytes) -> Resource[tuple[str, ...], str]:
         if pe.msgstr_plural:
             keys = list(pe.msgstr_plural)
             keys.sort()
-            value = tuple(pe.msgstr_plural.get(idx, "") for idx in range(keys[-1] + 1))
+            sel = Expression(VariableRef("n"), FunctionAnnotation("number"))
+            variants: Variants = {
+                (str(idx),): (
+                    [pe.msgstr_plural[idx]] if idx in pe.msgstr_plural else []
+                )
+                for idx in range(keys[-1] + 1)
+            }
+            value: Message = SelectMessage([sel], variants)
         else:
-            value = (pe.msgstr,)
+            value = PatternMessage([pe.msgstr])
         entry = Entry([pe.msgid], value, meta=meta)
         if pe.msgctxt in sections:
             sections[pe.msgctxt].entries.append(entry)
