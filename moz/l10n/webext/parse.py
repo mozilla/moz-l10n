@@ -19,6 +19,7 @@ from typing import Any
 from ..message import (
     Declaration,
     Expression,
+    Message,
     Pattern,
     PatternMessage,
     UnsupportedStatement,
@@ -27,7 +28,7 @@ from ..message import (
 from ..resource import Comment, Entry, Resource, Section
 
 
-def webext_parse(source: str | bytes) -> Resource[PatternMessage, None]:
+def webext_parse(source: str | bytes) -> Resource[Message, None]:
     """
     Parse a messages.json file into a message resource.
 
@@ -35,7 +36,7 @@ def webext_parse(source: str | bytes) -> Resource[PatternMessage, None]:
     with an attribute used for an example, if it's available.
     """
     json: dict[str, dict[str, Any]] = loads(source)
-    entries: list[Entry[PatternMessage, None] | Comment] = []
+    entries: list[Entry[Message, None] | Comment] = []
     for key, msg in json.items():
         src: str = msg["message"]
         comment: str = msg.get("description", "")

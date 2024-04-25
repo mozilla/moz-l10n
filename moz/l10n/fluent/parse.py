@@ -33,6 +33,13 @@ def fluent_parse(
 @overload
 def fluent_parse(
     source: bytes | str | ftl.Resource,
+    parse_message: Callable[[ftl.Pattern], msg.Message],
+) -> res.Resource[msg.Message, None]: ...
+
+
+@overload
+def fluent_parse(
+    source: bytes | str | ftl.Resource,
     parse_message: Callable[[ftl.Pattern], res.V],
 ) -> res.Resource[res.V, None]: ...
 
