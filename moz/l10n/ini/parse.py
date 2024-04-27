@@ -12,33 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable
 from io import StringIO
-from typing import Any, Generator, TextIO, cast, overload
+from typing import Generator, TextIO
 
 from iniparse import ini  # type: ignore[import-untyped]
 
-from ..resource import Comment, Entry, Resource, Section, V
+from ..resource import Comment, Entry, Resource, Section
 
 
-@overload
-def ini_parse(
-    source: TextIO | str | bytes,
-    parse_message: Callable[[str], str] | None = None,
-) -> Resource[str, None]: ...
-
-
-@overload
-def ini_parse(
-    source: TextIO | str | bytes,
-    parse_message: Callable[[str], V],
-) -> Resource[V, None]: ...
-
-
-def ini_parse(
-    source: TextIO | str | bytes,
-    parse_message: Callable[[str], V] | None = None,
-) -> Resource[V, None]:
+def ini_parse(source: TextIO | str | bytes) -> Resource[str, None]:
     """
     Parse an .ini file into a message resource
     """
@@ -50,9 +32,9 @@ def ini_parse(
         file = source
     cfg = ini.INIConfig(file, optionxformvalue=None)
 
-    resource = Resource[V, None]([])
-    section: Section[V, None] | None = None
-    entry: Entry[V, None] | None = None
+    resource = Resource[str, None]([])
+    section: Section[str, None] | None = None
+    entry: Entry[str, None] | None = None
     comment = ""
 
     def add_comment(cl: str | None) -> None:
@@ -67,10 +49,9 @@ def ini_parse(
                 entry.value += "\n" + line.value
                 continue
             elif isinstance(line, ini.EmptyLine):
-                entry.value += cast(Any, "\n")
+                entry.value += "\n"
             else:
-                value = cast(str, entry.value).rstrip("\n")
-                entry.value = parse_message(value) if parse_message else cast(V, value)
+                entry.value = entry.value.rstrip("\n")
                 entry = None
         if isinstance(line, ini.SectionLine):
             add_comment(line.comment)
@@ -101,8 +82,7 @@ def ini_parse(
         else:
             raise Exception(f"Unexpected {line.__class__.__name__}: {line.__dict__}")
     if entry:
-        value = cast(str, entry.value).rstrip("\n")
-        entry.value = parse_message(value) if parse_message else cast(V, value)
+        entry.value = entry.value.rstrip("\n")
     if comment:
         if section:
             section.entries.append(Comment(comment))
