@@ -245,6 +245,12 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(["control_chars"], PatternMessage(["\u0000 \u0001"])),
+                        Entry(
+                            ["percent"],
+                            PatternMessage(
+                                [Expression("%", attributes={"source": "%%"})]
+                            ),
+                        ),
                         Entry(["single_quote"], PatternMessage(["They're great"])),
                         Entry(["double_quotes"], PatternMessage(['They are "great"'])),
                         Entry(
@@ -407,6 +413,7 @@ class TestAndroid(TestCase):
               <string name="ws_with_entities">" one "<xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g>" three "</string>
               <string name="ws_with_html">" one"<b> two </b>"three "</string>
               <string name="control_chars">\\u0000 \\u0001</string>
+              <string name="percent">%%</string>
               <string name="single_quote">They\\'re great</string>
               <string name="double_quotes">They are \\"great\\"</string>
               <string name="both_quotes">They\\'re really \\"great\\"</string>
@@ -466,6 +473,7 @@ class TestAndroid(TestCase):
               <string name="ws_with_entities">" one "<xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g>" three "</string>
               <string name="ws_with_html">" one"<b> two </b>"three "</string>
               <string name="control_chars">\\u0000 \\u0001</string>
+              <string name="percent">%%</string>
               <string name="single_quote">They\\'re great</string>
               <string name="double_quotes">They are \\"great\\"</string>
               <string name="both_quotes">They\\'re really \\"great\\"</string>

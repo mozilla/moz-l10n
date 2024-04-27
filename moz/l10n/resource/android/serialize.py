@@ -314,6 +314,14 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
             elif ent_name:
                 node = etree.Entity(ent_name)
                 parent.append(node)
+            elif "source" in part.attributes:
+                source = part.attributes["source"]
+                if not isinstance(source, str):
+                    raise ValueError(f"Unsupported expression source: {part}")
+                if node is None:
+                    parent.text = parent.text + source if parent.text else source
+                else:
+                    node.tail = node.tail + source if node.tail else source
             else:
                 source = None
                 if isinstance(part.arg, str):
@@ -367,7 +375,7 @@ def entity_name(part: Expression) -> str | None:
 
 # Special Android characters
 android_escape = str.maketrans(
-    {"\\": r"\\", "\n": r"\n", "\t": r"\t", "'": r"\'", '"': r"\"", "%": r"%%"}
+    {"\\": r"\\", "\n": r"\n", "\t": r"\t", "'": r"\'", '"': r"\""}
 )
 
 # Control codes are not valid in XML, and nonstandard whitespace is hard to see.

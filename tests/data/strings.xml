@@ -29,6 +29,7 @@
   <string name="ws_with_html"> one<b> two </b>three </string>
 
   <string name="control_chars">\u0000 \u0001</string>
+  <string name="percent">%%</string>
   <string name="single_quote">They\'re great</string>
   <string name="double_quotes">They are \"great\"</string>
   <string name="both_quotes">They\'re really \"great\"</string>

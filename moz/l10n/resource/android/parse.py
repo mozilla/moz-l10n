@@ -389,27 +389,31 @@ def parse_inline(
                         acc = ""
                     yield Expression(m[3], FunctionAnnotation("html"))
                 else:
+                    if acc:
+                        yield acc
+                        acc = ""
                     conversion = m[5]
                     if conversion == "%":
                         # Literal %
-                        acc += "%"
+                        yield Expression("%", attributes={"source": m[4]})
                     else:
                         # Placeholder
-                        if acc:
-                            yield acc
-                            acc = ""
-                        exp = Expression(VariableRef(m[4]))
-                        if conversion in ("b", "B"):
-                            exp.annotation = FunctionAnnotation("boolean")
-                        elif conversion in ("c", "C", "s", "S"):
-                            exp.annotation = FunctionAnnotation("string")
-                        elif conversion in ("d", "h", "H", "o", "x", "X"):
-                            exp.annotation = FunctionAnnotation("integer")
-                        elif conversion in ("a", "A", "e", "E", "f", "g", "G"):
-                            exp.annotation = FunctionAnnotation("number")
-                        elif conversion[0] in ("t", "T"):
-                            exp.annotation = FunctionAnnotation("datetime")
-                        yield exp
+                        func: str | None
+                        match conversion:
+                            case "b" | "B":
+                                func = "boolean"
+                            case "c" | "C" | "s" | "S":
+                                func = "string"
+                            case "d" | "h" | "H" | "o" | "x" | "X":
+                                func = "integer"
+                            case "a" | "A" | "e" | "E" | "f" | "g" | "G":
+                                func = "number"
+                            case _:
+                                c0 = conversion[0]
+                                func = "datetime" if c0 == "t" or c0 == "T" else None
+                        yield Expression(
+                            VariableRef(m[4]), FunctionAnnotation(func) if func else None
+                        )
                 pos = m.end()
             acc += part[pos:]
     if acc:
