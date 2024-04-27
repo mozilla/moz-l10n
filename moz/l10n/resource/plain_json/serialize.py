@@ -17,11 +17,13 @@ from collections.abc import Iterator
 from json import dumps
 from typing import Any
 
+from moz.l10n.message import Message, PatternMessage
+
 from ..data import Entry, Metadata, Resource
 
 
 def plain_json_serialize(
-    resource: Resource[str, Any],
+    resource: Resource[str, Any] | Resource[Message, Any],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -53,14 +55,24 @@ def plain_json_serialize(
                 check(entry.comment, entry.meta)
                 if not entry.id:
                     raise ValueError(f"Unsupported empty identifier in {section.id}")
-                if not isinstance(entry.value, str):
+                msg = entry.value
+                if isinstance(msg, str):
+                    value = msg
+                elif (
+                    isinstance(msg, PatternMessage)
+                    and not msg.declarations
+                    and len(msg.pattern) == 1
+                    and isinstance(msg.pattern[0], str)
+                ):
+                    value = msg.pattern[0]
+                else:
                     raise ValueError(
-                        f"Source value for {section.id + entry.id} is not a string"
+                        f"Unsupported message for {section.id + entry.id}: {msg}"
                     )
                 parent = section_parent
                 for part in entry.id[:-1]:
                     parent = parent[part]
-                parent[entry.id[-1]] = entry.value
+                parent[entry.id[-1]] = value
             else:
                 check(entry.comment, None)
     yield dumps(root, indent=2)

@@ -15,11 +15,13 @@
 from collections.abc import Iterator
 from typing import Any
 
+from moz.l10n.message import Message, PatternMessage
+
 from ..data import Entry, Metadata, Resource
 
 
 def inc_serialize(
-    resource: Resource[str, Any],
+    resource: Resource[str, Any] | Resource[Message, Any],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -61,10 +63,19 @@ def inc_serialize(
                 yield from comment(entry.comment, entry.meta, False)
                 if len(entry.id) != 1:
                     raise ValueError(f"Unsupported identifier: {entry.id}")
-                if not isinstance(entry.value, str):
-                    raise ValueError(f"Source value for {entry.id[0]} is not a string")
-                value = entry.value.replace("\n", " ")
-                yield f"#define {entry.id[0]} {value}\n"
+                msg = entry.value
+                if isinstance(msg, str):
+                    value = msg
+                elif (
+                    isinstance(msg, PatternMessage)
+                    and not msg.declarations
+                    and len(msg.pattern) == 1
+                    and isinstance(msg.pattern[0], str)
+                ):
+                    value = msg.pattern[0]
+                else:
+                    raise ValueError(f"Unsupported message for {entry.id[0]}: {msg}")
+                yield f"#define {entry.id[0]} {value.replace('\n', ' ')}\n"
                 yield "\n"
             else:
                 yield from comment(entry.comment, None, True)
