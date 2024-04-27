@@ -33,7 +33,9 @@ from ..format import Format
 plural_categories = ("zero", "one", "two", "few", "many", "other")
 xliff_ns = "urn:oasis:names:tc:xliff:document:1.2"
 xliff_g = f"{{{xliff_ns}}}g"
-xml_name_start = r":A-Z_a-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\U00010000-\U000EFFFF"
+
+# Exclude : for compatibility with MF2
+xml_name_start = r"A-Z_a-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\U00010000-\U000EFFFF"
 xml_name_rest = r".0-9\xB7\u0300-\u036F\u203F-\u2040-"
 xml_name = compile(f"[{xml_name_start}][{xml_name_start}{xml_name_rest}]*")
 
@@ -235,7 +237,7 @@ resource_ref = compile(r"@(?:\w+:)?\w+/\w+|\?(?:\w+:)?(\w+/)?\w+")
 def parse_pattern(el: etree._Element) -> Iterator[str | Expression | Markup]:
     if len(el) == 0 and el.text and resource_ref.fullmatch(el.text):
         # https://developer.android.com/guide/topics/resources/providing-resources#ResourcesFromXml
-        yield Expression(VariableRef(el.text), FunctionAnnotation("reference"))
+        yield Expression(el.text, FunctionAnnotation("reference"))
     else:
         flat = flatten(el)
         spaced = parse_quotes(flat)
@@ -274,12 +276,13 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
                             attr: dict[str, str | VariableRef | None] = {
                                 "translate": "no"
                             }
+                            arg: str | VariableRef | None
                             if id:
-                                del options["id"]
-                                arg: str | VariableRef | None = VariableRef(id)
+                                arg = VariableRef(get_var_name(id))
                                 attr["source"] = gc
                             elif gc.startswith(("%", "{")):
-                                arg = VariableRef(gc)
+                                arg = VariableRef(get_var_name(gc))
+                                attr["source"] = gc
                             else:
                                 arg = gc
                             yield Expression(
@@ -411,10 +414,29 @@ def parse_inline(
                             case _:
                                 c0 = conversion[0]
                                 func = "datetime" if c0 == "t" or c0 == "T" else None
+                        name = get_var_name(m[4])
                         yield Expression(
-                            VariableRef(m[4]), FunctionAnnotation(func) if func else None
+                            VariableRef(name),
+                            FunctionAnnotation(func) if func else None,
+                            {"source": m[4]},
                         )
                 pos = m.end()
             acc += part[pos:]
     if acc:
         yield acc
+
+
+printf = compile(r"%([1-9]\$)?")
+not_name_char = compile(f"[^{xml_name_start}{xml_name_rest}]")
+not_name_start = compile(f"[^{xml_name_start}]")
+
+
+def get_var_name(src: str) -> str:
+    """Returns a valid MF2 name."""
+    pm = printf.match(src)
+    if pm:
+        return f"arg{pm[1][0]}" if pm[1] else "arg"
+    name = not_name_char.sub("", src)
+    if not_name_start.match(name):
+        name = name[1:]
+    return name or "arg"

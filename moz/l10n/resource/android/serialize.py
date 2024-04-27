@@ -270,8 +270,8 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
             # A "string" could be an Android resource reference,
             # which should not have its @ or ? sigil escaped.
             arg = pattern[0].arg
-            if isinstance(arg, VariableRef) and resource_ref.fullmatch(arg.name):
-                el.text = arg.name
+            if isinstance(arg, str) and resource_ref.fullmatch(arg):
+                el.text = arg
                 return
             else:
                 raise ValueError(f"Invalid reference value: {arg}")
@@ -289,28 +289,24 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
             ent_name = entity_name(part)
             if part.attributes.get("translate", None) == "no":
                 # <xliff:g>
-                arg = part.arg
-                attrib = {"id": arg.name} if isinstance(arg, VariableRef) else {}
-                if isinstance(part.annotation, FunctionAnnotation):
-                    for k, v in part.annotation.options.items():
-                        attrib[k] = str(v)
+                attrib = (
+                    cast(dict[str, str], part.annotation.options)
+                    if isinstance(part.annotation, FunctionAnnotation)
+                    else None
+                )
                 nsmap = {"xliff": xliff_ns} if not el.nsmap.get("xliff", None) else None
                 node = etree.SubElement(parent, xliff_g, attrib=attrib, nsmap=nsmap)
                 if ent_name:
-                    if "id" in node.attrib:
-                        del node.attrib["id"]
                     node.append(etree.Entity(ent_name))
                 elif "source" in part.attributes:
                     source = part.attributes["source"]
                     if source:
                         node.text = str(source)
                 else:
-                    if isinstance(arg, str):
-                        node.text = escape_backslash(arg)
-                    elif isinstance(arg, VariableRef):
-                        if "id" in node.attrib:
-                            del node.attrib["id"]
-                        node.text = arg.name
+                    if isinstance(part.arg, str):
+                        node.text = escape_backslash(part.arg)
+                    elif isinstance(part.arg, VariableRef):
+                        node.text = part.arg.name
             elif ent_name:
                 node = etree.Entity(ent_name)
                 parent.append(node)
