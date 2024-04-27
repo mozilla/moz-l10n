@@ -29,7 +29,7 @@ from .xliff.parse import xliff_parse
 
 def parse_resource(
     type: Format | str | None, source: str | bytes
-) -> Resource[str, None] | Resource[Message, str] | Resource[Message, None]:
+) -> Resource[str, str] | Resource[Message, str]:
     """
     Parse a Resource from its string representation.
 

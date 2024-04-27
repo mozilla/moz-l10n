@@ -19,13 +19,15 @@ from ..resource import Comment, Entry, Resource, Section
 re_define = compile(r"#define[ \t]+(\w+)(?:[ \t](.*))?")
 
 
-def inc_parse(source: str | bytes) -> Resource[str, None]:
+def inc_parse(source: str | bytes) -> Resource[str, str]:
     """
     Parse a .inc file into a message resource.
 
     Directives such as `#filter` and `#unfilter` will be stored as standalone comments.
+
+    The parsed resource will not include any metadata.
     """
-    entries: list[Entry[str, None] | Comment] = []
+    entries: list[Entry[str, str] | Comment] = []
     comment: str = ""
     if not isinstance(source, str):
         source = source.decode()

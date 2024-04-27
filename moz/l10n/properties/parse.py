@@ -45,7 +45,7 @@ def properties_parse(
     source: bytes | str,
     encoding: str = "utf-8",
     parse_message: Callable[[str], str] | None = None,
-) -> Resource[str, None]: ...
+) -> Resource[str, str]: ...
 
 
 @overload
@@ -53,22 +53,24 @@ def properties_parse(
     source: bytes | str,
     encoding: str = "utf-8",
     parse_message: Callable[[str], V] | None = None,
-) -> Resource[V, None]: ...
+) -> Resource[V, str]: ...
 
 
 def properties_parse(
     source: bytes | str,
     encoding: str = "utf-8",
     parse_message: Callable[[str], V] | None = None,
-) -> Resource[V, None]:
+) -> Resource[V, str]:
     """
-    Parse a .properties file into a message resource
+    Parse a .properties file into a message resource.
+
+    The parsed resource will not include any metadata.
     """
     pf = propfile_shim(personality="java-utf8")
     if encoding != "utf-8":
         pf.default_encoding = encoding
     pf.parse(source)
-    entries: list[Entry[V, None] | Comment] = []
+    entries: list[Entry[V, str] | Comment] = []
     resource = Resource([Section([], entries)])
     for unit in pf.getunits():
         if unit.name or unit.value:

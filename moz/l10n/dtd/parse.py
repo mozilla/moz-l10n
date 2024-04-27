@@ -36,11 +36,13 @@ re_entity = compile(
 re_comment = compile(r"\<!\s*--(.*?)--\s*\>", MULTILINE | DOTALL)
 
 
-def dtd_parse(source: str | bytes) -> Resource[str, None]:
+def dtd_parse(source: str | bytes) -> Resource[str, str]:
     """
-    Parse a .dtd file into a message resource
+    Parse a .dtd file into a message resource.
+
+    The parsed resource will not include any metadata.
     """
-    entries: list[Entry[str, None] | Comment] = []
+    entries: list[Entry[str, str] | Comment] = []
     resource = Resource([Section([], entries)])
     pos = 0
     at_newline = True
@@ -97,7 +99,7 @@ def dtd_parse(source: str | bytes) -> Resource[str, None]:
 
 def dtd_iter(
     text: str, pos: int, endpos: int = maxsize
-) -> Iterator[str | Entry[str, None]]:
+) -> Iterator[str | Entry[str, str]]:
     for match in re_entity.finditer(text, pos, endpos):
         yield text[pos : match.start(0)]
         id, value = match.groups()

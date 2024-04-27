@@ -20,9 +20,11 @@ from iniparse import ini  # type: ignore[import-untyped]
 from ..resource import Comment, Entry, Resource, Section
 
 
-def ini_parse(source: TextIO | str | bytes) -> Resource[str, None]:
+def ini_parse(source: TextIO | str | bytes) -> Resource[str, str]:
     """
-    Parse an .ini file into a message resource
+    Parse an .ini file into a message resource.
+
+    The parsed resource will not include any metadata.
     """
     if isinstance(source, str):
         file: TextIO = StringIO(source)
@@ -32,9 +34,9 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[str, None]:
         file = source
     cfg = ini.INIConfig(file, optionxformvalue=None)
 
-    resource = Resource[str, None]([])
-    section: Section[str, None] | None = None
-    entry: Entry[str, None] | None = None
+    resource = Resource[str, str]([])
+    section: Section[str, str] | None = None
+    entry: Entry[str, str] | None = None
     comment = ""
 
     def add_comment(cl: str | None) -> None:

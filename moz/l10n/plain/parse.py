@@ -19,11 +19,13 @@ from typing import Any
 from ..resource import Entry, Resource, Section
 
 
-def plain_parse(source: str | bytes) -> Resource[str, None]:
+def plain_parse(source: str | bytes) -> Resource[str, str]:
     """
     Parse a JSON file into a message resource.
 
     The input is expected to be a nested object with string values at leaf nodes.
+
+    The parsed resource will not include any metadata.
     """
     json: dict[str, dict[str, Any]] = loads(source)
     if not isinstance(json, dict):
@@ -31,7 +33,7 @@ def plain_parse(source: str | bytes) -> Resource[str, None]:
     return Resource([Section([], [e for e in plain_object([], json)])])
 
 
-def plain_object(path: list[str], obj: dict[str, Any]) -> Iterator[Entry[str, None]]:
+def plain_object(path: list[str], obj: dict[str, Any]) -> Iterator[Entry[str, str]]:
     for k, value in obj.items():
         key = path + [k]
         if isinstance(value, str):

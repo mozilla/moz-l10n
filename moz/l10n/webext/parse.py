@@ -28,15 +28,17 @@ from ..message import (
 from ..resource import Comment, Entry, Resource, Section
 
 
-def webext_parse(source: str | bytes) -> Resource[Message, None]:
+def webext_parse(source: str | bytes) -> Resource[Message, str]:
     """
     Parse a messages.json file into a message resource.
 
     Named placeholders are represented as declarations,
     with an attribute used for an example, if it's available.
+
+    The parsed resource will not include any metadata.
     """
     json: dict[str, dict[str, Any]] = loads(source)
-    entries: list[Entry[Message, None] | Comment] = []
+    entries: list[Entry[Message, str] | Comment] = []
     for key, msg in json.items():
         src: str = msg["message"]
         comment: str = msg.get("description", "")

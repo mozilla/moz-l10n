@@ -27,34 +27,36 @@ from .. import resource as res
 def fluent_parse(
     source: bytes | str | ftl.Resource,
     parse_message: None = None,
-) -> res.Resource[ftl.Pattern, None]: ...
+) -> res.Resource[ftl.Pattern, str]: ...
 
 
 @overload
 def fluent_parse(
     source: bytes | str | ftl.Resource,
     parse_message: Callable[[ftl.Pattern], msg.Message],
-) -> res.Resource[msg.Message, None]: ...
+) -> res.Resource[msg.Message, str]: ...
 
 
 @overload
 def fluent_parse(
     source: bytes | str | ftl.Resource,
     parse_message: Callable[[ftl.Pattern], res.V],
-) -> res.Resource[res.V, None]: ...
+) -> res.Resource[res.V, str]: ...
 
 
 def fluent_parse(
     source: bytes | str | ftl.Resource,
     parse_message: Callable[[ftl.Pattern], res.V] | None = None,
-) -> res.Resource[res.V, None]:
+) -> res.Resource[res.V, str]:
     """
-    Parse a .ftl file into a message resource
+    Parse a .ftl file into a message resource.
 
     Message and term references are represented by `message` function annotations,
     with term identifiers prefixed with a `-`.
 
     Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the Resource.
+
+    The parsed resource will not include any metadata.
     """
 
     if isinstance(source, ftl.Resource):
@@ -63,7 +65,7 @@ def fluent_parse(
         source_str = source if isinstance(source, str) else source.decode("utf-8")
         fluent_res = FluentParser().parse(source_str)
 
-    entries: list[res.Entry[res.V, None] | res.Comment] = []
+    entries: list[res.Entry[res.V, str] | res.Comment] = []
     section = res.Section([], entries)
     resource = res.Resource([section])
     for entry in fluent_res.body:
@@ -97,7 +99,7 @@ def fluent_parse(
 
 def patterns(
     entry: ftl.Message | ftl.Term, parse_message: Callable[[ftl.Pattern], res.V] | None
-) -> Generator[res.Entry[res.V, None], None, None]:
+) -> Generator[res.Entry[res.V, str], None, None]:
     message = parse_message or (lambda m: cast(res.V, m))
     id = entry.id.name
     if isinstance(entry, ftl.Term):
