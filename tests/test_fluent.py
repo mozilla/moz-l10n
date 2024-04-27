@@ -18,7 +18,6 @@ from unittest import TestCase
 
 from fluent.syntax import ast as ftl
 
-from moz.l10n.fluent import fluent_parse, fluent_parse_message, fluent_serialize
 from moz.l10n.message import (
     CatchallKey,
     Expression,
@@ -27,7 +26,12 @@ from moz.l10n.message import (
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.fluent import (
+    fluent_parse,
+    fluent_parse_message,
+    fluent_serialize,
+)
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999

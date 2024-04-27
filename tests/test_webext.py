@@ -17,8 +17,8 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.message import Declaration, Expression, PatternMessage, VariableRef
-from moz.l10n.resource import Entry, Resource, Section
-from moz.l10n.webext import webext_parse, webext_serialize
+from moz.l10n.resource.data import Entry, Resource, Section
+from moz.l10n.resource.webext import webext_parse, webext_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999

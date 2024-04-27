@@ -15,7 +15,7 @@
 from dataclasses import replace
 from typing import Any
 
-from .. import resource as res
+from ..resource import data as res
 
 RS = res.Section[Any, Any]
 RE = res.Entry[Any, Any]

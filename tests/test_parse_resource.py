@@ -15,8 +15,8 @@
 from importlib.resources import files
 from unittest import TestCase
 
-from moz.l10n import Format, parse_resource
-from moz.l10n.resource import Resource
+from moz.l10n.resource import Format, parse_resource
+from moz.l10n.resource.data import Resource
 
 
 def get_source(filename: str) -> bytes:

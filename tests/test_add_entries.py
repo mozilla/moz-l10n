@@ -14,7 +14,7 @@
 
 from unittest import TestCase
 
-from moz.l10n.resource import Entry, Resource, Section
+from moz.l10n.resource.data import Entry, Resource, Section
 from moz.l10n.transform import add_entries
 
 

@@ -16,8 +16,8 @@ from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
-from moz.l10n.inc import inc_parse, inc_serialize
-from moz.l10n.resource import Comment, Entry, Resource, Section
+from moz.l10n.resource.data import Comment, Entry, Resource, Section
+from moz.l10n.resource.inc import inc_parse, inc_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999

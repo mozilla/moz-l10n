@@ -16,8 +16,8 @@ from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
-from moz.l10n.properties import properties_parse, properties_serialize
-from moz.l10n.resource import Entry, Resource, Section
+from moz.l10n.resource.data import Entry, Resource, Section
+from moz.l10n.resource.properties import properties_parse, properties_serialize
 
 
 class TestProperties(TestCase):

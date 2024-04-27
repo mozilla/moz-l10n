@@ -16,7 +16,6 @@ from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
-from moz.l10n.android import android_parse, android_serialize
 from moz.l10n.message import (
     CatchallKey,
     Expression,
@@ -26,7 +25,8 @@ from moz.l10n.message import (
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.android import android_parse, android_serialize
+from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999

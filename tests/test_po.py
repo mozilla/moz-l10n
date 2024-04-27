@@ -22,8 +22,8 @@ from moz.l10n.message import (
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.po import po_parse, po_serialize
-from moz.l10n.resource import Entry, Metadata, Resource, Section
+from moz.l10n.resource.data import Entry, Metadata, Resource, Section
+from moz.l10n.resource.po import po_parse, po_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999

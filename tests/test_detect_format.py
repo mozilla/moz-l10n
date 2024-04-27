@@ -15,7 +15,7 @@
 from importlib.resources import files
 from unittest import TestCase
 
-from moz.l10n import Format, detect_format
+from moz.l10n.resource import Format, detect_format
 
 
 class TestDetectFormat(TestCase):

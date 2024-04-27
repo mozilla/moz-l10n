@@ -25,8 +25,8 @@ from moz.l10n.message import (
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource import Comment, Entry, Metadata, Resource, Section
-from moz.l10n.xliff import xliff_parse, xliff_serialize
+from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.xliff import xliff_parse, xliff_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
