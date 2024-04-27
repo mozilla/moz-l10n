@@ -19,7 +19,7 @@ from typing import Any
 from ..data import Entry, Resource, Section
 
 
-def plain_parse(source: str | bytes) -> Resource[str, str]:
+def plain_json_parse(source: str | bytes) -> Resource[str, str]:
     """
     Parse a JSON file into a message resource.
 

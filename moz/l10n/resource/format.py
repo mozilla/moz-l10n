@@ -30,7 +30,7 @@ Format = Enum(
         "fluent",
         "inc",
         "ini",
-        "plain",
+        "plain_json",
         "po",
         "properties",
         "webext",
@@ -73,7 +73,7 @@ def detect_format(name: str | None, source: bytes | str) -> Format | None:
                 return None
             if all(is_webext_message(m) for m in json.values()):
                 return Format.webext
-            return Format.plain
+            return Format.plain_json
         except JSONDecodeError:
             pass
 

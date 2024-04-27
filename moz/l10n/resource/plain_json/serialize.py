@@ -20,7 +20,7 @@ from typing import Any
 from ..data import Entry, Metadata, Resource
 
 
-def plain_serialize(
+def plain_json_serialize(
     resource: Resource[str, Any],
     trim_comments: bool = False,
 ) -> Iterator[str]:

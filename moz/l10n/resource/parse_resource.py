@@ -20,7 +20,7 @@ from .fluent.parse import fluent_parse, fluent_parse_message
 from .format import Format, detect_format
 from .inc.parse import inc_parse
 from .ini.parse import ini_parse
-from .plain.parse import plain_parse
+from .plain_json.parse import plain_json_parse
 from .po.parse import po_parse
 from .properties.parse import properties_parse
 from .webext.parse import webext_parse
@@ -49,8 +49,8 @@ def parse_resource(
             return inc_parse(source)
         case Format.ini:
             return ini_parse(source)
-        case Format.plain:
-            return plain_parse(source)
+        case Format.plain_json:
+            return plain_json_parse(source)
         case Format.po:
             return po_parse(source)
         case Format.properties:

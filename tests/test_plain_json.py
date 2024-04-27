@@ -17,7 +17,7 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.resource.data import Entry, Resource, Section
-from moz.l10n.resource.plain import plain_parse, plain_serialize
+from moz.l10n.resource.plain_json import plain_json_parse, plain_json_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
@@ -27,7 +27,7 @@ source = files("tests.data").joinpath("messages.json").read_bytes()
 
 class TestPlain(TestCase):
     def test_parse(self):
-        res = plain_parse(source)
+        res = plain_json_parse(source)
         self.assertEqual(
             res,
             Resource(
@@ -82,9 +82,9 @@ class TestPlain(TestCase):
         )
 
     def test_serialize(self):
-        res = plain_parse(source)
+        res = plain_json_parse(source)
         self.assertEqual(
-            "".join(plain_serialize(res)),
+            "".join(plain_json_serialize(res)),
             dedent(
                 """\
                 {
