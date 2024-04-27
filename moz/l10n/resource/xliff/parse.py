@@ -21,6 +21,7 @@ from lxml import etree
 
 from ...message import Expression, Message, PatternMessage
 from ..data import Comment, Entry, Metadata, Resource, Section
+from ..format import Format
 from .common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
 from .parse_trans_unit import parse_trans_unit
 from .parse_xcode import parse_xliff_stringsdict
@@ -56,7 +57,7 @@ def xliff_parse(source: str | bytes) -> Resource[Message, str]:
     if root.text and not root.text.isspace():
         raise ValueError(f"Unexpected text in <xliff>: {root.text}")
 
-    res: Resource[Message, str] = Resource([])
+    res: Resource[Message, str] = Resource(Format.xliff, [])
     root_comments = [
         c.text for c in root.itersiblings(etree.Comment, preceding=True) if c.text
     ]

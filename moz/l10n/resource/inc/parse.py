@@ -15,6 +15,7 @@
 from re import compile
 
 from ..data import Comment, Entry, Resource, Section
+from ..format import Format
 
 re_define = compile(r"#define[ \t]+(\w+)(?:[ \t](.*))?")
 
@@ -56,4 +57,4 @@ def inc_parse(source: str | bytes) -> Resource[str, str]:
                 raise ValueError(f"Unsupported content: {line}")
     if comment:
         entries.append(Comment(comment))
-    return Resource([Section([], entries)])
+    return Resource(Format.inc, [Section([], entries)])

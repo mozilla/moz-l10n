@@ -19,6 +19,7 @@ from typing import cast, overload
 from translate.storage.properties import propfile
 
 from ..data import Comment, Entry, Resource, Section, V
+from ..format import Format
 
 
 def parse_comment(lines: list[str]) -> str:
@@ -71,7 +72,7 @@ def properties_parse(
         pf.default_encoding = encoding
     pf.parse(source)
     entries: list[Entry[V, str] | Comment] = []
-    resource = Resource([Section([], entries)])
+    resource = Resource(Format.properties, [Section([], entries)])
     for unit in pf.getunits():
         if unit.name or unit.value:
             entries.append(

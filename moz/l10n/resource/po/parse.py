@@ -26,6 +26,7 @@ from ...message import (
     Variants,
 )
 from ..data import Entry, Metadata, Resource, Section
+from ..format import Format
 
 
 def po_parse(source: str | bytes) -> Resource[Message, str]:
@@ -78,4 +79,4 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
             sections[pe.msgctxt].entries.append(entry)
         else:
             sections[pe.msgctxt] = Section([pe.msgctxt] if pe.msgctxt else [], [entry])
-    return Resource(list(sections.values()), res_comment, res_meta)
+    return Resource(Format.po, list(sections.values()), res_comment, res_meta)

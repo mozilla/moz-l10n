@@ -16,6 +16,7 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.resource.data import Comment, Entry, Resource, Section
+from moz.l10n.resource.format import Format
 from moz.l10n.resource.ini import ini_parse, ini_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
@@ -36,13 +37,14 @@ class TestIni(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.ini,
                 [
                     Section(
                         id=["Strings"],
                         entries=[Entry(["TitleText"], "Some Title")],
                         comment="This file is in the UTF-8 encoding",
                     )
-                ]
+                ],
             ),
         )
         self.assertEqual(
@@ -76,6 +78,7 @@ class TestIni(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.ini,
                 [
                     Section(
                         id=["Strings"],
@@ -131,6 +134,7 @@ class TestIni(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.ini,
                 [
                     Section(
                         id=["Strings"],
@@ -177,6 +181,7 @@ class TestIni(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.ini,
                 [
                     Section(
                         id=["Strings"],
@@ -219,6 +224,7 @@ class TestIni(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.ini,
                 [
                     Section(
                         id=["Strings"],
@@ -240,7 +246,7 @@ class TestIni(TestCase):
         )
 
     def test_empty_file(self):
-        empty = Resource([])
+        empty = Resource(Format.ini, [])
         self.assertEqual(ini_parse(""), empty)
         self.assertEqual(ini_parse("\n"), empty)
         self.assertEqual(ini_parse("\n\n"), empty)

@@ -26,6 +26,7 @@ from moz.l10n.message import (
     VariableRef,
 )
 from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.format import Format
 from moz.l10n.resource.xliff import xliff_parse, xliff_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
@@ -41,6 +42,7 @@ class TestXliff1(TestCase):
     def test_parse_hello(self):
         res = xliff_parse(hello)
         assert res == Resource(
+            Format.xliff,
             meta=[
                 Metadata("@version", "1.2"),
                 Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
@@ -93,6 +95,7 @@ class TestXliff1(TestCase):
     def test_parse_angular(self):
         res = xliff_parse(angular)
         assert res == Resource(
+            Format.xliff,
             meta=[
                 Metadata("@version", "1.2"),
                 Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
@@ -204,6 +207,7 @@ class TestXliff1(TestCase):
     def test_parse_icu_docs(self):
         res = xliff_parse(icu_docs)
         assert res == Resource(
+            Format.xliff,
             meta=[
                 Metadata("@version", "1.2"),
                 Metadata(
@@ -460,6 +464,7 @@ class TestXliff1(TestCase):
     def test_parse_xcode(self):
         res = xliff_parse(xcode)
         assert res == Resource(
+            Format.xliff,
             meta=[
                 Metadata("@version", "1.2"),
                 Metadata(

@@ -23,6 +23,7 @@ from moz.l10n.message import (
     VariableRef,
 )
 from moz.l10n.resource.data import Entry, Metadata, Resource, Section
+from moz.l10n.resource.format import Format
 from moz.l10n.resource.po import po_parse, po_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
@@ -37,6 +38,7 @@ class TestPo(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.po,
                 comment="Test translation file.\n"
                 "Any copyright is dedicated to the Public Domain.\n"
                 "http://creativecommons.org/publicdomain/zero/1.0/",

@@ -20,7 +20,12 @@ from typing import Any
 
 from lxml.etree import LxmlError, iterparse
 
-from .xliff.common import xliff_ns
+# from moz.l10n.resource.xliff.common import xliff_ns
+xliff_ns = {
+    "urn:oasis:names:tc:xliff:document:1.0",
+    "urn:oasis:names:tc:xliff:document:1.1",
+    "urn:oasis:names:tc:xliff:document:1.2",
+}
 
 Format = Enum(
     "Format",

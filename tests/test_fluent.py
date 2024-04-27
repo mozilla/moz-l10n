@@ -32,6 +32,7 @@ from moz.l10n.resource.fluent import (
     fluent_parse_message,
     fluent_serialize,
 )
+from moz.l10n.resource.format import Format
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
@@ -213,6 +214,7 @@ class TestFluent(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.fluent,
                 [
                     Section(
                         id=[],
@@ -663,7 +665,9 @@ class TestFluent(TestCase):
                 comment="Nested selectors",
             ),
         ]
-        self.assertEqual(res, Resource(sections=[Section(id=[], entries=entries)]))
+        self.assertEqual(
+            res, Resource(Format.fluent, sections=[Section(id=[], entries=entries)])
+        )
         self.assertEqual(
             "".join(fluent_serialize(res)),
             dedent(

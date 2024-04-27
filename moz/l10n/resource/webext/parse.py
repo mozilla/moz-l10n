@@ -26,6 +26,7 @@ from ...message import (
     VariableRef,
 )
 from ..data import Comment, Entry, Resource, Section
+from ..format import Format
 
 
 def webext_parse(source: str | bytes) -> Resource[Message, str]:
@@ -92,4 +93,4 @@ def webext_parse(source: str | bytes) -> Resource[Message, str]:
         entries.append(
             Entry([key], PatternMessage(pattern, declarations), comment=comment)
         )
-    return Resource([Section([], entries)])
+    return Resource(Format.webext, [Section([], entries)])

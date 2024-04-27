@@ -27,6 +27,7 @@ from moz.l10n.message import (
 )
 from moz.l10n.resource.android import android_parse, android_serialize
 from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.format import Format
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
@@ -38,6 +39,7 @@ class TestAndroid(TestCase):
     def test_parse(self):
         res = android_parse(source)
         assert res == Resource(
+            Format.android,
             comment="Test translation file.\n"
             "Any copyright is dedicated to the Public Domain.\n"
             "http://creativecommons.org/publicdomain/zero/1.0/",
@@ -496,7 +498,9 @@ class TestAndroid(TestCase):
 
     def test_xliff_xmlns(self):
         exp = Expression(" X ", FunctionAnnotation("foo", {"opt": "OPT"}))
-        res = Resource([Section([], [Entry(["x"], PatternMessage([exp]))])])
+        res = Resource(
+            Format.android, [Section([], [Entry(["x"], PatternMessage([exp]))])]
+        )
 
         ser = "".join(android_serialize(res, trim_comments=True))
         assert ser == dedent(
@@ -527,7 +531,7 @@ class TestAndroid(TestCase):
                 Markup("close", "x", attributes={"translate": "no"}),
             ]
         )
-        res = Resource([Section([], [Entry(["x"], msg)])])
+        res = Resource(Format.android, [Section([], [Entry(["x"], msg)])])
 
         ser = "".join(android_serialize(res, trim_comments=True))
         assert ser == dedent(

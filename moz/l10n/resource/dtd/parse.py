@@ -20,6 +20,7 @@ from re import DOTALL, MULTILINE, UNICODE, compile
 from sys import maxsize
 
 from ..data import Comment, Entry, Resource, Section
+from ..format import Format
 
 name_start_char = (
     ":A-Z_a-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF"
@@ -43,7 +44,7 @@ def dtd_parse(source: str | bytes) -> Resource[str, str]:
     The parsed resource will not include any metadata.
     """
     entries: list[Entry[str, str] | Comment] = []
-    resource = Resource([Section([], entries)])
+    resource = Resource(Format.dtd, [Section([], entries)])
     pos = 0
     at_newline = True
     comment: str = ""

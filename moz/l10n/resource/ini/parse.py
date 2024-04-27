@@ -18,6 +18,7 @@ from typing import Generator, TextIO
 from iniparse import ini  # type: ignore[import-untyped]
 
 from ..data import Comment, Entry, Resource, Section
+from ..format import Format
 
 
 def ini_parse(source: TextIO | str | bytes) -> Resource[str, str]:
@@ -34,7 +35,7 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[str, str]:
         file = source
     cfg = ini.INIConfig(file, optionxformvalue=None)
 
-    resource = Resource[str, str]([])
+    resource = Resource[str, str](Format.ini, [])
     section: Section[str, str] | None = None
     entry: Entry[str, str] | None = None
     comment = ""

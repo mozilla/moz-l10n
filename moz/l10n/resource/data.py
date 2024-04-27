@@ -15,6 +15,8 @@
 from dataclasses import dataclass, field
 from typing import Generic, TypeVar
 
+from .format import Format
+
 __all__ = [
     "Comment",
     "Entry",
@@ -176,6 +178,11 @@ class Resource(Generic[V, M]):
 
     The first type parameter defines the Message value type,
     and the second one defines the metadata value type.
+    """
+
+    format: Format | None
+    """
+    The serialization format for the resource, if any.
     """
 
     sections: list[Section[V, M]]

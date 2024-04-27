@@ -28,6 +28,7 @@ from ...message import (
     VariableRef,
 )
 from ..data import Comment, Entry, Metadata, Resource, Section
+from ..format import Format
 
 plural_categories = ("zero", "one", "two", "few", "many", "other")
 xliff_ns = "urn:oasis:names:tc:xliff:document:1.2"
@@ -85,7 +86,7 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
         raise ValueError(f"Unsupported root node: {root}")
     if root.text and not root.text.isspace():
         raise ValueError(f"Unexpected text in resource: {root.text}")
-    res: Resource[Message, str] = Resource([Section([], [])])
+    res: Resource[Message, str] = Resource(Format.android, [Section([], [])])
     root_comments = [c.text for c in root.itersiblings(etree.Comment, preceding=True)]
     if root_comments:
         root_comments.reverse()

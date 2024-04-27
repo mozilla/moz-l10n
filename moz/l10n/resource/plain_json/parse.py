@@ -17,6 +17,7 @@ from json import loads
 from typing import Any
 
 from ..data import Entry, Resource, Section
+from ..format import Format
 
 
 def plain_json_parse(source: str | bytes) -> Resource[str, str]:
@@ -30,7 +31,9 @@ def plain_json_parse(source: str | bytes) -> Resource[str, str]:
     json: dict[str, dict[str, Any]] = loads(source)
     if not isinstance(json, dict):
         raise ValueError(f"Unexpected root value: {json}")
-    return Resource([Section([], [e for e in plain_object([], json)])])
+    return Resource(
+        Format.plain_json, [Section([], [e for e in plain_object([], json)])]
+    )
 
 
 def plain_object(path: list[str], obj: dict[str, Any]) -> Iterator[Entry[str, str]]:

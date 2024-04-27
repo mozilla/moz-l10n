@@ -17,6 +17,7 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.resource.data import Entry, Resource, Section
+from moz.l10n.resource.format import Format
 from moz.l10n.resource.properties import properties_parse, properties_serialize
 
 
@@ -33,6 +34,7 @@ and still has another line coming
         self.assertEqual(
             res,
             Resource(
+                Format.properties,
                 [
                     Section(
                         [],
@@ -49,7 +51,7 @@ and still has another line coming
                             ),
                         ],
                     )
-                ]
+                ],
             ),
         )
         self.assertEqual(
@@ -72,6 +74,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
         self.assertEqual(
             res,
             Resource(
+                Format.properties,
                 [
                     Section(
                         [],
@@ -91,7 +94,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                             ),
                         ],
                     )
-                ]
+                ],
             ),
         )
         self.assertEqual(
@@ -138,6 +141,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
         self.assertEqual(
             res,
             Resource(
+                Format.properties,
                 [
                     Section(
                         [],
@@ -190,7 +194,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                             ),
                         ],
                     )
-                ]
+                ],
             ),
         )
         res.sections[0].entries[10].comment = ""
@@ -234,7 +238,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
         exp = "one line with a # part that looks like a comment and an end"
         self.assertEqual(
             res,
-            Resource([Section([], [Entry(["bar"], exp)])]),
+            Resource(Format.properties, [Section([], [Entry(["bar"], exp)])]),
         )
         self.assertEqual(
             "".join(properties_serialize(res)),
@@ -254,6 +258,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
         self.assertEqual(
             res,
             Resource(
+                Format.properties,
                 [Section([], [Entry(["foo"], "value")])],
                 comment=dedent(
                     """\

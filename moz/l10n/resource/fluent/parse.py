@@ -21,6 +21,7 @@ from fluent.syntax import ast as ftl
 
 from ... import message as msg
 from .. import data as res
+from ..format import Format
 
 
 @overload
@@ -67,7 +68,7 @@ def fluent_parse(
 
     entries: list[res.Entry[res.V, str] | res.Comment] = []
     section = res.Section([], entries)
-    resource = res.Resource([section])
+    resource = res.Resource(Format.fluent, [section])
     for entry in fluent_res.body:
         if isinstance(entry, ftl.Message) or isinstance(entry, ftl.Term):
             entries.extend(patterns(entry, parse_message))

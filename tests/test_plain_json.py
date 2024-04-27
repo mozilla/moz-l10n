@@ -17,6 +17,7 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.resource.data import Entry, Resource, Section
+from moz.l10n.resource.format import Format
 from moz.l10n.resource.plain_json import plain_json_parse, plain_json_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
@@ -31,6 +32,7 @@ class TestPlain(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.plain_json,
                 [
                     Section(
                         [],
