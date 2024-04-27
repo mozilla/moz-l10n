@@ -158,6 +158,8 @@ def fluent_astify_message(message: msg.Message) -> ftl.Pattern:
     are mapped to message and term references.
     """
 
+    if not isinstance(message, (msg.PatternMessage, msg.SelectMessage)):
+        raise ValueError(f"Unsupported message: {message}")
     decl = [d for d in message.declarations if isinstance(d, msg.Declaration)]
     if len(decl) != len(message.declarations):
         raise ValueError("Unsupported statements are not supported")

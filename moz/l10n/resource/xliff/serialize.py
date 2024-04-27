@@ -139,15 +139,7 @@ def xliff_serialize(
             msg = entry.value
             target = None
             source = None
-            if (
-                tag == "trans-unit"
-                and msg
-                and (
-                    isinstance(msg, str)
-                    or isinstance(msg, PatternMessage)
-                    and msg.pattern
-                )
-            ):
+            if tag == "trans-unit" and msg:
                 target = unit.find("target")
                 if target is None:
                     source = unit.find("source")
@@ -157,10 +149,10 @@ def xliff_serialize(
                     source.addnext(target)
                 if isinstance(msg, str):
                     target.text = msg
-                elif msg.declarations:
-                    raise ValueError(f"Unsupported message with declarations: {msg}")
-                else:
+                elif isinstance(msg, PatternMessage) and not msg.declarations:
                     set_pattern(target, msg.pattern)
+                else:
+                    raise ValueError(f"Unsupported message: {msg}")
 
             if entry.comment and not trim_comments:
                 note = unit.find("note")
