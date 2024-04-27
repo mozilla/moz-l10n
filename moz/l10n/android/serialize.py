@@ -14,7 +14,7 @@
 
 from collections.abc import Iterator
 from re import compile
-from typing import Any, cast
+from typing import cast
 
 from lxml import etree
 
@@ -33,7 +33,7 @@ from .parse import plural_categories, resource_ref, xliff_g, xliff_ns, xml_name
 
 
 def android_serialize(
-    resource: Resource[Message | str, Any],
+    resource: Resource[str, str] | Resource[Message, str],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -160,12 +160,12 @@ def android_serialize(
     yield "\n"
 
 
-def get_attrib(name: str, meta: list[Metadata[Any]]) -> dict[str, str]:
+def get_attrib(name: str, meta: list[Metadata[str]]) -> dict[str, str]:
     res = {"name": name}
     for m in meta:
         if m.key == "name":
             raise ValueError(f'Unsupported "name" metadata for {name}')
-        res[m.key] = str(m.value)
+        res[m.key] = m.value
     return res
 
 
@@ -187,7 +187,7 @@ def add_comment(el: etree._Element, content: str, standalone: bool) -> None:
     el.append(comment)
 
 
-def entity_definition(entry: Entry[Message | str, Any]) -> str:
+def entity_definition(entry: Entry[str, str] | Entry[Message, str]) -> str:
     if len(entry.id) != 1 or not xml_name.fullmatch(entry.id[0]):
         raise ValueError(f"Invalid entity identifier: {entry.id}")
     name = entry.id[0]
@@ -217,7 +217,7 @@ def entity_definition(entry: Entry[Message | str, Any]) -> str:
 
 
 def set_string_array_item(
-    parent: etree._Element, entry: Entry[Message | str, Any]
+    parent: etree._Element, entry: Entry[str, str] | Entry[Message, str]
 ) -> None:
     try:
         num = int(entry.id[1])

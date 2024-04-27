@@ -21,7 +21,7 @@ from ..resource import Entry, Metadata, Resource
 
 
 def plain_serialize(
-    resource: Resource[str, None],
+    resource: Resource[str, Any],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """

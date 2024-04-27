@@ -13,12 +13,13 @@
 # limitations under the License.
 
 from collections.abc import Iterator
+from typing import Any
 
 from ..resource import Entry, Metadata, Resource
 
 
 def inc_serialize(
-    resource: Resource[str, None],
+    resource: Resource[str, Any],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """

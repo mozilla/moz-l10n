@@ -17,12 +17,12 @@ from json import dumps
 from re import sub
 from typing import Any
 
-from ..message import Declaration, Expression, PatternMessage, VariableRef
+from ..message import Declaration, Expression, Message, PatternMessage, VariableRef
 from ..resource import Entry, Metadata, Resource
 
 
 def webext_serialize(
-    resource: Resource[PatternMessage, None],
+    resource: Resource[Message, Any],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -55,7 +55,7 @@ def webext_serialize(
                 name = entry.id[0]
                 if not isinstance(entry.value, PatternMessage):
                     raise ValueError(f"Unsupported entry for {name}: {entry.value}")
-                res[name] = webext_message(name, entry, trim_comments)
+                res[name] = webext_message(name, entry, trim_comments)  # type: ignore[arg-type]
             else:
                 check(entry.comment, None)
     yield dumps(res, indent=2)
@@ -63,7 +63,7 @@ def webext_serialize(
 
 
 def webext_message(
-    name: str, entry: Entry[PatternMessage, None], trim_comments: bool
+    name: str, entry: Entry[PatternMessage, Any], trim_comments: bool
 ) -> dict[str, Any]:
     msg = ""
     placeholders = {}

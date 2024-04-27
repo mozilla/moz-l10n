@@ -33,7 +33,7 @@ from .common import clark_name
 
 
 def xliff_serialize(
-    resource: Resource[Message | str, str],
+    resource: Resource[str, str] | Resource[Message, str],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """

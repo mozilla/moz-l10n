@@ -24,7 +24,7 @@ from .. import resource as res
 
 
 def fluent_serialize(
-    resource: res.Resource[msg.Message | ftl.Pattern, res.M],
+    resource: res.Resource[msg.Message, res.M] | res.Resource[ftl.Pattern, res.M],
     serialize_metadata: Callable[[res.Metadata[res.M]], str | None] | None = None,
     trim_comments: bool = False,
 ) -> Iterator[str]:
@@ -52,7 +52,7 @@ def fluent_serialize(
 
 
 def fluent_astify(
-    resource: res.Resource[msg.Message | ftl.Pattern, res.M],
+    resource: res.Resource[msg.Message, res.M] | res.Resource[ftl.Pattern, res.M],
     serialize_metadata: Callable[[res.Metadata[res.M]], str | None] | None = None,
     trim_comments: bool = False,
 ) -> ftl.Resource:
@@ -96,12 +96,12 @@ def fluent_astify(
     if res_comment:
         body.append(ftl.ResourceComment(res_comment))
     for idx, section in enumerate(resource.sections):
-        section_comment = comment(section)
+        section_comment = comment(section)  # type: ignore[arg-type]
         if not trim_comments and idx != 0 or section_comment:
             body.append(ftl.GroupComment(section_comment))
         cur: ftl.Message | ftl.Term | None = None
         cur_id = ""
-        for entry in section.entries:
+        for entry in section.entries:  # type: ignore[attr-defined]
             if isinstance(entry, res.Comment):
                 if not trim_comments:
                     body.append(ftl.Comment(entry.comment))
