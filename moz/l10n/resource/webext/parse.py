@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from json import loads
-from re import finditer, fullmatch
+from re import compile
 from typing import Any
 
 from ...message import (
@@ -27,6 +27,9 @@ from ...message import (
 )
 from ..data import Comment, Entry, Resource, Section
 from ..format import Format
+
+placeholder = compile(r"\$([a-zA-Z0-9_@]+)\$|(\$[1-9])|\$(\$+)")
+pos_arg = compile(r"\$([1-9])")
 
 
 def webext_parse(source: str | bytes) -> Resource[Message, str]:
@@ -51,7 +54,7 @@ def webext_parse(source: str | bytes) -> Resource[Message, str]:
         declarations: list[Declaration | UnsupportedStatement] = []
         pattern: Pattern = []
         pos = 0
-        for m in finditer(r"\$([a-zA-Z0-9_@]+)\$|(\$[1-9])|\$(\$+)", src):
+        for m in placeholder.finditer(src):
             text = src[pos : m.start()]
             if text:
                 if pattern and isinstance(pattern[-1], str):
@@ -61,22 +64,36 @@ def webext_parse(source: str | bytes) -> Resource[Message, str]:
             if m[1]:
                 # Named placeholder, with content & optional example in placeholders object
                 ph = ph_data[m[1].lower()]
-                if "_prev" in ph:
-                    ph_key = ph["_prev"]
+                if "_name" in ph:
+                    ph_name = ph["_name"]
                 else:
-                    ph_key = m[1]
-                    ph_src = ph["content"]
-                    ph_value = Expression(
-                        VariableRef(ph_src) if fullmatch(r"\$[1-9]", ph_src) else ph_src
+                    decl_src = ph["content"]
+                    decl_arg_match = pos_arg.fullmatch(decl_src)
+                    decl_value = (
+                        Expression(
+                            VariableRef(f"arg{decl_arg_match[1]}"),
+                            attributes={"source": decl_src},
+                        )
+                        if decl_arg_match
+                        else Expression(decl_src)
                     )
                     if "example" in ph:
-                        ph_value.attributes["example"] = ph["example"]
-                    declarations.append(Declaration(ph_key, ph_value))
-                    ph["_prev"] = ph_key
-                pattern.append(Expression(VariableRef(ph_key)))
+                        decl_value.attributes["example"] = ph["example"]
+                    ph_name = m[1].replace("@", "_")
+                    if ph_name[0].isdigit():
+                        ph_name = f"_{ph_name}"
+                    declarations.append(Declaration(ph_name, decl_value))
+                    ph["_name"] = ph_name
+                exp = Expression(VariableRef(ph_name), attributes={"source": m[0]})
+                pattern.append(exp)
             elif m[2]:
                 # Indexed placeholder
-                pattern.append(Expression(VariableRef(m[2])))
+                ph_src = m[2]
+                pattern.append(
+                    Expression(
+                        VariableRef(f"arg{ph_src[1]}"), attributes={"source": ph_src}
+                    )
+                )
             else:
                 # Escaped literal dollar sign
                 if pattern and isinstance(pattern[-1], str):

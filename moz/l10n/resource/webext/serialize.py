@@ -66,7 +66,7 @@ def webext_message(
     name: str, entry: Entry[PatternMessage, Any], trim_comments: bool
 ) -> dict[str, Any]:
     msg = ""
-    placeholders = {}
+    placeholders: dict[str, Any] = {}
     for part in entry.value.pattern:
         if isinstance(part, str):
             msg += sub(r"\$+", r"$\g<0>", part)
@@ -76,6 +76,7 @@ def webext_message(
             and part.annotation is None
         ):
             ph_name = part.arg.name
+            source = part.attributes.get("source", None)
             local = next(
                 (
                     d.value
@@ -85,8 +86,13 @@ def webext_message(
                 None,
             )
             if local:
-                if isinstance(local.arg, VariableRef):
+                local_source = local.attributes.get("source", None)
+                if isinstance(local_source, str):
+                    content = local_source
+                elif isinstance(local.arg, VariableRef):
                     content = local.arg.name
+                    if not content.startswith("$"):
+                        content = f"${content}"
                 elif isinstance(local.arg, str):
                     content = local.arg
                 else:
@@ -97,19 +103,30 @@ def webext_message(
                     raise ValueError(
                         f"Unsupported annotation for {ph_name} in {name}: {local}"
                     )
-                placeholders[ph_name] = {"content": content}
-                example = (
-                    None if trim_comments else local.attributes.get("example", None)
-                )
-                if isinstance(example, str):
-                    placeholders[ph_name]["example"] = example
-                elif example:
-                    raise ValueError(
-                        f"Unsupported placeholder example for {ph_name} in {name}: {example}"
+                if (
+                    isinstance(source, str)
+                    and len(source) >= 3
+                    and source.startswith("$")
+                    and source.endswith("$")
+                ):
+                    ph_name = source[1:-1]
+                else:
+                    source = None
+                if not any(key.lower() == ph_name.lower() for key in placeholders):
+                    placeholders[ph_name] = {"content": content}
+                    example = (
+                        None if trim_comments else local.attributes.get("example", None)
                     )
-                msg += f"${ph_name}$"
+                    if isinstance(example, str):
+                        placeholders[ph_name]["example"] = example
+                    elif example:
+                        raise ValueError(
+                            f"Unsupported placeholder example for {ph_name} in {name}: {example}"
+                        )
+                msg += source or f"${ph_name}$"
             else:
-                msg += ph_name
+                name = source if isinstance(source, str) else ph_name
+                msg += name if name.startswith("$") else f"${name}"
         else:
             raise ValueError(f"Unsupported message part for {name}: {part}")
     res: dict[str, Any] = {"message": msg}

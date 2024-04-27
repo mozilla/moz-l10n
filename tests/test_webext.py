@@ -30,144 +30,156 @@ source = files("tests.data").joinpath("messages.json").read_bytes()
 class TestWebext(TestCase):
     def test_parse(self):
         res = webext_parse(source)
-        self.assertEqual(
-            res,
-            Resource(
-                Format.webext,
-                [
-                    Section(
-                        [],
-                        [
-                            Entry(
-                                ["SourceString"],
-                                PatternMessage(["Translated String"]),
-                                comment="Sample comment",
+        assert res == Resource(
+            Format.webext,
+            [
+                Section(
+                    [],
+                    [
+                        Entry(
+                            ["SourceString"],
+                            PatternMessage(["Translated String"]),
+                            comment="Sample comment",
+                        ),
+                        Entry(
+                            ["MultipleComments"],
+                            PatternMessage(["Translated Multiple Comments"]),
+                            comment="Second comment",
+                        ),
+                        Entry(
+                            ["NoCommentsorSources"],
+                            PatternMessage(["Translated No Comments or Sources"]),
+                        ),
+                        Entry(
+                            ["placeholders"],
+                            PatternMessage(
+                                [
+                                    "Hello$$ ",
+                                    Expression(
+                                        VariableRef("_1YOUR_NAME"),
+                                        attributes={"source": "$1YOUR_NAME$"},
+                                    ),
+                                    " at ",
+                                    Expression(
+                                        VariableRef("arg2"),
+                                        attributes={"source": "$2"},
+                                    ),
+                                ],
+                                declarations=[
+                                    Declaration(
+                                        "_1YOUR_NAME",
+                                        Expression(
+                                            VariableRef("arg1"),
+                                            attributes={
+                                                "source": "$1",
+                                                "example": "Cira",
+                                            },
+                                        ),
+                                    )
+                                ],
                             ),
-                            Entry(
-                                ["MultipleComments"],
-                                PatternMessage(["Translated Multiple Comments"]),
-                                comment="Second comment",
+                            comment="Peer greeting",
+                        ),
+                        Entry(
+                            ["repeated_ref"],
+                            PatternMessage(
+                                [
+                                    Expression(
+                                        VariableRef("foo"),
+                                        attributes={"source": "$foo$"},
+                                    ),
+                                    " and ",
+                                    Expression(
+                                        VariableRef("foo"),
+                                        attributes={"source": "$Foo$"},
+                                    ),
+                                ],
+                                declarations=[
+                                    Declaration(
+                                        "foo",
+                                        Expression(
+                                            VariableRef("arg1"),
+                                            attributes={"source": "$1"},
+                                        ),
+                                    )
+                                ],
                             ),
-                            Entry(
-                                ["NoCommentsorSources"],
-                                PatternMessage(["Translated No Comments or Sources"]),
-                            ),
-                            Entry(
-                                ["placeholders"],
-                                PatternMessage(
-                                    [
-                                        "Hello$$ ",
-                                        Expression(VariableRef("1YOUR_NAME")),
-                                        " at ",
-                                        Expression(VariableRef("$2")),
-                                    ],
-                                    declarations=[
-                                        Declaration(
-                                            "1YOUR_NAME",
-                                            Expression(
-                                                VariableRef("$1"),
-                                                attributes={"example": "Cira"},
-                                            ),
-                                        )
-                                    ],
-                                ),
-                                comment="Peer greeting",
-                            ),
-                            Entry(
-                                ["repeated_ref"],
-                                PatternMessage(
-                                    [
-                                        Expression(VariableRef("foo")),
-                                        " and ",
-                                        Expression(VariableRef("foo")),
-                                    ],
-                                    declarations=[
-                                        Declaration(
-                                            "foo", Expression(VariableRef("$1"))
-                                        )
-                                    ],
-                                ),
-                            ),
-                        ],
-                    )
-                ],
-            ),
+                        ),
+                    ],
+                )
+            ],
         )
 
     def test_serialize(self):
         res = webext_parse(source)
-        self.assertEqual(
-            "".join(webext_serialize(res)),
-            dedent(
-                """\
-                {
-                  "SourceString": {
-                    "message": "Translated String",
-                    "description": "Sample comment"
-                  },
-                  "MultipleComments": {
-                    "message": "Translated Multiple Comments",
-                    "description": "Second comment"
-                  },
-                  "NoCommentsorSources": {
-                    "message": "Translated No Comments or Sources"
-                  },
-                  "placeholders": {
-                    "message": "Hello$$$ $1YOUR_NAME$ at $2",
-                    "description": "Peer greeting",
-                    "placeholders": {
-                      "1YOUR_NAME": {
-                        "content": "$1",
-                        "example": "Cira"
-                      }
-                    }
-                  },
-                  "repeated_ref": {
-                    "message": "$foo$ and $foo$",
-                    "placeholders": {
-                      "foo": {
-                        "content": "$1"
-                      }
-                    }
+        ser = "".join(webext_serialize(res))
+        assert ser == dedent(
+            """\
+            {
+              "SourceString": {
+                "message": "Translated String",
+                "description": "Sample comment"
+              },
+              "MultipleComments": {
+                "message": "Translated Multiple Comments",
+                "description": "Second comment"
+              },
+              "NoCommentsorSources": {
+                "message": "Translated No Comments or Sources"
+              },
+              "placeholders": {
+                "message": "Hello$$$ $1YOUR_NAME$ at $2",
+                "description": "Peer greeting",
+                "placeholders": {
+                  "1YOUR_NAME": {
+                    "content": "$1",
+                    "example": "Cira"
                   }
                 }
-                """
-            ),
+              },
+              "repeated_ref": {
+                "message": "$foo$ and $Foo$",
+                "placeholders": {
+                  "foo": {
+                    "content": "$1"
+                  }
+                }
+              }
+            }
+            """
         )
 
     def test_trim_comments(self):
         res = webext_parse(source)
-        self.assertEqual(
-            "".join(webext_serialize(res, trim_comments=True)),
-            dedent(
-                """\
-                {
-                  "SourceString": {
-                    "message": "Translated String"
-                  },
-                  "MultipleComments": {
-                    "message": "Translated Multiple Comments"
-                  },
-                  "NoCommentsorSources": {
-                    "message": "Translated No Comments or Sources"
-                  },
-                  "placeholders": {
-                    "message": "Hello$$$ $1YOUR_NAME$ at $2",
-                    "placeholders": {
-                      "1YOUR_NAME": {
-                        "content": "$1"
-                      }
-                    }
-                  },
-                  "repeated_ref": {
-                    "message": "$foo$ and $foo$",
-                    "placeholders": {
-                      "foo": {
-                        "content": "$1"
-                      }
-                    }
+        ser = "".join(webext_serialize(res, trim_comments=True))
+        assert ser == dedent(
+            """\
+            {
+              "SourceString": {
+                "message": "Translated String"
+              },
+              "MultipleComments": {
+                "message": "Translated Multiple Comments"
+              },
+              "NoCommentsorSources": {
+                "message": "Translated No Comments or Sources"
+              },
+              "placeholders": {
+                "message": "Hello$$$ $1YOUR_NAME$ at $2",
+                "placeholders": {
+                  "1YOUR_NAME": {
+                    "content": "$1"
                   }
                 }
-                """
-            ),
+              },
+              "repeated_ref": {
+                "message": "$foo$ and $Foo$",
+                "placeholders": {
+                  "foo": {
+                    "content": "$1"
+                  }
+                }
+              }
+            }
+            """
         )
