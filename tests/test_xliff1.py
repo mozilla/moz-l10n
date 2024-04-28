@@ -543,15 +543,17 @@ class TestXliff1(TestCase):
                                 variants={
                                     ("one",): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("int"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " voce selezionata",
                                     ],
                                     (CatchallKey("other"),): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("int"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " voci selezionate",
                                     ],
@@ -577,15 +579,17 @@ class TestXliff1(TestCase):
                                 variants={
                                     ("one",): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("int"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " thread",
                                     ],
                                     (CatchallKey(value="other"),): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("int"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " thread",
                                     ],
@@ -634,29 +638,49 @@ class TestXliff1(TestCase):
                                 variants={
                                     ("one",): [
                                         "Followed by ",
-                                        Expression(VariableRef("%2$@")),
+                                        Expression(
+                                            VariableRef("arg2"),
+                                            attributes={"source": "%2$@"},
+                                        ),
                                         ", ",
-                                        Expression(VariableRef("%3$@")),
+                                        Expression(
+                                            VariableRef("arg3"),
+                                            attributes={"source": "%3$@"},
+                                        ),
                                         ", ",
-                                        Expression(VariableRef("%4$@")),
+                                        Expression(
+                                            VariableRef("arg4"),
+                                            attributes={"source": "%4$@"},
+                                        ),
                                         " & ",
                                         Expression(
-                                            VariableRef("%1$d"),
+                                            VariableRef("int1"),
                                             FunctionAnnotation("integer"),
+                                            attributes={"source": "%1$d"},
                                         ),
                                         " other",
                                     ],
                                     (CatchallKey("other"),): [
                                         "Followed by ",
-                                        Expression(VariableRef("%2$@")),
+                                        Expression(
+                                            VariableRef("arg2"),
+                                            attributes={"source": "%2$@"},
+                                        ),
                                         ", ",
-                                        Expression(VariableRef("%3$@")),
+                                        Expression(
+                                            VariableRef("arg3"),
+                                            attributes={"source": "%3$@"},
+                                        ),
                                         ", ",
-                                        Expression(VariableRef("%4$@")),
+                                        Expression(
+                                            VariableRef("arg4"),
+                                            attributes={"source": "%4$@"},
+                                        ),
                                         " & ",
                                         Expression(
-                                            VariableRef("%1$d"),
+                                            VariableRef("int1"),
                                             FunctionAnnotation("integer"),
+                                            attributes={"source": "%1$d"},
                                         ),
                                         " others",
                                     ],

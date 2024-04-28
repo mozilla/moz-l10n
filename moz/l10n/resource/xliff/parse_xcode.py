@@ -46,10 +46,10 @@ class XcodePlural:
 
 
 plural_categories = ("zero", "one", "two", "few", "many", "other")
-variant_key = compile(r"%#@(\w+)@")
+variant_key = compile(r"%#@([a-zA-Z_]\w*)@")
 # https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Strings/Articles/formatSpecifiers.html
 printf = compile(
-    r"%(?:[1-9]\$)?[-#+ 0,]?[0-9.]*(?:(?:hh?|ll?|qztj)[douxX]|L[aAeEfFgG]|[@%aAcCdDeEfFgGoOspSuUxX])"
+    r"%([1-9]\$)?[-#+ 0,]?[0-9.]*(?:(?:hh?|ll?|qztj)[douxX]|L[aAeEfFgG]|[@%aAcCdDeEfFgGoOspSuUxX])"
 )
 
 
@@ -184,16 +184,28 @@ def parse_pattern(src: str | None) -> Iterator[str | Expression]:
         if format == "%":
             yield Expression("%", attributes={"source": source})
         else:
-            arg = VariableRef(source)
-            if format in {"c", "C", "s", "S"}:
-                annot = FunctionAnnotation("string")
-            elif format in {"d", "D", "o", "O", "p", "u", "U", "x", "X"}:
-                annot = FunctionAnnotation("integer")
-            elif format in {"a", "A", "e", "E", "f", "g", "G"}:
-                annot = FunctionAnnotation("number")
-            else:
-                annot = None
-            yield Expression(arg, annot)
+            name: str
+            func: str | None
+            match format:
+                case "c" | "C" | "s" | "S":
+                    name = "str"
+                    func = "string"
+                case "d" | "D" | "o" | "O" | "p" | "u" | "U" | "x" | "X":
+                    name = "int"
+                    func = "integer"
+                case "a" | "A" | "e" | "E" | "f" | "g" | "G":
+                    name = "num"
+                    func = "number"
+                case _:
+                    name = "arg"
+                    func = None
+            if m[1]:
+                name += m[1][0]
+            yield Expression(
+                VariableRef(name),
+                FunctionAnnotation(func) if func else None,
+                attributes={"source": source},
+            )
         pos = m.end()
     if pos < len(src):
         yield src[pos:]
