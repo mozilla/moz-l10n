@@ -17,7 +17,7 @@ from typing import Any
 
 from moz.l10n.message import Message, PatternMessage
 
-from ..data import Entry, Metadata, Resource
+from ..data import Entry, Resource
 
 
 def inc_serialize(
@@ -36,14 +36,11 @@ def inc_serialize(
     Yields each line separately.
     """
 
-    def comment(
-        comment: str, meta: list[Metadata[None]] | None, standalone: bool
-    ) -> Iterator[str]:
+    def comment(comment: str, meta: Any, standalone: bool) -> Iterator[str]:
         if meta:
             raise ValueError("Metadata is not supported")
-        lines = comment.strip("\n").split("\n") if comment else []
-        if lines:
-            for line in lines:
+        if comment:
+            for line in comment.strip("\n").split("\n"):
                 if line.startswith("#"):
                     if not trim_comments or not line.startswith("# "):
                         yield f"{line}\n"
@@ -66,16 +63,14 @@ def inc_serialize(
                 msg = entry.value
                 if isinstance(msg, str):
                     value = msg
-                elif (
-                    isinstance(msg, PatternMessage)
-                    and not msg.declarations
-                    and len(msg.pattern) == 1
-                    and isinstance(msg.pattern[0], str)
+                elif isinstance(msg, PatternMessage) and all(
+                    isinstance(p, str) for p in msg.pattern
                 ):
-                    value = msg.pattern[0]
+                    value = "".join(msg.pattern)  # type: ignore[arg-type]
                 else:
                     raise ValueError(f"Unsupported message for {entry.id[0]}: {msg}")
-                yield f"#define {entry.id[0]} {value.replace('\n', ' ')}\n"
+                value = value.replace("\n", " ")
+                yield f"#define {entry.id[0]} {value}\n"
                 yield "\n"
             else:
                 yield from comment(entry.comment, None, True)

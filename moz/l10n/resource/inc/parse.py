@@ -13,6 +13,9 @@
 # limitations under the License.
 
 from re import compile
+from typing import Any
+
+from moz.l10n.message import Message, PatternMessage
 
 from ..data import Comment, Entry, Resource, Section
 from ..format import Format
@@ -20,7 +23,7 @@ from ..format import Format
 re_define = compile(r"#define[ \t]+(\w+)(?:[ \t](.*))?")
 
 
-def inc_parse(source: str | bytes) -> Resource[str, str]:
+def inc_parse(source: str | bytes) -> Resource[Message, Any]:
     """
     Parse a .inc file into a message resource.
 
@@ -28,7 +31,7 @@ def inc_parse(source: str | bytes) -> Resource[str, str]:
 
     The parsed resource will not include any metadata.
     """
-    entries: list[Entry[str, str] | Comment] = []
+    entries: list[Entry[Message, Any] | Comment] = []
     comment: str = ""
     if not isinstance(source, str):
         source = source.decode()
@@ -46,7 +49,7 @@ def inc_parse(source: str | bytes) -> Resource[str, str]:
             match = re_define.fullmatch(line)
             if match:
                 name, value = match.groups()
-                entries.append(Entry([name], value, comment))
+                entries.append(Entry([name], PatternMessage([value]), comment))
                 comment = ""
             elif line.startswith("#"):
                 if comment:
