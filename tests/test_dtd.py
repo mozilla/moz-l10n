@@ -16,6 +16,7 @@ from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
+from moz.l10n.message import PatternMessage
 from moz.l10n.resource.data import Comment, Entry, Resource, Section
 from moz.l10n.resource.dtd import dtd_parse, dtd_serialize
 from moz.l10n.resource.format import Format
@@ -43,50 +44,97 @@ class TestDtd(TestCase):
                             ),
                             Entry(
                                 ["accounts.title"],
-                                "Accounts - &brandShortName;",
+                                PatternMessage(["Accounts - &brandShortName;"]),
                                 comment="Account manager window for Instantbird",
                             ),
                             Entry(
                                 ["accountsWindow.title"],
-                                "Instant messaging status",
+                                PatternMessage(["Instant messaging status"]),
                                 comment="Instant messaging account status window for Thunderbird",
                             ),
-                            Entry(["accountManager.newAccount.label"], "New Account"),
-                            Entry(["accountManager.newAccount.accesskey"], "N"),
-                            Entry(["accountManager.close.label"], "Close"),
-                            Entry(["accountManager.close.accesskey"], "l"),
+                            Entry(
+                                ["accountManager.newAccount.label"],
+                                PatternMessage(["New Account"]),
+                            ),
+                            Entry(
+                                ["accountManager.newAccount.accesskey"],
+                                PatternMessage(["N"]),
+                            ),
+                            Entry(
+                                ["accountManager.close.label"],
+                                PatternMessage(["Close"]),
+                            ),
+                            Entry(
+                                ["accountManager.close.accesskey"],
+                                PatternMessage(["l"]),
+                            ),
                             Entry(
                                 ["accountManager.close.commandkey"],
-                                "a",
+                                PatternMessage(["a"]),
                                 comment="This should match account.commandkey in instantbird.dtd",
                             ),
                             Entry(
                                 ["accountManager.noAccount.title"],
-                                "No account configured yet",
+                                PatternMessage(["No account configured yet"]),
                                 comment="This title must be short, displayed with a big font size",
                             ),
                             Entry(
                                 ["accountManager.noAccount.description"],
-                                "Click on the &accountManager.newAccount.label; button to let &brandShortName; guide you through the process of configuring one.",
+                                PatternMessage(
+                                    [
+                                        "Click on the &accountManager.newAccount.label; button to let &brandShortName; guide you through the process of configuring one."
+                                    ]
+                                ),
                             ),
-                            Entry(["account.autoSignOn.label"], "Sign-on at startup"),
-                            Entry(["account.autoSignOn.accesskey"], "S"),
-                            Entry(["account.connect.label"], "Connect"),
-                            Entry(["account.connect.accesskey"], "o"),
-                            Entry(["account.disconnect.label"], "Disconnect"),
-                            Entry(["account.disconnect.accesskey"], "i"),
-                            Entry(["account.edit.label"], "Properties"),
-                            Entry(["account.edit.accesskey"], "P"),
+                            Entry(
+                                ["account.autoSignOn.label"],
+                                PatternMessage(["Sign-on at startup"]),
+                            ),
+                            Entry(
+                                ["account.autoSignOn.accesskey"], PatternMessage(["S"])
+                            ),
+                            Entry(
+                                ["account.connect.label"], PatternMessage(["Connect"])
+                            ),
+                            Entry(["account.connect.accesskey"], PatternMessage(["o"])),
+                            Entry(
+                                ["account.disconnect.label"],
+                                PatternMessage(["Disconnect"]),
+                            ),
+                            Entry(
+                                ["account.disconnect.accesskey"], PatternMessage(["i"])
+                            ),
+                            Entry(
+                                ["account.edit.label"], PatternMessage(["Properties"])
+                            ),
+                            Entry(["account.edit.accesskey"], PatternMessage(["P"])),
                             Entry(
                                 ["account.cancelReconnection.label"],
-                                "Cancel reconnection",
+                                PatternMessage(["Cancel reconnection"]),
                             ),
-                            Entry(["account.cancelReconnection.accesskey"], "A"),
-                            Entry(["account.copyDebugLog.label"], "Copy Debug Log"),
-                            Entry(["account.copyDebugLog.accesskey"], "C"),
-                            Entry(["account.connecting"], "Connecting…"),
-                            Entry(["account.disconnecting"], "Disconnecting…"),
-                            Entry(["account.disconnected"], "Not Connected"),
+                            Entry(
+                                ["account.cancelReconnection.accesskey"],
+                                PatternMessage(["A"]),
+                            ),
+                            Entry(
+                                ["account.copyDebugLog.label"],
+                                PatternMessage(["Copy Debug Log"]),
+                            ),
+                            Entry(
+                                ["account.copyDebugLog.accesskey"],
+                                PatternMessage(["C"]),
+                            ),
+                            Entry(
+                                ["account.connecting"], PatternMessage(["Connecting…"])
+                            ),
+                            Entry(
+                                ["account.disconnecting"],
+                                PatternMessage(["Disconnecting…"]),
+                            ),
+                            Entry(
+                                ["account.disconnected"],
+                                PatternMessage(["Not Connected"]),
+                            ),
                         ],
                     )
                 ],

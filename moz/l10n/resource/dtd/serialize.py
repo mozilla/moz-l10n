@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from re import UNICODE, compile
+from typing import Any
 
-from ..data import Entry, M, Metadata, Resource, V
+from moz.l10n.message import Message, PatternMessage
+
+from ..data import Entry, Resource
 from .parse import name, re_comment
 
 re_name = compile(name, UNICODE)
 
 
 def dtd_serialize(
-    resource: Resource[V, M],
-    serialize_message: Callable[[V], str] | None = None,
-    serialize_metadata: Callable[[Metadata[M]], str | None] | None = None,
+    resource: Resource[str, Any] | Resource[Message, Any],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -33,9 +34,7 @@ def dtd_serialize(
     Section identifiers will be prepended to their constituent message identifiers.
     Multi-part identifiers will be joined with `.` between each part.
 
-    For non-string message values, a `serialize_message` callable must be provided.
-    If the resource includes any metadata, a `serialize_metadata` callable must be provided
-    to map each field into a comment value, or to discard it by returning an empty value.
+    Metadata is not supported.
 
     Yields each entity, comment, and empty line separately.
     Re-parsing a serialized DTD file is not guaranteed to result in the same Resource,
@@ -44,25 +43,20 @@ def dtd_serialize(
 
     at_empty_line = True
 
-    def comment(
-        comment: str, meta: list[Metadata[M]] | None, standalone: bool
-    ) -> Iterator[str]:
+    def comment(comment: str, meta: Any, standalone: bool) -> Iterator[str]:
         nonlocal at_empty_line
         if trim_comments:
             return
-        lines = comment.strip("\n").split("\n") if comment else []
         if meta:
-            if not serialize_metadata:
-                raise ValueError("Metadata requires serialize_metadata parameter")
-            for field in meta:
-                meta_str = serialize_metadata(field)
-                if meta_str:
-                    lines += meta_str.strip("\n").split("\n")
-        if lines:
+            raise ValueError("Metadata is not supported")
+        if comment:
             if standalone and not at_empty_line:
                 yield "\n"
             # Comments can't include --, so add a zero width space between and after dashes beyond the first
-            lines = [line.rstrip().replace("--", "-\u200b-\u200b") for line in lines]
+            lines = [
+                line.rstrip().replace("--", "-\u200b-\u200b")
+                for line in comment.strip("\n").split("\n")
+            ]
             cstr = "<!--" if not lines[0] or lines[0].startswith(" ") else "<!-- "
             cstr += lines[0]
             for line in lines[1:]:
@@ -86,11 +80,15 @@ def dtd_serialize(
                 name = id_prefix + ".".join(entry.id)
                 if not re_name.fullmatch(name):
                     raise ValueError(f"Unsupported DTD name: {name}")
-                value = (
-                    serialize_message(entry.value) if serialize_message else entry.value
-                )
-                if not isinstance(value, str):
-                    raise ValueError(f"Source value for {name} is not a string")
+                msg = entry.value
+                if isinstance(msg, str):
+                    value = msg
+                elif isinstance(msg, PatternMessage) and all(
+                    isinstance(p, str) for p in msg.pattern
+                ):
+                    value = "".join(msg.pattern)  # type: ignore[arg-type]
+                else:
+                    raise ValueError(f"Unsupported message for {name}: {msg}")
 
                 if '"' in value and "'" not in value:
                     quoted = f"'{value}'"

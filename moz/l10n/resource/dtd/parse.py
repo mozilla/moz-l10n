@@ -18,6 +18,9 @@
 from collections.abc import Iterator
 from re import DOTALL, MULTILINE, UNICODE, compile
 from sys import maxsize
+from typing import Any
+
+from moz.l10n.message import Message, PatternMessage
 
 from ..data import Comment, Entry, Resource, Section
 from ..format import Format
@@ -37,13 +40,13 @@ re_entity = compile(
 re_comment = compile(r"\<!\s*--(.*?)--\s*\>", MULTILINE | DOTALL)
 
 
-def dtd_parse(source: str | bytes) -> Resource[str, str]:
+def dtd_parse(source: str | bytes) -> Resource[Message, Any]:
     """
     Parse a .dtd file into a message resource.
 
     The parsed resource will not include any metadata.
     """
-    entries: list[Entry[str, str] | Comment] = []
+    entries: list[Entry[Message, Any] | Comment] = []
     resource = Resource(Format.dtd, [Section([], entries)])
     pos = 0
     at_newline = True
@@ -100,10 +103,10 @@ def dtd_parse(source: str | bytes) -> Resource[str, str]:
 
 def dtd_iter(
     text: str, pos: int, endpos: int = maxsize
-) -> Iterator[str | Entry[str, str]]:
+) -> Iterator[str | Entry[Message, Any]]:
     for match in re_entity.finditer(text, pos, endpos):
         yield text[pos : match.start(0)]
         id, value = match.groups()
-        yield Entry([id], value[1:-1])
+        yield Entry([id], PatternMessage([value[1:-1]]))
         pos = match.end(0)
     yield text[pos:endpos]
