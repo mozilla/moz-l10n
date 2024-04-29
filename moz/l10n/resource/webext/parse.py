@@ -32,7 +32,7 @@ placeholder = compile(r"\$([a-zA-Z0-9_@]+)\$|(\$[1-9])|\$(\$+)")
 pos_arg = compile(r"\$([1-9])")
 
 
-def webext_parse(source: str | bytes) -> Resource[Message, str]:
+def webext_parse(source: str | bytes) -> Resource[Message, Any]:
     """
     Parse a messages.json file into a message resource.
 
@@ -42,7 +42,7 @@ def webext_parse(source: str | bytes) -> Resource[Message, str]:
     The parsed resource will not include any metadata.
     """
     json: dict[str, dict[str, Any]] = loads(source)
-    entries: list[Entry[Message, str] | Comment] = []
+    entries: list[Entry[Message, Any] | Comment] = []
     for key, msg in json.items():
         src: str = msg["message"]
         comment: str = msg.get("description", "")

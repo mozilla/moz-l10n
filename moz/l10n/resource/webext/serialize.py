@@ -18,11 +18,11 @@ from re import sub
 from typing import Any
 
 from ...message import Declaration, Expression, Message, PatternMessage, VariableRef
-from ..data import Entry, Metadata, Resource
+from ..data import Entry, Resource
 
 
 def webext_serialize(
-    resource: Resource[Message, Any],
+    resource: Resource[str, Any] | Resource[Message, Any],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -35,7 +35,9 @@ def webext_serialize(
     Yields the entire JSON result as a single string.
     """
 
-    def check(comment: str | None, meta: list[Metadata[None]] | None) -> None:
+    def check(comment: str | None, meta: Any) -> None:
+        if trim_comments:
+            return
         if comment:
             raise ValueError("Resource and section comments are not supported")
         if meta:
@@ -53,9 +55,14 @@ def webext_serialize(
                 if len(entry.id) != 1:
                     raise ValueError(f"Unsupported entry identifier: {entry.id}")
                 name = entry.id[0]
-                if not isinstance(entry.value, PatternMessage):
+                if isinstance(entry.value, str):
+                    res[name] = {"message": sub(r"\$+", r"$\g<0>", entry.value)}
+                    if not trim_comments and entry.comment:
+                        res[name]["description"] = entry.comment
+                elif isinstance(entry.value, PatternMessage):
+                    res[name] = webext_message(name, entry, trim_comments)  # type: ignore[arg-type]
+                else:
                     raise ValueError(f"Unsupported entry for {name}: {entry.value}")
-                res[name] = webext_message(name, entry, trim_comments)  # type: ignore[arg-type]
             else:
                 check(entry.comment, None)
     yield dumps(res, indent=2)
@@ -125,8 +132,8 @@ def webext_message(
                         )
                 msg += source or f"${ph_name}$"
             else:
-                name = source if isinstance(source, str) else ph_name
-                msg += name if name.startswith("$") else f"${name}"
+                arg_name = source if isinstance(source, str) else ph_name
+                msg += arg_name if arg_name.startswith("$") else f"${arg_name}"
         else:
             raise ValueError(f"Unsupported message part for {name}: {part}")
     res: dict[str, Any] = {"message": msg}
