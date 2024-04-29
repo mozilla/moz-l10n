@@ -13,15 +13,17 @@
 # limitations under the License.
 
 from io import StringIO
-from typing import Generator, TextIO
+from typing import Any, Generator, TextIO
 
 from iniparse import ini  # type: ignore[import-untyped]
+
+from moz.l10n.message import Message, PatternMessage
 
 from ..data import Comment, Entry, Resource, Section
 from ..format import Format
 
 
-def ini_parse(source: TextIO | str | bytes) -> Resource[str, str]:
+def ini_parse(source: TextIO | str | bytes) -> Resource[Message, Any]:
     """
     Parse an .ini file into a message resource.
 
@@ -35,9 +37,9 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[str, str]:
         file = source
     cfg = ini.INIConfig(file, optionxformvalue=None)
 
-    resource = Resource[str, str](Format.ini, [])
-    section: Section[str, str] | None = None
-    entry: Entry[str, str] | None = None
+    resource = Resource[Message, str](Format.ini, [])
+    section: Section[Message, str] | None = None
+    pattern: list[str] | None = None
     comment = ""
 
     def add_comment(cl: str | None) -> None:
@@ -47,28 +49,28 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[str, str]:
             comment = f"{comment}\n{cv}" if comment else cv
 
     for line in ini_lines(cfg._data):
-        if entry:
+        if pattern:
             if isinstance(line, ini.ContinuationLine):
-                entry.value += "\n" + line.value
+                pattern[0] += "\n" + line.value
                 continue
             elif isinstance(line, ini.EmptyLine):
-                entry.value += "\n"
+                pattern[0] += "\n"
             else:
-                entry.value = entry.value.rstrip("\n")
-                entry = None
+                pattern[0] = pattern[0].rstrip("\n")
+                pattern = None
         if isinstance(line, ini.SectionLine):
             add_comment(line.comment)
             section = Section([line.name], [], comment)
             comment = ""
             resource.sections.append(section)
         elif isinstance(line, ini.OptionLine):
+            if not section:
+                raise ValueError(f"Unexpected value {line.name} before section header")
             add_comment(line.comment)
-            entry = Entry([line.name], line.value, comment)
+            pattern = [line.value]
+            msg = PatternMessage(pattern)  # type: ignore[arg-type]
+            section.entries.append(Entry([line.name], msg, comment))
             comment = ""
-            if section:
-                section.entries.append(entry)
-            else:
-                raise Exception(f"Unexpected value {line.name} before section header")
         elif isinstance(line, ini.CommentLine):
             add_comment(line.comment)
         elif isinstance(line, ini.EmptyLine):
@@ -83,9 +85,9 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[str, str]:
                     )
                 comment = ""
         else:
-            raise Exception(f"Unexpected {line.__class__.__name__}: {line.__dict__}")
-    if entry:
-        entry.value = entry.value.rstrip("\n")
+            raise ValueError(f"Unexpected {line.__class__.__name__}: {line.__dict__}")
+    if pattern:
+        pattern[0] = pattern[0].rstrip("\n")
     if comment:
         if section:
             section.entries.append(Comment(comment))

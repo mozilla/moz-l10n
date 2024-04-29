@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from re import search
+from typing import Any
 
-from ..data import Entry, M, Metadata, Resource, V
+from moz.l10n.message import Message, PatternMessage
+
+from ..data import Entry, Resource
 
 
 def ini_serialize(
-    resource: Resource[V, M],
-    serialize_message: Callable[[V], str] | None = None,
-    serialize_metadata: Callable[[Metadata[M]], str | None] | None = None,
+    resource: Resource[str, Any] | Resource[Message, Any],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -30,9 +31,7 @@ def ini_serialize(
     Anonymous sections are not supported.
     Multi-part section and message identifiers will be joined with `.` between each part.
 
-    For non-string message values, a `serialize_message` callable must be provided.
-    If the resource includes any metadata, a `serialize_metadata` callable must be provided
-    to map each field into a comment value, or to discard it by returning an empty value.
+    Metadata is not supported.
 
     Comment lines not starting with `#` will be separated from their `#` prefix with a space.
 
@@ -43,24 +42,16 @@ def ini_serialize(
 
     at_empty_line = True
 
-    def comment(
-        comment: str, meta: list[Metadata[M]] | None, standalone: bool
-    ) -> Iterator[str]:
+    def comment(comment: str, meta: Any, standalone: bool) -> Iterator[str]:
         nonlocal at_empty_line
         if trim_comments:
             return
-        lines = comment.strip("\n").split("\n") if comment else []
         if meta:
-            if not serialize_metadata:
-                raise Exception("Metadata requires serialize_metadata parameter")
-            for field in meta:
-                meta_str = serialize_metadata(field)
-                if meta_str:
-                    lines += meta_str.strip("\n").split("\n")
-        if lines:
+            raise ValueError("Metadata is not supported")
+        if comment:
             if standalone and not at_empty_line:
                 yield "\n"
-            for line in lines:
+            for line in comment.strip("\n").split("\n"):
                 if not line or line.isspace():
                     yield "#\n"
                 else:
@@ -80,12 +71,16 @@ def ini_serialize(
         for entry in section.entries:
             if isinstance(entry, Entry):
                 yield from comment(entry.comment, entry.meta, False)
-                source = (
-                    serialize_message(entry.value) if serialize_message else entry.value
-                )
-                if not isinstance(source, str):
-                    raise Exception(f"Source value for {entry.id} is not a string")
-                lines = source.rstrip().splitlines()
+                msg = entry.value
+                if isinstance(msg, str):
+                    value = msg
+                elif isinstance(msg, PatternMessage) and all(
+                    isinstance(p, str) for p in msg.pattern
+                ):
+                    value = "".join(msg.pattern)  # type: ignore[arg-type]
+                else:
+                    raise ValueError(f"Unsupported message for {entry.id}: {msg}")
+                lines = value.rstrip().splitlines()
                 yield f"{id_str(entry.id)} = {lines.pop(0)}".rstrip() + "\n"
                 for line in lines:
                     ls = line.rstrip()

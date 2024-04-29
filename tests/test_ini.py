@@ -15,6 +15,7 @@
 from textwrap import dedent
 from unittest import TestCase
 
+from moz.l10n.message import PatternMessage
 from moz.l10n.resource.data import Comment, Entry, Resource, Section
 from moz.l10n.resource.format import Format
 from moz.l10n.resource.ini import ini_parse, ini_serialize
@@ -41,7 +42,7 @@ class TestIni(TestCase):
                 [
                     Section(
                         id=["Strings"],
-                        entries=[Entry(["TitleText"], "Some Title")],
+                        entries=[Entry(["TitleText"], PatternMessage(["Some Title"]))],
                         comment="This file is in the UTF-8 encoding",
                     )
                 ],
@@ -82,7 +83,7 @@ class TestIni(TestCase):
                 [
                     Section(
                         id=["Strings"],
-                        entries=[Entry(["TitleText"], "Some Title")],
+                        entries=[Entry(["TitleText"], PatternMessage(["Some Title"]))],
                     )
                 ],
                 comment="This Source Code Form is subject to the terms of the Mozilla Public\n"
@@ -131,24 +132,21 @@ class TestIni(TestCase):
                 """
             )
         )
-        self.assertEqual(
-            res,
-            Resource(
-                Format.ini,
-                [
-                    Section(
-                        id=["Strings"],
-                        entries=[
-                            Entry(
-                                ["TitleText"],
-                                "Some Title\nContinues",
-                                comment="entry pre comment\nentry line comment",
-                            ),
-                        ],
-                        comment="section comment",
-                    )
-                ],
-            ),
+        assert res == Resource(
+            Format.ini,
+            [
+                Section(
+                    id=["Strings"],
+                    entries=[
+                        Entry(
+                            ["TitleText"],
+                            PatternMessage(["Some Title\nContinues"]),
+                            comment="entry pre comment\nentry line comment",
+                        ),
+                    ],
+                    comment="section comment",
+                )
+            ],
         )
         self.assertEqual(
             "".join(ini_serialize(res)),
@@ -186,7 +184,7 @@ class TestIni(TestCase):
                     Section(
                         id=["Strings"],
                         entries=[
-                            Entry(["TitleText"], "Some Title"),
+                            Entry(["TitleText"], PatternMessage(["Some Title"])),
                             Comment("Stray trailing comment"),
                         ],
                     )
@@ -228,7 +226,12 @@ class TestIni(TestCase):
                 [
                     Section(
                         id=["Strings"],
-                        entries=[Entry(["TitleText"], "Some Title\n\nContinues")],
+                        entries=[
+                            Entry(
+                                ["TitleText"],
+                                PatternMessage(["Some Title\n\nContinues"]),
+                            )
+                        ],
                     )
                 ],
             ),
