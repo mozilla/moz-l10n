@@ -14,11 +14,13 @@
 
 from collections.abc import Callable
 from re import sub
-from typing import cast, overload
+from typing import Any, cast
 
 from translate.storage.properties import propfile
 
-from ..data import Comment, Entry, Resource, Section, V
+from moz.l10n.message import Message, PatternMessage
+
+from ..data import Comment, Entry, Resource, Section
 from ..format import Format
 
 
@@ -41,29 +43,16 @@ class propfile_shim(propfile):  # type: ignore[misc]
             )
 
 
-@overload
 def properties_parse(
     source: bytes | str,
     encoding: str = "utf-8",
-    parse_message: Callable[[str], str] | None = None,
-) -> Resource[str, str]: ...
-
-
-@overload
-def properties_parse(
-    source: bytes | str,
-    encoding: str = "utf-8",
-    parse_message: Callable[[str], V] | None = None,
-) -> Resource[V, str]: ...
-
-
-def properties_parse(
-    source: bytes | str,
-    encoding: str = "utf-8",
-    parse_message: Callable[[str], V] | None = None,
-) -> Resource[V, str]:
+    parse_message: Callable[[str], Message] | None = None,
+) -> Resource[Message, Any]:
     """
     Parse a .properties file into a message resource.
+
+    By default, all messages are parsed as PatternMessage([str]).
+    To customize that, define an appropriate `parse_message(str) -> Message`.
 
     The parsed resource will not include any metadata.
     """
@@ -71,14 +60,18 @@ def properties_parse(
     if encoding != "utf-8":
         pf.default_encoding = encoding
     pf.parse(source)
-    entries: list[Entry[V, str] | Comment] = []
+    entries: list[Entry[Message, Any] | Comment] = []
     resource = Resource(Format.properties, [Section([], entries)])
     for unit in pf.getunits():
         if unit.name or unit.value:
             entries.append(
                 Entry(
                     id=[unit.name],
-                    value=parse_message(unit.source) if parse_message else unit.source,
+                    value=(
+                        parse_message(unit.source)
+                        if parse_message
+                        else PatternMessage([unit.source])
+                    ),
                     comment=parse_comment(unit.comments),
                 )
             )

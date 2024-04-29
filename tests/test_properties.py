@@ -16,6 +16,7 @@ from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
+from moz.l10n.message import PatternMessage
 from moz.l10n.resource.data import Entry, Resource, Section
 from moz.l10n.resource.format import Format
 from moz.l10n.resource.properties import properties_parse, properties_serialize
@@ -39,15 +40,22 @@ and still has another line coming
                     Section(
                         [],
                         [
-                            Entry(["one_line"], "This is one line"),
-                            Entry(["two_line"], "This is the first of two lines"),
+                            Entry(["one_line"], PatternMessage(["This is one line"])),
+                            Entry(
+                                ["two_line"],
+                                PatternMessage(["This is the first of two lines"]),
+                            ),
                             Entry(
                                 ["one_line_trailing"],
-                                "This line has a \\ and ends in \\",
+                                PatternMessage(["This line has a \\ and ends in \\"]),
                             ),
                             Entry(
                                 ["two_lines_triple"],
-                                "This line is one of two and ends in \\and still has another line coming",
+                                PatternMessage(
+                                    [
+                                        "This line is one of two and ends in \\and still has another line coming"
+                                    ]
+                                ),
                             ),
                         ],
                     )
@@ -79,17 +87,21 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                     Section(
                         [],
                         [
-                            Entry(["1"], "1", comment=cc0),
-                            Entry(["2"], "2"),
-                            Entry(["3"], "3"),
-                            Entry(["4"], "4"),
-                            Entry(["5"], "5"),
-                            Entry(["6"], "6"),
-                            Entry(["7"], "7 "),
-                            Entry(["8"], "8 "),
+                            Entry(["1"], PatternMessage(["1"]), comment=cc0),
+                            Entry(["2"], PatternMessage(["2"])),
+                            Entry(["3"], PatternMessage(["3"])),
+                            Entry(["4"], PatternMessage(["4"])),
+                            Entry(["5"], PatternMessage(["5"])),
+                            Entry(["6"], PatternMessage(["6"])),
+                            Entry(["7"], PatternMessage(["7 "])),
+                            Entry(["8"], PatternMessage(["8 "])),
                             Entry(
                                 ["9"],
-                                "this is the first part of a continued line and here is the 2nd part",
+                                PatternMessage(
+                                    [
+                                        "this is the first part of a continued line and here is the 2nd part"
+                                    ]
+                                ),
                                 comment="this is a comment",
                             ),
                         ],
@@ -146,47 +158,57 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                     Section(
                         [],
                         [
-                            Entry(["1"], "abc", comment="simple check"),
+                            Entry(
+                                ["1"], PatternMessage(["abc"]), comment="simple check"
+                            ),
                             Entry(
                                 ["2"],
-                                "xy\t",
+                                PatternMessage(["xy\t"]),
                                 comment="test whitespace trimming in key and value",
                             ),
                             Entry(
                                 ["3"],
-                                "\u1234\t\r\n\u00AB\\u0001\n",
+                                PatternMessage(["\u1234\t\r\n\u00AB\\u0001\n"]),
                                 comment="test parsing of escaped values",
                             ),
                             Entry(
                                 ["4"],
-                                "this is multiline property",
+                                PatternMessage(["this is multiline property"]),
                                 comment="test multiline properties",
                             ),
                             Entry(
-                                ["5"], "this is another multiline property", comment=""
+                                ["5"],
+                                PatternMessage(["this is another multiline property"]),
+                                comment="",
                             ),
-                            Entry(["6"], "test\u0036", comment="property with DOS EOL"),
+                            Entry(
+                                ["6"],
+                                PatternMessage(["test\u0036"]),
+                                comment="property with DOS EOL",
+                            ),
                             Entry(
                                 ["7"],
-                                "yet another multiline propery",
+                                PatternMessage(["yet another multiline propery"]),
                                 comment="test multiline property with with DOS EOL",
                             ),
                             Entry(
                                 ["8"],
-                                "\ttest5 \t",
+                                PatternMessage(["\ttest5 \t"]),
                                 comment="trimming should not trim escaped whitespaces",
                             ),
                             Entry(
-                                ["9"], " test6\t\t    ", comment="another variant of #8"
+                                ["9"],
+                                PatternMessage([" test6\t\t    "]),
+                                comment="another variant of #8",
                             ),
                             Entry(
                                 ["10aሴb"],
-                                "c\uCDEFd",
+                                PatternMessage(["c\uCDEFd"]),
                                 comment="test UTF-8 encoded property/value",
                             ),
                             Entry(
                                 ["11"],
-                                "\uABCD",
+                                PatternMessage(["\uABCD"]),
                                 comment="next property should test unicode escaping at the boundary of parsing buffer\n"
                                 + "buffer size is expected to be 4096 so add comments to get to this offset\n"
                                 + (("#" * 79 + "\n") * 41)
@@ -235,10 +257,11 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
             """
         )
         res = properties_parse(src)
-        exp = "one line with a # part that looks like a comment and an end"
+        exp = PatternMessage(
+            ["one line with a # part that looks like a comment and an end"]
+        )
         self.assertEqual(
-            res,
-            Resource(Format.properties, [Section([], [Entry(["bar"], exp)])]),
+            res, Resource(Format.properties, [Section([], [Entry(["bar"], exp)])])
         )
         self.assertEqual(
             "".join(properties_serialize(res)),
@@ -259,7 +282,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
             res,
             Resource(
                 Format.properties,
-                [Section([], [Entry(["foo"], "value")])],
+                [Section([], [Entry(["foo"], PatternMessage(["value"]))])],
                 comment=dedent(
                     """\
                     Any copyright is dedicated to the Public Domain.

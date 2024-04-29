@@ -13,18 +13,19 @@
 # limitations under the License.
 
 from collections.abc import Callable, Iterator
-from typing import Literal
+from typing import Any, Literal
 
 from translate.storage.properties import propunit
 
-from ..data import Entry, M, Metadata, Resource, V
+from moz.l10n.message import Message, PatternMessage
+
+from ..data import Entry, Resource
 
 
 def properties_serialize(
-    resource: Resource[V, M],
+    resource: Resource[str, Any] | Resource[Message, Any],
     encoding: Literal["iso-8859-1", "utf-8", "utf-16"] = "utf-8",
-    serialize_message: Callable[[V], str] | None = None,
-    serialize_metadata: Callable[[Metadata[M]], str | None] | None = None,
+    serialize_message: Callable[[Message], str] | None = None,
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -34,8 +35,8 @@ def properties_serialize(
     Multi-part message identifiers will be joined with `.` between each part.
 
     For non-string message values, a `serialize_message` callable must be provided.
-    If the resource includes any metadata, a `serialize_metadata` callable must be provided
-    to map each field into a comment value, or to discard it by returning an empty value.
+
+    Metadata is not supported.
 
     Comment lines not starting with `#` will be prefixed with `# `.
 
@@ -47,24 +48,16 @@ def properties_serialize(
     personality = "java-utf8" if encoding == "utf-8" or encoding == "utf-16" else "java"
     at_empty_line = True
 
-    def comment(
-        comment: str, meta: list[Metadata[M]] | None, standalone: bool
-    ) -> Iterator[str]:
+    def comment(comment: str, meta: Any, standalone: bool) -> Iterator[str]:
         nonlocal at_empty_line
         if trim_comments:
             return
-        lines = comment.strip("\n").split("\n") if comment else []
         if meta:
-            if not serialize_metadata:
-                raise Exception("Metadata requires serialize_metadata parameter")
-            for field in meta:
-                meta_str = serialize_metadata(field)
-                if meta_str:
-                    lines += meta_str.strip("\n").split("\n")
-        if lines:
+            raise ValueError("Metadata is not supported")
+        if comment:
             if standalone and not at_empty_line:
                 yield "\n"
-            for line in lines:
+            for line in comment.strip("\n").split("\n"):
                 if not line or line.isspace():
                     yield "#\n"
                 else:
@@ -84,12 +77,19 @@ def properties_serialize(
                 unit = propunit(personality=personality)
                 unit.out_delimiter_wrappers = " "
                 unit.name = id_prefix + ".".join(entry.id)
-                source = (
-                    serialize_message(entry.value) if serialize_message else entry.value
-                )
-                if not isinstance(source, str):
-                    raise Exception(f"Source value for {unit.name} is not a string")
-                unit.source = source
+
+                msg = entry.value
+                if isinstance(msg, str):
+                    unit.source = msg
+                elif serialize_message:
+                    unit.source = serialize_message(msg)
+                elif isinstance(msg, PatternMessage) and all(
+                    isinstance(p, str) for p in msg.pattern
+                ):
+                    unit.source = "".join(msg.pattern)  # type: ignore[arg-type]
+                else:
+                    raise ValueError(f"Unsupported message for {unit.name}: {msg}")
+
                 if unit.value[0:1].isspace():
                     unit.value = "\\" + unit.value
                 if unit.value.endswith(" ") and not unit.value.endswith("\\ "):
