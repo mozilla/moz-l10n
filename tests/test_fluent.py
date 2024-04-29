@@ -27,11 +27,7 @@ from moz.l10n.message import (
     VariableRef,
 )
 from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
-from moz.l10n.resource.fluent import (
-    fluent_parse,
-    fluent_parse_message,
-    fluent_serialize,
-)
+from moz.l10n.resource.fluent import fluent_parse, fluent_serialize
 from moz.l10n.resource.format import Format
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
@@ -53,7 +49,7 @@ class TestFluent(TestCase):
                 .attr = foo
             """
         )
-        res = fluent_parse(source)
+        res = fluent_parse(source, as_ftl_patterns=True)
         self.assertEqual(len(res.sections), 1)
         self.assertEqual(len(res.sections[0].entries), 2)
         self.assertEqual(res.sections[0].entries[0].id, ["key"])
@@ -64,15 +60,15 @@ class TestFluent(TestCase):
 
     def test_equality_same(self):
         source = 'progress = Progress: { NUMBER($num, style: "percent") }.'
-        res1 = fluent_parse(source, fluent_parse_message)
-        res2 = fluent_parse(source, fluent_parse_message)
+        res1 = fluent_parse(source)
+        res2 = fluent_parse(source)
         self.assertEqual(res1, res2)
 
     def test_equality_different_whitespace(self):
         source1 = b"foo = { $arg }"
         source2 = b"foo = {    $arg    }"
-        res1 = fluent_parse(source1, fluent_parse_message)
-        res2 = fluent_parse(source2, fluent_parse_message)
+        res1 = fluent_parse(source1)
+        res2 = fluent_parse(source2)
         self.assertEqual(res1, res2)
 
     def test_resource(self):
@@ -133,7 +129,6 @@ class TestFluent(TestCase):
                   }
                 """
             ),
-            fluent_parse_message,
         )
         other = CatchallKey("other")
         entries = [
@@ -347,7 +342,7 @@ class TestFluent(TestCase):
         )
 
     def test_attr_comment(self):
-        res = fluent_parse("msg = body\n  .attr = value", fluent_parse_message)
+        res = fluent_parse("msg = body\n  .attr = value")
 
         res.sections[0].entries[1].comment = "comment1"
         self.assertEqual(
@@ -386,7 +381,7 @@ class TestFluent(TestCase):
         )
 
     def test_meta(self):
-        res = fluent_parse("one = foo\ntwo = bar", fluent_parse_message)
+        res = fluent_parse("one = foo\ntwo = bar")
         res.sections[0].entries[1].meta = [Metadata("a", 42), Metadata("b", False)]
         try:
             "".join(fluent_serialize(res))
@@ -415,11 +410,11 @@ class TestFluent(TestCase):
 
     def test_junk(self):
         with self.assertRaisesRegex(Exception, 'Expected token: "="'):
-            fluent_parse("msg = value\n# Comment\nLine of junk")
+            fluent_parse("msg = value\n# Comment\nLine of junk", as_ftl_patterns=True)
 
     def test_file(self):
         bytes = files("tests.data").joinpath("demo.ftl").read_bytes()
-        res = fluent_parse(bytes, fluent_parse_message)
+        res = fluent_parse(bytes)
         entries = [
             Entry(
                 id=["title"],

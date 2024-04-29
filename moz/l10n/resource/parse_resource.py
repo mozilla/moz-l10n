@@ -16,7 +16,7 @@ from ..message import Message
 from .android.parse import android_parse
 from .data import Resource
 from .dtd.parse import dtd_parse
-from .fluent.parse import fluent_parse, fluent_parse_message
+from .fluent.parse import fluent_parse
 from .format import Format, detect_format
 from .inc.parse import inc_parse
 from .ini.parse import ini_parse
@@ -44,7 +44,7 @@ def parse_resource(
         case Format.dtd:
             return dtd_parse(source)
         case Format.fluent:
-            return fluent_parse(source, parse_message=fluent_parse_message)
+            return fluent_parse(source)
         case Format.inc:
             return inc_parse(source)
         case Format.ini:

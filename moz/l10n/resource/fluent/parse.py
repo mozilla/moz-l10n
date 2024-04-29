@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Generator
+from collections.abc import Generator
 from itertools import product
-from typing import cast, overload
+from typing import Any, Literal, cast, overload
 
 from fluent.syntax import FluentParser
 from fluent.syntax import ast as ftl
@@ -27,33 +27,29 @@ from ..format import Format
 @overload
 def fluent_parse(
     source: bytes | str | ftl.Resource,
-    parse_message: None = None,
-) -> res.Resource[ftl.Pattern, str]: ...
-
-
-@overload
-def fluent_parse(
-    source: bytes | str | ftl.Resource,
-    parse_message: Callable[[ftl.Pattern], msg.Message],
+    as_ftl_patterns: Literal[False] = False,
 ) -> res.Resource[msg.Message, str]: ...
 
 
 @overload
 def fluent_parse(
     source: bytes | str | ftl.Resource,
-    parse_message: Callable[[ftl.Pattern], res.V],
-) -> res.Resource[res.V, str]: ...
+    as_ftl_patterns: Literal[True],
+) -> res.Resource[ftl.Pattern, str]: ...
 
 
 def fluent_parse(
     source: bytes | str | ftl.Resource,
-    parse_message: Callable[[ftl.Pattern], res.V] | None = None,
-) -> res.Resource[res.V, str]:
+    as_ftl_patterns: bool = False,
+) -> res.Resource[msg.Message, Any] | res.Resource[ftl.Pattern, Any]:
     """
     Parse a .ftl file into a message resource.
 
     Message and term references are represented by `message` function annotations,
     with term identifiers prefixed with a `-`.
+
+    By default, messages are parsed as Messages;
+    to keep them as Fluent Patterns, use `as_ftl_patterns=True`.
 
     Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the Resource.
 
@@ -66,12 +62,12 @@ def fluent_parse(
         source_str = source if isinstance(source, str) else source.decode("utf-8")
         fluent_res = FluentParser().parse(source_str)
 
-    entries: list[res.Entry[res.V, str] | res.Comment] = []
+    entries: list[res.Entry[Any, Any] | res.Comment] = []
     section = res.Section([], entries)
     resource = res.Resource(Format.fluent, [section])
     for entry in fluent_res.body:
         if isinstance(entry, ftl.Message) or isinstance(entry, ftl.Term):
-            entries.extend(patterns(entry, parse_message))
+            entries.extend(patterns(entry, as_ftl_patterns))
         elif isinstance(entry, ftl.ResourceComment):
             if entry.content:
                 resource.comment = (
@@ -94,14 +90,14 @@ def fluent_parse(
                 message = entry.annotations[0].message
             except Exception:
                 message = ""
-            raise Exception(message or "Fluent parser error")
+            raise ValueError(message or "Fluent parser error")
     return resource
 
 
 def patterns(
-    entry: ftl.Message | ftl.Term, parse_message: Callable[[ftl.Pattern], res.V] | None
-) -> Generator[res.Entry[res.V, str], None, None]:
-    message = parse_message or (lambda m: cast(res.V, m))
+    entry: ftl.Message | ftl.Term, as_ftl_patterns: bool
+) -> Generator[res.Entry[msg.Message, Any] | res.Entry[ftl.Pattern, Any], None, None]:
+    message = (lambda m: m) if as_ftl_patterns else fluent_parse_message
     id = entry.id.name
     if isinstance(entry, ftl.Term):
         id = "-" + id
@@ -266,7 +262,7 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
     else:  # ftl.FunctionReference
         name = exp.id.name.lower()
         if len(exp.arguments.positional) > 1:
-            raise Exception(
+            raise ValueError(
                 f"Functions with more than one positional argument are not supported: {name}"
             )
         ftl_arg: ftl.Placeable | ftl.InlineExpression | None = next(
@@ -284,7 +280,7 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
         elif isinstance(ftl_arg, ftl.VariableReference):
             arg = msg.VariableRef(ftl_arg.id.name)
         else:
-            raise Exception(f"Unexpected value: {ftl_arg}")
+            raise ValueError(f"Unexpected value: {ftl_arg}")
         ftl_named = exp.arguments.named
         return msg.Expression(
             arg,

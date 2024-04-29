@@ -91,7 +91,7 @@ def fluent_astify(
         cs = node.comment.rstrip()
         if not isinstance(node, res.Comment) and node.meta:
             if not serialize_metadata:
-                raise Exception("Metadata requires serialize_metadata parameter")
+                raise ValueError("Metadata requires serialize_metadata parameter")
             for field in node.meta:
                 meta_str = serialize_metadata(field)
                 if meta_str:
@@ -154,7 +154,7 @@ def fluent_astify(
                         ftl.Attribute(ftl.Identifier(entry.id[1]), value)
                     )
                 else:
-                    raise Exception(f"Unsupported message id: {entry.id}")
+                    raise ValueError(f"Unsupported message id: {entry.id}")
     return ftl.Resource(body)
 
 
