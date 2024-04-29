@@ -24,7 +24,11 @@ from .. import data as res
 
 
 def fluent_serialize(
-    resource: res.Resource[msg.Message, res.M] | res.Resource[ftl.Pattern, res.M],
+    resource: (
+        res.Resource[str, res.M]
+        | res.Resource[msg.Message, res.M]
+        | res.Resource[ftl.Pattern, res.M]
+    ),
     serialize_metadata: Callable[[res.Metadata[res.M]], str | None] | None = None,
     trim_comments: bool = False,
 ) -> Iterator[str]:
@@ -52,7 +56,11 @@ def fluent_serialize(
 
 
 def fluent_astify(
-    resource: res.Resource[msg.Message, res.M] | res.Resource[ftl.Pattern, res.M],
+    resource: (
+        res.Resource[str, res.M]
+        | res.Resource[msg.Message, res.M]
+        | res.Resource[ftl.Pattern, res.M]
+    ),
     serialize_metadata: Callable[[res.Metadata[res.M]], str | None] | None = None,
     trim_comments: bool = False,
 ) -> ftl.Resource:
@@ -150,7 +158,7 @@ def fluent_astify(
     return ftl.Resource(body)
 
 
-def fluent_astify_message(message: msg.Message) -> ftl.Pattern:
+def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
     """
     Transform a message into a corresponding Fluent AST pattern.
 
@@ -158,6 +166,8 @@ def fluent_astify_message(message: msg.Message) -> ftl.Pattern:
     are mapped to message and term references.
     """
 
+    if isinstance(message, str):
+        return ftl.Pattern([ftl.TextElement(message)])
     if not isinstance(message, (msg.PatternMessage, msg.SelectMessage)):
         raise ValueError(f"Unsupported message: {message}")
     decl = [d for d in message.declarations if isinstance(d, msg.Declaration)]
