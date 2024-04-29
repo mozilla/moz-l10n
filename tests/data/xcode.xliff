@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
+  <file original="xcode1/en.lproj/Localizable.strings" source-language="en" target-language="it" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.2" build-num="15C500b"/>
+    </header>
+    <body>
+      <trans-unit id="[KeyFile/Delete/Confirm/text] Delete key file?&#10; Make sure you have a backup." xml:space="preserve">
+        <source>Delete key file?
+ Make sure you have a backup.</source>
+        <target state="translated">Eliminare il file chiave?
+Assicurati di avere una copia.</target>
+        <note>Message to confirm deletion of a key file.</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="xcode1/en.lproj/Localizable.stringsdict" source-language="en" target-language="it" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.2" build-num="15C500b"/>
+    </header>
+    <body>
+      <trans-unit id="/[Generic/Count/EntriesSelected]:dict/GenericCountEntriesSelected:dict/one:dict/:string">
+        <source>%d entry selected</source>
+        <target state="translated">%d voce selezionata</target>
+      </trans-unit>
+      <trans-unit id="/[Generic/Count/EntriesSelected]:dict/GenericCountEntriesSelected:dict/other:dict/:string">
+        <source>%d entries selected</source>
+        <target state="translated">%d voci selezionate</target>
+      </trans-unit>
+      <trans-unit id="/[Generic/Count/Threads]:dict/GenericCountThreads:dict/one:dict/:string">
+        <source>%d thread</source>
+        <target state="translated">%d thread</target>
+      </trans-unit>
+      <trans-unit id="/[Generic/Count/Threads]:dict/GenericCountThreads:dict/other:dict/:string">
+        <source>%d threads</source>
+        <target state="translated">%d thread</target>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="xcode2/en.lproj/Localizable.stringsdict" source-language="en" target-language="en" datatype="plaintext">
+    <body>
+      <trans-unit id="/followed_by_three_and_others:dict/NSStringLocalizedFormatKey:dict/:string" xml:space="preserve">
+        <source>%#@OTHERS@</source>
+        <target>%#@OTHERS@</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="/followed_by_three_and_others:dict/OTHERS:dict/one:dict/:string" xml:space="preserve">
+        <source>Followed by %2$@, %3$@, %4$@ &amp; %1$d other</source>
+        <target>Followed by %2$@, %3$@, %4$@ &amp; %1$d other</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="/followed_by_three_and_others:dict/OTHERS:dict/other:dict/:string" xml:space="preserve">
+        <source>Followed by %2$@, %3$@, %4$@ &amp; %1$d others</source>
+        <target>Followed by %2$@, %3$@, %4$@ &amp; %1$d others</target>
+        <note/>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>
