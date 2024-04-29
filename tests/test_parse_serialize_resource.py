@@ -15,7 +15,7 @@
 from importlib.resources import files
 from unittest import TestCase
 
-from moz.l10n.resource import Format, parse_resource
+from moz.l10n.resource import Format, parse_resource, serialize_resource
 from moz.l10n.resource.data import Resource
 
 
@@ -42,10 +42,13 @@ class TesteParseResource(TestCase):
         for file in data:
             res = parse_resource(file, get_source(file))
             assert isinstance(res, Resource)
+            list(serialize_resource(res))
+            list(serialize_resource(res, trim_comments=True))
 
-    def test_anon_files(self):
+    def test_parse_anon_files(self):
         data = {
-            Format.android: ("messages.json",),
+            Format.android: ("strings.xml",),
+            Format.webext: ("messages.json",),
             Format.xliff: (
                 "angular.xliff",
                 "hello.xliff",
@@ -57,8 +60,15 @@ class TesteParseResource(TestCase):
             for file in values:
                 res = parse_resource(None, get_source(file))
                 assert isinstance(res, Resource)
+                assert res.format == format
 
-    def test_unknown_format(self):
+    def test_parse_unknown_format(self):
         source = get_source("accounts.dtd")
         with self.assertRaises(ValueError):
             parse_resource(None, source)
+
+    def test_serialize_unsupported_format(self):
+        source = get_source("xcode.xliff")
+        res = parse_resource(Format.xliff, source)
+        with self.assertRaises(ValueError):
+            list(serialize_resource(res, Format.fluent))
