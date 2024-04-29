@@ -21,7 +21,7 @@ from ..data import Entry, Resource
 
 
 def po_serialize(
-    resource: Resource[Message, str],
+    resource: Resource[str, str] | Resource[Message, str],
     trim_comments: bool = False,
     wrapwidth: int = 78,
 ) -> Iterator[str]:
@@ -53,13 +53,12 @@ def po_serialize(
             if isinstance(entry, Entry):
                 pe = POEntry(msgctxt=context, msgid=".".join(entry.id))
                 msg = entry.value
-                if (
-                    isinstance(msg, PatternMessage)
-                    and not msg.declarations
-                    and len(msg.pattern) == 1
-                    and isinstance(msg.pattern[0], str)
+                if isinstance(msg, str):
+                    pe.msgstr = msg
+                elif isinstance(msg, PatternMessage) and all(
+                    isinstance(p, str) for p in msg.pattern
                 ):
-                    pe.msgstr = msg.pattern[0]
+                    pe.msgstr = "".join(msg.pattern)  # type: ignore[arg-type]
                 elif (
                     isinstance(msg, SelectMessage)
                     and not msg.declarations
@@ -68,21 +67,19 @@ def po_serialize(
                     and msg.selectors[0].annotation.name == "number"
                     and not msg.selectors[0].annotation.options
                     and all(
-                        len(keys) == 1
-                        and len(pattern) == 1
-                        and isinstance(pattern[0], str)
+                        len(keys) == 1 and all(isinstance(p, str) for p in pattern)
                         for keys, pattern in msg.variants.items()
                     )
                 ):
-                    values: list[str] = [
-                        pattern[0] for pattern in msg.variants.values()  # type: ignore[misc]
+                    values = [
+                        "".join(pattern) for pattern in msg.variants.values()  # type: ignore[arg-type]
                     ]
                     if len(values) == 1:
                         pe.msgstr = values[0]
                     else:
                         pe.msgstr_plural = {idx: str for idx, str in enumerate(values)}
                 else:
-                    raise Exception(
+                    raise ValueError(
                         f"Value for {entry.id} is not supported: {entry.value}"
                     )
                 if not trim_comments:
