@@ -19,7 +19,7 @@ from typing import Any
 
 from moz.l10n.message import Message, PatternMessage
 
-from ..data import Entry, Metadata, Resource
+from ..data import Entry, Resource
 
 
 def plain_json_serialize(
@@ -34,8 +34,10 @@ def plain_json_serialize(
     Yields the entire JSON result as a single string.
     """
 
-    def check(comment: str | None, meta: list[Metadata[None]] | None) -> None:
-        if comment and not trim_comments:
+    def check(comment: str | None, meta: Any) -> None:
+        if trim_comments:
+            return
+        if comment:
             raise ValueError("Resource and section comments are not supported")
         if meta:
             raise ValueError("Metadata is not supported")
@@ -58,13 +60,10 @@ def plain_json_serialize(
                 msg = entry.value
                 if isinstance(msg, str):
                     value = msg
-                elif (
-                    isinstance(msg, PatternMessage)
-                    and not msg.declarations
-                    and len(msg.pattern) == 1
-                    and isinstance(msg.pattern[0], str)
+                elif isinstance(msg, PatternMessage) and all(
+                    isinstance(p, str) for p in msg.pattern
                 ):
-                    value = msg.pattern[0]
+                    value = "".join(msg.pattern)  # type: ignore[arg-type]
                 else:
                     raise ValueError(
                         f"Unsupported message for {section.id + entry.id}: {msg}"

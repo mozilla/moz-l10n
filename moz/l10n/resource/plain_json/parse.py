@@ -16,11 +16,13 @@ from collections.abc import Iterator
 from json import loads
 from typing import Any
 
+from moz.l10n.message import Message, PatternMessage
+
 from ..data import Entry, Resource, Section
 from ..format import Format
 
 
-def plain_json_parse(source: str | bytes) -> Resource[str, str]:
+def plain_json_parse(source: str | bytes) -> Resource[Message, Any]:
     """
     Parse a JSON file into a message resource.
 
@@ -36,11 +38,11 @@ def plain_json_parse(source: str | bytes) -> Resource[str, str]:
     )
 
 
-def plain_object(path: list[str], obj: dict[str, Any]) -> Iterator[Entry[str, str]]:
+def plain_object(path: list[str], obj: dict[str, Any]) -> Iterator[Entry[Message, Any]]:
     for k, value in obj.items():
         key = path + [k]
         if isinstance(value, str):
-            yield Entry(key, value)
+            yield Entry(key, PatternMessage([value]))
         elif isinstance(value, dict):
             yield from plain_object(key, value)
         else:

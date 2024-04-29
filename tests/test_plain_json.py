@@ -16,6 +16,7 @@ from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
+from moz.l10n.message import PatternMessage
 from moz.l10n.resource.data import Entry, Resource, Section
 from moz.l10n.resource.format import Format
 from moz.l10n.resource.plain_json import plain_json_parse, plain_json_serialize
@@ -37,24 +38,34 @@ class TestPlain(TestCase):
                     Section(
                         [],
                         [
-                            Entry(["SourceString", "message"], "Translated String"),
-                            Entry(["SourceString", "description"], "Sample comment"),
                             Entry(
-                                ["MultipleComments", "message"],
-                                "Translated Multiple Comments",
+                                ["SourceString", "message"],
+                                PatternMessage(["Translated String"]),
                             ),
                             Entry(
-                                ["MultipleComments", "description"], "Second comment"
+                                ["SourceString", "description"],
+                                PatternMessage(["Sample comment"]),
+                            ),
+                            Entry(
+                                ["MultipleComments", "message"],
+                                PatternMessage(["Translated Multiple Comments"]),
+                            ),
+                            Entry(
+                                ["MultipleComments", "description"],
+                                PatternMessage(["Second comment"]),
                             ),
                             Entry(
                                 ["NoCommentsorSources", "message"],
-                                "Translated No Comments or Sources",
+                                PatternMessage(["Translated No Comments or Sources"]),
                             ),
                             Entry(
                                 ["placeholders", "message"],
-                                "Hello$$$ $1YOUR_NAME$ at $2",
+                                PatternMessage(["Hello$$$ $1YOUR_NAME$ at $2"]),
                             ),
-                            Entry(["placeholders", "description"], "Peer greeting"),
+                            Entry(
+                                ["placeholders", "description"],
+                                PatternMessage(["Peer greeting"]),
+                            ),
                             Entry(
                                 [
                                     "placeholders",
@@ -62,7 +73,7 @@ class TestPlain(TestCase):
                                     "1your_name",
                                     "content",
                                 ],
-                                "$1",
+                                PatternMessage(["$1"]),
                             ),
                             Entry(
                                 [
@@ -71,11 +82,15 @@ class TestPlain(TestCase):
                                     "1your_name",
                                     "example",
                                 ],
-                                "Cira",
+                                PatternMessage(["Cira"]),
                             ),
-                            Entry(["repeated_ref", "message"], "$foo$ and $Foo$"),
                             Entry(
-                                ["repeated_ref", "placeholders", "foo", "content"], "$1"
+                                ["repeated_ref", "message"],
+                                PatternMessage(["$foo$ and $Foo$"]),
+                            ),
+                            Entry(
+                                ["repeated_ref", "placeholders", "foo", "content"],
+                                PatternMessage(["$1"]),
                             ),
                         ],
                     )
