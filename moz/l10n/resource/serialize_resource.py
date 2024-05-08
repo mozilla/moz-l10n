@@ -37,6 +37,11 @@ def serialize_resource(
 ) -> Iterator[str]:
     """
     Serialize a Resource as its string representation.
+
+    If `format` is set, it overrides the `resource.format` value.
+
+    With `trim_comments`,
+    all standalone and attached comments are left out of the serialization.
     """
     match format or resource.format:
         case Format.android:

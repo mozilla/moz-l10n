@@ -42,6 +42,9 @@ Format = Enum(
         "xliff",
     ),
 )
+"""
+Identifier for a supported resource format.
+"""
 
 
 def detect_format(name: str | None, source: bytes | str) -> Format | None:
@@ -49,7 +52,7 @@ def detect_format(name: str | None, source: bytes | str) -> Format | None:
     Detect the format of the input based on its file extension
     and/or contents.
 
-    Returns a `Format` value, or `None` if the input is not recognized.
+    Returns a `Format` enum value, or `None` if the input is not recognized.
     """
     if not name:
         ext = None

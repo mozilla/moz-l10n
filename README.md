@@ -19,3 +19,71 @@ but additional input types and options vary by format.
 The Message and Resource representations are drawn from work done for the
 Unicode [MessageFormat 2 specification](https://github.com/unicode-org/message-format-wg/tree/main/spec)
 and the [Message resource specification](https://github.com/eemeli/message-resource-wg/).
+
+## moz.l10n.resources
+
+### detect_format
+
+```python
+def detect_format(name: str | None, source: bytes | str) -> Format | None
+```
+
+Detect the format of the input based on its file extension
+and/or contents.
+
+Returns a `Format` enum value, or `None` if the input is not recognized.
+
+### iter_resources
+
+```python
+def iter_resources(
+    root: str,
+    dirs: list[str] | None = None,
+    ignorepath: str = ".l10n-ignore"
+) -> Iterator[tuple[str, Resource[Message, str] | None]]
+```
+
+Iterate through localizable resources under the `root` directory.
+Use `dirs` to limit the search to only some subdirectories under `root`.
+
+Yields `(str, Resource | None)` tuples,
+with the file path and the corresponding `Resource`,
+or `None` for files that could not be parsed as localization resources.
+
+To ignore files, include a `.l10n-ignore` file in `root`,
+or some other location passed in as `ignorepath`.
+This file uses a git-ignore syntax,
+and is always based in the `root` directory.
+
+### parse_resource
+
+```python
+def parse_resource(
+    type: Format | str | None,
+    source: str | bytes
+) -> Resource[Message, str]
+```
+
+Parse a Resource from its string representation.
+
+The first argument may be an explicit Format,
+the filename as a string, or None.
+For the latter two types,
+an attempt is made to detect the appropriate format.
+
+### serialize_resource
+
+```python
+def serialize_resource(
+    resource: Resource[str, str] | Resource[Message, str],
+    format: Format | None = None,
+    trim_comments: bool = False
+) -> Iterator[str]
+```
+
+Serialize a Resource as its string representation.
+
+If `format` is set, it overrides the `resource.format` value.
+
+With `trim_comments`,
+all standalone and attached comments are left out of the serialization.
