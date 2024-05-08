@@ -2,5 +2,6 @@ black ~= 24.0
 flake8 ~= 7.0
 isort ~= 5.0
 mypy ~= 1.0
+pytest ~= 8.1.1
 types-lxml ~= 2024.4.14
 types-polib ~= 1.2.0.20240327

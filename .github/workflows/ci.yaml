@@ -22,7 +22,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install .
-      - run: python -m unittest
+      - run: pip install pytest
+      - run: pytest -vv
 
   lint:
     runs-on: ubuntu-latest
