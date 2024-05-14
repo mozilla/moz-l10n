@@ -42,8 +42,10 @@ class TesteParseResource(TestCase):
         for file in data:
             res = parse_resource(file, get_source(file))
             assert isinstance(res, Resource)
-            list(serialize_resource(res))
-            list(serialize_resource(res, trim_comments=True))
+            assert all(isinstance(s, str) for s in serialize_resource(res))
+            assert all(
+                isinstance(s, str) for s in serialize_resource(res, trim_comments=True)
+            )
 
     def test_parse_anon_files(self):
         data = {
@@ -71,4 +73,6 @@ class TesteParseResource(TestCase):
         source = get_source("xcode.xliff")
         res = parse_resource(Format.xliff, source)
         with self.assertRaises(ValueError):
-            list(serialize_resource(res, Format.fluent))
+            assert all(
+                isinstance(s, str) for s in serialize_resource(res, Format.fluent)
+            )
