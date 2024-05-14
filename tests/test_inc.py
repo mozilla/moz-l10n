@@ -16,8 +16,10 @@ from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
-from moz.l10n.inc import inc_parse, inc_serialize
-from moz.l10n.resource import Comment, Entry, Resource, Section
+from moz.l10n.message import PatternMessage
+from moz.l10n.resource.data import Comment, Entry, Resource, Section
+from moz.l10n.resource.format import Format
+from moz.l10n.resource.inc import inc_parse, inc_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
@@ -31,12 +33,16 @@ class TestInc(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.inc,
                 [
                     Section(
                         [],
                         [
                             Comment("#filter emptyLines"),
-                            Entry(["MOZ_LANGPACK_CREATOR"], "SeaMonkey e.V."),
+                            Entry(
+                                ["MOZ_LANGPACK_CREATOR"],
+                                PatternMessage(["SeaMonkey e.V."]),
+                            ),
                             Comment(
                                 "If non-English locales wish to credit multiple contributors, uncomment this\n"
                                 "variable definition and use the format specified.\n"
@@ -44,7 +50,7 @@ class TestInc(TestCase):
                             ),
                             Entry(
                                 ["seamonkey"],
-                                "SeaMonkey",
+                                PatternMessage(["SeaMonkey"]),
                                 comment="LOCALIZATION NOTE (seamonkey):\n"
                                 "link title for https://www.seamonkey-project.org/ (in the personal toolbar)",
                             ),

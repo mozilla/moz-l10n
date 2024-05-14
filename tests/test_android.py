@@ -16,7 +16,6 @@ from importlib.resources import files
 from textwrap import dedent
 from unittest import TestCase
 
-from moz.l10n.android import android_parse, android_serialize
 from moz.l10n.message import (
     CatchallKey,
     Expression,
@@ -26,7 +25,9 @@ from moz.l10n.message import (
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.android import android_parse, android_serialize
+from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.format import Format
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
@@ -38,6 +39,7 @@ class TestAndroid(TestCase):
     def test_parse(self):
         res = android_parse(source)
         assert res == Resource(
+            Format.android,
             comment="Test translation file.\n"
             "Any copyright is dedicated to the Public Domain.\n"
             "http://creativecommons.org/publicdomain/zero/1.0/",
@@ -77,7 +79,7 @@ class TestAndroid(TestCase):
                             PatternMessage(
                                 [
                                     Expression(
-                                        VariableRef("@string/three"),
+                                        "@string/three",
                                         FunctionAnnotation("reference"),
                                     )
                                 ]
@@ -106,13 +108,15 @@ class TestAndroid(TestCase):
                                 [
                                     "Hello, ",
                                     Expression(
-                                        VariableRef("%1$s"),
+                                        VariableRef("arg1"),
                                         FunctionAnnotation("string"),
+                                        {"source": "%1$s"},
                                     ),
                                     "! You have ",
                                     Expression(
-                                        VariableRef("%2$d"),
+                                        VariableRef("arg2"),
                                         FunctionAnnotation("integer"),
+                                        {"source": "%2$d"},
                                     ),
                                     " new messages.",
                                 ]
@@ -124,14 +128,16 @@ class TestAndroid(TestCase):
                                 [
                                     "Hello, ",
                                     Expression(
-                                        VariableRef("%1$s"),
+                                        VariableRef("arg1"),
                                         FunctionAnnotation("string"),
+                                        {"source": "%1$s"},
                                     ),
                                     "! You have ",
                                     Markup("open", "b"),
                                     Expression(
-                                        VariableRef("%2$d"),
+                                        VariableRef("arg2"),
                                         FunctionAnnotation("integer"),
+                                        {"source": "%2$d"},
                                     ),
                                     " new messages",
                                     Markup("close", "b"),
@@ -145,14 +151,16 @@ class TestAndroid(TestCase):
                                 [
                                     "Hello, ",
                                     Expression(
-                                        VariableRef("%1$s"),
+                                        VariableRef("arg1"),
                                         FunctionAnnotation("string"),
+                                        {"source": "%1$s"},
                                     ),
                                     "! You have ",
                                     Expression("<b>", FunctionAnnotation("html")),
                                     Expression(
-                                        VariableRef("%2$d"),
+                                        VariableRef("arg2"),
                                         FunctionAnnotation("integer"),
+                                        {"source": "%2$d"},
                                     ),
                                     " new messages",
                                     Expression("</b>", FunctionAnnotation("html")),
@@ -168,14 +176,14 @@ class TestAndroid(TestCase):
                                     Expression(
                                         VariableRef("user"),
                                         FunctionAnnotation(
-                                            "xliff:g", {"example": "Bob"}
+                                            "xliff:g", {"id": "user", "example": "Bob"}
                                         ),
                                         {"translate": "no", "source": "%1$s"},
                                     ),
                                     "! You have ",
                                     Expression(
                                         VariableRef("count"),
-                                        None,
+                                        FunctionAnnotation("xliff:g", {"id": "count"}),
                                         {"translate": "no", "source": "%2$d"},
                                     ),
                                     " new messages.",
@@ -243,6 +251,12 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(["control_chars"], PatternMessage(["\u0000 \u0001"])),
+                        Entry(
+                            ["percent"],
+                            PatternMessage(
+                                [Expression("%", attributes={"source": "%%"})]
+                            ),
+                        ),
                         Entry(["single_quote"], PatternMessage(["They're great"])),
                         Entry(["double_quotes"], PatternMessage(['They are "great"'])),
                         Entry(
@@ -255,8 +269,9 @@ class TestAndroid(TestCase):
                                 [
                                     'Foo Bar <a href="foo?id=',
                                     Expression(
-                                        VariableRef("%s"),
+                                        VariableRef("arg"),
                                         FunctionAnnotation("string"),
+                                        {"source": "%s"},
                                     ),
                                     '">baz',
                                     Expression("</a>", FunctionAnnotation("html")),
@@ -297,15 +312,17 @@ class TestAndroid(TestCase):
                                 {
                                     ("one",): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("arg"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " song found.",
                                     ],
                                     (CatchallKey("other"),): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("arg"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " songs found.",
                                     ],
@@ -333,24 +350,27 @@ class TestAndroid(TestCase):
                                     ("one",): [
                                         "Znaleziono ",
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("arg"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " piosenkę.",
                                     ],
                                     ("few",): [
                                         "Znaleziono ",
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("arg"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " piosenki.",
                                     ],
                                     (CatchallKey("other"),): [
                                         "Znaleziono ",
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("arg"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " piosenek.",
                                     ],
@@ -405,6 +425,7 @@ class TestAndroid(TestCase):
               <string name="ws_with_entities">" one "<xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g>" three "</string>
               <string name="ws_with_html">" one"<b> two </b>"three "</string>
               <string name="control_chars">\\u0000 \\u0001</string>
+              <string name="percent">%%</string>
               <string name="single_quote">They\\'re great</string>
               <string name="double_quotes">They are \\"great\\"</string>
               <string name="both_quotes">They\\'re really \\"great\\"</string>
@@ -464,6 +485,7 @@ class TestAndroid(TestCase):
               <string name="ws_with_entities">" one "<xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g>" three "</string>
               <string name="ws_with_html">" one"<b> two </b>"three "</string>
               <string name="control_chars">\\u0000 \\u0001</string>
+              <string name="percent">%%</string>
               <string name="single_quote">They\\'re great</string>
               <string name="double_quotes">They are \\"great\\"</string>
               <string name="both_quotes">They\\'re really \\"great\\"</string>
@@ -496,7 +518,9 @@ class TestAndroid(TestCase):
 
     def test_xliff_xmlns(self):
         exp = Expression(" X ", FunctionAnnotation("foo", {"opt": "OPT"}))
-        res = Resource([Section([], [Entry(["x"], PatternMessage([exp]))])])
+        res = Resource(
+            Format.android, [Section([], [Entry(["x"], PatternMessage([exp]))])]
+        )
 
         ser = "".join(android_serialize(res, trim_comments=True))
         assert ser == dedent(
@@ -527,7 +551,7 @@ class TestAndroid(TestCase):
                 Markup("close", "x", attributes={"translate": "no"}),
             ]
         )
-        res = Resource([Section([], [Entry(["x"], msg)])])
+        res = Resource(Format.android, [Section([], [Entry(["x"], msg)])])
 
         ser = "".join(android_serialize(res, trim_comments=True))
         assert ser == dedent(

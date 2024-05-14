@@ -25,8 +25,9 @@ from moz.l10n.message import (
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource import Comment, Entry, Metadata, Resource, Section
-from moz.l10n.xliff import xliff_parse, xliff_serialize
+from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.format import Format
+from moz.l10n.resource.xliff import xliff_parse, xliff_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
@@ -41,6 +42,7 @@ class TestXliff1(TestCase):
     def test_parse_hello(self):
         res = xliff_parse(hello)
         assert res == Resource(
+            Format.xliff,
             meta=[
                 Metadata("@version", "1.2"),
                 Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
@@ -93,6 +95,7 @@ class TestXliff1(TestCase):
     def test_parse_angular(self):
         res = xliff_parse(angular)
         assert res == Resource(
+            Format.xliff,
             meta=[
                 Metadata("@version", "1.2"),
                 Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
@@ -204,6 +207,7 @@ class TestXliff1(TestCase):
     def test_parse_icu_docs(self):
         res = xliff_parse(icu_docs)
         assert res == Resource(
+            Format.xliff,
             meta=[
                 Metadata("@version", "1.2"),
                 Metadata(
@@ -364,9 +368,11 @@ class TestXliff1(TestCase):
                     <!-- The resources for a fictious Hello World application. The application displays a single window with a logo and the hello message. -->
                     <trans-unit id="authors" resname="authors" restype="x-icu-alias">
                       <source>root/authors</source>
+                      <target/>
                     </trans-unit>
                     <trans-unit id="hello" resname="hello">
                       <source>Hello, world!</source>
+                      <target/>
                       <note>This is the message that the application displays to the user.</note>
                     </trans-unit>
                     <bin-unit id="logo" resname="logo" mime-type="image" restype="x-icu-binary" translate="no">
@@ -386,13 +392,16 @@ class TestXliff1(TestCase):
                       <group id="menus_help_menu" resname="help_menu" restype="x-icu-table">
                         <trans-unit id="menus_help_menu_name" resname="name">
                           <source>Help</source>
+                          <target/>
                         </trans-unit>
                         <group id="menus_help_menu_items" resname="items" restype="x-icu-array">
                           <trans-unit id="menus_help_menu_items_0">
                             <source>Help Topics</source>
+                            <target/>
                           </trans-unit>
                           <trans-unit id="menus_help_menu_items_1">
                             <source>About Hello World</source>
+                            <target/>
                           </trans-unit>
                         </group>
                       </group>
@@ -419,9 +428,11 @@ class TestXliff1(TestCase):
                   <group id="en" restype="x-icu-table">
                     <trans-unit id="authors" resname="authors" restype="x-icu-alias">
                       <source>root/authors</source>
+                      <target/>
                     </trans-unit>
                     <trans-unit id="hello" resname="hello">
                       <source>Hello, world!</source>
+                      <target/>
                     </trans-unit>
                     <bin-unit id="logo" resname="logo" mime-type="image" restype="x-icu-binary" translate="no">
                       <!--The logo to be displayed in the application window.-->
@@ -439,13 +450,16 @@ class TestXliff1(TestCase):
                       <group id="menus_help_menu" resname="help_menu" restype="x-icu-table">
                         <trans-unit id="menus_help_menu_name" resname="name">
                           <source>Help</source>
+                          <target/>
                         </trans-unit>
                         <group id="menus_help_menu_items" resname="items" restype="x-icu-array">
                           <trans-unit id="menus_help_menu_items_0">
                             <source>Help Topics</source>
+                            <target/>
                           </trans-unit>
                           <trans-unit id="menus_help_menu_items_1">
                             <source>About Hello World</source>
+                            <target/>
                           </trans-unit>
                         </group>
                       </group>
@@ -460,6 +474,7 @@ class TestXliff1(TestCase):
     def test_parse_xcode(self):
         res = xliff_parse(xcode)
         assert res == Resource(
+            Format.xliff,
             meta=[
                 Metadata("@version", "1.2"),
                 Metadata(
@@ -528,15 +543,17 @@ class TestXliff1(TestCase):
                                 variants={
                                     ("one",): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("int"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " voce selezionata",
                                     ],
                                     (CatchallKey("other"),): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("int"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " voci selezionate",
                                     ],
@@ -562,15 +579,17 @@ class TestXliff1(TestCase):
                                 variants={
                                     ("one",): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("int"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " thread",
                                     ],
                                     (CatchallKey(value="other"),): [
                                         Expression(
-                                            VariableRef("%d"),
+                                            VariableRef("int"),
                                             FunctionAnnotation("integer"),
+                                            {"source": "%d"},
                                         ),
                                         " thread",
                                     ],
@@ -619,29 +638,49 @@ class TestXliff1(TestCase):
                                 variants={
                                     ("one",): [
                                         "Followed by ",
-                                        Expression(VariableRef("%2$@")),
+                                        Expression(
+                                            VariableRef("arg2"),
+                                            attributes={"source": "%2$@"},
+                                        ),
                                         ", ",
-                                        Expression(VariableRef("%3$@")),
+                                        Expression(
+                                            VariableRef("arg3"),
+                                            attributes={"source": "%3$@"},
+                                        ),
                                         ", ",
-                                        Expression(VariableRef("%4$@")),
+                                        Expression(
+                                            VariableRef("arg4"),
+                                            attributes={"source": "%4$@"},
+                                        ),
                                         " & ",
                                         Expression(
-                                            VariableRef("%1$d"),
+                                            VariableRef("int1"),
                                             FunctionAnnotation("integer"),
+                                            attributes={"source": "%1$d"},
                                         ),
                                         " other",
                                     ],
                                     (CatchallKey("other"),): [
                                         "Followed by ",
-                                        Expression(VariableRef("%2$@")),
+                                        Expression(
+                                            VariableRef("arg2"),
+                                            attributes={"source": "%2$@"},
+                                        ),
                                         ", ",
-                                        Expression(VariableRef("%3$@")),
+                                        Expression(
+                                            VariableRef("arg3"),
+                                            attributes={"source": "%3$@"},
+                                        ),
                                         ", ",
-                                        Expression(VariableRef("%4$@")),
+                                        Expression(
+                                            VariableRef("arg4"),
+                                            attributes={"source": "%4$@"},
+                                        ),
                                         " & ",
                                         Expression(
-                                            VariableRef("%1$d"),
+                                            VariableRef("int1"),
                                             FunctionAnnotation("integer"),
+                                            attributes={"source": "%1$d"},
                                         ),
                                         " others",
                                     ],

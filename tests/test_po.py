@@ -15,8 +15,16 @@
 from importlib.resources import files
 from unittest import TestCase
 
-from moz.l10n.po import po_parse, po_serialize
-from moz.l10n.resource import Entry, Metadata, Resource, Section
+from moz.l10n.message import (
+    Expression,
+    FunctionAnnotation,
+    PatternMessage,
+    SelectMessage,
+    VariableRef,
+)
+from moz.l10n.resource.data import Entry, Metadata, Resource, Section
+from moz.l10n.resource.format import Format
+from moz.l10n.resource.po import po_parse, po_serialize
 
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
@@ -30,6 +38,7 @@ class TestPo(TestCase):
         self.assertEqual(
             res,
             Resource(
+                Format.po,
                 comment="Test translation file.\n"
                 "Any copyright is dedicated to the Public Domain.\n"
                 "http://creativecommons.org/publicdomain/zero/1.0/",
@@ -52,32 +61,50 @@ class TestPo(TestCase):
                     Section(
                         id=[],
                         entries=[
-                            Entry(["original string"], ("translated string",)),
+                            Entry(
+                                ["original string"],
+                                PatternMessage(["translated string"]),
+                            ),
                             Entry(
                                 ["%d translated message"],
                                 meta=[
-                                    Metadata("references", [("src/msgfmt.c", "876")]),
-                                    Metadata("flags", ["c-format"]),
+                                    Metadata("reference", "src/msgfmt.c:876"),
+                                    Metadata("flag", "c-format"),
                                     Metadata("plural", "%d translated messages"),
                                 ],
-                                value=(
-                                    "%d prevedenih sporočil",
-                                    "%d prevedeno sporočilo",
-                                    "%d prevedeni sporočili",
-                                    "%d prevedena sporočila",
+                                value=SelectMessage(
+                                    [
+                                        Expression(
+                                            VariableRef("n"),
+                                            FunctionAnnotation("number"),
+                                        )
+                                    ],
+                                    {
+                                        ("0",): ["%d prevedenih sporočil"],
+                                        ("1",): ["%d prevedeno sporočilo"],
+                                        ("2",): ["%d prevedeni sporočili"],
+                                        ("3",): ["%d prevedena sporočila"],
+                                    },
                                 ),
                             ),
                             Entry(
                                 ["obsolete string"],
-                                meta=[Metadata("obsolete", True)],
-                                value=("translated string",),
+                                meta=[Metadata("obsolete", "true")],
+                                value=PatternMessage(["translated string"]),
                             ),
-                            Entry(["other string"], ("translated string",)),
+                            Entry(
+                                ["other string"], PatternMessage(["translated string"])
+                            ),
                         ],
                     ),
                     Section(
                         id=["context"],
-                        entries=[Entry(["original string"], ("translated string",))],
+                        entries=[
+                            Entry(
+                                ["original string"],
+                                PatternMessage(["translated string"]),
+                            )
+                        ],
                     ),
                 ],
             ),
