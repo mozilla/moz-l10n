@@ -65,9 +65,7 @@ def iter_resources(
                         rp = rp.replace(os.sep, "/")
                     if check_match(ignore, rp):
                         continue
-                with open(path, mode="rb") as file:
-                    try:
-                        resource = parse_resource(path, file.read())
-                    except ValueError:
-                        resource = None
-                yield (path, resource)
+                try:
+                    yield (path, parse_resource(path))
+                except ValueError:
+                    yield (path, None)

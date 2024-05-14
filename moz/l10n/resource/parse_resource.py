@@ -28,17 +28,26 @@ from .xliff.parse import xliff_parse
 
 
 def parse_resource(
-    type: Format | str | None, source: str | bytes
+    input: Format | str | None, source: str | bytes | None = None
 ) -> Resource[Message, str]:
     """
     Parse a Resource from its string representation.
 
     The first argument may be an explicit Format,
-    the filename as a string, or None.
+    the file path as a string, or None.
     For the latter two types,
     an attempt is made to detect the appropriate format.
+
+    If the first argument is a string path,
+    the `source` argument is optional,
+    as the file will be opened and read.
     """
-    match type if isinstance(type, Format) else detect_format(type, source):
+    if source is None:
+        if not isinstance(input, str):
+            raise TypeError("Source is required if type is not a string path")
+        with open(input, mode="rb") as file:
+            source = file.read()
+    match input if isinstance(input, Format) else detect_format(input, source):
         case Format.android:
             return android_parse(source)
         case Format.dtd:
@@ -60,4 +69,4 @@ def parse_resource(
         case Format.xliff:
             return xliff_parse(source)
         case _:
-            raise ValueError(f"Unsupported resource format: {type}")
+            raise ValueError(f"Unsupported resource format: {input}")
