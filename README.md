@@ -59,17 +59,21 @@ and is always based in the `root` directory.
 
 ```python
 def parse_resource(
-    type: Format | str | None,
-    source: str | bytes
+    input: Format | str | None,
+    source: str | bytes | None = None
 ) -> Resource[Message, str]
 ```
 
 Parse a Resource from its string representation.
 
 The first argument may be an explicit Format,
-the filename as a string, or None.
+the file path as a string, or None.
 For the latter two types,
 an attempt is made to detect the appropriate format.
+
+If the first argument is a string path,
+the `source` argument is optional,
+as the file will be opened and read.
 
 ### serialize_resource
 
