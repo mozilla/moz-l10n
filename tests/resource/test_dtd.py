@@ -24,7 +24,9 @@ from moz.l10n.resource.format import Format
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
 
-source = files("tests.data").joinpath("accounts.dtd").read_bytes().decode("utf-8")
+source = (
+    files("tests.resource.data").joinpath("accounts.dtd").read_bytes().decode("utf-8")
+)
 
 
 class TestDtd(TestCase):

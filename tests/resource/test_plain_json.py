@@ -24,7 +24,7 @@ from moz.l10n.resource.plain_json import plain_json_parse, plain_json_serialize
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
 
-source = files("tests.data").joinpath("messages.json").read_bytes()
+source = files("tests.resource.data").joinpath("messages.json").read_bytes()
 
 
 class TestPlain(TestCase):

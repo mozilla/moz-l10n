@@ -20,7 +20,7 @@ from moz.l10n.resource.data import Resource
 
 
 def get_source(filename: str) -> bytes:
-    return files("tests.data").joinpath(filename).read_bytes()
+    return files("tests.resource.data").joinpath(filename).read_bytes()
 
 
 class TesteParseResource(TestCase):

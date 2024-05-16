@@ -32,10 +32,10 @@ from moz.l10n.resource.xliff import xliff_parse, xliff_serialize
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
 
-hello = files("tests.data").joinpath("hello.xliff").read_bytes()
-angular = files("tests.data").joinpath("angular.xliff").read_bytes()
-icu_docs = files("tests.data").joinpath("icu-docs.xliff").read_bytes()
-xcode = files("tests.data").joinpath("xcode.xliff").read_bytes()
+hello = files("tests.resource.data").joinpath("hello.xliff").read_bytes()
+angular = files("tests.resource.data").joinpath("angular.xliff").read_bytes()
+icu_docs = files("tests.resource.data").joinpath("icu-docs.xliff").read_bytes()
+xcode = files("tests.resource.data").joinpath("xcode.xliff").read_bytes()
 
 
 class TestXliff1(TestCase):

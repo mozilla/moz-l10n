@@ -29,7 +29,7 @@ from moz.l10n.resource.po import po_parse, po_serialize
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
 
-source = files("tests.data").joinpath("foo.po").read_bytes().decode("utf-8")
+source = files("tests.resource.data").joinpath("foo.po").read_bytes().decode("utf-8")
 
 
 class TestPo(TestCase):

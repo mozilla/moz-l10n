@@ -73,7 +73,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
 
     def test_whitespace(self):
         # port of netwerk/test/PropertiesTest.cpp
-        bytes = files("tests.data").joinpath("test.properties").read_bytes()
+        bytes = files("tests.resource.data").joinpath("test.properties").read_bytes()
         res = properties_parse(bytes)
         cc0 = (
             "Any copyright is dedicated to the Public Domain.\n"
@@ -147,7 +147,9 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
 
     def test_bug121341(self):
         # port of xpcom/tests/unit/test_bug121341.js
-        bytes = files("tests.data").joinpath("bug121341.properties").read_bytes()
+        bytes = (
+            files("tests.resource.data").joinpath("bug121341.properties").read_bytes()
+        )
         res = properties_parse(bytes)
         self.maxDiff = 10000
         self.assertEqual(

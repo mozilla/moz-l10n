@@ -413,7 +413,7 @@ class TestFluent(TestCase):
             fluent_parse("msg = value\n# Comment\nLine of junk", as_ftl_patterns=True)
 
     def test_file(self):
-        bytes = files("tests.data").joinpath("demo.ftl").read_bytes()
+        bytes = files("tests.resource.data").joinpath("demo.ftl").read_bytes()
         res = fluent_parse(bytes)
         entries = [
             Entry(

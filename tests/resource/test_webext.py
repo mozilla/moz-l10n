@@ -24,7 +24,7 @@ from moz.l10n.resource.webext import webext_parse, webext_serialize
 # Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
 # __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
 
-source = files("tests.data").joinpath("messages.json").read_bytes()
+source = files("tests.resource.data").joinpath("messages.json").read_bytes()
 
 
 class TestWebext(TestCase):
