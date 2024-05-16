@@ -14,60 +14,50 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import Iterator
+from os import sep, walk
 from os.path import isdir, join, relpath
 
-from gitignorant import check_match, parse_gitignore_file
-
-from ..message import Message
-from .data import Resource
-from .parse_resource import parse_resource
+from gitignorant import Rule, check_match, parse_gitignore_file
 
 
-def iter_resources(
-    root: str, dirs: list[str] | None = None, ignorepath: str = ".l10n-ignore"
-) -> Iterator[tuple[str, Resource[Message, str] | None]]:
+def walk_files(
+    root: str, dirs: list[str] | None = None, ignorepath: str | None = ".l10n-ignore"
+) -> Iterator[str]:
     """
-    Iterate through localizable resources under the `root` directory.
+    Iterate through all files under the `root` directory.
     Use `dirs` to limit the search to only some subdirectories under `root`.
 
-    Yields `(str, Resource | None)` tuples,
-    with the file path and the corresponding `Resource`,
-    or `None` for files that could not be parsed as localization resources.
-
-    To ignore files, include a `.l10n-ignore` file in `root`,
+    All files and directories with names starting with `.` are ignored.
+    To ignore other files, include a `.l10n-ignore` file in `root`,
     or some other location passed in as `ignorepath`.
     This file uses git-ignore syntax,
     and is always based in the `root` directory.
     """
     if not isdir(root):
         raise ValueError(f"Not a directory: {root}")
-    try:
-        with open(join(root, ignorepath), encoding="utf-8") as file:
-            ignore = list(parse_gitignore_file(file))
-    except OSError:
-        ignore = None
+    ignore = [Rule(negative=False, content=".*")]
+    if ignorepath:
+        try:
+            with open(join(root, ignorepath), encoding="utf-8") as file:
+                ignore += parse_gitignore_file(file)
+        except OSError:
+            pass
     for dir in (join(root, p) for p in dirs) if dirs else (root,):
-        for dirpath, dirnames, filenames in os.walk(dir):
-            if ignore:
-                idx = len(dirnames) - 1
-                while idx >= 0:
-                    rp = relpath(join(dirpath, dirnames[idx]), start=root)
-                    if os.sep != "/":
-                        rp = rp.replace(os.sep, "/")
-                    if ignore and check_match(ignore, rp, is_dir=True):
-                        del dirnames[idx]
-                    idx -= 1
+        for dirpath, dirnames, filenames in walk(dir):
+            idx = len(dirnames) - 1
+            while idx >= 0:
+                rp = relpath(join(dirpath, dirnames[idx]), start=root)
+                if sep != "/":
+                    rp = rp.replace(sep, "/")
+                if check_match(ignore, rp, is_dir=True):
+                    del dirnames[idx]
+                idx -= 1
             for fn in filenames:
                 path = join(dirpath, fn)
-                if ignore:
-                    rp = relpath(path, start=root)
-                    if os.sep != "/":
-                        rp = rp.replace(os.sep, "/")
-                    if check_match(ignore, rp):
-                        continue
-                try:
-                    yield (path, parse_resource(path))
-                except ValueError:
-                    yield (path, None)
+                rp = relpath(path, start=root)
+                if sep != "/":
+                    rp = rp.replace(sep, "/")
+                if check_match(ignore, rp):
+                    continue
+                yield path
