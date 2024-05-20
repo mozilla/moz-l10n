@@ -29,6 +29,10 @@ from .webext.parse import webext_parse
 from .xliff.parse import xliff_parse
 
 
+class UnsupportedResource(Exception):
+    pass
+
+
 def parse_resource(
     input: Format | str | None, source: str | bytes | None = None
 ) -> Resource[Message, str]:
@@ -72,4 +76,4 @@ def parse_resource(
     elif format == Format.xliff:
         return xliff_parse(source)
     else:
-        raise ValueError(f"Unsupported resource format: {input}")
+        raise UnsupportedResource(f"Unsupported resource format: {input}")
