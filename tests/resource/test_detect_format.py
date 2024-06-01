@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from importlib.resources import files
+from __future__ import annotations
+
+from importlib_resources import files
 from unittest import TestCase
 
 from moz.l10n.resource import Format, detect_format

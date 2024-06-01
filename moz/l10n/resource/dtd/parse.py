@@ -15,6 +15,8 @@
 # The core logic of the parser used here is taken from silme:
 # https://github.com/mozilla/silme/blob/2f7af3dd87fff27a3c3650d442a065b5a290268e/lib/silme/format/dtd/parser.py
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from re import DOTALL, MULTILINE, UNICODE, compile
 from sys import maxsize

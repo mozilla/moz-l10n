@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from re import sub
-from typing import Any, cast
+from typing import Any, Tuple, cast
 
 from translate.storage.properties import propfile
 
@@ -39,7 +41,7 @@ class propfile_shim(propfile):  # type: ignore[misc]
             return (text, default_encodings[0] if default_encodings else "utf-8")
         else:
             return cast(
-                tuple[str, str], super().detect_encoding(text, default_encodings)
+                Tuple[str, str], super().detect_encoding(text, default_encodings)
             )
 
 

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Callable, Iterable, Iterator
 from re import compile
 
@@ -402,18 +404,18 @@ def parse_inline(
                     else:
                         # Placeholder
                         func: str | None
-                        match conversion:
-                            case "b" | "B":
-                                func = "boolean"
-                            case "c" | "C" | "s" | "S":
-                                func = "string"
-                            case "d" | "h" | "H" | "o" | "x" | "X":
-                                func = "integer"
-                            case "a" | "A" | "e" | "E" | "f" | "g" | "G":
-                                func = "number"
-                            case _:
-                                c0 = conversion[0]
-                                func = "datetime" if c0 == "t" or c0 == "T" else None
+                        # TODO post-py38: should be a match
+                        if conversion in {"b", "B"}:
+                            func = "boolean"
+                        elif conversion in {"c", "C", "s", "S"}:
+                            func = "string"
+                        elif conversion in {"d", "h", "H", "o", "x", "X"}:
+                            func = "integer"
+                        elif conversion in {"a", "A", "e", "E", "f", "g", "G"}:
+                            func = "number"
+                        else:
+                            c0 = conversion[0]
+                            func = "datetime" if c0 == "t" or c0 == "T" else None
                         name = get_var_name(m[4])
                         yield Expression(
                             VariableRef(name),

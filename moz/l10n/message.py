@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Dict, List, Literal, Tuple, Union
 
 __all__ = [
     "CatchallKey",
@@ -70,7 +72,7 @@ class Markup:
     attributes: dict[str, str | VariableRef | None] = field(default_factory=dict)
 
 
-Pattern = list[str | Expression | Markup]
+Pattern = List[Union[str, Expression, Markup]]
 """
 A linear sequence of text and placeholders corresponding to potential output of a message.
 
@@ -126,7 +128,7 @@ class PatternMessage:
     declarations: list[Declaration | UnsupportedStatement] = field(default_factory=list)
 
 
-Variants = dict[tuple[str | CatchallKey, ...], Pattern]
+Variants = Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
 
 
 @dataclass
@@ -140,4 +142,4 @@ class SelectMessage:
     declarations: list[Declaration | UnsupportedStatement] = field(default_factory=list)
 
 
-Message = PatternMessage | SelectMessage
+Message = Union[PatternMessage, SelectMessage]

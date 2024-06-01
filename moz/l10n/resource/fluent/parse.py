@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Generator
 from itertools import product
-from typing import Any, Literal, cast, overload
+from typing import Any, Literal, Tuple, cast, overload
 
 from fluent.syntax import FluentParser
 from fluent.syntax import ast as ftl
@@ -171,7 +173,7 @@ def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
         return msg.PatternMessage(next(iter(msg_variants.values())))
 
 
-Key = tuple[str, bool, bool]
+Key = Tuple[str, bool, bool]
 "(name, is_numeric, is_default)"
 
 
