@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from ..message import Message
 from .android.parse import android_parse
 from .data import Resource
@@ -47,26 +49,27 @@ def parse_resource(
             raise TypeError("Source is required if type is not a string path")
         with open(input, mode="rb") as file:
             source = file.read()
-    match input if isinstance(input, Format) else detect_format(input, source):
-        case Format.android:
-            return android_parse(source)
-        case Format.dtd:
-            return dtd_parse(source)
-        case Format.fluent:
-            return fluent_parse(source)
-        case Format.inc:
-            return inc_parse(source)
-        case Format.ini:
-            return ini_parse(source)
-        case Format.plain_json:
-            return plain_json_parse(source)
-        case Format.po:
-            return po_parse(source)
-        case Format.properties:
-            return properties_parse(source)
-        case Format.webext:
-            return webext_parse(source)
-        case Format.xliff:
-            return xliff_parse(source)
-        case _:
-            raise ValueError(f"Unsupported resource format: {input}")
+    # TODO post-py38: should be a match
+    format = input if isinstance(input, Format) else detect_format(input, source)
+    if format == Format.android:
+        return android_parse(source)
+    elif format == Format.dtd:
+        return dtd_parse(source)
+    elif format == Format.fluent:
+        return fluent_parse(source)
+    elif format == Format.inc:
+        return inc_parse(source)
+    elif format == Format.ini:
+        return ini_parse(source)
+    elif format == Format.plain_json:
+        return plain_json_parse(source)
+    elif format == Format.po:
+        return po_parse(source)
+    elif format == Format.properties:
+        return properties_parse(source)
+    elif format == Format.webext:
+        return webext_parse(source)
+    elif format == Format.xliff:
+        return xliff_parse(source)
+    else:
+        raise ValueError(f"Unsupported resource format: {input}")

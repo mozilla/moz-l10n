@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from collections import defaultdict
 from collections.abc import Iterator
 from re import compile
-from typing import cast
+from typing import List, Union, cast
 
 from lxml import etree
 
@@ -111,7 +113,9 @@ def xliff_parse(source: str | bytes) -> Resource[Message, str]:
             if file_name.endswith(".stringsdict"):
                 plural_entries = parse_xliff_stringsdict(ns, body)
                 if plural_entries is not None:
-                    entries += cast(list[Entry[Message, str] | Comment], plural_entries)
+                    entries += cast(
+                        List[Union[Entry[Message, str], Comment]], plural_entries
+                    )
                     continue
 
             for unit in body:

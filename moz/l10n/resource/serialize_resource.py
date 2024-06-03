@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 
 from moz.l10n.message import Message
@@ -43,28 +45,28 @@ def serialize_resource(
     With `trim_comments`,
     all standalone and attached comments are left out of the serialization.
     """
-    match format or resource.format:
-        case Format.android:
-            return android_serialize(resource, trim_comments=trim_comments)
-        case Format.dtd:
-            return dtd_serialize(resource, trim_comments=trim_comments)
-        case Format.fluent:
-            return fluent_serialize(resource, trim_comments=trim_comments)
-        case Format.inc:
-            return inc_serialize(resource, trim_comments=trim_comments)
-        case Format.ini:
-            return ini_serialize(resource, trim_comments=trim_comments)
-        case Format.plain_json:
-            return plain_json_serialize(resource, trim_comments=trim_comments)
-        case Format.po:
-            return po_serialize(resource, trim_comments=trim_comments)
-        case Format.properties:
-            return properties_serialize(resource, trim_comments=trim_comments)
-        case Format.webext:
-            return webext_serialize(resource, trim_comments=trim_comments)
-        case Format.xliff:
-            return xliff_serialize(resource, trim_comments=trim_comments)
-        case _:
-            raise ValueError(
-                f"Unsupported resource format: {format or resource.format}"
-            )
+    # TODO post-py38: should be a match
+    if not format:
+        format = resource.format
+    if format == Format.android:
+        return android_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.dtd:
+        return dtd_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.fluent:
+        return fluent_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.inc:
+        return inc_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.ini:
+        return ini_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.plain_json:
+        return plain_json_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.po:
+        return po_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.properties:
+        return properties_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.webext:
+        return webext_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.xliff:
+        return xliff_serialize(resource, trim_comments=trim_comments)
+    else:
+        raise ValueError(f"Unsupported resource format: {format or resource.format}")

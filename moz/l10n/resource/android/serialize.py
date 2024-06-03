@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from re import compile
-from typing import cast
+from typing import Dict, cast
 
 from lxml import etree
 
@@ -290,7 +292,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
             if part.attributes.get("translate", None) == "no":
                 # <xliff:g>
                 attrib = (
-                    cast(dict[str, str], part.annotation.options)
+                    cast(Dict[str, str], part.annotation.options)
                     if isinstance(part.annotation, FunctionAnnotation)
                     else None
                 )
@@ -342,7 +344,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
                 name = f"{{{xmlns}}}{local}"
             else:
                 name = part.name
-            attrib = cast(dict[str, str], part.options)
+            attrib = cast(Dict[str, str], part.options)
             if part.kind == "standalone":
                 node = etree.SubElement(parent, name, attrib=attrib)
             elif part.kind == "open":

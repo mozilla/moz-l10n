@@ -1,5 +1,6 @@
 black ~= 24.0
 flake8 ~= 7.0
+importlib_resources ~= 6.0
 isort ~= 5.0
 mypy ~= 1.0
 pytest ~= 8.1.1
