@@ -223,10 +223,9 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                 ],
             ),
         )
-        res.sections[0].entries[10].comment = ""
-        self.assertEqual(
-            "".join(properties_serialize(res)),
-            dedent(
+        assert (
+            "".join(properties_serialize(res))
+            == dedent(
                 """\
                 # simple check
                 1 = abc
@@ -247,9 +246,13 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                 9 = \\ test6\\t\\t   \\u0020
                 # test UTF-8 encoded property/value
                 10aሴb = c\uCDEFd
-                11 = \uABCD
+                # next property should test unicode escaping at the boundary of parsing buffer
+                # buffer size is expected to be 4096 so add comments to get to this offset
                 """
-            ),
+            )
+            + ("#" * 80 + "\n") * 41
+            + ("#" * 79 + "\n")
+            + "11 = \uABCD\n"
         )
 
     def test_comment_in_multi(self):
