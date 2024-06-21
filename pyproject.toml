@@ -39,6 +39,9 @@ dependencies = [
   "translate-toolkit ~= 3.12.2",
 ]
 
+[project.scripts]
+l10n-fix = "moz.l10n.bin.fix:cli"
+
 [project.urls]
 repository = "https://github.com/mozilla/moz-l10n"
 
