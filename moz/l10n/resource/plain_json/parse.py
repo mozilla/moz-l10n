@@ -36,7 +36,7 @@ def plain_json_parse(source: str | bytes) -> Resource[Message, Any]:
     if not isinstance(json, dict):
         raise ValueError(f"Unexpected root value: {json}")
     return Resource(
-        Format.plain_json, [Section([], [e for e in plain_object([], json)])]
+        Format.plain_json, [Section((), [e for e in plain_object([], json)])]
     )
 
 
@@ -44,7 +44,7 @@ def plain_object(path: list[str], obj: dict[str, Any]) -> Iterator[Entry[Message
     for k, value in obj.items():
         key = path + [k]
         if isinstance(value, str):
-            yield Entry(key, PatternMessage([value]))
+            yield Entry(tuple(key), PatternMessage([value]))
         elif isinstance(value, dict):
             yield from plain_object(key, value)
         else:

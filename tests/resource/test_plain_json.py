@@ -38,60 +38,60 @@ class TestPlain(TestCase):
                 Format.plain_json,
                 [
                     Section(
-                        [],
+                        (),
                         [
                             Entry(
-                                ["SourceString", "message"],
+                                ("SourceString", "message"),
                                 PatternMessage(["Translated String"]),
                             ),
                             Entry(
-                                ["SourceString", "description"],
+                                ("SourceString", "description"),
                                 PatternMessage(["Sample comment"]),
                             ),
                             Entry(
-                                ["MultipleComments", "message"],
+                                ("MultipleComments", "message"),
                                 PatternMessage(["Translated Multiple Comments"]),
                             ),
                             Entry(
-                                ["MultipleComments", "description"],
+                                ("MultipleComments", "description"),
                                 PatternMessage(["Second comment"]),
                             ),
                             Entry(
-                                ["NoCommentsorSources", "message"],
+                                ("NoCommentsorSources", "message"),
                                 PatternMessage(["Translated No Comments or Sources"]),
                             ),
                             Entry(
-                                ["placeholders", "message"],
+                                ("placeholders", "message"),
                                 PatternMessage(["Hello$$$ $1YOUR_NAME$ at $2"]),
                             ),
                             Entry(
-                                ["placeholders", "description"],
+                                ("placeholders", "description"),
                                 PatternMessage(["Peer greeting"]),
                             ),
                             Entry(
-                                [
+                                (
                                     "placeholders",
                                     "placeholders",
                                     "1your_name",
                                     "content",
-                                ],
+                                ),
                                 PatternMessage(["$1"]),
                             ),
                             Entry(
-                                [
+                                (
                                     "placeholders",
                                     "placeholders",
                                     "1your_name",
                                     "example",
-                                ],
+                                ),
                                 PatternMessage(["Cira"]),
                             ),
                             Entry(
-                                ["repeated_ref", "message"],
+                                ("repeated_ref", "message"),
                                 PatternMessage(["$foo$ and $Foo$"]),
                             ),
                             Entry(
-                                ["repeated_ref", "placeholders", "foo", "content"],
+                                ("repeated_ref", "placeholders", "foo", "content"),
                                 PatternMessage(["$1"]),
                             ),
                         ],

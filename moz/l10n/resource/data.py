@@ -86,7 +86,7 @@ class Entry(Generic[V, M]):
     and the second one defines the metadata value type.
     """
 
-    id: list[str]
+    id: tuple[str, ...]
     """
     The entry identifier.
 
@@ -132,7 +132,7 @@ class Section(Generic[V, M]):
     and the second one defines the metadata value type.
     """
 
-    id: list[str]
+    id: tuple[str, ...]
     """
     The section identifier.
 

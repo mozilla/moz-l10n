@@ -40,11 +40,11 @@ class TestInc(TestCase):
                 Format.inc,
                 [
                     Section(
-                        [],
+                        (),
                         [
                             Comment("#filter emptyLines"),
                             Entry(
-                                ["MOZ_LANGPACK_CREATOR"],
+                                ("MOZ_LANGPACK_CREATOR",),
                                 PatternMessage(["SeaMonkey e.V."]),
                             ),
                             Comment(
@@ -53,7 +53,7 @@ class TestInc(TestCase):
                                 "# #define MOZ_LANGPACK_CONTRIBUTORS <em:contributor>Joe Solon</em:contributor> <em:contributor>Suzy Solon</em:contributor>"
                             ),
                             Entry(
-                                ["seamonkey"],
+                                ("seamonkey",),
                                 PatternMessage(["SeaMonkey"]),
                                 comment="LOCALIZATION NOTE (seamonkey):\n"
                                 "link title for https://www.seamonkey-project.org/ (in the personal toolbar)",
