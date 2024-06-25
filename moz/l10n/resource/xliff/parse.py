@@ -99,7 +99,7 @@ def xliff_parse(source: str | bytes) -> Resource[Message, str]:
                 if child.tail and not child.tail.isspace():
                     raise ValueError(f"Unexpected text in <file>: {child.tail}")
 
-            section = Section([file_name], entries, meta=meta)
+            section = Section((file_name,), entries, meta=meta)
             if comment:
                 section.comment = comment_str(comment)
                 comment.clear()
@@ -126,7 +126,7 @@ def xliff_parse(source: str | bytes) -> Resource[Message, str]:
                 elif unit.tag == f"{ns}bin-unit":
                     entries.append(parse_bin_unit(unit))
                 elif unit.tag == f"{ns}group":
-                    res.sections += parse_group(ns, section.id, unit)
+                    res.sections += parse_group(ns, [file_name], unit)
                 else:
                     raise ValueError(
                         f"Unsupported <{unit.tag}> element in <body>: {body}"
@@ -148,7 +148,7 @@ def parse_group(
 
     # Note that this is modified after being emitted,
     # To ensure that nested groups are ordered by path
-    yield Section(path, entries, meta=meta)
+    yield Section(tuple(path), entries, meta=meta)
 
     seen: dict[str, int] = defaultdict(int)
     for unit in group:
@@ -177,7 +177,7 @@ def parse_bin_unit(unit: etree._Element) -> Entry[Message, str]:
     meta = attrib_as_metadata(unit, None, ("id",))
     meta += element_as_metadata(unit, "", False)
     msg = PatternMessage([Expression(None, attributes={"bin-unit": None})])
-    return Entry([id], msg, meta=meta)
+    return Entry((id,), msg, meta=meta)
 
 
 dash_indent = compile(r" .+(\n   - .*)+ ")

@@ -43,8 +43,8 @@ class TestIni(TestCase):
                 Format.ini,
                 [
                     Section(
-                        id=["Strings"],
-                        entries=[Entry(["TitleText"], PatternMessage(["Some Title"]))],
+                        id=("Strings",),
+                        entries=[Entry(("TitleText",), PatternMessage(["Some Title"]))],
                         comment="This file is in the UTF-8 encoding",
                     )
                 ],
@@ -84,8 +84,8 @@ class TestIni(TestCase):
                 Format.ini,
                 [
                     Section(
-                        id=["Strings"],
-                        entries=[Entry(["TitleText"], PatternMessage(["Some Title"]))],
+                        id=("Strings",),
+                        entries=[Entry(("TitleText",), PatternMessage(["Some Title"]))],
                     )
                 ],
                 comment="This Source Code Form is subject to the terms of the Mozilla Public\n"
@@ -138,10 +138,10 @@ class TestIni(TestCase):
             Format.ini,
             [
                 Section(
-                    id=["Strings"],
+                    id=("Strings",),
                     entries=[
                         Entry(
-                            ["TitleText"],
+                            ("TitleText",),
                             PatternMessage(["Some Title\nContinues"]),
                             comment="entry pre comment\nentry line comment",
                         ),
@@ -184,9 +184,9 @@ class TestIni(TestCase):
                 Format.ini,
                 [
                     Section(
-                        id=["Strings"],
+                        id=("Strings",),
                         entries=[
-                            Entry(["TitleText"], PatternMessage(["Some Title"])),
+                            Entry(("TitleText",), PatternMessage(["Some Title"])),
                             Comment("Stray trailing comment"),
                         ],
                     )
@@ -227,10 +227,10 @@ class TestIni(TestCase):
                 Format.ini,
                 [
                     Section(
-                        id=["Strings"],
+                        id=("Strings",),
                         entries=[
                             Entry(
-                                ["TitleText"],
+                                ("TitleText",),
                                 PatternMessage(["Some Title\n\nContinues"]),
                             )
                         ],

@@ -54,9 +54,9 @@ class TestFluent(TestCase):
         res = fluent_parse(source, as_ftl_patterns=True)
         self.assertEqual(len(res.sections), 1)
         self.assertEqual(len(res.sections[0].entries), 2)
-        self.assertEqual(res.sections[0].entries[0].id, ["key"])
+        self.assertEqual(res.sections[0].entries[0].id, ("key",))
         self.assertIsInstance(res.sections[0].entries[0].value, ftl.Pattern)
-        self.assertEqual(res.sections[0].entries[1].id, ["key", "attr"])
+        self.assertEqual(res.sections[0].entries[1].id, ("key", "attr"))
         self.assertIsInstance(res.sections[0].entries[1].value, ftl.Pattern)
         self.assertEqual("".join(fluent_serialize(res)), source)
 
@@ -135,7 +135,7 @@ class TestFluent(TestCase):
         other = CatchallKey("other")
         entries = [
             Entry(
-                ["expressions"],
+                ("expressions",),
                 PatternMessage(
                     [
                         "A ",
@@ -149,7 +149,7 @@ class TestFluent(TestCase):
                 comment="Message Comment\non two lines.",
             ),
             Entry(
-                ["functions"],
+                ("functions",),
                 PatternMessage(
                     [
                         Expression(VariableRef("arg"), FunctionAnnotation("number")),
@@ -157,15 +157,15 @@ class TestFluent(TestCase):
                     ]
                 ),
             ),
-            Entry(["has-attr"], PatternMessage(["ABC"])),
-            Entry(["has-attr", "attr"], PatternMessage(["Attr"])),
+            Entry(("has-attr",), PatternMessage(["ABC"])),
+            Entry(("has-attr", "attr"), PatternMessage(["Attr"])),
             Entry(
-                ["has-only-attr", "attr"],
+                ("has-only-attr", "attr"),
                 PatternMessage(["Attr"]),
                 comment="Attr Comment",
             ),
             Entry(
-                ["single-sel"],
+                ("single-sel",),
                 SelectMessage(
                     [Expression(VariableRef("num"), FunctionAnnotation("number"))],
                     {
@@ -175,7 +175,7 @@ class TestFluent(TestCase):
                 ),
             ),
             Entry(
-                ["two-sels"],
+                ("two-sels",),
                 SelectMessage(
                     [
                         Expression(VariableRef("a"), FunctionAnnotation("number")),
@@ -190,7 +190,7 @@ class TestFluent(TestCase):
                 ),
             ),
             Entry(
-                ["deep-sels"],
+                ("deep-sels",),
                 SelectMessage(
                     [
                         Expression(VariableRef("a"), FunctionAnnotation("number")),
@@ -214,14 +214,14 @@ class TestFluent(TestCase):
                 Format.fluent,
                 [
                     Section(
-                        id=[],
+                        id=(),
                         entries=[
-                            Entry(["simple"], PatternMessage(["A"])),
+                            Entry(("simple",), PatternMessage(["A"])),
                             Comment("Standalone Comment"),
                         ],
                         comment="Group Comment",
                     ),
-                    Section([], entries),
+                    Section((), entries),
                 ],
                 comment="Resource Comment",
             ),
@@ -419,12 +419,12 @@ class TestFluent(TestCase):
         res = fluent_parse(bytes)
         entries = [
             Entry(
-                id=["title"],
+                id=("title",),
                 value=PatternMessage(["About Localization"]),
                 comment="Simple string",
             ),
             Entry(
-                id=["feedbackUninstallCopy"],
+                id=("feedbackUninstallCopy",),
                 value=PatternMessage(
                     [
                         "Your participation in Firefox Test Pilot means\na lot! Please check out our other experiments,\nand stay tuned for more to come."
@@ -433,42 +433,42 @@ class TestFluent(TestCase):
                 comment="Multiline string: press Shift + Enter to insert new line",
             ),
             Entry(
-                id=["emailOptInInput", "placeholder"],
+                id=("emailOptInInput", "placeholder"),
                 value=PatternMessage(["email goes here :)"]),
                 comment="Attributes: in original string",
             ),
             Entry(
-                id=["file-menu", "label"],
+                id=("file-menu", "label"),
                 value=PatternMessage(["File"]),
                 comment="Attributes: access keys",
             ),
             Entry(
-                id=["file-menu", "accesskey"],
+                id=("file-menu", "accesskey"),
                 value=PatternMessage(["F"]),
             ),
             Entry(
-                id=["other-file-menu", "aria-label"],
+                id=("other-file-menu", "aria-label"),
                 value=PatternMessage(
                     [Expression("file-menu.label", FunctionAnnotation("message"))],
                 ),
             ),
             Entry(
-                id=["other-file-menu", "accesskey"],
+                id=("other-file-menu", "accesskey"),
                 value=PatternMessage(
                     [Expression("file-menu.accesskey", FunctionAnnotation("message"))],
                 ),
             ),
             Entry(
-                id=["shotIndexNoExpirationSymbol"],
+                id=("shotIndexNoExpirationSymbol",),
                 value=PatternMessage(["∞"]),
                 comment="Value and an attribute",
             ),
             Entry(
-                id=["shotIndexNoExpirationSymbol", "title"],
+                id=("shotIndexNoExpirationSymbol", "title"),
                 value=PatternMessage(["This shot does not expire"]),
             ),
             Entry(
-                id=["delete-all-message"],
+                id=("delete-all-message",),
                 value=SelectMessage(
                     selectors=[
                         Expression(VariableRef("num"), FunctionAnnotation("number"))
@@ -485,7 +485,7 @@ class TestFluent(TestCase):
                 comment="Plurals",
             ),
             Entry(
-                id=["delete-all-message-special-cases"],
+                id=("delete-all-message-special-cases",),
                 value=SelectMessage(
                     selectors=[
                         Expression(VariableRef("num"), FunctionAnnotation("number"))
@@ -504,7 +504,7 @@ class TestFluent(TestCase):
                 comment="Plurals with custom values",
             ),
             Entry(
-                id=["today-is"],
+                id=("today-is",),
                 value=PatternMessage(
                     [
                         "Today is ",
@@ -520,12 +520,12 @@ class TestFluent(TestCase):
                 comment="DATETIME Built-in function",
             ),
             Entry(
-                id=["default-content-process-count", "label"],
+                id=("default-content-process-count", "label"),
                 value=PatternMessage([Expression(VariableRef("num")), " (default)"]),
                 comment="Soft Launch",
             ),
             Entry(
-                id=["platform"],
+                id=("platform",),
                 value=SelectMessage(
                     selectors=[Expression(None, FunctionAnnotation("platform"))],
                     variants={
@@ -536,7 +536,7 @@ class TestFluent(TestCase):
                 comment="PLATFORM() selector",
             ),
             Entry(
-                id=["number"],
+                id=("number",),
                 value=SelectMessage(
                     selectors=[
                         Expression(
@@ -553,7 +553,7 @@ class TestFluent(TestCase):
                 comment="NUMBER() selector",
             ),
             Entry(
-                id=["platform-attribute", "title"],
+                id=("platform-attribute", "title"),
                 value=SelectMessage(
                     selectors=[Expression(None, FunctionAnnotation("platform"))],
                     variants={
@@ -564,7 +564,7 @@ class TestFluent(TestCase):
                 comment="PLATFORM() selector in attribute",
             ),
             Entry(
-                id=["download-choose-folder", "label"],
+                id=("download-choose-folder", "label"),
                 value=SelectMessage(
                     selectors=[Expression(None, FunctionAnnotation("platform"))],
                     variants={
@@ -575,14 +575,14 @@ class TestFluent(TestCase):
                 comment="Double selector in attributes",
             ),
             Entry(
-                id=["download-choose-folder", "accesskey"],
+                id=("download-choose-folder", "accesskey"),
                 value=SelectMessage(
                     selectors=[Expression(None, FunctionAnnotation("platform"))],
                     variants={("macos",): ["e"], (CatchallKey("other"),): ["o"]},
                 ),
             ),
             Entry(
-                id=["selector-multi"],
+                id=("selector-multi",),
                 value=SelectMessage(
                     selectors=[
                         Expression(VariableRef("num"), FunctionAnnotation("number")),
@@ -604,12 +604,12 @@ class TestFluent(TestCase):
                 comment="Multiple selectors",
             ),
             Entry(
-                id=["-term"],
+                id=("-term",),
                 value=PatternMessage(["Term"]),
                 comment="Term",
             ),
             Entry(
-                id=["term-reference"],
+                id=("term-reference",),
                 value=PatternMessage(
                     [
                         "Term ",
@@ -620,26 +620,26 @@ class TestFluent(TestCase):
                 comment="TermReference",
             ),
             Entry(
-                id=["string-expression"],
+                id=("string-expression",),
                 value=PatternMessage([Expression("")]),
                 comment="StringExpression",
             ),
             Entry(
-                id=["number-expression"],
+                id=("number-expression",),
                 value=PatternMessage(
                     [Expression("5", FunctionAnnotation("number"))],
                 ),
                 comment="NumberExpression",
             ),
             Entry(
-                id=["attribute-expression"],
+                id=("attribute-expression",),
                 value=PatternMessage(
                     [Expression("my_id.title", FunctionAnnotation("message"))],
                 ),
                 comment="MessageReference with attribute (was: AttributeExpression)",
             ),
             Entry(
-                id=["selector-nested"],
+                id=("selector-nested",),
                 value=SelectMessage(
                     selectors=[
                         Expression(VariableRef("gender"), FunctionAnnotation("string")),
@@ -663,7 +663,7 @@ class TestFluent(TestCase):
             ),
         ]
         self.assertEqual(
-            res, Resource(Format.fluent, sections=[Section(id=[], entries=entries)])
+            res, Resource(Format.fluent, sections=[Section(id=(), entries=entries)])
         )
         self.assertEqual(
             "".join(fluent_serialize(res)),

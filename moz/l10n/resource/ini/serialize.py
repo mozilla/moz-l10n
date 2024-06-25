@@ -92,7 +92,7 @@ def ini_serialize(
                 yield from comment(entry.comment, None, True)
 
 
-def id_str(id: list[str]) -> str:
+def id_str(id: tuple[str, ...]) -> str:
     name = ".".join(id)
     if search(r"^\s|[\n:=[\]]|\s$", name):
         raise ValueError(f"Unsupported character in identifier: {id}")

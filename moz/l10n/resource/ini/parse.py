@@ -62,7 +62,7 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[Message, Any]:
                 pattern = None
         if isinstance(line, ini.SectionLine):
             add_comment(line.comment)
-            section = Section([line.name], [], comment)
+            section = Section((line.name,), [], comment)
             comment = ""
             resource.sections.append(section)
         elif isinstance(line, ini.OptionLine):
@@ -71,7 +71,7 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[Message, Any]:
             add_comment(line.comment)
             pattern = [line.value]
             msg = PatternMessage(pattern)  # type: ignore[arg-type]
-            section.entries.append(Entry([line.name], msg, comment))
+            section.entries.append(Entry((line.name,), msg, comment))
             comment = ""
         elif isinstance(line, ini.CommentLine):
             add_comment(line.comment)

@@ -96,7 +96,7 @@ def parse_xliff_stringsdict(
             variants[(CatchallKey("other") if key == "other" else key,)] = list(
                 parse_pattern(pattern_src)
             )
-        entries.append(Entry([msg_id], SelectMessage([selector], variants), meta=meta))
+        entries.append(Entry((msg_id,), SelectMessage([selector], variants), meta=meta))
     return entries
 
 

@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any
 
-from ..resource import data as res
+from . import data as res
 
 RS = res.Section[Any, Any]
 RE = res.Entry[Any, Any]

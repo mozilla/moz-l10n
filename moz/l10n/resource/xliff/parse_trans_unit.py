@@ -65,7 +65,7 @@ def parse_trans_unit(unit: etree._Element) -> Entry[Message, str]:
 
     comment = "" if note is None else note.text or ""
     msg = PatternMessage([] if target is None else list(parse_pattern(target)))
-    return Entry([id], msg, comment, meta)
+    return Entry((id,), msg, comment, meta)
 
 
 def parse_pattern(el: etree._Element) -> Iterator[str | Markup]:

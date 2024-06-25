@@ -5,7 +5,7 @@ primarily built for internal use at Mozilla.
 
 The core idea here is to establish [Message](./moz/l10n/message.py) and [Resource](./moz/l10n/resource.py)
 as format-independent representations of localizable and localized messages and resources,
-so that operations like linting and [transforms](./moz/l10n/transform/) can be applied to them.
+so that operations like linting and transforms can be applied to them.
 
 Parsers and serializers are provided for a number of formats,
 using common and well-established libraries to take care of the details.
@@ -20,7 +20,51 @@ The Message and Resource representations are drawn from work done for the
 Unicode [MessageFormat 2 specification](https://github.com/unicode-org/message-format-wg/tree/main/spec)
 and the [Message resource specification](https://github.com/eemeli/message-resource-wg/).
 
+## moz.l10n.paths
+
+### L10nConfigPaths
+
+Wrapper for localization config files.
+
+Supports a subset of the format specified at:
+https://moz-l10n-config.readthedocs.io/en/latest/fileformat.html
+
+Differences:
+- `[build]` is ignored
+- `[[excludes]]` are not supported
+- `[[filters]]` are ignored
+- `[[paths]]` must always include both `reference` and `l10n`
+
+Does not consider `.l10n-ignore` files.
+
+### L10nDiscoverPaths
+
+Automagical localization resource discovery.
+
+Given a root directory, finds the likeliest reference and target directories.
+
+The reference directory has a name like `templates`, `en-US`, or `en`,
+and contains files with extensions that appear localizable.
+
+The localization target root is a directory with subdirectories named as
+BCP 47 locale identifiers, i.e. like `aa`, `aa-AA`, `aa-Aaaa`, or `aa-Aaaa-AA`.
+
+An underscore may also be used as a separator, as in `en_US`.
+
 ## moz.l10n.resources
+
+### add_entries
+
+```python
+def add_entries(target: Resource, source: Resource) -> int
+```
+
+Modifies `target` by adding entries from `source` that are not already present in `target`.
+Standalone comments are not added.
+
+Entries are not copied, so further changes will be reflected in both resources.
+
+Returns a count of added entries.
 
 ### detect_format
 
@@ -54,6 +98,18 @@ To ignore files, include a `.l10n-ignore` file in `root`,
 or some other location passed in as `ignorepath`.
 This file uses a git-ignore syntax,
 and is always based in the `root` directory.
+
+### l10n_equal
+
+```python
+def l10n_equal(a: Resource, b: Resource) -> bool
+```
+
+Compares the localization-relevant content
+(id, comment, metadata, message values) of two resources.
+
+Sections with no message entries are ignored,
+and the order of sections, entries, and metadata is ignored.
 
 ### parse_resource
 

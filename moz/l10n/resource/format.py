@@ -48,6 +48,32 @@ Format = Enum(
 Identifier for a supported resource format.
 """
 
+l10n_extensions = {
+    ".dtd",
+    ".ftl",
+    ".inc",
+    ".ini",
+    ".json",
+    ".properties",
+    ".po",
+    ".pot",
+    ".xlf",
+    ".xliff",
+    ".xml",
+}
+"""Extensions used by localization file formats."""
+
+bilingual_extensions = {
+    ".po",
+    ".pot",
+    ".xlf",
+    ".xliff",
+}
+"""
+Extensions used by file formats (XLIFF & gettext) that contain
+both the reference and target languages in the same file.
+"""
+
 
 def detect_format(name: str | None, source: bytes | str) -> Format | None:
     """

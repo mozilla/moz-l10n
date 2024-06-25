@@ -40,8 +40,6 @@ def properties_serialize(
 
     Metadata is not supported.
 
-    Comment lines not starting with `#` will be prefixed with `# `.
-
     Yields each entry, comment, and empty line separately.
     Re-parsing a serialized .properties file is not guaranteed to result in the same Resource,
     as the serialization may lose information about message sections and metadata.
@@ -64,7 +62,7 @@ def properties_serialize(
                     yield "#\n"
                 else:
                     line = line.rstrip() + "\n"
-                    yield line if line.startswith("#") else f"# {line}"
+                    yield f"#{line}" if line.startswith("#") else f"# {line}"
             if standalone:
                 yield "\n"
                 at_empty_line = True

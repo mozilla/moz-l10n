@@ -40,50 +40,50 @@ class TestDtd(TestCase):
                 Format.dtd,
                 [
                     Section(
-                        [],
+                        (),
                         [
                             Comment(
                                 "This file is originally from:\n"
                                 "https://searchfox.org/comm-central/rev/1032c05ab3f8f1a7b9b928cc5a79dbf67a9ac48f/chat/locales/en-US/accounts.dtd"
                             ),
                             Entry(
-                                ["accounts.title"],
+                                ("accounts.title",),
                                 PatternMessage(["Accounts - &brandShortName;"]),
                                 comment="Account manager window for Instantbird",
                             ),
                             Entry(
-                                ["accountsWindow.title"],
+                                ("accountsWindow.title",),
                                 PatternMessage(["Instant messaging status"]),
                                 comment="Instant messaging account status window for Thunderbird",
                             ),
                             Entry(
-                                ["accountManager.newAccount.label"],
+                                ("accountManager.newAccount.label",),
                                 PatternMessage(["New Account"]),
                             ),
                             Entry(
-                                ["accountManager.newAccount.accesskey"],
+                                ("accountManager.newAccount.accesskey",),
                                 PatternMessage(["N"]),
                             ),
                             Entry(
-                                ["accountManager.close.label"],
+                                ("accountManager.close.label",),
                                 PatternMessage(["Close"]),
                             ),
                             Entry(
-                                ["accountManager.close.accesskey"],
+                                ("accountManager.close.accesskey",),
                                 PatternMessage(["l"]),
                             ),
                             Entry(
-                                ["accountManager.close.commandkey"],
+                                ("accountManager.close.commandkey",),
                                 PatternMessage(["a"]),
                                 comment="This should match account.commandkey in instantbird.dtd",
                             ),
                             Entry(
-                                ["accountManager.noAccount.title"],
+                                ("accountManager.noAccount.title",),
                                 PatternMessage(["No account configured yet"]),
                                 comment="This title must be short, displayed with a big font size",
                             ),
                             Entry(
-                                ["accountManager.noAccount.description"],
+                                ("accountManager.noAccount.description",),
                                 PatternMessage(
                                     [
                                         "Click on the &accountManager.newAccount.label; button to let &brandShortName; guide you through the process of configuring one."
@@ -91,52 +91,54 @@ class TestDtd(TestCase):
                                 ),
                             ),
                             Entry(
-                                ["account.autoSignOn.label"],
+                                ("account.autoSignOn.label",),
                                 PatternMessage(["Sign-on at startup"]),
                             ),
                             Entry(
-                                ["account.autoSignOn.accesskey"], PatternMessage(["S"])
+                                ("account.autoSignOn.accesskey",), PatternMessage(["S"])
                             ),
                             Entry(
-                                ["account.connect.label"], PatternMessage(["Connect"])
+                                ("account.connect.label",), PatternMessage(["Connect"])
                             ),
-                            Entry(["account.connect.accesskey"], PatternMessage(["o"])),
                             Entry(
-                                ["account.disconnect.label"],
+                                ("account.connect.accesskey",), PatternMessage(["o"])
+                            ),
+                            Entry(
+                                ("account.disconnect.label",),
                                 PatternMessage(["Disconnect"]),
                             ),
                             Entry(
-                                ["account.disconnect.accesskey"], PatternMessage(["i"])
+                                ("account.disconnect.accesskey",), PatternMessage(["i"])
                             ),
                             Entry(
-                                ["account.edit.label"], PatternMessage(["Properties"])
+                                ("account.edit.label",), PatternMessage(["Properties"])
                             ),
-                            Entry(["account.edit.accesskey"], PatternMessage(["P"])),
+                            Entry(("account.edit.accesskey",), PatternMessage(["P"])),
                             Entry(
-                                ["account.cancelReconnection.label"],
+                                ("account.cancelReconnection.label",),
                                 PatternMessage(["Cancel reconnection"]),
                             ),
                             Entry(
-                                ["account.cancelReconnection.accesskey"],
+                                ("account.cancelReconnection.accesskey",),
                                 PatternMessage(["A"]),
                             ),
                             Entry(
-                                ["account.copyDebugLog.label"],
+                                ("account.copyDebugLog.label",),
                                 PatternMessage(["Copy Debug Log"]),
                             ),
                             Entry(
-                                ["account.copyDebugLog.accesskey"],
+                                ("account.copyDebugLog.accesskey",),
                                 PatternMessage(["C"]),
                             ),
                             Entry(
-                                ["account.connecting"], PatternMessage(["Connecting…"])
+                                ("account.connecting",), PatternMessage(["Connecting…"])
                             ),
                             Entry(
-                                ["account.disconnecting"],
+                                ("account.disconnecting",),
                                 PatternMessage(["Disconnecting…"]),
                             ),
                             Entry(
-                                ["account.disconnected"],
+                                ("account.disconnected",),
                                 PatternMessage(["Not Connected"]),
                             ),
                         ],
@@ -150,7 +152,7 @@ class TestDtd(TestCase):
 
     def test_serialize(self):
         res = dtd_parse(source)
-        res.sections[0].entries.insert(0, Entry(["foo"], '"bar"'))
+        res.sections[0].entries.insert(0, Entry(("foo",), '"bar"'))
         self.assertEqual(
             "".join(dtd_serialize(res)),
             dedent(
@@ -232,6 +234,6 @@ class TestDtd(TestCase):
 
     def test_invalid_key(self):
         res = dtd_parse(source)
-        res.sections[0].entries.insert(0, Entry(["fail me"], "bar"))
+        res.sections[0].entries.insert(0, Entry(("fail me",), "bar"))
         with self.assertRaises(ValueError):
             "".join(dtd_serialize(res))

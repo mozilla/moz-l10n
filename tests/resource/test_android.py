@@ -48,11 +48,11 @@ class TestAndroid(TestCase):
             meta=[Metadata("xmlns:xliff", "urn:oasis:names:tc:xliff:document:1.2")],
             sections=[
                 Section(
-                    ["!ENTITY"],
+                    ("!ENTITY",),
                     [
-                        Entry(["foo"], PatternMessage(["Foo"])),
+                        Entry(("foo",), PatternMessage(["Foo"])),
                         Entry(
-                            ["bar"],
+                            ("bar",),
                             PatternMessage(
                                 [
                                     "Bar ",
@@ -66,18 +66,18 @@ class TestAndroid(TestCase):
                     ],
                 ),
                 Section(
-                    [],
+                    (),
                     [
-                        Entry(["one"], PatternMessage([])),
-                        Entry(["two"], PatternMessage([])),
-                        Entry(["three"], PatternMessage(["value"]), comment="bar"),
+                        Entry(("one",), PatternMessage([])),
+                        Entry(("two",), PatternMessage([])),
+                        Entry(("three",), PatternMessage(["value"]), comment="bar"),
                         Entry(
-                            ["four"],
+                            ("four",),
                             PatternMessage(["multi-line comment"]),
                             comment="bar\n\nfoo",
                         ),
                         Entry(
-                            ["five"],
+                            ("five",),
                             PatternMessage(
                                 [
                                     Expression(
@@ -90,7 +90,7 @@ class TestAndroid(TestCase):
                         ),
                         Comment("standalone"),
                         Entry(
-                            ["welcome"],
+                            ("welcome",),
                             PatternMessage(
                                 [
                                     "Welcome to ",
@@ -105,7 +105,7 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(
-                            ["placeholders"],
+                            ("placeholders",),
                             PatternMessage(
                                 [
                                     "Hello, ",
@@ -125,7 +125,7 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(
-                            ["real_html"],
+                            ("real_html",),
                             PatternMessage(
                                 [
                                     "Hello, ",
@@ -148,7 +148,7 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(
-                            ["escaped_html"],
+                            ("escaped_html",),
                             PatternMessage(
                                 [
                                     "Hello, ",
@@ -171,7 +171,7 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(
-                            ["protected"],
+                            ("protected",),
                             PatternMessage(
                                 [
                                     "Hello, ",
@@ -193,7 +193,7 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(
-                            ["nested_protections"],
+                            ("nested_protections",),
                             PatternMessage(
                                 [
                                     "Welcome to ",
@@ -214,14 +214,16 @@ class TestAndroid(TestCase):
                                 ]
                             ),
                         ),
-                        Entry(["ws_trimmed"], PatternMessage([" "])),
-                        Entry(["ws_quoted"], PatternMessage([" \u0020 \u2008 \u2003"])),
+                        Entry(("ws_trimmed",), PatternMessage([" "])),
                         Entry(
-                            ["ws_escaped"],
+                            ("ws_quoted",), PatternMessage([" \u0020 \u2008 \u2003"])
+                        ),
+                        Entry(
+                            ("ws_escaped",),
                             PatternMessage([" \u0020 \u2008 \u2003"]),
                         ),
                         Entry(
-                            ["ws_with_entities"],
+                            ("ws_with_entities",),
                             PatternMessage(
                                 [
                                     " one ",
@@ -241,7 +243,7 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(
-                            ["ws_with_html"],
+                            ("ws_with_html",),
                             PatternMessage(
                                 [
                                     " one",
@@ -252,21 +254,21 @@ class TestAndroid(TestCase):
                                 ]
                             ),
                         ),
-                        Entry(["control_chars"], PatternMessage(["\u0000 \u0001"])),
+                        Entry(("control_chars",), PatternMessage(["\u0000 \u0001"])),
                         Entry(
-                            ["percent"],
+                            ("percent",),
                             PatternMessage(
                                 [Expression("%", attributes={"source": "%%"})]
                             ),
                         ),
-                        Entry(["single_quote"], PatternMessage(["They're great"])),
-                        Entry(["double_quotes"], PatternMessage(['They are "great"'])),
+                        Entry(("single_quote",), PatternMessage(["They're great"])),
+                        Entry(("double_quotes",), PatternMessage(['They are "great"'])),
                         Entry(
-                            ["both_quotes"],
+                            ("both_quotes",),
                             PatternMessage(['They\'re really "great"']),
                         ),
                         Entry(
-                            ["foo"],
+                            ("foo",),
                             PatternMessage(
                                 [
                                     'Foo Bar <a href="foo?id=',
@@ -282,7 +284,7 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(
-                            ["busy"],
+                            ("busy",),
                             PatternMessage(
                                 [
                                     "Sorry, ",
@@ -298,12 +300,12 @@ class TestAndroid(TestCase):
                                 ]
                             ),
                         ),
-                        Entry(["planets_array", "0"], PatternMessage(["Mercury"])),
-                        Entry(["planets_array", "1"], PatternMessage(["Venus"])),
-                        Entry(["planets_array", "2"], PatternMessage(["Earth"])),
-                        Entry(["planets_array", "3"], PatternMessage(["Mars"])),
+                        Entry(("planets_array", "0"), PatternMessage(["Mercury"])),
+                        Entry(("planets_array", "1"), PatternMessage(["Venus"])),
+                        Entry(("planets_array", "2"), PatternMessage(["Earth"])),
+                        Entry(("planets_array", "3"), PatternMessage(["Mars"])),
                         Entry(
-                            ["numberOfSongsAvailable"],
+                            ("numberOfSongsAvailable",),
                             SelectMessage(
                                 [
                                     Expression(
@@ -340,7 +342,7 @@ class TestAndroid(TestCase):
                             ),
                         ),
                         Entry(
-                            ["numberOfSongsAvailable_pl"],
+                            ("numberOfSongsAvailable_pl",),
                             SelectMessage(
                                 [
                                     Expression(
@@ -521,7 +523,7 @@ class TestAndroid(TestCase):
     def test_xliff_xmlns(self):
         exp = Expression(" X ", FunctionAnnotation("foo", {"opt": "OPT"}))
         res = Resource(
-            Format.android, [Section([], [Entry(["x"], PatternMessage([exp]))])]
+            Format.android, [Section((), [Entry(("x",), PatternMessage([exp]))])]
         )
 
         ser = "".join(android_serialize(res, trim_comments=True))
@@ -553,7 +555,7 @@ class TestAndroid(TestCase):
                 Markup("close", "x", attributes={"translate": "no"}),
             ]
         )
-        res = Resource(Format.android, [Section([], [Entry(["x"], msg)])])
+        res = Resource(Format.android, [Section((), [Entry(("x",), msg)])])
 
         ser = "".join(android_serialize(res, trim_comments=True))
         assert ser == dedent(

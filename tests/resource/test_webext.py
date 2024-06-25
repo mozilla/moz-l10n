@@ -36,24 +36,24 @@ class TestWebext(TestCase):
             Format.webext,
             [
                 Section(
-                    [],
+                    (),
                     [
                         Entry(
-                            ["SourceString"],
+                            ("SourceString",),
                             PatternMessage(["Translated String"]),
                             comment="Sample comment",
                         ),
                         Entry(
-                            ["MultipleComments"],
+                            ("MultipleComments",),
                             PatternMessage(["Translated Multiple Comments"]),
                             comment="Second comment",
                         ),
                         Entry(
-                            ["NoCommentsorSources"],
+                            ("NoCommentsorSources",),
                             PatternMessage(["Translated No Comments or Sources"]),
                         ),
                         Entry(
-                            ["placeholders"],
+                            ("placeholders",),
                             PatternMessage(
                                 [
                                     "Hello$$ ",
@@ -83,7 +83,7 @@ class TestWebext(TestCase):
                             comment="Peer greeting",
                         ),
                         Entry(
-                            ["repeated_ref"],
+                            ("repeated_ref",),
                             PatternMessage(
                                 [
                                     Expression(

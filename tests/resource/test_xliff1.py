@@ -51,7 +51,7 @@ class TestXliff1(TestCase):
             ],
             sections=[
                 Section(
-                    id=["hello.txt"],
+                    id=("hello.txt",),
                     meta=[
                         Metadata("@source-language", "en"),
                         Metadata("@target-language", "fr"),
@@ -59,7 +59,7 @@ class TestXliff1(TestCase):
                     ],
                     entries=[
                         Entry(
-                            id=["hi"],
+                            id=("hi",),
                             meta=[
                                 Metadata("source", "Hello world"),
                                 Metadata("alt-trans/target/@xml:lang", "es"),
@@ -104,7 +104,7 @@ class TestXliff1(TestCase):
             ],
             sections=[
                 Section(
-                    id=["ng2.template"],
+                    id=("ng2.template",),
                     meta=[
                         Metadata("@source-language", "en"),
                         Metadata("@target-language", "fi"),
@@ -112,7 +112,7 @@ class TestXliff1(TestCase):
                     ],
                     entries=[
                         Entry(
-                            id=["introductionHeader"],
+                            id=("introductionHeader",),
                             value=PatternMessage(["\n  Hei i18n!\n"]),
                             comment="An introduction header for this sample",
                             meta=[
@@ -140,7 +140,7 @@ class TestXliff1(TestCase):
                             ],
                         ),
                         Entry(
-                            id=["icu_plural"],
+                            id=("icu_plural",),
                             value=PatternMessage(
                                 [
                                     "{VAR_PLURAL, plural, =0 {juuri nyt} =1 {minuutti sitten} other {",
@@ -221,7 +221,7 @@ class TestXliff1(TestCase):
             ],
             sections=[
                 Section(
-                    id=["en.txt"],
+                    id=("en.txt",),
                     meta=[
                         Metadata("@xml:space", "preserve"),
                         Metadata("@source-language", "en"),
@@ -233,14 +233,14 @@ class TestXliff1(TestCase):
                     entries=[],
                 ),
                 Section(
-                    id=["en.txt", "en"],
+                    id=("en.txt", "en"),
                     meta=[Metadata("@restype", "x-icu-table")],
                     entries=[
                         Comment(
                             "The resources for a fictious Hello World application. The application displays a single window with a logo and the hello message."
                         ),
                         Entry(
-                            id=["authors"],
+                            id=("authors",),
                             value=PatternMessage([]),
                             meta=[
                                 Metadata("@resname", "authors"),
@@ -249,7 +249,7 @@ class TestXliff1(TestCase):
                             ],
                         ),
                         Entry(
-                            id=["hello"],
+                            id=("hello",),
                             value=PatternMessage([]),
                             comment="This is the message that the application displays to the user.",
                             meta=[
@@ -258,7 +258,7 @@ class TestXliff1(TestCase):
                             ],
                         ),
                         Entry(
-                            id=["logo"],
+                            id=("logo",),
                             value=PatternMessage(
                                 [Expression(None, attributes={"bin-unit": None})]
                             ),
@@ -275,7 +275,7 @@ class TestXliff1(TestCase):
                             ],
                         ),
                         Entry(
-                            id=["md5_sum"],
+                            id=("md5_sum",),
                             value=PatternMessage(
                                 [Expression(None, attributes={"bin-unit": None})]
                             ),
@@ -300,7 +300,7 @@ class TestXliff1(TestCase):
                     ],
                 ),
                 Section(
-                    id=["en.txt", "en", "menus"],
+                    id=("en.txt", "en", "menus"),
                     meta=[
                         Metadata("@resname", "menus"),
                         Metadata("@restype", "x-icu-table"),
@@ -310,14 +310,14 @@ class TestXliff1(TestCase):
                     ],
                 ),
                 Section(
-                    id=["en.txt", "en", "menus", "menus_help_menu"],
+                    id=("en.txt", "en", "menus", "menus_help_menu"),
                     meta=[
                         Metadata("@resname", "help_menu"),
                         Metadata("@restype", "x-icu-table"),
                     ],
                     entries=[
                         Entry(
-                            id=["menus_help_menu_name"],
+                            id=("menus_help_menu_name",),
                             value=PatternMessage([]),
                             meta=[
                                 Metadata("@resname", "name"),
@@ -327,25 +327,25 @@ class TestXliff1(TestCase):
                     ],
                 ),
                 Section(
-                    id=[
+                    id=(
                         "en.txt",
                         "en",
                         "menus",
                         "menus_help_menu",
                         "menus_help_menu_items",
-                    ],
+                    ),
                     meta=[
                         Metadata("@resname", "items"),
                         Metadata("@restype", "x-icu-array"),
                     ],
                     entries=[
                         Entry(
-                            id=["menus_help_menu_items_0"],
+                            id=("menus_help_menu_items_0",),
                             value=PatternMessage([]),
                             meta=[Metadata("source", "Help Topics")],
                         ),
                         Entry(
-                            id=["menus_help_menu_items_1"],
+                            id=("menus_help_menu_items_1",),
                             value=PatternMessage([]),
                             meta=[Metadata("source", "About Hello World")],
                         ),
@@ -488,7 +488,7 @@ class TestXliff1(TestCase):
             ],
             sections=[
                 Section(
-                    id=["xcode1/en.lproj/Localizable.strings"],
+                    id=("xcode1/en.lproj/Localizable.strings",),
                     meta=[
                         Metadata("@source-language", "en"),
                         Metadata("@target-language", "it"),
@@ -500,9 +500,9 @@ class TestXliff1(TestCase):
                     ],
                     entries=[
                         Entry(
-                            id=[
-                                "[KeyFile/Delete/Confirm/text] Delete key file?\n Make sure you have a backup."
-                            ],
+                            id=(
+                                "[KeyFile/Delete/Confirm/text] Delete key file?\n Make sure you have a backup.",
+                            ),
                             value=PatternMessage(
                                 [
                                     "Eliminare il file chiave?\nAssicurati di avere una copia."
@@ -521,7 +521,7 @@ class TestXliff1(TestCase):
                     ],
                 ),
                 Section(
-                    id=["xcode1/en.lproj/Localizable.stringsdict"],
+                    id=("xcode1/en.lproj/Localizable.stringsdict",),
                     meta=[
                         Metadata("@source-language", "en"),
                         Metadata("@target-language", "it"),
@@ -533,7 +533,7 @@ class TestXliff1(TestCase):
                     ],
                     entries=[
                         Entry(
-                            id=["[Generic/Count/EntriesSelected]"],
+                            id=("[Generic/Count/EntriesSelected]",),
                             value=SelectMessage(
                                 selectors=[
                                     Expression(
@@ -569,7 +569,7 @@ class TestXliff1(TestCase):
                             ],
                         ),
                         Entry(
-                            id=["[Generic/Count/Threads]"],
+                            id=("[Generic/Count/Threads]",),
                             value=SelectMessage(
                                 selectors=[
                                     Expression(
@@ -607,7 +607,7 @@ class TestXliff1(TestCase):
                     ],
                 ),
                 Section(
-                    id=["xcode2/en.lproj/Localizable.stringsdict"],
+                    id=("xcode2/en.lproj/Localizable.stringsdict",),
                     meta=[
                         Metadata("@source-language", "en"),
                         Metadata("@target-language", "en"),
@@ -615,7 +615,7 @@ class TestXliff1(TestCase):
                     ],
                     entries=[
                         Entry(
-                            id=["followed_by_three_and_others"],
+                            id=("followed_by_three_and_others",),
                             meta=[
                                 Metadata("format/@xml:space", "preserve"),
                                 Metadata("one/@xml:space", "preserve"),

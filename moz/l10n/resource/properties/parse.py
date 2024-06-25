@@ -63,12 +63,12 @@ def properties_parse(
         pf.default_encoding = encoding
     pf.parse(source)
     entries: list[Entry[Message, Any] | Comment] = []
-    resource = Resource(Format.properties, [Section([], entries)])
+    resource = Resource(Format.properties, [Section((), entries)])
     for unit in pf.getunits():
         if unit.name or unit.value:
             entries.append(
                 Entry(
-                    id=[unit.name],
+                    id=(unit.name,),
                     value=(
                         parse_message(unit.source)
                         if parse_message

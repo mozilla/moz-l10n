@@ -90,7 +90,7 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
         raise ValueError(f"Unsupported root node: {root}")
     if root.text and not root.text.isspace():
         raise ValueError(f"Unexpected text in resource: {root.text}")
-    res: Resource[Message, str] = Resource(Format.android, [Section([], [])])
+    res: Resource[Message, str] = Resource(Format.android, [Section((), [])])
     root_comments = [c.text for c in root.itersiblings(etree.Comment, preceding=True)]
     if root_comments:
         root_comments.reverse()
@@ -108,9 +108,9 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
             if not name:
                 raise ValueError(f"Unnamed entity: {entity}")
             value: Message = PatternMessage(list(parse_entity_value(entity.content)))
-            entities.append(Entry([name], value))
+            entities.append(Entry((name,), value))
         if entities:
-            res.sections.insert(0, Section(["!ENTITY"], entities))
+            res.sections.insert(0, Section(("!ENTITY",), entities))
 
     comment: list[str | None] = []  # TODO: should be list[str]
     for el in root:
@@ -129,13 +129,13 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
 
             if el.tag == "string":
                 value = PatternMessage(list(parse_pattern(el)))
-                entries.append(Entry([name], value, comment_str(comment), meta))
+                entries.append(Entry((name,), value, comment_str(comment), meta))
 
             elif el.tag == "plurals":
                 if el.text and not el.text.isspace():
                     raise ValueError(f"Unexpected text in {name} plurals: {el.text}")
                 value = parse_plurals(name, el, comment.extend)
-                entries.append(Entry([name], value, comment_str(comment), meta))
+                entries.append(Entry((name,), value, comment_str(comment), meta))
 
             elif el.tag == "string-array":
                 if el.text and not el.text.isspace():
@@ -149,7 +149,7 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
                     elif item.tag == "item":
                         value = PatternMessage(list(parse_pattern(item)))
                         ic = comment_str(comment)
-                        entries.append(Entry([name, str(idx)], value, ic, meta[:]))
+                        entries.append(Entry((name, str(idx)), value, ic, meta[:]))
                         comment.clear()
                         idx += 1
                     else:

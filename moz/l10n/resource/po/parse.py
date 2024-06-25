@@ -76,9 +76,9 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
             value: Message = SelectMessage([sel], variants)
         else:
             value = PatternMessage([pe.msgstr])
-        entry = Entry([pe.msgid], value, meta=meta)
+        entry = Entry((pe.msgid,), value, meta=meta)
         if pe.msgctxt in sections:
             sections[pe.msgctxt].entries.append(entry)
         else:
-            sections[pe.msgctxt] = Section([pe.msgctxt] if pe.msgctxt else [], [entry])
+            sections[pe.msgctxt] = Section((pe.msgctxt,) if pe.msgctxt else (), [entry])
     return Resource(Format.po, list(sections.values()), res_comment, res_meta)

@@ -61,14 +61,14 @@ class TestPo(TestCase):
                 ],
                 sections=[
                     Section(
-                        id=[],
+                        id=(),
                         entries=[
                             Entry(
-                                ["original string"],
+                                ("original string",),
                                 PatternMessage(["translated string"]),
                             ),
                             Entry(
-                                ["%d translated message"],
+                                ("%d translated message",),
                                 meta=[
                                     Metadata("reference", "src/msgfmt.c:876"),
                                     Metadata("flag", "c-format"),
@@ -90,20 +90,20 @@ class TestPo(TestCase):
                                 ),
                             ),
                             Entry(
-                                ["obsolete string"],
+                                ("obsolete string",),
                                 meta=[Metadata("obsolete", "true")],
                                 value=PatternMessage(["translated string"]),
                             ),
                             Entry(
-                                ["other string"], PatternMessage(["translated string"])
+                                ("other string",), PatternMessage(["translated string"])
                             ),
                         ],
                     ),
                     Section(
-                        id=["context"],
+                        id=("context",),
                         entries=[
                             Entry(
-                                ["original string"],
+                                ("original string",),
                                 PatternMessage(["translated string"]),
                             )
                         ],
