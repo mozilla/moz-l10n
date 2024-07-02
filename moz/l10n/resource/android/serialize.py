@@ -91,7 +91,7 @@ def android_serialize(
         if section.comment and not trim_comments:
             add_comment(root, section.comment, True)
         if section.id:
-            if section.id == ["!ENTITY"]:
+            if section.id == ("!ENTITY",):
                 for entry in section.entries:
                     if isinstance(entry, Entry):
                         entities.append(entity_definition(entry))

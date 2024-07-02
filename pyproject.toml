@@ -35,8 +35,12 @@ dependencies = [
   "iniparse ~= 0.5",
   "lxml ~= 5.1.0",
   "polib ~= 1.2.0",
+  "tomli >= 1.1.0; python_version < '3.11'",
   "translate-toolkit ~= 3.12.2",
 ]
+
+[project.scripts]
+l10n-fix = "moz.l10n.bin.fix:cli"
 
 [project.urls]
 repository = "https://github.com/mozilla/moz-l10n"

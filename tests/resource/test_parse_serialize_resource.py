@@ -17,7 +17,12 @@ from __future__ import annotations
 from importlib_resources import files
 from unittest import TestCase
 
-from moz.l10n.resource import Format, parse_resource, serialize_resource
+from moz.l10n.resource import (
+    Format,
+    UnsupportedResource,
+    parse_resource,
+    serialize_resource,
+)
 from moz.l10n.resource.data import Resource
 
 
@@ -68,7 +73,7 @@ class TesteParseResource(TestCase):
 
     def test_parse_unknown_format(self):
         source = get_source("accounts.dtd")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(UnsupportedResource):
             parse_resource(None, source)
 
     def test_serialize_unsupported_format(self):

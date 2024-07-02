@@ -51,7 +51,7 @@ def inc_parse(source: str | bytes) -> Resource[Message, Any]:
             match = re_define.fullmatch(line)
             if match:
                 name, value = match.groups()
-                entries.append(Entry([name], PatternMessage([value]), comment))
+                entries.append(Entry((name,), PatternMessage([value]), comment))
                 comment = ""
             elif line.startswith("#"):
                 if comment:
@@ -62,4 +62,4 @@ def inc_parse(source: str | bytes) -> Resource[Message, Any]:
                 raise ValueError(f"Unsupported content: {line}")
     if comment:
         entries.append(Comment(comment))
-    return Resource(Format.inc, [Section([], entries)])
+    return Resource(Format.inc, [Section((), entries)])

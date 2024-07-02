@@ -49,7 +49,7 @@ def dtd_parse(source: str | bytes) -> Resource[Message, Any]:
     The parsed resource will not include any metadata.
     """
     entries: list[Entry[Message, Any] | Comment] = []
-    resource = Resource(Format.dtd, [Section([], entries)])
+    resource = Resource(Format.dtd, [Section((), entries)])
     pos = 0
     at_newline = True
     comment: str = ""
@@ -109,6 +109,6 @@ def dtd_iter(
     for match in re_entity.finditer(text, pos, endpos):
         yield text[pos : match.start(0)]
         id, value = match.groups()
-        yield Entry([id], PatternMessage([value[1:-1]]))
+        yield Entry((id,), PatternMessage([value[1:-1]]))
         pos = match.end(0)
     yield text[pos:endpos]

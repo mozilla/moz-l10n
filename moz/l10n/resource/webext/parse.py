@@ -110,6 +110,6 @@ def webext_parse(source: str | bytes) -> Resource[Message, Any]:
             else:
                 pattern.append(rest)
         entries.append(
-            Entry([key], PatternMessage(pattern, declarations), comment=comment)
+            Entry((key,), PatternMessage(pattern, declarations), comment=comment)
         )
-    return Resource(Format.webext, [Section([], entries)])
+    return Resource(Format.webext, [Section((), entries)])

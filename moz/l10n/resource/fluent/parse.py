@@ -65,7 +65,7 @@ def fluent_parse(
         fluent_res = FluentParser().parse(source_str)
 
     entries: list[res.Entry[Any, Any] | res.Comment] = []
-    section = res.Section([], entries)
+    section = res.Section((), entries)
     resource = res.Resource(Format.fluent, [section])
     for entry in fluent_res.body:
         if isinstance(entry, ftl.Message) or isinstance(entry, ftl.Term):
@@ -80,7 +80,7 @@ def fluent_parse(
         elif isinstance(entry, ftl.GroupComment):
             if entries or section.comment:
                 entries = []
-                section = res.Section([], entries, comment=entry.content or "")
+                section = res.Section((), entries, comment=entry.content or "")
                 resource.sections.append(section)
             else:
                 section.comment = entry.content or ""
@@ -105,12 +105,14 @@ def patterns(
         id = "-" + id
     comment = entry.comment.content or "" if entry.comment else ""
     if entry.value:
-        yield res.Entry(id=[id], value=message(entry.value), comment=comment)
+        yield res.Entry(id=(id,), value=message(entry.value), comment=comment)
         if comment:
             comment = ""
     for attr in entry.attributes:
         yield res.Entry(
-            id=[id, attr.id.name], value=message(attr.value), comment=comment
+            id=(id, attr.id.name),
+            value=message(attr.value),
+            comment=comment,
         )
         if comment:
             comment = ""
