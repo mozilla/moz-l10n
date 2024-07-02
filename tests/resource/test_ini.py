@@ -250,6 +250,39 @@ class TestIni(TestCase):
             ),
         )
 
+    def test_empty_value(self):
+        res = ini_parse(
+            dedent(
+                """\
+                [Strings]
+                foo=
+                bar=Bar
+                """
+            )
+        )
+        assert res == Resource(
+            Format.ini,
+            [
+                Section(
+                    id=("Strings",),
+                    entries=[
+                        Entry(("foo",), PatternMessage([""])),
+                        Entry(("bar",), PatternMessage(["Bar"])),
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(
+            "".join(ini_serialize(res)),
+            dedent(
+                """\
+                [Strings]
+                foo =
+                bar = Bar
+                """
+            ),
+        )
+
     def test_empty_file(self):
         empty = Resource(Format.ini, [])
         self.assertEqual(ini_parse(""), empty)

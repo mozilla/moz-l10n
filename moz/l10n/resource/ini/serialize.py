@@ -83,7 +83,7 @@ def ini_serialize(
                 else:
                     raise ValueError(f"Unsupported message for {entry.id}: {msg}")
                 lines = value.rstrip().splitlines()
-                yield f"{id_str(entry.id)} = {lines.pop(0)}".rstrip() + "\n"
+                yield f"{id_str(entry.id)} = {lines.pop(0) if lines else ''}".rstrip() + "\n"
                 for line in lines:
                     ls = line.rstrip()
                     yield f"  {ls}\n" if ls else "\n"
