@@ -455,6 +455,7 @@ class TestFluent(TestCase):
     def test_file(self):
         bytes = files("tests.resource.data").joinpath("demo.ftl").read_bytes()
         res = fluent_parse(bytes)
+        copyright = "Any copyright is dedicated to the Public Domain.\nhttp://creativecommons.org/publicdomain/zero/1.0/"
         entries = [
             Entry(
                 id=("title",),
@@ -701,121 +702,130 @@ class TestFluent(TestCase):
             ),
         ]
         self.assertEqual(
-            res, Resource(Format.fluent, sections=[Section(id=(), entries=entries)])
+            res,
+            Resource(
+                Format.fluent,
+                meta=[Metadata("info", copyright)],
+                comment="Resource Comment",
+                sections=[Section(id=(), entries=entries)],
+            ),
         )
-        self.assertEqual(
-            "".join(fluent_serialize(res)),
-            dedent(
-                """\
-                # Simple string
-                title = About Localization
-                # Multiline string: press Shift + Enter to insert new line
-                feedbackUninstallCopy =
-                    Your participation in Firefox Test Pilot means
-                    a lot! Please check out our other experiments,
-                    and stay tuned for more to come.
-                # Attributes: in original string
-                emailOptInInput =
-                    .placeholder = email goes here :)
-                # Attributes: access keys
-                file-menu =
-                    .label = File
-                    .accesskey = F
-                other-file-menu =
-                    .aria-label = { file-menu.label }
-                    .accesskey = { file-menu.accesskey }
-                # Value and an attribute
-                shotIndexNoExpirationSymbol = ∞
-                    .title = This shot does not expire
-                # Plurals
-                delete-all-message =
-                    { NUMBER($num) ->
-                        [one] Delete this download?
-                       *[other] Delete { $num } downloads?
-                    }
-                # Plurals with custom values
-                delete-all-message-special-cases =
-                    { NUMBER($num) ->
-                        [1] Delete this download?
-                        [2] Delete this pair of downloads?
-                        [12] Delete this dozen of downloads?
-                       *[other] Delete { $num } downloads?
-                    }
-                # DATETIME Built-in function
-                today-is = Today is { DATETIME($date, month: "long", year: "numeric", day: "numeric") }
-                # Soft Launch
-                default-content-process-count =
-                    .label = { $num } (default)
-                # PLATFORM() selector
-                platform =
+        assert "".join(fluent_serialize(res)) == dedent(
+            """\
+            # Any copyright is dedicated to the Public Domain.
+            # http://creativecommons.org/publicdomain/zero/1.0/
+
+
+            ### Resource Comment
+
+            # Simple string
+            title = About Localization
+            # Multiline string: press Shift + Enter to insert new line
+            feedbackUninstallCopy =
+                Your participation in Firefox Test Pilot means
+                a lot! Please check out our other experiments,
+                and stay tuned for more to come.
+            # Attributes: in original string
+            emailOptInInput =
+                .placeholder = email goes here :)
+            # Attributes: access keys
+            file-menu =
+                .label = File
+                .accesskey = F
+            other-file-menu =
+                .aria-label = { file-menu.label }
+                .accesskey = { file-menu.accesskey }
+            # Value and an attribute
+            shotIndexNoExpirationSymbol = ∞
+                .title = This shot does not expire
+            # Plurals
+            delete-all-message =
+                { NUMBER($num) ->
+                    [one] Delete this download?
+                   *[other] Delete { $num } downloads?
+                }
+            # Plurals with custom values
+            delete-all-message-special-cases =
+                { NUMBER($num) ->
+                    [1] Delete this download?
+                    [2] Delete this pair of downloads?
+                    [12] Delete this dozen of downloads?
+                   *[other] Delete { $num } downloads?
+                }
+            # DATETIME Built-in function
+            today-is = Today is { DATETIME($date, month: "long", year: "numeric", day: "numeric") }
+            # Soft Launch
+            default-content-process-count =
+                .label = { $num } (default)
+            # PLATFORM() selector
+            platform =
+                { PLATFORM() ->
+                    [win] Options
+                   *[other] Preferences
+                }
+            # NUMBER() selector
+            number =
+                { NUMBER($var, type: "ordinal") ->
+                    [1] first
+                    [one] { $var }st
+                   *[other] { $var }nd
+                }
+            # PLATFORM() selector in attribute
+            platform-attribute =
+                .title =
                     { PLATFORM() ->
                         [win] Options
                        *[other] Preferences
                     }
-                # NUMBER() selector
-                number =
-                    { NUMBER($var, type: "ordinal") ->
-                        [1] first
-                        [one] { $var }st
-                       *[other] { $var }nd
+            # Double selector in attributes
+            download-choose-folder =
+                .label =
+                    { PLATFORM() ->
+                        [macos] Choose…
+                       *[other] Browse…
                     }
-                # PLATFORM() selector in attribute
-                platform-attribute =
-                    .title =
-                        { PLATFORM() ->
-                            [win] Options
-                           *[other] Preferences
-                        }
-                # Double selector in attributes
-                download-choose-folder =
-                    .label =
-                        { PLATFORM() ->
-                            [macos] Choose…
-                           *[other] Browse…
-                        }
-                    .accesskey =
-                        { PLATFORM() ->
-                            [macos] e
-                           *[other] o
-                        }
-                # Multiple selectors
-                selector-multi =
-                    { NUMBER($num) ->
-                        [one]
-                            { $gender ->
-                                [feminine] There is one email for her
-                               *[masculine] There is one email for him
-                            }
-                       *[other]
-                            { $gender ->
-                                [feminine] There are many emails for her
-                               *[masculine] There are many emails for him
-                            }
+                .accesskey =
+                    { PLATFORM() ->
+                        [macos] e
+                       *[other] o
                     }
-                # Term
-                -term = Term
-                # TermReference
-                term-reference = Term { -term } Reference
-                # StringExpression
-                string-expression = { "" }
-                # NumberExpression
-                number-expression = { 5 }
-                # MessageReference with attribute (was: AttributeExpression)
-                attribute-expression = { my_id.title }
-                # Nested selectors
-                selector-nested =
-                    { $gender ->
-                        [masculine]
-                            { NUMBER($num) ->
-                                [one] There is one email for him
-                               *[other] There are many emails for him
-                            }
-                       *[feminine]
-                            { NUMBER($num) ->
-                                [one] There is one email for her
-                               *[other] There are many emails for her
-                            }
-                    }
-                """
-            ),
+            # Multiple selectors
+            selector-multi =
+                { NUMBER($num) ->
+                    [one]
+                        { $gender ->
+                            [feminine] There is one email for her
+                           *[masculine] There is one email for him
+                        }
+                   *[other]
+                        { $gender ->
+                            [feminine] There are many emails for her
+                           *[masculine] There are many emails for him
+                        }
+                }
+            # Term
+            -term = Term
+            # TermReference
+            term-reference = Term { -term } Reference
+            # StringExpression
+            string-expression = { "" }
+            # NumberExpression
+            number-expression = { 5 }
+            # MessageReference with attribute (was: AttributeExpression)
+            attribute-expression = { my_id.title }
+            # Nested selectors
+            selector-nested =
+                { $gender ->
+                    [masculine]
+                        { NUMBER($num) ->
+                            [one] There is one email for him
+                           *[other] There are many emails for him
+                        }
+                   *[feminine]
+                        { NUMBER($num) ->
+                            [one] There is one email for her
+                           *[other] There are many emails for her
+                        }
+                }
+            """
         )

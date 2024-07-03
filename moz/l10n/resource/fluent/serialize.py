@@ -76,7 +76,8 @@ def fluent_astify(
     Function names are upper-cased, and annotations with the `message` function
     are mapped to message and term references.
 
-    If the resource includes any metadata, a `serialize_metadata` callable must be provided
+    If the resource includes any metadata other than a string resource `info` value,
+    a `serialize_metadata` callable must be provided
     to map each field into a comment value, or to discard it by returning an empty value.
     """
 
@@ -95,6 +96,12 @@ def fluent_astify(
             if not serialize_metadata:
                 raise ValueError("Metadata requires serialize_metadata parameter")
             for field in node.meta:
+                if (
+                    isinstance(node, res.Resource)
+                    and field.key == "info"
+                    and field == node.meta[0]
+                ):
+                    continue
                 meta_str = serialize_metadata(field)
                 if meta_str:
                     ms = meta_str.strip("\n")
@@ -102,7 +109,18 @@ def fluent_astify(
         return cs
 
     body: list[ftl.EntryType] = []
-    res_comment = comment(resource)
+    res_info = resource.meta[0] if resource.meta else None
+    if (
+        not trim_comments
+        and res_info
+        and res_info.key == "info"
+        and isinstance(res_info.value, str)
+        and res_info.value
+    ):
+        body.append(ftl.Comment(res_info.value))
+        res_comment = resource.comment.rstrip()
+    else:
+        res_comment = comment(resource)
     if res_comment:
         body.append(ftl.ResourceComment(res_comment))
     for idx, section in enumerate(resource.sections):
