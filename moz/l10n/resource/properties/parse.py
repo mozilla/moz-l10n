@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from re import sub
-from typing import Any, Tuple, cast
+from typing import Any
 
 from translate.storage.properties import propfile
 
@@ -32,17 +32,12 @@ def parse_comment(lines: list[str]) -> str:
 
 class propfile_shim(propfile):  # type: ignore[misc]
     def detect_encoding(
-        self, text: bytes | str, default_encodings: list[str] | None = None
+        self, text: str, default_encodings: list[str] | None = None
     ) -> tuple[str, str]:
         """
         Allow propfile().parse() to parse str inputs.
         """
-        if isinstance(text, str):
-            return (text, default_encodings[0] if default_encodings else "utf-8")
-        else:
-            return cast(
-                Tuple[str, str], super().detect_encoding(text, default_encodings)
-            )
+        return (text, default_encodings[0] if default_encodings else "utf-8")
 
 
 def properties_parse(
@@ -61,7 +56,7 @@ def properties_parse(
     pf = propfile_shim(personality="java-utf8")
     if encoding != "utf-8":
         pf.default_encoding = encoding
-    pf.parse(source)
+    pf.parse(source if isinstance(source, str) else source.decode(encoding))
     entries: list[Entry[Message, Any] | Comment] = []
     resource = Resource(Format.properties, [Section((), entries)])
     for unit in pf.getunits():
