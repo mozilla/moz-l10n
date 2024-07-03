@@ -252,6 +252,8 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
         return msg.Expression(name, msg.FunctionAnnotation("message"))
     elif isinstance(exp, ftl.TermReference):
         name = "-" + exp.id.name
+        if exp.attribute is not None:
+            name += "." + exp.attribute.name
         ftl_named = exp.arguments.named if exp.arguments else []
         return msg.Expression(
             name,

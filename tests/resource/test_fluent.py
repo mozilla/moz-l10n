@@ -129,6 +129,13 @@ class TestFluent(TestCase):
                            *[other] x,x
                         }
                   }
+                -term = Term
+                  .attr = foo
+                term-sel =
+                  { -term.attr ->
+                     [foo] Foo
+                    *[other] Other
+                  }
                 """
             ),
         )
@@ -207,140 +214,157 @@ class TestFluent(TestCase):
                     },
                 ),
             ),
+            Entry(("-term",), PatternMessage(["Term"])),
+            Entry(("-term", "attr"), PatternMessage(["foo"])),
+            Entry(
+                ("term-sel",),
+                SelectMessage(
+                    [Expression("-term.attr", FunctionAnnotation("message"))],
+                    {
+                        ("foo",): ["Foo"],
+                        (other,): ["Other"],
+                    },
+                ),
+            ),
         ]
-        self.assertEqual(
-            res,
-            Resource(
-                Format.fluent,
-                [
-                    Section(
-                        id=(),
-                        entries=[
-                            Entry(("simple",), PatternMessage(["A"])),
-                            Comment("Standalone Comment"),
-                        ],
-                        comment="Group Comment",
-                    ),
-                    Section((), entries),
-                ],
-                comment="Resource Comment",
-            ),
+        assert res == Resource(
+            Format.fluent,
+            [
+                Section(
+                    id=(),
+                    entries=[
+                        Entry(("simple",), PatternMessage(["A"])),
+                        Comment("Standalone Comment"),
+                    ],
+                    comment="Group Comment",
+                ),
+                Section((), entries),
+            ],
+            comment="Resource Comment",
         )
-        self.assertEqual(
-            "".join(fluent_serialize(res)),
-            dedent(
-                """\
-                ### Resource Comment
+        assert "".join(fluent_serialize(res)) == dedent(
+            """\
+            ### Resource Comment
 
 
-                ## Group Comment
+            ## Group Comment
 
-                simple = A
+            simple = A
 
-                # Standalone Comment
+            # Standalone Comment
 
 
-                ##
+            ##
 
-                # Message Comment
-                # on two lines.
-                expressions = A { $arg } B { msg.foo } C { -term(x: 42) }
-                functions = { NUMBER($arg) }{ FOO("bar", opt: "val") }
-                has-attr = ABC
-                    .attr = Attr
-                # Attr Comment
-                has-only-attr =
-                    .attr = Attr
-                single-sel =
-                    { NUMBER($num) ->
-                        [one] One
-                       *[other] Other
-                    }
-                two-sels =
-                    { NUMBER($a) ->
-                        [1]
-                            { $b ->
-                                [cc] pre One mid CC post
-                               *[bb] pre One mid BB post
-                            }
-                       *[2]
-                            { $b ->
-                                [cc] pre Two mid CC post
-                               *[bb] pre Two mid BB post
-                            }
-                    }
-                deep-sels =
-                    { NUMBER($a) ->
-                        [0]
-                            { NUMBER($b) ->
-                                [one] { "" }
-                               *[other] 0,x
-                            }
-                        [one]
-                            { NUMBER($b) ->
-                                [one] { "1,1" }
-                               *[other] 1,x
-                            }
-                       *[other]
-                            { NUMBER($b) ->
-                                [0] x,0
-                                [one] x,1
-                               *[other] x,x
-                            }
-                    }
-                """
-            ),
+            # Message Comment
+            # on two lines.
+            expressions = A { $arg } B { msg.foo } C { -term(x: 42) }
+            functions = { NUMBER($arg) }{ FOO("bar", opt: "val") }
+            has-attr = ABC
+                .attr = Attr
+            # Attr Comment
+            has-only-attr =
+                .attr = Attr
+            single-sel =
+                { NUMBER($num) ->
+                    [one] One
+                   *[other] Other
+                }
+            two-sels =
+                { NUMBER($a) ->
+                    [1]
+                        { $b ->
+                            [cc] pre One mid CC post
+                           *[bb] pre One mid BB post
+                        }
+                   *[2]
+                        { $b ->
+                            [cc] pre Two mid CC post
+                           *[bb] pre Two mid BB post
+                        }
+                }
+            deep-sels =
+                { NUMBER($a) ->
+                    [0]
+                        { NUMBER($b) ->
+                            [one] { "" }
+                           *[other] 0,x
+                        }
+                    [one]
+                        { NUMBER($b) ->
+                            [one] { "1,1" }
+                           *[other] 1,x
+                        }
+                   *[other]
+                        { NUMBER($b) ->
+                            [0] x,0
+                            [one] x,1
+                           *[other] x,x
+                        }
+                }
+            -term = Term
+                .attr = foo
+            term-sel =
+                { -term.attr ->
+                    [foo] Foo
+                   *[other] Other
+                }
+            """
         )
-        self.assertEqual(
-            "".join(fluent_serialize(res, trim_comments=True)),
-            dedent(
-                """\
-                simple = A
-                expressions = A { $arg } B { msg.foo } C { -term(x: 42) }
-                functions = { NUMBER($arg) }{ FOO("bar", opt: "val") }
-                has-attr = ABC
-                    .attr = Attr
-                has-only-attr =
-                    .attr = Attr
-                single-sel =
-                    { NUMBER($num) ->
-                        [one] One
-                       *[other] Other
-                    }
-                two-sels =
-                    { NUMBER($a) ->
-                        [1]
-                            { $b ->
-                                [cc] pre One mid CC post
-                               *[bb] pre One mid BB post
-                            }
-                       *[2]
-                            { $b ->
-                                [cc] pre Two mid CC post
-                               *[bb] pre Two mid BB post
-                            }
-                    }
-                deep-sels =
-                    { NUMBER($a) ->
-                        [0]
-                            { NUMBER($b) ->
-                                [one] { "" }
-                               *[other] 0,x
-                            }
-                        [one]
-                            { NUMBER($b) ->
-                                [one] { "1,1" }
-                               *[other] 1,x
-                            }
-                       *[other]
-                            { NUMBER($b) ->
-                                [0] x,0
-                                [one] x,1
-                               *[other] x,x
-                            }
-                    }
+        assert "".join(fluent_serialize(res, trim_comments=True)) == dedent(
+            """\
+            simple = A
+            expressions = A { $arg } B { msg.foo } C { -term(x: 42) }
+            functions = { NUMBER($arg) }{ FOO("bar", opt: "val") }
+            has-attr = ABC
+                .attr = Attr
+            has-only-attr =
+                .attr = Attr
+            single-sel =
+                { NUMBER($num) ->
+                    [one] One
+                   *[other] Other
+                }
+            two-sels =
+                { NUMBER($a) ->
+                    [1]
+                        { $b ->
+                            [cc] pre One mid CC post
+                           *[bb] pre One mid BB post
+                        }
+                   *[2]
+                        { $b ->
+                            [cc] pre Two mid CC post
+                           *[bb] pre Two mid BB post
+                        }
+                }
+            deep-sels =
+                { NUMBER($a) ->
+                    [0]
+                        { NUMBER($b) ->
+                            [one] { "" }
+                           *[other] 0,x
+                        }
+                    [one]
+                        { NUMBER($b) ->
+                            [one] { "1,1" }
+                           *[other] 1,x
+                        }
+                   *[other]
+                        { NUMBER($b) ->
+                            [0] x,0
+                            [one] x,1
+                           *[other] x,x
+                        }
+                }
+            -term = Term
+                .attr = foo
+            term-sel =
+                { -term.attr ->
+                    [foo] Foo
+                   *[other] Other
+                }
                 """
-            ),
         )
 
     def test_escapes(self):
