@@ -343,6 +343,20 @@ class TestFluent(TestCase):
             ),
         )
 
+    def test_escapes(self):
+        source = 'key = { "" } { "\t" } { "\\u000a" }'
+        res = fluent_parse(source)
+        exp_msg = PatternMessage(
+            [Expression(""), " ", Expression("\t"), " ", Expression("\n")]
+        )
+        assert res == Resource(
+            Format.fluent, [Section(id=(), entries=[Entry(("key",), exp_msg)])]
+        )
+        assert (
+            "".join(fluent_serialize(res))
+            == 'key = { "" } { "\\u0009" } { "\\u000A" }\n'
+        )
+
     def test_attr_comment(self):
         res = fluent_parse("msg = body\n  .attr = value")
 

@@ -313,6 +313,10 @@ def function_ref(
     return ftl.FunctionReference(ftl.Identifier(annotation.name.upper()), args)
 
 
+# Non-printable ASCII C0 & C1 / Unicode Cc characters
+esc_cc = {n: f"\\u{n:04X}" for r in (range(0, 32), range(127, 160)) for n in r}
+
+
 def value(
     decl: list[msg.Declaration], val: str | msg.VariableRef
 ) -> ftl.InlineExpression:
@@ -321,7 +325,7 @@ def value(
             float(val)
             return ftl.NumberLiteral(val)
         except Exception:
-            return ftl.StringLiteral(val)
+            return ftl.StringLiteral(val.translate(esc_cc))
     else:
         local = next((d for d in decl if d.name == val.name), None)
         return (
