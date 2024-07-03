@@ -46,8 +46,8 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[Message, Any]:
 
     def add_comment(cl: str | None) -> None:
         nonlocal comment
-        cv = cl[1:] if cl and cl.startswith(" ") else cl
-        if cv:
+        if cl is not None:
+            cv = cl[1:] if cl and cl.startswith(" ") else cl
             comment = f"{comment}\n{cv}" if comment else cv
 
     for line in ini_lines(cfg._data):
