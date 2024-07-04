@@ -67,7 +67,11 @@ def fluent_parse(
     entries: list[res.Entry[Any, Any] | res.Comment] = []
     section = res.Section((), entries)
     resource = res.Resource(Format.fluent, [section])
-    for entry in fluent_res.body:
+    fluent_body = fluent_res.body
+    if fluent_body and isinstance(fluent_body[0], ftl.Comment):
+        resource.meta.append(res.Metadata("info", fluent_body[0].content))
+        fluent_body = fluent_body[1:]
+    for entry in fluent_body:
         if isinstance(entry, ftl.Message) or isinstance(entry, ftl.Term):
             entries.extend(patterns(entry, as_ftl_patterns))
         elif isinstance(entry, ftl.ResourceComment):
@@ -252,6 +256,8 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
         return msg.Expression(name, msg.FunctionAnnotation("message"))
     elif isinstance(exp, ftl.TermReference):
         name = "-" + exp.id.name
+        if exp.attribute is not None:
+            name += "." + exp.attribute.name
         ftl_named = exp.arguments.named if exp.arguments else []
         return msg.Expression(
             name,

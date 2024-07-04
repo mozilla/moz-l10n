@@ -34,35 +34,29 @@ class TestIni(TestCase):
                 ; This file is in the UTF-8 encoding
                 [Strings]
                 TitleText=Some Title
-                """,
+                """
             )
         )
-        self.assertEqual(
-            res,
-            Resource(
-                Format.ini,
-                [
-                    Section(
-                        id=("Strings",),
-                        entries=[Entry(("TitleText",), PatternMessage(["Some Title"]))],
-                        comment="This file is in the UTF-8 encoding",
-                    )
-                ],
-            ),
+        assert res == Resource(
+            Format.ini,
+            [
+                Section(
+                    id=("Strings",),
+                    entries=[Entry(("TitleText",), PatternMessage(["Some Title"]))],
+                    comment="This file is in the UTF-8 encoding",
+                )
+            ],
         )
-        self.assertEqual(
-            "".join(ini_serialize(res)),
-            dedent(
-                """\
-                # This file is in the UTF-8 encoding
-                [Strings]
-                TitleText = Some Title
-                """
-            ),
+        assert "".join(ini_serialize(res)) == dedent(
+            """\
+            # This file is in the UTF-8 encoding
+            [Strings]
+            TitleText = Some Title
+            """
         )
-        self.assertEqual(
-            "".join(ini_serialize(res, trim_comments=True)),
-            "[Strings]\nTitleText = Some Title\n",
+        assert (
+            "".join(ini_serialize(res, trim_comments=True))
+            == "[Strings]\nTitleText = Some Title\n"
         )
 
     def test_resource_comment(self):
@@ -72,43 +66,42 @@ class TestIni(TestCase):
                 ; This Source Code Form is subject to the terms of the Mozilla Public
                 ; License, v. 2.0. If a copy of the MPL was not distributed with this file,
                 ; You can obtain one at http://mozilla.org/MPL/2.0/.
+                ;
+                ; This file is in the UTF-8 encoding
 
                 [Strings]
                 TitleText=Some Title
                 """
             )
         )
-        self.assertEqual(
-            res,
-            Resource(
-                Format.ini,
-                [
-                    Section(
-                        id=("Strings",),
-                        entries=[Entry(("TitleText",), PatternMessage(["Some Title"]))],
-                    )
-                ],
-                comment="This Source Code Form is subject to the terms of the Mozilla Public\n"
-                "License, v. 2.0. If a copy of the MPL was not distributed with this file,\n"
-                "You can obtain one at http://mozilla.org/MPL/2.0/.",
-            ),
+        assert res == Resource(
+            Format.ini,
+            [
+                Section(
+                    id=("Strings",),
+                    entries=[Entry(("TitleText",), PatternMessage(["Some Title"]))],
+                )
+            ],
+            comment="This Source Code Form is subject to the terms of the Mozilla Public\n"
+            "License, v. 2.0. If a copy of the MPL was not distributed with this file,\n"
+            "You can obtain one at http://mozilla.org/MPL/2.0/.\n\n"
+            "This file is in the UTF-8 encoding",
         )
-        self.assertEqual(
-            "".join(ini_serialize(res)),
-            dedent(
-                """\
-                # This Source Code Form is subject to the terms of the Mozilla Public
-                # License, v. 2.0. If a copy of the MPL was not distributed with this file,
-                # You can obtain one at http://mozilla.org/MPL/2.0/.
+        assert "".join(ini_serialize(res)) == dedent(
+            """\
+            # This Source Code Form is subject to the terms of the Mozilla Public
+            # License, v. 2.0. If a copy of the MPL was not distributed with this file,
+            # You can obtain one at http://mozilla.org/MPL/2.0/.
+            #
+            # This file is in the UTF-8 encoding
 
-                [Strings]
-                TitleText = Some Title
-                """
-            ),
+            [Strings]
+            TitleText = Some Title
+            """
         )
-        self.assertEqual(
-            "".join(ini_serialize(res, trim_comments=True)),
-            "[Strings]\nTitleText = Some Title\n",
+        assert (
+            "".join(ini_serialize(res, trim_comments=True))
+            == "[Strings]\nTitleText = Some Title\n"
         )
 
     def test_junk(self):
