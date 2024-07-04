@@ -237,3 +237,33 @@ class TestDtd(TestCase):
         res.sections[0].entries.insert(0, Entry(("fail me",), "bar"))
         with self.assertRaises(ValueError):
             "".join(dtd_serialize(res))
+
+    def test_no_whitespace(self):
+        res = dtd_parse('<!ENTITY key "value">')
+        assert res == Resource(
+            Format.dtd, [Section((), [Entry(("key",), PatternMessage(["value"]))])]
+        )
+
+        res = dtd_parse('<!-- comment --><!ENTITY key "value">')
+        assert res == Resource(
+            Format.dtd,
+            [
+                Section(
+                    (), [Entry(("key",), PatternMessage(["value"]), comment="comment")]
+                )
+            ],
+        )
+
+        res = dtd_parse('<!ENTITY one "One"><!ENTITY two "Two">')
+        assert res == Resource(
+            Format.dtd,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(("one",), PatternMessage(["One"])),
+                        Entry(("two",), PatternMessage(["Two"])),
+                    ],
+                )
+            ],
+        )
