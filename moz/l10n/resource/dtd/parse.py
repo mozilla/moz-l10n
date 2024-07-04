@@ -91,7 +91,7 @@ def dtd_parse(source: str | bytes) -> Resource[Message, Any]:
     if len(source) > pos:
         for entry in dtd_iter(source, pos):
             if isinstance(entry, str):
-                if not entry.isspace():
+                if entry and not entry.isspace():
                     raise ValueError(f"Unexpected content in DTD: {entry}")
             else:
                 if comment:
