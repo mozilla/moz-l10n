@@ -44,7 +44,7 @@ def build_file_tree(root: str, tree: Tree) -> None:
             build_file_tree(path, value)
 
 
-class TestL10nConfig(TestCase):
+class TestL10nConfigPaths(TestCase):
     def test_paths(self):
         cfg_toml = dedent(
             """
@@ -124,7 +124,7 @@ class TestL10nConfig(TestCase):
                 reference = "browser/branding/locales/en-US/**"
                 l10n = "{l}browser/branding/**"
             [[includes]]
-                path = "devtools/locales/l10n.toml"
+                path = "devtools/shared/locales/l10n.toml"
             [[includes]]
                 path = "toolkit/locales/l10n.toml"
             """
@@ -132,13 +132,13 @@ class TestL10nConfig(TestCase):
         devtools_toml = dedent(
             """
             # included in both browser_toml and toolkit_toml
-            basepath = ".."
+            basepath = "../../.."
             [[paths]]
-                reference = "locales/en-US/**"
-                l10n = "../{locale}/devtools/**"
+                reference = "devtools/shared/locales/en-US/**"
+                l10n = "{l10n_base}/{locale}/devtools/**"
             [[includes]]
                 # reference loop
-                path = "../toolkit/locales/l10n.toml"
+                path = "toolkit/locales/l10n.toml"
             """
         )
         toolkit_toml = dedent(
@@ -157,7 +157,7 @@ class TestL10nConfig(TestCase):
                 reference = "browser/locales/en-US/b/**"
                 l10n = "{l}browser/b/**"
             [[includes]]
-                path = "devtools/locales/l10n.toml"
+                path = "devtools/shared/locales/l10n.toml"
             """
         )
         tree: Tree = {
@@ -169,9 +169,11 @@ class TestL10nConfig(TestCase):
                 },
             },
             "devtools": {
-                "locales": {
-                    "l10n.toml": devtools_toml,
-                    "en-US": {"a": "", "b": {"c": ""}},
+                "shared": {
+                    "locales": {
+                        "l10n.toml": devtools_toml,
+                        "en-US": {"a": "", "b": {"c": ""}},
+                    }
                 }
             },
             "dom": {
@@ -202,7 +204,7 @@ class TestL10nConfig(TestCase):
 
         assert loaded == [
             join(root, p, "locales", "l10n.toml")
-            for p in ("browser", "devtools", "toolkit")
+            for p in ("browser", join("devtools", "shared"), "toolkit")
         ]
         assert paths.base == root
         assert paths.locales is None
@@ -213,8 +215,8 @@ class TestL10nConfig(TestCase):
                 "browser/branding/locales/en-US/b/c": "browser/branding/b/c",
                 "browser/locales/en-US/a": "browser/a",
                 "browser/locales/en-US/b/c": "browser/b/c",
-                "devtools/locales/en-US/a": "devtools/a",
-                "devtools/locales/en-US/b/c": "devtools/b/c",
+                "devtools/shared/locales/en-US/a": "devtools/a",
+                "devtools/shared/locales/en-US/b/c": "devtools/b/c",
                 "dom/locales/en-US/a": "dom/a",
                 "dom/locales/en-US/b/c": "dom/b/c",
                 "toolkit/locales/en-US/a": "toolkit/a",
@@ -229,6 +231,12 @@ class TestL10nConfig(TestCase):
             paths.target_path(join(root, "browser", "locales", "l10n.toml"), "xx")
             is None
         )
+        paths.locales = ["aa", "bb"]
+        new_base = join(paths.base, "x", "y", "z")
+        paths.base = new_base
+        assert paths.all() == {
+            (ref, tgt.replace(root, new_base)): ["aa", "bb"] for ref, tgt in expected
+        }
 
     def test_fomo_buyersguide(self):
         cfg_toml = dedent(

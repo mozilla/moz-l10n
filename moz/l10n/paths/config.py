@@ -69,18 +69,6 @@ class L10nConfigPaths:
     Does not consider `.l10n-ignore` files.
     """
 
-    base: str
-    """
-    The configuration root,
-    determined in the TOML by `basepath` relative to the config file path
-    or set by the user.
-    """
-    locales: list[str] | None
-    """
-    Locales for the config,
-    determined in the TOML by `locales` or set directly by the user.
-    """
-
     def __init__(
         self,
         cfg_path: str,
@@ -106,9 +94,9 @@ class L10nConfigPaths:
         self._cfg_path = cfg_path
         self._locale_map = locale_map or {}
         base = toml.get("basepath", ".")
-        self.base = normpath(join(dirname(cfg_path), base))
-        self._ref_root = self.base
-        self.locales = toml.get("locales", None)
+        self._base = normpath(join(dirname(cfg_path), base))
+        self._ref_root = self._base
+        self._locales: list[str] | None = toml.get("locales", None)
         env = toml.get("env", None)
         env_map = PartialMap(env) if env else None
 
@@ -164,6 +152,35 @@ class L10nConfigPaths:
                     )
 
     @property
+    def base(self) -> str:
+        """
+        The configuration root,
+        determined in the TOML by `basepath` relative to the config file path
+        or set by the user.
+        """
+        return self._base
+
+    @base.setter
+    def base(self, base: str) -> None:
+        self._base = base
+        for incl in self._includes:
+            incl.base = base
+
+    @property
+    def locales(self) -> list[str] | None:
+        """
+        Locales for the config,
+        determined in the TOML by `locales` or set directly by the user.
+        """
+        return self._locales
+
+    @locales.setter
+    def locales(self, locales: list[str] | None) -> None:
+        self._locales = locales
+        for incl in self._includes:
+            incl.locales = locales
+
+    @property
     def ref_root(self) -> str:
         """The reference root directory."""
         return self._ref_root
@@ -205,13 +222,13 @@ class L10nConfigPaths:
         self, format_map: dict[str, str] | None
     ) -> Iterator[tuple[tuple[str, str], list[str] | None]]:
         lc_map = PartialMap(format_map or ())
-        lc_map["l10n_base"] = self.base
+        lc_map["l10n_base"] = self._base
         for ref, (target, locales) in self._path_data.items():
             target = target.format_map(lc_map)
             if target.endswith(".pot"):
                 target = target[:-1]
-            target = normpath(join(self.base, target))
-            yield (ref, target), locales or self.locales
+            target = normpath(join(self._base, target))
+            yield (ref, target), locales or self._locales
         for incl in self._includes:
             yield from incl._all(format_map)
 
@@ -222,7 +239,7 @@ class L10nConfigPaths:
             norm_ref_path += "t"
         pd = self._path_data.get(norm_ref_path, None)
         if pd:
-            locales = set(pd[1] or self.locales or ())
+            locales = set(pd[1] or self._locales or ())
         else:
             locales = set()
         for incl in self._includes:
@@ -256,7 +273,7 @@ class L10nConfigPaths:
                     return path
             return None
         lc_map = PartialMap(format_map or ())
-        lc_map["l10n_base"] = self.base
+        lc_map["l10n_base"] = self._base
         if locale is not None:
             if pd[1] is not None and locale not in pd[1]:
                 return None
@@ -266,20 +283,20 @@ class L10nConfigPaths:
         target = pd[0].format_map(lc_map)
         if target.endswith(".pot"):
             target = target[:-1]
-        return normpath(join(self.base, target))
+        return normpath(join(self._base, target))
 
     def format_target_path(self, target: str, locale: str) -> str:
         lc_map = {"locale": locale}
         for key, fn in self._locale_map.items():
             lc_map[key] = fn(locale)
-        return normpath(join(self.base, target.format_map(lc_map)))
+        return normpath(join(self._base, target.format_map(lc_map)))
 
     def find_reference(self, target: str) -> tuple[str, dict[str, str]] | None:
         """
         A reverse lookup for the reference path and variables matching `target`,
         or `None` if not found.
         """
-        target = relpath(join(self.base, normpath(target)), self.base)
+        target = relpath(join(self._base, normpath(target)), self._base)
         target = normpath(target).replace(sep, "/")
         for ref, pattern in self._templates:
             match = pattern.fullmatch(target)
