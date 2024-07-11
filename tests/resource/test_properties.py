@@ -154,74 +154,69 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
         )
         res = properties_parse(bytes)
         self.maxDiff = 10000
-        self.assertEqual(
-            res,
-            Resource(
-                Format.properties,
-                [
-                    Section(
-                        (),
-                        [
-                            Entry(
-                                ("1",), PatternMessage(["abc"]), comment="simple check"
-                            ),
-                            Entry(
-                                ("2",),
-                                PatternMessage(["xy\t"]),
-                                comment="test whitespace trimming in key and value",
-                            ),
-                            Entry(
-                                ("3",),
-                                PatternMessage(["\u1234\t\r\n\u00AB\\u0001\n"]),
-                                comment="test parsing of escaped values",
-                            ),
-                            Entry(
-                                ("4",),
-                                PatternMessage(["this is multiline property"]),
-                                comment="test multiline properties",
-                            ),
-                            Entry(
-                                ("5",),
-                                PatternMessage(["this is another multiline property"]),
-                                comment="",
-                            ),
-                            Entry(
-                                ("6",),
-                                PatternMessage(["test\u0036"]),
-                                comment="property with DOS EOL",
-                            ),
-                            Entry(
-                                ("7",),
-                                PatternMessage(["yet another multiline propery"]),
-                                comment="test multiline property with with DOS EOL",
-                            ),
-                            Entry(
-                                ("8",),
-                                PatternMessage(["\ttest5 \t"]),
-                                comment="trimming should not trim escaped whitespaces",
-                            ),
-                            Entry(
-                                ("9",),
-                                PatternMessage([" test6\t\t    "]),
-                                comment="another variant of #8",
-                            ),
-                            Entry(
-                                ("10aሴb",),
-                                PatternMessage(["c\uCDEFd"]),
-                                comment="test UTF-8 encoded property/value",
-                            ),
-                            Entry(
-                                ("11",),
-                                PatternMessage(["\uABCD"]),
-                                comment="next property should test unicode escaping at the boundary of parsing buffer\n"
-                                + "buffer size is expected to be 4096 so add comments to get to this offset\n"
-                                + (("#" * 79 + "\n") * 41)
-                                + ("#" * 78),
-                            ),
-                        ],
-                    )
-                ],
-            ),
+        assert res == Resource(
+            Format.properties,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(("1",), PatternMessage(["abc"]), comment="simple check"),
+                        Entry(
+                            ("2",),
+                            PatternMessage(["xy\t"]),
+                            comment="test whitespace trimming in key and value",
+                        ),
+                        Entry(
+                            ("3",),
+                            PatternMessage(["\u1234\t\r\n\u00AB\u0001\n"]),
+                            comment="test parsing of escaped values",
+                        ),
+                        Entry(
+                            ("4",),
+                            PatternMessage(["this is multiline property"]),
+                            comment="test multiline properties",
+                        ),
+                        Entry(
+                            ("5",),
+                            PatternMessage(["this is another multiline property"]),
+                            comment="",
+                        ),
+                        Entry(
+                            ("6",),
+                            PatternMessage(["test\u0036"]),
+                            comment="property with DOS EOL",
+                        ),
+                        Entry(
+                            ("7",),
+                            PatternMessage(["yet another multiline propery"]),
+                            comment="test multiline property with with DOS EOL",
+                        ),
+                        Entry(
+                            ("8",),
+                            PatternMessage(["\ttest5 \t"]),
+                            comment="trimming should not trim escaped whitespaces",
+                        ),
+                        Entry(
+                            ("9",),
+                            PatternMessage([" test6\t\t    "]),
+                            comment="another variant of #8",
+                        ),
+                        Entry(
+                            ("10aሴb",),
+                            PatternMessage(["c\uCDEFd"]),
+                            comment="test UTF-8 encoded property/value",
+                        ),
+                        Entry(
+                            ("11",),
+                            PatternMessage(["\uABCD"]),
+                            comment="next property should test unicode escaping at the boundary of parsing buffer\n"
+                            + "buffer size is expected to be 4096 so add comments to get to this offset\n"
+                            + (("#" * 79 + "\n") * 41)
+                            + ("#" * 78),
+                        ),
+                    ],
+                )
+            ],
         )
         assert (
             "".join(properties_serialize(res))
@@ -232,7 +227,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                 # test whitespace trimming in key and value
                 2 = xy\\t
                 # test parsing of escaped values
-                3 = \u1234\\t\\r\\n\u00AB\\\\u0001\\n
+                3 = \u1234\\t\\r\\n\u00AB\\u0001\\n
                 # test multiline properties
                 4 = this is multiline property
                 5 = this is another multiline property
