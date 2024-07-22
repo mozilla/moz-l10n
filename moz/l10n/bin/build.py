@@ -117,7 +117,7 @@ def build_targets_for_release(
                 else:
                     log.info(f"skip {rel_path}")
             elif source_ids:
-                log.info(f"create {rel_path}")
+                log.info(f"create empty {rel_path}")
                 open(tgt_path, "a").close()
             else:
                 log.info(f"skip {rel_path}")
