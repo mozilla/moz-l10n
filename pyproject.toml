@@ -40,6 +40,7 @@ dependencies = [
 ]
 
 [project.scripts]
+l10n-build = "moz.l10n.bin.build:cli"
 l10n-fix = "moz.l10n.bin.fix:cli"
 
 [project.urls]

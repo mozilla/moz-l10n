@@ -79,10 +79,6 @@ def cli() -> None:
     sys.exit(res)
 
 
-if __name__ == "__main__":
-    cli()
-
-
 def fix(
     file_paths: list[str],
     config_path: str | None = None,
@@ -177,3 +173,7 @@ def fix_file(root: str, path: str) -> Result:
 def plural(noun: str, count: int) -> str:
     """Hacky and English-only"""
     return noun if count == 1 else noun + "s"
+
+
+if __name__ == "__main__":
+    cli()
