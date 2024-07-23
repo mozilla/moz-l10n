@@ -42,6 +42,11 @@ class TestL10nEqual(TestCase):
         b = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 2")])])
         assert not l10n_equal(a, b)
 
+    def test_equal_stripped_entry_comments(self):
+        a = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 1")])])
+        b = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 1   ")])])
+        assert l10n_equal(a, b)
+
     def test_not_equal_entry_meta(self):
         a = Resource(
             None,
@@ -62,6 +67,11 @@ class TestL10nEqual(TestCase):
         a = Resource(None, [Section((), [Entry(("foo",), "Foo")])])
         b = Resource(None, [Section((), [Entry(("foo",), "Foo")], "Bar")])
         assert not l10n_equal(a, b)
+
+    def test_equal_stripped_section_comments(self):
+        a = Resource(None, [Section((), [Entry(("foo",), "Foo")], "\nBar")])
+        b = Resource(None, [Section((), [Entry(("foo",), "Foo")], "Bar")])
+        assert l10n_equal(a, b)
 
     def test_ignore_non_l10n(self):
         a = Resource(None, [Section((), []), Section((), [Entry(("foo",), "Foo")])])
