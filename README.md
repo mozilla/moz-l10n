@@ -20,6 +20,25 @@ The Message and Resource representations are drawn from work done for the
 Unicode [MessageFormat 2 specification](https://github.com/unicode-org/message-format-wg/tree/main/spec)
 and the [Message resource specification](https://github.com/eemeli/message-resource-wg/).
 
+## Command-line Tools
+
+For usage details, use each command's `--help` argument.
+
+### `l10n-build`
+
+Build localization files for release.
+
+Iterates source files as defined by `--config`, reads localization sources from `--base`, and writes to `--target`.
+Trims out all comments and messages not in the source files for each of the `--locales`.
+Adds empty files for any missing from the target locale.
+
+### `l10n-fix`
+
+Fix the formatting for localization resources.
+
+If `paths` is a single directory, it is iterated with `L10nConfigPaths` if `--config` is set, or `L10nDiscoverPaths` otherwise.
+If `paths` is not a single directory, its values are treated as glob expressions, with `**` support.
+
 ## moz.l10n.paths
 
 ### L10nConfigPaths
