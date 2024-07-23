@@ -35,7 +35,7 @@ def l10n_equal(a: Resource[Any, Any], b: Resource[Any, Any]) -> bool:
     """
     return (
         a.format == b.format
-        and a.comment == b.comment
+        and a.comment.strip() == b.comment.strip()
         and l10n_meta(a) == l10n_meta(b)
         and l10n_sections(a) == l10n_sections(b)
     )
@@ -43,7 +43,7 @@ def l10n_equal(a: Resource[Any, Any], b: Resource[Any, Any]) -> bool:
 
 def l10n_sections(resource: Resource[Any, Any]) -> _L10nData[_L10nData[Any]]:
     ls = [
-        (section.id, section.comment, l10n_meta(section), l10n_entries(section))
+        (section.id, section.comment.strip(), l10n_meta(section), l10n_entries(section))
         for section in resource.sections
         if any(isinstance(entry, Entry) for entry in section.entries)
     ]
@@ -53,7 +53,7 @@ def l10n_sections(resource: Resource[Any, Any]) -> _L10nData[_L10nData[Any]]:
 
 def l10n_entries(section: Section[Any, Any]) -> _L10nData[Any]:
     le = [
-        (entry.id, entry.comment, l10n_meta(entry), entry.value)
+        (entry.id, entry.comment.strip(), l10n_meta(entry), entry.value)
         for entry in section.entries
         if isinstance(entry, Entry)
     ]
