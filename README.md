@@ -7,15 +7,6 @@ The core idea here is to establish [Message](./moz/l10n/message.py) and [Resourc
 as format-independent representations of localizable and localized messages and resources,
 so that operations like linting and transforms can be applied to them.
 
-Parsers and serializers are provided for a number of formats,
-using common and well-established libraries to take care of the details.
-A unified API for these is provided,
-such that `FORMAT_parse(text)` will always accept `str` input,
-and `FORMAT_serialize(resource)` will always provide a `str` iterator.
-All the serializers accept a `trim_comments` argument
-which leaves out comments from the serialized result,
-but additional input types and options vary by format.
-
 The Message and Resource representations are drawn from work done for the
 Unicode [MessageFormat 2 specification](https://github.com/unicode-org/message-format-wg/tree/main/spec)
 and the [Message resource specification](https://github.com/eemeli/message-resource-wg/).
@@ -71,6 +62,28 @@ BCP 47 locale identifiers, i.e. like `aa`, `aa-AA`, `aa-Aaaa`, or `aa-Aaaa-AA`.
 An underscore may also be used as a separator, as in `en_US`.
 
 ## moz.l10n.resources
+
+Parsers and serializers are provided for a number of formats,
+using common and well-established libraries to take care of the details.
+A unified API for these is provided,
+such that `FORMAT_parse(text)` will always accept `str` input,
+and `FORMAT_serialize(resource)` will always provide a `str` iterator.
+All the serializers accept a `trim_comments` argument
+which leaves out comments from the serialized result,
+but additional input types and options vary by format.
+
+The library currently supports the following resource formats:
+
+- `android`: Android string resources (strings.xml)
+- `dtd`: .dtd
+- `fluent`: Fluent (.ftl)
+- `inc`: .inc
+- `ini`: .ini
+- `plain_json`: Plain JSON (.json)
+- `po`: Gettext (.po, .pot)
+- `properties`: .properties
+- `webext`: WebExtensions (messages.json)
+- `xliff`: XLIFF 1.2, including XCode customizations (.xlf, .xliff)
 
 ### add_entries
 
