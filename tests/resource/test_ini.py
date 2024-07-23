@@ -51,12 +51,12 @@ class TestIni(TestCase):
             """\
             # This file is in the UTF-8 encoding
             [Strings]
-            TitleText = Some Title
+            TitleText=Some Title
             """
         )
         assert (
             "".join(ini_serialize(res, trim_comments=True))
-            == "[Strings]\nTitleText = Some Title\n"
+            == "[Strings]\nTitleText=Some Title\n"
         )
 
     def test_resource_comment(self):
@@ -96,12 +96,12 @@ class TestIni(TestCase):
             # This file is in the UTF-8 encoding
 
             [Strings]
-            TitleText = Some Title
+            TitleText=Some Title
             """
         )
         assert (
             "".join(ini_serialize(res, trim_comments=True))
-            == "[Strings]\nTitleText = Some Title\n"
+            == "[Strings]\nTitleText=Some Title\n"
         )
 
     def test_junk(self):
@@ -151,14 +151,14 @@ class TestIni(TestCase):
                 [Strings]
                 # entry pre comment
                 # entry line comment
-                TitleText = Some Title
+                TitleText=Some Title
                   Continues
                 """
             ),
         )
         self.assertEqual(
             "".join(ini_serialize(res, trim_comments=True)),
-            "[Strings]\nTitleText = Some Title\n  Continues\n",
+            "[Strings]\nTitleText=Some Title\n  Continues\n",
         )
 
     def test_trailing_comment(self):
@@ -191,7 +191,7 @@ class TestIni(TestCase):
             dedent(
                 """\
                 [Strings]
-                TitleText = Some Title
+                TitleText=Some Title
 
                 # Stray trailing comment
 
@@ -200,7 +200,7 @@ class TestIni(TestCase):
         )
         self.assertEqual(
             "".join(ini_serialize(res, trim_comments=True)),
-            "[Strings]\nTitleText = Some Title\n",
+            "[Strings]\nTitleText=Some Title\n",
         )
 
     def test_empty_line_in_value(self):
@@ -236,7 +236,7 @@ class TestIni(TestCase):
             dedent(
                 """\
                 [Strings]
-                TitleText = Some Title
+                TitleText=Some Title
 
                   Continues
                 """
@@ -270,8 +270,8 @@ class TestIni(TestCase):
             dedent(
                 """\
                 [Strings]
-                foo =
-                bar = Bar
+                foo=
+                bar=Bar
                 """
             ),
         )
