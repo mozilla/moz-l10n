@@ -22,11 +22,27 @@ from moz.l10n.resource.data import Entry, Resource, Section
 
 class TestAddEntries(TestCase):
     def test_no_changes(self):
+        target = Resource(None, [Section((), [Entry(("foo",), "Foo")])])
+        source = Resource(None, [Section((), [Entry(("foo",), "Foo")])])
+        self.assertEqual(add_entries(target, source), 0)
+        self.assertEqual(
+            target, Resource(None, [Section((), [Entry(("foo",), "Foo")])])
+        )
+
+    def test_message_changed_in_source(self):
         target = Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
         source = Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
         self.assertEqual(add_entries(target, source), 0)
         self.assertEqual(
             target, Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
+        )
+
+    def test_message_changed_in_source_use_source_values(self):
+        target = Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
+        source = Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
+        self.assertEqual(add_entries(target, source, use_source_values=True), 1)
+        self.assertEqual(
+            target, Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
         )
 
     def test_message_not_in_source(self):
