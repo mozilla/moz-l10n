@@ -63,7 +63,7 @@ def cli() -> None:
         )
         path0 = abspath(args.paths[0])
         locale0 = basename(path0)
-        source_paths.base = dirname(abspath(args.paths[0]))
+        source_paths.base = dirname(path0)
         source_data = {}
         for ref_path, tgt_path in source_paths.all():
             try:
