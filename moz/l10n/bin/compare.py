@@ -43,6 +43,9 @@ def cli() -> None:
     )
     parser.add_argument("--json", action="store_true", help="output JSON")
     parser.add_argument(
+        "--ext", nargs="+", type=str, help="file extensions, prefix with ! to exclude"
+    )
+    parser.add_argument(
         "--source",
         metavar="PATH",
         required=True,
@@ -52,9 +55,29 @@ def cli() -> None:
     parser.add_argument("paths", nargs="+", type=str, help="directories to test")
     args = parser.parse_args()
 
+    ext_include: set[str] = set()
+    ext_exclude: set[str] = set()
+    if args.ext:
+        arg_ext: list[str] = args.ext
+        if len(arg_ext) == 1 and "," in arg_ext[0]:
+            arg_ext = [ext.strip() for ext in arg_ext[0].split(",")]
+        for ext in arg_ext:
+            if ext.startswith("!"):
+                ext = ext[1:]
+                ext_exclude.add(ext if ext.startswith(".") else f".{ext}")
+            else:
+                ext_include.add(ext if ext.startswith(".") else f".{ext}")
+
+    def ext_filter(path: str) -> bool:
+        included = not ext_include or any(path.endswith(ext) for ext in ext_include)
+        excluded = ext_exclude and any(path.endswith(ext) for ext in ext_exclude)
+        return included and not excluded
+
     if args.source.endswith(".json"):
         with open(args.source) as f:
             source_data: dict[str, list[str] | set[str]] = json.load(f)
+        if ext_include or ext_exclude:
+            source_data = {k: set(v) for k, v in source_data.items() if ext_filter(k)}
     else:
         source_paths: L10nConfigPaths | L10nDiscoverPaths = (
             L10nConfigPaths(args.source)
@@ -66,11 +89,12 @@ def cli() -> None:
         source_paths.base = dirname(path0)
         source_data = {}
         for ref_path, tgt_path in source_paths.all():
-            try:
-                path = relpath(tgt_path.format(locale=locale0), path0)
-                source_data[path] = msg_ids(ref_path)
-            except UnsupportedResource:
-                continue
+            if ext_filter(tgt_path):
+                try:
+                    path = relpath(tgt_path.format(locale=locale0), path0)
+                    source_data[path] = msg_ids(ref_path)
+                except UnsupportedResource:
+                    continue
     source_total = sum(len(sd) for sd in source_data.values())
     if source_total == 0:
         raise ValueError(f"No messages found for source {args.source}")
