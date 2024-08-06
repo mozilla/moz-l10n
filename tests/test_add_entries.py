@@ -40,9 +40,15 @@ class TestAddEntries(TestCase):
     def test_message_changed_in_source_use_source_values(self):
         target = Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
         source = Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
-        self.assertEqual(add_entries(target, source, use_source_values=True), 1)
-        self.assertEqual(
-            target, Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
+        assert add_entries(target, source, use_source_entries=True) == 1
+        assert target == Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
+
+    def test_message_comment_changed_in_source_use_source_values(self):
+        target = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 1")])])
+        source = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 2")])])
+        assert add_entries(target, source, use_source_entries=True) == 1
+        assert target == Resource(
+            None, [Section((), [Entry(("foo",), "Foo", "Bar 2")])]
         )
 
     def test_message_not_in_source(self):
@@ -80,13 +86,15 @@ class TestAddEntries(TestCase):
         source = Resource(
             None, [Section((), [Entry(("bar",), "Bar 2"), Entry(("foo",), "Foo 2")])]
         )
-        self.assertEqual(add_entries(target, source), 0)
-        self.assertEqual(
-            target,
-            Resource(
-                None,
-                [Section((), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 1")])],
-            ),
+        assert add_entries(target, source) == 0
+        assert target == Resource(
+            None,
+            [Section((), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 1")])],
+        )
+        assert add_entries(target, source, use_source_entries=True) == 2
+        assert target == Resource(
+            None,
+            [Section((), [Entry(("foo",), "Foo 2"), Entry(("bar",), "Bar 2")])],
         )
 
     def test_message_addition_order(self):
