@@ -67,7 +67,7 @@ class TestL10nDiscover(TestCase):
         with self.assertRaises(ValueError):
             paths.all()
         with self.assertRaises(ValueError):
-            paths.target_path("one.pot")
+            paths.target("one.pot")
         with self.assertRaises(ValueError):
             paths.format_target_path("one.pot", "xx")
 
@@ -88,8 +88,7 @@ class TestL10nDiscover(TestCase):
         }
         assert paths.all() == expected
         for ref, tgt in expected:
-            assert paths.target_path(ref) == tgt
-            assert paths.target_path(ref, locale="xx") == tgt.format(locale="xx")
+            assert paths.target(ref) == (tgt, ())
 
     def test_ref_priorities(self):
         with TemporaryDirectory() as root:
@@ -125,21 +124,19 @@ class TestL10nDiscover(TestCase):
             assert paths.ref_root == join(root, "source", "en")
             assert paths.base == join(root, "target")
             assert paths.locales == ["yy-Latn", "zz"]
-            assert paths.target_locales() == {"yy-Latn", "zz"}
-            assert paths.target_locales("foo") == {"yy-Latn", "zz"}
             assert paths.all() == {
                 (
                     join(paths.ref_root, "c.pot"),
                     join(paths.base, "{locale}", "c.po"),
                 ): paths.locales,
             }
-            assert (
-                paths.target_path(join(paths.ref_root, "c.pot"))
-                == paths.target_path("c.pot")
-                == join(paths.base, "{locale}", "c.po")
+            assert paths.target(join(paths.ref_root, "c.pot")) == paths.target("c.pot")
+            assert paths.target("c.pot") == (
+                join(paths.base, "{locale}", "c.po"),
+                paths.locales,
             )
-            assert paths.target_path("a.ftl") is None
-            assert paths.target_path(join(root, "source", "en-US", "a.ftl")) is None
+            assert paths.target("a.ftl") == (None, ())
+            assert paths.target(join(root, "source", "en-US", "a.ftl")) == (None, ())
             # This relies on the `yy_Latn` directory being actually present.
             assert paths.format_target_path("{locale}/c.pot", "yy-Latn") == join(
                 paths.base, "yy_Latn", "c.pot"

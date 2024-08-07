@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from glob import glob
 from os import sep
 from os.path import dirname, isfile, join, normpath, relpath
@@ -232,34 +232,19 @@ class L10nConfigPaths:
         for incl in self._includes:
             yield from incl._all(format_map)
 
-    def target_locales(self, ref_path: str) -> set[str]:
-        """Returns the locales for which `ref_path` is translated."""
-        norm_ref_path = normpath(join(self._ref_root, ref_path))
-        if norm_ref_path.endswith(".po"):
-            norm_ref_path += "t"
-        pd = self._path_data.get(norm_ref_path, None)
-        if pd:
-            locales = set(pd[1] or self._locales or ())
-        else:
-            locales = set()
-        for incl in self._includes:
-            locales.update(incl.target_locales(ref_path))
-        return locales
-
-    def target_path(
+    def target(
         self,
         ref_path: str,
-        locale: str | None = None,
+        *,
         format_map: dict[str, str] | None = None,
-    ) -> str | None:
+    ) -> tuple[str | None, Iterable[str]]:
         """
         If `ref_path` is a valid reference path,
-        returns its corresponding target path.
-        Otherwise, returns `None`.
+        returns its corresponding target path and locales.
+        Otherwise, returns `None` for the path.
 
         In the target path, `{l10n_base}` is replaced by `self.base`.
-        If `locale` is not set,
-        any `{locale}` or `locale_map` variables will be left in.
+        Any `{locale}` or `locale_map` variables will be left in.
         Additional format variables may be set in `format_map`.
         """
         norm_ref_path = normpath(join(self._ref_root, ref_path))
@@ -268,22 +253,26 @@ class L10nConfigPaths:
         pd = self._path_data.get(norm_ref_path, None)
         if pd is None:
             for incl in self._includes:
-                path = incl.target_path(ref_path, locale, format_map)
-                if path is not None:
-                    return path
-            return None
-        lc_map = PartialMap(format_map or ())
-        lc_map["l10n_base"] = self._base
-        if locale is not None:
-            if pd[1] is not None and locale not in pd[1]:
-                return None
-            lc_map["locale"] = locale
-            for key, fn in self._locale_map.items():
-                lc_map[key] = fn(locale)
-        target = pd[0].format_map(lc_map)
-        if target.endswith(".pot"):
-            target = target[:-1]
-        return normpath(join(self._base, target))
+                target = incl.target(ref_path, format_map=format_map)
+                if target[0] is not None:
+                    return target
+            return None, ()
+        pd_path, pd_locales = pd
+
+        fmt_map = PartialMap(format_map or ())
+        fmt_map["l10n_base"] = self._base
+        path = pd_path.format_map(fmt_map)
+        if path.endswith(".pot"):
+            path = path[:-1]
+        path = normpath(join(self._base, path))
+
+        locales = (
+            set(pd_locales).intersection(self._locales)
+            if pd_locales and self._locales
+            else pd_locales or self._locales or ()
+        )
+
+        return path, locales
 
     def format_target_path(self, target: str, locale: str) -> str:
         lc_map = {"locale": locale}

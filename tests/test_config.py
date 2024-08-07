@@ -88,9 +88,7 @@ class TestL10nConfigPaths(TestCase):
         }
         assert paths.all() == expected
         for ref, tgt in expected:
-            assert paths.target_locales(ref) == set()
-            assert paths.target_path(ref) == tgt
-            assert paths.target_path(ref, "xx") == tgt.format(locale="xx")
+            assert paths.target(ref) == (tgt, ())
         assert paths.find_reference("xx/one.po") == (
             join(root, "en", "one.pot"),
             {"locale": "xx"},
@@ -225,12 +223,8 @@ class TestL10nConfigPaths(TestCase):
         }
         assert paths.all() == expected
         for ref, tgt in expected:
-            assert paths.target_locales(ref) == set()
-            assert paths.target_path(ref) == tgt
-        assert (
-            paths.target_path(join(root, "browser", "locales", "l10n.toml"), "xx")
-            is None
-        )
+            assert paths.target(ref) == (tgt, ())
+        assert paths.target(join(root, "browser", "locales", "l10n.toml")) == (None, ())
         paths.locales = ["aa", "bb"]
         new_base = join(paths.base, "x", "y", "z")
         paths.base = new_base
@@ -279,16 +273,18 @@ class TestL10nConfigPaths(TestCase):
         res_target = (
             "wagtailpages/templates/about/locale/{locale}/LC_MESSAGES/django.po"
         )
-        assert paths.target_locales(res_source) == set(path_locales)
-        assert paths.target_path(res_source) == join(
-            paths.base,
-            normpath(res_target),
-        )
-        assert paths.target_path(res_source, "de") == join(
+        tgt_path, tgt_locales = paths.target(res_source)
+        assert tgt_path == join(paths.base, normpath(res_target))
+        assert tgt_locales == set(path_locales)
+        assert paths.format_target_path(tgt_path, "de") == join(
             paths.base,
             normpath(res_target).format(locale="de"),
         )
-        assert paths.target_path(res_source, "nl") is None
+
+        paths.locales = ["es", "fr", "nl"]
+        assert paths.target(res_source)[1] == set(("es", "fr"))
+        paths.locales = []
+        assert paths.target(res_source)[1] == path_locales
 
     def test_fenix(self):
         cfg_toml = dedent(
@@ -318,11 +314,7 @@ class TestL10nConfigPaths(TestCase):
         source_strings = join(root, "res", "values", "strings.xml")
         target_strings = join(root, "res", "values-{android_locale}", "strings.xml")
         assert paths.all() == {(source_strings, target_strings): ["abc", "de-FG"]}
-        assert paths.target_locales(source_strings) == set(("abc", "de-FG"))
-        assert paths.target_path(source_strings) == target_strings
-        assert paths.target_path(source_strings, "abc") == target_strings.format(
-            android_locale="b+abc"
-        )
+        assert paths.target(source_strings) == (target_strings, ["abc", "de-FG"])
         assert paths.format_target_path(target_strings, "abc") == target_strings.format(
             android_locale="b+abc"
         )

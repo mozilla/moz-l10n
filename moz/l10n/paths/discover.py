@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from os import sep, walk
 from os.path import commonpath, isdir, join, normpath, relpath, splitext
 from re import compile
@@ -193,26 +194,24 @@ class L10nDiscoverPaths:
             paths[(ref_path, target)] = self.locales
         return paths
 
-    def target_locales(self, _ref_path: str = "") -> set[str]:
-        return set(self.locales or ())
-
-    def target_path(self, ref_path: str, locale: str | None = None) -> str | None:
+    def target(self, ref_path: str) -> tuple[str | None, Iterable[str]]:
         """
         If `ref_path` is a valid reference path,
         returns its corresponding target path.
-        Otherwise, returns `None`.
+        Otherwise, returns `None` for the path.
 
-        If `locale` is not set,
-        target path will include a `{locale}` variable.
+        Target path will include a `{locale}` variable.
         """
         ref_path = normpath(join(self._ref_root, ref_path))
         if ref_path.endswith(".po"):
             ref_path += "t"
         if ref_path not in self.ref_paths:
-            return None
-        locale_root = join(self._base(), "{locale}" if locale is None else locale)
+            return None, ()
+        locale_root = join(self._base(), "{locale}")
         target = ref_path.replace(self._ref_root, locale_root, 1)
-        return target[:-1] if target.endswith(".pot") else target
+        if target.endswith(".pot"):
+            target = target[:-1]
+        return target, self.locales or ()
 
     def format_target_path(self, target: str, locale: str) -> str:
         base = self._base()
