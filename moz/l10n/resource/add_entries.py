@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any, cast
+from typing import Any
 
 from . import data as res
 
@@ -27,7 +27,7 @@ def add_entries(
     target: res.Resource[res.V, res.M],
     source: res.Resource[res.V, res.M],
     *,
-    use_source_values: bool = False,
+    use_source_entries: bool = False,
 ) -> int:
     """
     Modifies `target` by adding entries from `source` that are not already present in `target`.
@@ -58,13 +58,12 @@ def add_entries(
                     None,
                 )
                 if target_pos:
-                    if use_source_values:
-                        tgt_entry = cast(RE, target_pos[0].entries[target_pos[1]])
-                        if tgt_entry.value != entry.value:
-                            tgt_entry.value = entry.value
+                    cur_tgt_section, idx = target_pos
+                    if use_source_entries:
+                        if cur_tgt_section.entries[idx] != entry:
+                            cur_tgt_section.entries[idx] = entry
                             added += 1
                     prev_pos = target_pos
-                    cur_tgt_section = target_pos[0]
                 else:
                     # Entry has no section-id + entry-id match in target,
                     # so needs to be added.
