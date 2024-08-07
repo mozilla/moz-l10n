@@ -23,6 +23,14 @@ Iterates source files as defined by `--config`, reads localization sources from 
 Trims out all comments and messages not in the source files for each of the `--locales`.
 Adds empty files for any missing from the target locale.
 
+### `l10n-compare`
+
+Compare localizations to their `source`, which may be
+
+- a directory (using `L10nDiscoverPaths`),
+- a TOML config file (using `L10nConfigPaths`), or
+- a JSON file containing a mapping of file paths to arrays of messages.
+
 ### `l10n-fix`
 
 Fix the formatting for localization resources.
@@ -40,6 +48,7 @@ Supports a subset of the format specified at:
 https://moz-l10n-config.readthedocs.io/en/latest/fileformat.html
 
 Differences:
+
 - `[build]` is ignored
 - `[[excludes]]` are not supported
 - `[[filters]]` are ignored
