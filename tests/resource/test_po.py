@@ -28,95 +28,87 @@ from moz.l10n.resource.data import Entry, Metadata, Resource, Section
 from moz.l10n.resource.format import Format
 from moz.l10n.resource.po import po_parse, po_serialize
 
-# Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
-# __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
-
 source = files("tests.resource.data").joinpath("foo.po").read_bytes().decode("utf-8")
 
 
 class TestPo(TestCase):
     def test_parse(self):
         res = po_parse(source)
-        self.assertEqual(
-            res,
-            Resource(
-                Format.po,
-                comment="Test translation file.\n"
-                "Any copyright is dedicated to the Public Domain.\n"
-                "http://creativecommons.org/publicdomain/zero/1.0/",
-                meta=[
-                    Metadata("Project-Id-Version", "foo"),
-                    Metadata("POT-Creation-Date", "2008-02-06 16:25-0500"),
-                    Metadata("PO-Revision-Date", "2008-02-09 15:23+0200"),
-                    Metadata("Last-Translator", "Foo Bar <foobar@example.org>"),
-                    Metadata("Language-Team", "Fake <fake@example.org>"),
-                    Metadata("MIME-Version", "1.0"),
-                    Metadata("Content-Type", "text/plain; charset=UTF-8"),
-                    Metadata("Content-Transfer-Encoding", "8bit"),
-                    Metadata("Language", "sl"),
-                    Metadata(
-                        "Plural-Forms",
-                        "nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n%100==4 ? 3 : 0);",
-                    ),
-                ],
-                sections=[
-                    Section(
-                        id=(),
-                        entries=[
-                            Entry(
-                                ("original string",),
-                                PatternMessage(["translated string"]),
-                            ),
-                            Entry(
-                                ("%d translated message",),
-                                meta=[
-                                    Metadata("reference", "src/msgfmt.c:876"),
-                                    Metadata("flag", "c-format"),
-                                    Metadata("plural", "%d translated messages"),
+        assert res == Resource(
+            Format.po,
+            comment="Test translation file.\n"
+            "Any copyright is dedicated to the Public Domain.\n"
+            "http://creativecommons.org/publicdomain/zero/1.0/",
+            meta=[
+                Metadata("Project-Id-Version", "foo"),
+                Metadata("POT-Creation-Date", "2008-02-06 16:25-0500"),
+                Metadata("PO-Revision-Date", "2008-02-09 15:23+0200"),
+                Metadata("Last-Translator", "Foo Bar <foobar@example.org>"),
+                Metadata("Language-Team", "Fake <fake@example.org>"),
+                Metadata("MIME-Version", "1.0"),
+                Metadata("Content-Type", "text/plain; charset=UTF-8"),
+                Metadata("Content-Transfer-Encoding", "8bit"),
+                Metadata("Language", "sl"),
+                Metadata(
+                    "Plural-Forms",
+                    "nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n%100==4 ? 3 : 0);",
+                ),
+            ],
+            sections=[
+                Section(
+                    id=(),
+                    entries=[
+                        Entry(
+                            ("original string",),
+                            PatternMessage(["translated string"]),
+                        ),
+                        Entry(
+                            ("%d translated message",),
+                            meta=[
+                                Metadata("reference", "src/msgfmt.c:876"),
+                                Metadata("flag", "c-format"),
+                                Metadata("plural", "%d translated messages"),
+                            ],
+                            value=SelectMessage(
+                                [
+                                    Expression(
+                                        VariableRef("n"),
+                                        FunctionAnnotation("number"),
+                                    )
                                 ],
-                                value=SelectMessage(
-                                    [
-                                        Expression(
-                                            VariableRef("n"),
-                                            FunctionAnnotation("number"),
-                                        )
-                                    ],
-                                    {
-                                        ("0",): ["%d prevedenih sporočil"],
-                                        ("1",): ["%d prevedeno sporočilo"],
-                                        ("2",): ["%d prevedeni sporočili"],
-                                        ("3",): ["%d prevedena sporočila"],
-                                    },
-                                ),
+                                {
+                                    ("0",): ["%d prevedenih sporočil"],
+                                    ("1",): ["%d prevedeno sporočilo"],
+                                    ("2",): ["%d prevedeni sporočili"],
+                                    ("3",): ["%d prevedena sporočila"],
+                                },
                             ),
-                            Entry(
-                                ("obsolete string",),
-                                meta=[Metadata("obsolete", "true")],
-                                value=PatternMessage(["translated string"]),
-                            ),
-                            Entry(
-                                ("other string",), PatternMessage(["translated string"])
-                            ),
-                        ],
-                    ),
-                    Section(
-                        id=("context",),
-                        entries=[
-                            Entry(
-                                ("original string",),
-                                PatternMessage(["translated string"]),
-                            )
-                        ],
-                    ),
-                ],
-            ),
+                        ),
+                        Entry(
+                            ("obsolete string",),
+                            meta=[Metadata("obsolete", "true")],
+                            value=PatternMessage(["translated string"]),
+                        ),
+                        Entry(("other string",), PatternMessage(["translated string"])),
+                    ],
+                ),
+                Section(
+                    id=("context",),
+                    entries=[
+                        Entry(
+                            ("original string",),
+                            PatternMessage(["translated string"]),
+                        )
+                    ],
+                ),
+            ],
         )
 
     def test_serialize(self):
         res = po_parse(source)
-        self.assertEqual(
-            "".join(po_serialize(res)),
-            r"""# Test translation file.
+        assert (
+            "".join(po_serialize(res))
+            == r"""# Test translation file.
 # Any copyright is dedicated to the Public Domain.
 # http://creativecommons.org/publicdomain/zero/1.0/
 #
@@ -154,14 +146,14 @@ msgstr "translated string"
 msgctxt "context"
 msgid "original string"
 msgstr "translated string"
-""",
+"""
         )
 
     def test_trim_comments(self):
         res = po_parse(source)
-        self.assertEqual(
-            "".join(po_serialize(res, trim_comments=True)),
-            r"""#
+        assert (
+            "".join(po_serialize(res, trim_comments=True))
+            == r"""#
 msgid ""
 msgstr ""
 "Project-Id-Version: foo\n"
@@ -191,16 +183,16 @@ msgstr "translated string"
 msgctxt "context"
 msgid "original string"
 msgstr "translated string"
-""",
+"""
         )
 
     def test_obsolete(self):
         res = po_parse(source)
         res.sections[0].entries[0].meta.append(Metadata("obsolete", True))
         res.sections[0].entries[2].meta = []
-        self.assertEqual(
-            "".join(po_serialize(res)),
-            r"""# Test translation file.
+        assert (
+            "".join(po_serialize(res))
+            == r"""# Test translation file.
 # Any copyright is dedicated to the Public Domain.
 # http://creativecommons.org/publicdomain/zero/1.0/
 #
@@ -238,5 +230,5 @@ msgstr "translated string"
 msgctxt "context"
 msgid "original string"
 msgstr "translated string"
-""",
+"""
         )

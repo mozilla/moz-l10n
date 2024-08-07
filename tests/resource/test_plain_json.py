@@ -23,120 +23,111 @@ from moz.l10n.resource.data import Entry, Resource, Section
 from moz.l10n.resource.format import Format
 from moz.l10n.resource.plain_json import plain_json_parse, plain_json_serialize
 
-# Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
-# __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
-
 source = files("tests.resource.data").joinpath("messages.json").read_bytes()
 
 
 class TestPlain(TestCase):
     def test_parse(self):
         res = plain_json_parse(source)
-        self.assertEqual(
-            res,
-            Resource(
-                Format.plain_json,
-                [
-                    Section(
-                        (),
-                        [
-                            Entry(
-                                ("SourceString", "message"),
-                                PatternMessage(["Translated String"]),
+        assert res == Resource(
+            Format.plain_json,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("SourceString", "message"),
+                            PatternMessage(["Translated String"]),
+                        ),
+                        Entry(
+                            ("SourceString", "description"),
+                            PatternMessage(["Sample comment"]),
+                        ),
+                        Entry(
+                            ("MultipleComments", "message"),
+                            PatternMessage(["Translated Multiple Comments"]),
+                        ),
+                        Entry(
+                            ("MultipleComments", "description"),
+                            PatternMessage(["Second comment"]),
+                        ),
+                        Entry(
+                            ("NoCommentsorSources", "message"),
+                            PatternMessage(["Translated No Comments or Sources"]),
+                        ),
+                        Entry(
+                            ("placeholders", "message"),
+                            PatternMessage(["Hello$$$ $1YOUR_NAME$ at $2"]),
+                        ),
+                        Entry(
+                            ("placeholders", "description"),
+                            PatternMessage(["Peer greeting"]),
+                        ),
+                        Entry(
+                            (
+                                "placeholders",
+                                "placeholders",
+                                "1your_name",
+                                "content",
                             ),
-                            Entry(
-                                ("SourceString", "description"),
-                                PatternMessage(["Sample comment"]),
+                            PatternMessage(["$1"]),
+                        ),
+                        Entry(
+                            (
+                                "placeholders",
+                                "placeholders",
+                                "1your_name",
+                                "example",
                             ),
-                            Entry(
-                                ("MultipleComments", "message"),
-                                PatternMessage(["Translated Multiple Comments"]),
-                            ),
-                            Entry(
-                                ("MultipleComments", "description"),
-                                PatternMessage(["Second comment"]),
-                            ),
-                            Entry(
-                                ("NoCommentsorSources", "message"),
-                                PatternMessage(["Translated No Comments or Sources"]),
-                            ),
-                            Entry(
-                                ("placeholders", "message"),
-                                PatternMessage(["Hello$$$ $1YOUR_NAME$ at $2"]),
-                            ),
-                            Entry(
-                                ("placeholders", "description"),
-                                PatternMessage(["Peer greeting"]),
-                            ),
-                            Entry(
-                                (
-                                    "placeholders",
-                                    "placeholders",
-                                    "1your_name",
-                                    "content",
-                                ),
-                                PatternMessage(["$1"]),
-                            ),
-                            Entry(
-                                (
-                                    "placeholders",
-                                    "placeholders",
-                                    "1your_name",
-                                    "example",
-                                ),
-                                PatternMessage(["Cira"]),
-                            ),
-                            Entry(
-                                ("repeated_ref", "message"),
-                                PatternMessage(["$foo$ and $Foo$"]),
-                            ),
-                            Entry(
-                                ("repeated_ref", "placeholders", "foo", "content"),
-                                PatternMessage(["$1"]),
-                            ),
-                        ],
-                    )
-                ],
-            ),
+                            PatternMessage(["Cira"]),
+                        ),
+                        Entry(
+                            ("repeated_ref", "message"),
+                            PatternMessage(["$foo$ and $Foo$"]),
+                        ),
+                        Entry(
+                            ("repeated_ref", "placeholders", "foo", "content"),
+                            PatternMessage(["$1"]),
+                        ),
+                    ],
+                )
+            ],
         )
 
     def test_serialize(self):
         res = plain_json_parse(source)
-        self.assertEqual(
-            "".join(plain_json_serialize(res)),
-            dedent(
-                """\
-                {
-                  "SourceString": {
-                    "message": "Translated String",
-                    "description": "Sample comment"
-                  },
-                  "MultipleComments": {
-                    "message": "Translated Multiple Comments",
-                    "description": "Second comment"
-                  },
-                  "NoCommentsorSources": {
-                    "message": "Translated No Comments or Sources"
-                  },
-                  "placeholders": {
-                    "message": "Hello$$$ $1YOUR_NAME$ at $2",
-                    "description": "Peer greeting",
-                    "placeholders": {
-                      "1your_name": {
-                        "content": "$1",
-                        "example": "Cira"
-                      }
-                    }
-                  },
-                  "repeated_ref": {
-                    "message": "$foo$ and $Foo$",
-                    "placeholders": {
-                      "foo": {
-                        "content": "$1"
-                      }
-                    }
+        assert "".join(plain_json_serialize(res)) == dedent(
+            """\
+            {
+              "SourceString": {
+                "message": "Translated String",
+                "description": "Sample comment"
+              },
+              "MultipleComments": {
+                "message": "Translated Multiple Comments",
+                "description": "Second comment"
+              },
+              "NoCommentsorSources": {
+                "message": "Translated No Comments or Sources"
+              },
+              "placeholders": {
+                "message": "Hello$$$ $1YOUR_NAME$ at $2",
+                "description": "Peer greeting",
+                "placeholders": {
+                  "1your_name": {
+                    "content": "$1",
+                    "example": "Cira"
                   }
                 }
-                """
-            ),
+              },
+              "repeated_ref": {
+                "message": "$foo$ and $Foo$",
+                "placeholders": {
+                  "foo": {
+                    "content": "$1"
+                  }
+                }
+              }
+            }
+            """
         )

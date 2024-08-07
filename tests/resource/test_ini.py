@@ -22,9 +22,6 @@ from moz.l10n.resource.data import Comment, Entry, Resource, Section
 from moz.l10n.resource.format import Format
 from moz.l10n.resource.ini import ini_parse, ini_serialize
 
-# Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
-# __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
-
 
 class TestIni(TestCase):
     def test_section_comment(self):
@@ -143,22 +140,19 @@ class TestIni(TestCase):
                 )
             ],
         )
-        self.assertEqual(
-            "".join(ini_serialize(res)),
-            dedent(
-                """\
-                # section comment
-                [Strings]
-                # entry pre comment
-                # entry line comment
-                TitleText=Some Title
-                  Continues
-                """
-            ),
+        assert "".join(ini_serialize(res)) == dedent(
+            """\
+            # section comment
+            [Strings]
+            # entry pre comment
+            # entry line comment
+            TitleText=Some Title
+              Continues
+            """
         )
-        self.assertEqual(
-            "".join(ini_serialize(res, trim_comments=True)),
-            "[Strings]\nTitleText=Some Title\n  Continues\n",
+        assert (
+            "".join(ini_serialize(res, trim_comments=True))
+            == "[Strings]\nTitleText=Some Title\n  Continues\n"
         )
 
     def test_trailing_comment(self):
@@ -171,36 +165,30 @@ class TestIni(TestCase):
                 """
             )
         )
-        self.assertEqual(
-            res,
-            Resource(
-                Format.ini,
-                [
-                    Section(
-                        id=("Strings",),
-                        entries=[
-                            Entry(("TitleText",), PatternMessage(["Some Title"])),
-                            Comment("Stray trailing comment"),
-                        ],
-                    )
-                ],
-            ),
+        assert res == Resource(
+            Format.ini,
+            [
+                Section(
+                    id=("Strings",),
+                    entries=[
+                        Entry(("TitleText",), PatternMessage(["Some Title"])),
+                        Comment("Stray trailing comment"),
+                    ],
+                )
+            ],
         )
-        self.assertEqual(
-            "".join(ini_serialize(res)),
-            dedent(
-                """\
-                [Strings]
-                TitleText=Some Title
+        assert "".join(ini_serialize(res)) == dedent(
+            """\
+            [Strings]
+            TitleText=Some Title
 
-                # Stray trailing comment
+            # Stray trailing comment
 
-                """
-            ),
+            """
         )
-        self.assertEqual(
-            "".join(ini_serialize(res, trim_comments=True)),
-            "[Strings]\nTitleText=Some Title\n",
+        assert (
+            "".join(ini_serialize(res, trim_comments=True))
+            == "[Strings]\nTitleText=Some Title\n"
         )
 
     def test_empty_line_in_value(self):
@@ -214,33 +202,27 @@ class TestIni(TestCase):
                 """
             )
         )
-        self.assertEqual(
-            res,
-            Resource(
-                Format.ini,
-                [
-                    Section(
-                        id=("Strings",),
-                        entries=[
-                            Entry(
-                                ("TitleText",),
-                                PatternMessage(["Some Title\n\nContinues"]),
-                            )
-                        ],
-                    )
-                ],
-            ),
+        assert res == Resource(
+            Format.ini,
+            [
+                Section(
+                    id=("Strings",),
+                    entries=[
+                        Entry(
+                            ("TitleText",),
+                            PatternMessage(["Some Title\n\nContinues"]),
+                        )
+                    ],
+                )
+            ],
         )
-        self.assertEqual(
-            "".join(ini_serialize(res)),
-            dedent(
-                """\
-                [Strings]
-                TitleText=Some Title
+        assert "".join(ini_serialize(res)) == dedent(
+            """\
+            [Strings]
+            TitleText=Some Title
 
-                  Continues
-                """
-            ),
+              Continues
+            """
         )
 
     def test_empty_value(self):
@@ -265,21 +247,18 @@ class TestIni(TestCase):
                 )
             ],
         )
-        self.assertEqual(
-            "".join(ini_serialize(res)),
-            dedent(
-                """\
-                [Strings]
-                foo=
-                bar=Bar
-                """
-            ),
+        assert "".join(ini_serialize(res)) == dedent(
+            """\
+            [Strings]
+            foo=
+            bar=Bar
+            """
         )
 
     def test_empty_file(self):
         empty = Resource(Format.ini, [])
-        self.assertEqual(ini_parse(""), empty)
-        self.assertEqual(ini_parse("\n"), empty)
-        self.assertEqual(ini_parse("\n\n"), empty)
-        self.assertEqual(ini_parse(" \n\n"), empty)
-        self.assertEqual("".join(ini_serialize(empty)), "")
+        assert ini_parse("") == empty
+        assert ini_parse("\n") == empty
+        assert ini_parse("\n\n") == empty
+        assert ini_parse(" \n\n") == empty
+        assert "".join(ini_serialize(empty)) == ""
