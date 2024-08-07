@@ -32,9 +32,6 @@ from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
 from moz.l10n.resource.fluent import fluent_parse, fluent_serialize
 from moz.l10n.resource.format import Format
 
-# Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
-# __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
-
 
 class TestFluent(TestCase):
     def test_fluent_value(self):
@@ -52,26 +49,26 @@ class TestFluent(TestCase):
             """
         )
         res = fluent_parse(source, as_ftl_patterns=True)
-        self.assertEqual(len(res.sections), 1)
-        self.assertEqual(len(res.sections[0].entries), 2)
-        self.assertEqual(res.sections[0].entries[0].id, ("key",))
-        self.assertIsInstance(res.sections[0].entries[0].value, ftl.Pattern)
-        self.assertEqual(res.sections[0].entries[1].id, ("key", "attr"))
-        self.assertIsInstance(res.sections[0].entries[1].value, ftl.Pattern)
-        self.assertEqual("".join(fluent_serialize(res)), source)
+        assert len(res.sections) == 1
+        assert len(res.sections[0].entries) == 2
+        assert res.sections[0].entries[0].id == ("key",)
+        assert isinstance(res.sections[0].entries[0].value, ftl.Pattern)
+        assert res.sections[0].entries[1].id == ("key", "attr")
+        assert isinstance(res.sections[0].entries[1].value, ftl.Pattern)
+        assert "".join(fluent_serialize(res)) == source
 
     def test_equality_same(self):
         source = 'progress = Progress: { NUMBER($num, style: "percent") }.'
         res1 = fluent_parse(source)
         res2 = fluent_parse(source)
-        self.assertEqual(res1, res2)
+        assert res1 == res2
 
     def test_equality_different_whitespace(self):
         source1 = b"foo = { $arg }"
         source2 = b"foo = {    $arg    }"
         res1 = fluent_parse(source1)
         res2 = fluent_parse(source2)
-        self.assertEqual(res1, res2)
+        assert res1 == res2
 
     def test_resource(self):
         res = fluent_parse(
@@ -385,39 +382,33 @@ class TestFluent(TestCase):
         res = fluent_parse("msg = body\n  .attr = value")
 
         res.sections[0].entries[1].comment = "comment1"
-        self.assertEqual(
-            "".join(fluent_serialize(res)),
-            dedent(
-                """\
-                # attr:
-                # comment1
-                msg = body
-                    .attr = value
-                """
-            ),
+        assert "".join(fluent_serialize(res)) == dedent(
+            """\
+            # attr:
+            # comment1
+            msg = body
+                .attr = value
+            """
         )
-        self.assertEqual(
-            "".join(fluent_serialize(res, trim_comments=True)),
-            "msg = body\n    .attr = value\n",
+        assert (
+            "".join(fluent_serialize(res, trim_comments=True))
+            == "msg = body\n    .attr = value\n"
         )
 
         res.sections[0].entries[0].comment = "comment0"
-        self.assertEqual(
-            "".join(fluent_serialize(res)),
-            dedent(
-                """\
-                # comment0
-                #
-                # attr:
-                # comment1
-                msg = body
-                    .attr = value
-                """
-            ),
+        assert "".join(fluent_serialize(res)) == dedent(
+            """\
+            # comment0
+            #
+            # attr:
+            # comment1
+            msg = body
+                .attr = value
+            """
         )
-        self.assertEqual(
-            "".join(fluent_serialize(res, trim_comments=True)),
-            "msg = body\n    .attr = value\n",
+        assert (
+            "".join(fluent_serialize(res, trim_comments=True))
+            == "msg = body\n    .attr = value\n"
         )
 
     def test_meta(self):
@@ -427,25 +418,23 @@ class TestFluent(TestCase):
             "".join(fluent_serialize(res))
             raise Exception("Expected an error")
         except Exception as e:
-            self.assertEqual(
-                e.args, ("Metadata requires serialize_metadata parameter",)
-            )
-        self.assertEqual(
-            "".join(fluent_serialize(res, lambda _: None)), "one = foo\ntwo = bar\n"
+            assert e.args == ("Metadata requires serialize_metadata parameter",)
+        assert (
+            "".join(fluent_serialize(res, lambda _: None)) == "one = foo\ntwo = bar\n"
         )
-        self.assertEqual(
-            "".join(fluent_serialize(res, lambda m: f"@{m.key}: {m.value}")),
-            dedent(
-                """\
-                one = foo
-                # @a: 42
-                # @b: False
-                two = bar
-                """
-            ),
+        assert "".join(
+            fluent_serialize(res, lambda m: f"@{m.key}: {m.value}")
+        ) == dedent(
+            """\
+            one = foo
+            # @a: 42
+            # @b: False
+            two = bar
+            """
         )
-        self.assertEqual(
-            "".join(fluent_serialize(res, trim_comments=True)), "one = foo\ntwo = bar\n"
+        assert (
+            "".join(fluent_serialize(res, trim_comments=True))
+            == "one = foo\ntwo = bar\n"
         )
 
     def test_junk(self):
@@ -701,14 +690,11 @@ class TestFluent(TestCase):
                 comment="Nested selectors",
             ),
         ]
-        self.assertEqual(
-            res,
-            Resource(
-                Format.fluent,
-                meta=[Metadata("info", copyright)],
-                comment="Resource Comment",
-                sections=[Section(id=(), entries=entries)],
-            ),
+        assert res == Resource(
+            Format.fluent,
+            meta=[Metadata("info", copyright)],
+            comment="Resource Comment",
+            sections=[Section(id=(), entries=entries)],
         )
         assert "".join(fluent_serialize(res)) == dedent(
             """\

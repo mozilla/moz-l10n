@@ -34,43 +34,40 @@ two_lines_triple = This line is one of two and ends in \\\
 and still has another line coming
 """
         res = properties_parse(src)
-        self.assertEqual(
-            res,
-            Resource(
-                Format.properties,
-                [
-                    Section(
-                        (),
-                        [
-                            Entry(("one_line",), PatternMessage(["This is one line"])),
-                            Entry(
-                                ("two_line",),
-                                PatternMessage(["This is the first of two lines"]),
+        assert res == Resource(
+            Format.properties,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(("one_line",), PatternMessage(["This is one line"])),
+                        Entry(
+                            ("two_line",),
+                            PatternMessage(["This is the first of two lines"]),
+                        ),
+                        Entry(
+                            ("one_line_trailing",),
+                            PatternMessage(["This line has a \\ and ends in \\"]),
+                        ),
+                        Entry(
+                            ("two_lines_triple",),
+                            PatternMessage(
+                                [
+                                    "This line is one of two and ends in \\and still has another line coming"
+                                ]
                             ),
-                            Entry(
-                                ("one_line_trailing",),
-                                PatternMessage(["This line has a \\ and ends in \\"]),
-                            ),
-                            Entry(
-                                ("two_lines_triple",),
-                                PatternMessage(
-                                    [
-                                        "This line is one of two and ends in \\and still has another line coming"
-                                    ]
-                                ),
-                            ),
-                        ],
-                    )
-                ],
-            ),
+                        ),
+                    ],
+                )
+            ],
         )
-        self.assertEqual(
-            "".join(properties_serialize(res)),
-            r"""one_line = This is one line
+        assert (
+            "".join(properties_serialize(res))
+            == r"""one_line = This is one line
 two_line = This is the first of two lines
 one_line_trailing = This line has a \\ and ends in \\
 two_lines_triple = This line is one of two and ends in \\and still has another line coming
-""",
+"""
         )
 
     def test_whitespace(self):
@@ -81,70 +78,61 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
             "Any copyright is dedicated to the Public Domain.\n"
             "http://creativecommons.org/publicdomain/zero/1.0/"
         )
-        self.assertEqual(
-            res,
-            Resource(
-                Format.properties,
-                [
-                    Section(
-                        (),
-                        [
-                            Entry(("1",), PatternMessage(["1"]), comment=cc0),
-                            Entry(("2",), PatternMessage(["2"])),
-                            Entry(("3",), PatternMessage(["3"])),
-                            Entry(("4",), PatternMessage(["4"])),
-                            Entry(("5",), PatternMessage(["5"])),
-                            Entry(("6",), PatternMessage(["6"])),
-                            Entry(("7",), PatternMessage(["7 "])),
-                            Entry(("8",), PatternMessage(["8 "])),
-                            Entry(
-                                ("9",),
-                                PatternMessage(
-                                    [
-                                        "this is the first part of a continued line and here is the 2nd part"
-                                    ]
-                                ),
-                                comment="this is a comment",
+        assert res == Resource(
+            Format.properties,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(("1",), PatternMessage(["1"]), comment=cc0),
+                        Entry(("2",), PatternMessage(["2"])),
+                        Entry(("3",), PatternMessage(["3"])),
+                        Entry(("4",), PatternMessage(["4"])),
+                        Entry(("5",), PatternMessage(["5"])),
+                        Entry(("6",), PatternMessage(["6"])),
+                        Entry(("7",), PatternMessage(["7 "])),
+                        Entry(("8",), PatternMessage(["8 "])),
+                        Entry(
+                            ("9",),
+                            PatternMessage(
+                                [
+                                    "this is the first part of a continued line and here is the 2nd part"
+                                ]
                             ),
-                        ],
-                    )
-                ],
-            ),
+                            comment="this is a comment",
+                        ),
+                    ],
+                )
+            ],
         )
-        self.assertEqual(
-            "".join(properties_serialize(res)),
-            dedent(
-                """\
-                # Any copyright is dedicated to the Public Domain.
-                # http://creativecommons.org/publicdomain/zero/1.0/
-                1 = 1
-                2 = 2
-                3 = 3
-                4 = 4
-                5 = 5
-                6 = 6
-                7 = 7\\u0020
-                8 = 8\\u0020
-                # this is a comment
-                9 = this is the first part of a continued line and here is the 2nd part
-                """
-            ),
+        assert "".join(properties_serialize(res)) == dedent(
+            """\
+            # Any copyright is dedicated to the Public Domain.
+            # http://creativecommons.org/publicdomain/zero/1.0/
+            1 = 1
+            2 = 2
+            3 = 3
+            4 = 4
+            5 = 5
+            6 = 6
+            7 = 7\\u0020
+            8 = 8\\u0020
+            # this is a comment
+            9 = this is the first part of a continued line and here is the 2nd part
+            """
         )
-        self.assertEqual(
-            "".join(properties_serialize(res, trim_comments=True)),
-            dedent(
-                """\
-                1 = 1
-                2 = 2
-                3 = 3
-                4 = 4
-                5 = 5
-                6 = 6
-                7 = 7\\u0020
-                8 = 8\\u0020
-                9 = this is the first part of a continued line and here is the 2nd part
-                """
-            ),
+        assert "".join(properties_serialize(res, trim_comments=True)) == dedent(
+            """\
+            1 = 1
+            2 = 2
+            3 = 3
+            4 = 4
+            5 = 5
+            6 = 6
+            7 = 7\\u0020
+            8 = 8\\u0020
+            9 = this is the first part of a continued line and here is the 2nd part
+            """
         )
 
     def test_bug121341(self):
@@ -262,12 +250,10 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
         exp = PatternMessage(
             ["one line with a # part that looks like a comment and an end"]
         )
-        self.assertEqual(
-            res, Resource(Format.properties, [Section((), [Entry(("bar",), exp)])])
-        )
-        self.assertEqual(
-            "".join(properties_serialize(res)),
-            "bar = one line with a # part that looks like a comment and an end\n",
+        assert res == Resource(Format.properties, [Section((), [Entry(("bar",), exp)])])
+        assert (
+            "".join(properties_serialize(res))
+            == "bar = one line with a # part that looks like a comment and an end\n"
         )
 
     def test_license_header(self):
@@ -280,19 +266,14 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
             """
         )
         res = properties_parse(src)
-        self.assertEqual(
-            res,
-            Resource(
-                Format.properties,
-                [Section((), [Entry(("foo",), PatternMessage(["value"]))])],
-                comment=dedent(
-                    """\
+        assert res == Resource(
+            Format.properties,
+            [Section((), [Entry(("foo",), PatternMessage(["value"]))])],
+            comment=dedent(
+                """\
                     Any copyright is dedicated to the Public Domain.
                     http://creativecommons.org/publicdomain/zero/1.0/"""
-                ),
             ),
         )
-        self.assertEqual("".join(properties_serialize(res)), src)
-        self.assertEqual(
-            "".join(properties_serialize(res, trim_comments=True)), "foo = value\n"
-        )
+        assert "".join(properties_serialize(res)) == src
+        assert "".join(properties_serialize(res, trim_comments=True)) == "foo = value\n"

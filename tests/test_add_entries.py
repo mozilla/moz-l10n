@@ -22,154 +22,171 @@ from moz.l10n.resource.data import Entry, Resource, Section
 
 class TestAddEntries(TestCase):
     def test_no_changes(self):
-        target = Resource(None, [Section((), [Entry(("foo",), "Foo")])])
-        source = Resource(None, [Section((), [Entry(("foo",), "Foo")])])
-        self.assertEqual(add_entries(target, source), 0)
-        self.assertEqual(
-            target, Resource(None, [Section((), [Entry(("foo",), "Foo")])])
-        )
+        target = Resource(None, [Section((), [Entry(("id",), "msg")])])
+        source = Resource(None, [Section((), [Entry(("id",), "msg")])])
+        assert add_entries(target, source) == 0
+        assert target == Resource(None, [Section((), [Entry(("id",), "msg")])])
 
     def test_message_changed_in_source(self):
-        target = Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
-        source = Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
-        self.assertEqual(add_entries(target, source), 0)
-        self.assertEqual(
-            target, Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
-        )
+        target = Resource(None, [Section((), [Entry(("id",), "msg 1")])])
+        source = Resource(None, [Section((), [Entry(("id",), "msg 2")])])
+        assert add_entries(target, source) == 0
+        assert target == Resource(None, [Section((), [Entry(("id",), "msg 1")])])
 
     def test_message_changed_in_source_use_source_entries(self):
-        target = Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
-        source = Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
+        target = Resource(None, [Section((), [Entry(("id",), "msg 1")])])
+        source = Resource(None, [Section((), [Entry(("id",), "msg 2")])])
         assert add_entries(target, source, use_source_entries=True) == 1
-        assert target == Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
+        assert target == Resource(None, [Section((), [Entry(("id",), "msg 2")])])
+
+    def test_message_comment_changed_in_source(self):
+        target = Resource(None, [Section((), [Entry(("id",), "msg", "Comment 1")])])
+        source = Resource(None, [Section((), [Entry(("id",), "msg", "Comment 2")])])
+        assert add_entries(target, source) == 0
+        assert target == Resource(
+            None, [Section((), [Entry(("id",), "msg", "Comment 1")])]
+        )
 
     def test_message_comment_changed_in_source_use_source_entries(self):
-        target = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 1")])])
-        source = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 2")])])
+        target = Resource(None, [Section((), [Entry(("id",), "msg", "Comment 1")])])
+        source = Resource(None, [Section((), [Entry(("id",), "msg", "Comment 2")])])
         assert add_entries(target, source, use_source_entries=True) == 1
         assert target == Resource(
-            None, [Section((), [Entry(("foo",), "Foo", "Bar 2")])]
+            None, [Section((), [Entry(("id",), "msg", "Comment 2")])]
         )
 
     def test_message_not_in_source(self):
         target = Resource(
-            None, [Section((), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 1")])]
+            None,
+            [Section((), [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")])],
         )
-        source = Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
-        self.assertEqual(add_entries(target, source), 0)
-        self.assertEqual(
-            target,
-            Resource(
-                None,
-                [Section((), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 1")])],
-            ),
+        source = Resource(None, [Section((), [Entry(("id-1",), "msg 1B")])])
+        assert add_entries(target, source) == 0
+        assert target == Resource(
+            None,
+            [Section((), [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")])],
         )
 
     def test_message_added_in_source(self):
-        target = Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
+        target = Resource(None, [Section((), [Entry(("id-1",), "msg 1A")])])
         source = Resource(
-            None, [Section((), [Entry(("foo",), "Foo 2"), Entry(("bar",), "Bar 2")])]
+            None,
+            [Section((), [Entry(("id-1",), "msg 1B"), Entry(("id-2",), "msg 2B")])],
         )
-        self.assertEqual(add_entries(target, source), 1)
-        self.assertEqual(
-            target,
-            Resource(
-                None,
-                [Section((), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 2")])],
-            ),
+        assert add_entries(target, source) == 1
+        assert target == Resource(
+            None,
+            [Section((), [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2B")])],
         )
 
     def test_messages_reordered(self):
         target = Resource(
-            None, [Section((), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 1")])]
+            None,
+            [Section((), [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")])],
         )
         source = Resource(
-            None, [Section((), [Entry(("bar",), "Bar 2"), Entry(("foo",), "Foo 2")])]
+            None,
+            [Section((), [Entry(("id-2",), "msg 2B"), Entry(("id-1",), "msg 1B")])],
         )
         assert add_entries(target, source) == 0
         assert target == Resource(
             None,
-            [Section((), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 1")])],
+            [Section((), [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")])],
+        )
+
+    def test_messages_reordered_use_source_entries(self):
+        target = Resource(
+            None,
+            [Section((), [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")])],
+        )
+        source = Resource(
+            None,
+            [Section((), [Entry(("id-2",), "msg 2B"), Entry(("id-1",), "msg 1B")])],
         )
         assert add_entries(target, source, use_source_entries=True) == 2
         assert target == Resource(
             None,
-            [Section((), [Entry(("foo",), "Foo 2"), Entry(("bar",), "Bar 2")])],
+            [Section((), [Entry(("id-1",), "msg 1B"), Entry(("id-2",), "msg 2B")])],
         )
 
     def test_message_addition_order(self):
         target = Resource(
-            None, [Section((), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 1")])]
+            None,
+            [Section((), [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")])],
         )
         source_entries = [
-            Entry(("bar",), "Bar 2"),
-            Entry(("x",), "X"),
-            Entry(("foo",), "Foo 2"),
-            Entry(("y",), "Y"),
+            Entry(("id-2",), "msg 2B"),
+            Entry(("id-x",), "msg X"),
+            Entry(("id-1",), "msg 1B"),
+            Entry(("id-y",), "msg Y"),
         ]
         source = Resource(None, [Section((), source_entries)])
-        self.assertEqual(add_entries(target, source), 2)
+        assert add_entries(target, source) == 2
         exp_entries = [
-            Entry(("foo",), "Foo 1"),
-            Entry(("y",), "Y"),
-            Entry(("bar",), "Bar 1"),
-            Entry(("x",), "X"),
+            Entry(("id-1",), "msg 1A"),
+            Entry(("id-y",), "msg Y"),
+            Entry(("id-2",), "msg 2A"),
+            Entry(("id-x",), "msg X"),
         ]
-        self.assertEqual(target, Resource(None, [Section((), exp_entries)]))
+        assert target == Resource(None, [Section((), exp_entries)])
 
     def test_added_sections(self):
         target = Resource(
             None,
-            [Section(("1",), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 1")])],
+            [Section(("1",), [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")])],
         )
         source = Resource(
             None,
             [
-                Section(("0",), [Entry(("x",), "X")]),
-                Section(("1",), [Entry(("foo",), "Foo 2"), Entry(("bar",), "Bar 2")]),
-                Section(("2",), [Entry(("x",), "Y")]),
+                Section(("0",), [Entry(("id-x",), "msg X")]),
+                Section(
+                    ("1",), [Entry(("id-1",), "msg 1B"), Entry(("id-2",), "msg 2B")]
+                ),
+                Section(("2",), [Entry(("id-x",), "msg Y")]),
             ],
         )
-        self.assertEqual(add_entries(target, source), 2)
-        self.assertEqual(
-            target,
-            Resource(
-                None,
-                [
-                    Section(("0",), [Entry(("x",), "X")]),
-                    Section(
-                        ("1",), [Entry(("foo",), "Foo 1"), Entry(("bar",), "Bar 1")]
-                    ),
-                    Section(("2",), [Entry(("x",), "Y")]),
-                ],
-            ),
+        assert add_entries(target, source) == 2
+        assert target == Resource(
+            None,
+            [
+                Section(("0",), [Entry(("id-x",), "msg X")]),
+                Section(
+                    ("1",), [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")]
+                ),
+                Section(("2",), [Entry(("id-x",), "msg Y")]),
+            ],
         )
 
     def test_anon_sections(self):
         target = Resource(
             None,
             [
-                Section((), [Entry(("foo",), "Foo 1")], "C1"),
-                Section((), [Entry(("bar",), "Bar 1")], "C2"),
+                Section((), [Entry(("id-1",), "msg 1")], "Section Comment A"),
+                Section((), [Entry(("id-2",), "msg 2")], "Section Comment B"),
             ],
         )
         source = Resource(
             None,
             [
-                Section((), [Entry(("x",), "X")], "C0"),
-                Section((), [Entry(("y",), "Y")], "C2"),
-                Section((), [Entry(("z",), "Z")], "C1"),
+                Section((), [Entry(("id-x",), "msg X")], "Section Comment C"),
+                Section((), [Entry(("id-y",), "msg Y")], "Section Comment B"),
+                Section((), [Entry(("id-z",), "msg Z")], "Section Comment A"),
             ],
         )
-        self.assertEqual(add_entries(target, source), 3)
-        self.assertEqual(
-            target,
-            Resource(
-                None,
-                [
-                    Section((), [Entry(("x",), "X")], "C0"),
-                    Section((), [Entry(("foo",), "Foo 1"), Entry(("z",), "Z")], "C1"),
-                    Section((), [Entry(("bar",), "Bar 1"), Entry(("y",), "Y")], "C2"),
-                ],
-            ),
+        assert add_entries(target, source) == 3
+        assert target == Resource(
+            None,
+            [
+                Section((), [Entry(("id-x",), "msg X")], "Section Comment C"),
+                Section(
+                    (),
+                    [Entry(("id-1",), "msg 1"), Entry(("id-z",), "msg Z")],
+                    "Section Comment A",
+                ),
+                Section(
+                    (),
+                    [Entry(("id-2",), "msg 2"), Entry(("id-y",), "msg Y")],
+                    "Section Comment B",
+                ),
+            ],
         )

@@ -31,9 +31,6 @@ from moz.l10n.resource.android import android_parse, android_serialize
 from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
 from moz.l10n.resource.format import Format
 
-# Show full diff in self.assertEqual. https://stackoverflow.com/a/61345284
-# __import__("sys").modules["unittest.util"]._MAX_LENGTH = 999999999
-
 source = files("tests.resource.data").joinpath("strings.xml").read_bytes()
 
 
@@ -518,7 +515,7 @@ class TestAndroid(TestCase):
         res1 = android_parse(source)
         src_res = "".join(android_serialize(res1))
         res2 = android_parse(src_res)
-        self.assertEqual(res1, res2)
+        assert res1 == res2
 
     def test_xliff_xmlns(self):
         exp = Expression(" X ", FunctionAnnotation("foo", {"opt": "OPT"}))
