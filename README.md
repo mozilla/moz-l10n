@@ -88,11 +88,19 @@ The library currently supports the following resource formats:
 ### add_entries
 
 ```python
-def add_entries(target: Resource, source: Resource) -> int
+def add_entries(
+    target: Resource,
+    source: Resource,
+    *,
+    use_source_entries: bool = False
+) -> int
 ```
 
 Modifies `target` by adding entries from `source` that are not already present in `target`.
 Standalone comments are not added.
+
+If `use_source_entries` is set,
+entries from `source` override those in `target` when they differ.
 
 Entries are not copied, so further changes will be reflected in both resources.
 

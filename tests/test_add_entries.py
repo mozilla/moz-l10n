@@ -37,13 +37,13 @@ class TestAddEntries(TestCase):
             target, Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
         )
 
-    def test_message_changed_in_source_use_source_values(self):
+    def test_message_changed_in_source_use_source_entries(self):
         target = Resource(None, [Section((), [Entry(("foo",), "Foo 1")])])
         source = Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
         assert add_entries(target, source, use_source_entries=True) == 1
         assert target == Resource(None, [Section((), [Entry(("foo",), "Foo 2")])])
 
-    def test_message_comment_changed_in_source_use_source_values(self):
+    def test_message_comment_changed_in_source_use_source_entries(self):
         target = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 1")])])
         source = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 2")])])
         assert add_entries(target, source, use_source_entries=True) == 1

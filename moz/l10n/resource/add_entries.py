@@ -32,8 +32,8 @@ def add_entries(
     """
     Modifies `target` by adding entries from `source` that are not already present in `target`.
     Standalone comments are not added.
-    If `use_source_values` is set,
-    entry values from `source` override those in `target`.
+    If `use_source_entries` is set,
+    entries from `source` override those in `target` when they differ.
 
     Entries are not copied, so further changes will be reflected in both resources.
 
