@@ -95,10 +95,10 @@ class TestL10nDiscover(TestCase):
             build_file_tree(root, {"en_US": {"a.ftl": ""}})
             assert L10nDiscoverPaths(root).ref_root == join(root, "en_US")
 
-            build_file_tree(root, {"templates": {"a.json": ""}})
-            assert L10nDiscoverPaths(root).ref_root == join(root, "templates")
+            build_file_tree(root, {"en": {"a.json": ""}})
+            assert L10nDiscoverPaths(root).ref_root == join(root, "en_US")
 
-            build_file_tree(root, {"en": {"a.pot": ""}})
+            build_file_tree(join(root, "en"), {"a.pot": ""})
             assert L10nDiscoverPaths(root).ref_root == join(root, "en")
 
             build_file_tree(root, {"foo": {"en-US": {"bar": {"a.pot": ""}}}})
@@ -157,7 +157,7 @@ class TestL10nDiscover(TestCase):
                 "en": {"c.pot": ""},
                 "en-US": {"a.ftl": "", "b.ftl": ""},
             },
-            "ignore": {"aa": {}, "bb": {}, "cc": {}, "dd": {}},
+            "empty": {"aa": {}, "bb": {}, "cc": {}, "dd": {}},
             "target": {
                 "ignore": {"a.ftl": "", "b.ftl": ""},
                 "zz": {"a.ftl": "", "b.ftl": ""},
@@ -168,7 +168,7 @@ class TestL10nDiscover(TestCase):
             build_file_tree(root, tree)
 
             paths = L10nDiscoverPaths(root, ref_root="source")
-            assert paths.ref_root == join(root, "source")
+            assert paths.ref_root == join(root, "source", "en")
             assert paths.base == join(root, "target")
 
             paths = L10nDiscoverPaths(root, ref_root="source/en-US")
@@ -177,16 +177,35 @@ class TestL10nDiscover(TestCase):
 
             paths = L10nDiscoverPaths(root, ref_root="target")
             assert paths.ref_root == join(root, "target")
-            assert paths.base == join(root, "ignore")
+            assert paths.base == join(root, "empty")
 
             paths = L10nDiscoverPaths(root, ref_root="target/ignore")
             assert paths.ref_root == join(root, "target", "ignore")
             assert paths.base == join(root, "target")
 
-            paths = L10nDiscoverPaths(root, ref_root="ignore")
-            assert paths.ref_root == join(root, "ignore")
-            assert paths.base == join(root, "target")
+            with self.assertRaises(MissingSourceDirectoryError):
+                L10nDiscoverPaths(root, ref_root="empty")
 
-            paths = L10nDiscoverPaths(root, ref_root="missing")
-            assert paths.ref_root == join(root, "missing")
-            assert paths.base == join(root, "target")
+            with self.assertRaises(MissingSourceDirectoryError):
+                L10nDiscoverPaths(root, ref_root="missing")
+
+    def test_ref_target_mixed(self):
+        tree: Tree = {
+            "en": {"c.pot": ""},
+            "en-US": {"a.ftl": "", "b.ftl": ""},
+            "ignore": {"a.ftl": "", "b.ftl": ""},
+            "zz": {"a.ftl": "", "b.ftl": ""},
+            "yy_Latn": {"a.ftl": "", "b.ftl": ""},
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+
+            paths = L10nDiscoverPaths(root)
+            assert paths.ref_root == join(root, "en")
+            assert paths.base == root
+            assert set(paths.locales) == set(["yy-Latn", "zz"])
+
+            paths = L10nDiscoverPaths(root, ref_root=join(root, "en-US"))
+            assert paths.ref_root == join(root, "en-US")
+            assert paths.base == root
+            assert set(paths.locales) == set(["yy-Latn", "zz"])

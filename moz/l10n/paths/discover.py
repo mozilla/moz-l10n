@@ -14,24 +14,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+import re
+from collections.abc import Iterable, Iterator
+from itertools import chain
 from os import sep, walk
 from os.path import commonpath, isdir, join, normpath, relpath, splitext
-from re import compile
 
 from moz.l10n.resource.format import l10n_extensions
 from moz.l10n.util import walk_files
 
-REF_DIR_SCORES = {
-    "templates": 3,
-    "en-US": 2,
-    "en-us": 2,
-    "en_US": 2,
-    "en_us": 2,
-    "en": 1,
-}
-
-locale_id = compile(
+locale_id = re.compile(
     r"[a-z]{2}(?:[-_][A-Z][a-z]{3})?(?:[-_][A-Z]{2})?|ca-valencia|ja-JP-mac"
 )
 
@@ -53,19 +45,7 @@ class MissingSourceDirectoryError(Exception):
 
 
 class L10nDiscoverPaths:
-    """
-    Automagical localization resource discovery.
-
-    Given a root directory, finds the likeliest reference and target directories.
-
-    The reference directory has a name like `templates`, `en-US`, or `en`,
-    and contains files with extensions that appear localizable.
-
-    The localization target root is a directory with subdirectories named as
-    BCP 47 locale identifiers, i.e. like `aa`, `aa-AA`, `aa-Aaaa`, or `aa-Aaaa-AA`.
-
-    An underscore may also be used as a separator, as in `en_US`.
-    """
+    """Automagical localization resource discovery"""
 
     base: str | None
     """The target base directory, with subdirectories for each locale."""
@@ -78,9 +58,31 @@ class L10nDiscoverPaths:
         self,
         root: str,
         ref_root: str | None = None,
+        *,
         ignorepath: str | None = ".l10n-ignore",
+        source_locale: str | list[str] | None = None,
     ) -> None:
         """
+        Automagical localization resource discovery.
+
+        Given a `root` directory, finds the likeliest reference and target directories.
+
+        The reference directory has a name matching the `source_locale`
+        and contains files with extensions that appear localizable.
+
+        If `ref_root` is given, the reference directory must be within it.
+        If it does not contain a directory matching `source_locale`
+        but `ref_root` itself contains files with extensions that appear localizable,
+        it is used as the reference directory.
+
+        The default `source_locale` is `['en-US', 'en']`,
+        with earlier values taking priority.
+        For the reference directory, an underscore may also be used as a separator and it may be all lower-case,
+        such that a directory named `en_us` is considered to match a source locale `en-US`.
+
+        The localization target root is a directory within `root` with subdirectories named as
+        BCP 47 locale identifiers, i.e. like `aa`, `aa-AA`, `aa-Aaaa`, or `aa-Aaaa-AA`.
+
         To ignore files, include a `.l10n-ignore` file in the reference base directory
         or some other location passed in as `ignorepath`.
         This file uses git-ignore syntax,
@@ -91,17 +93,32 @@ class L10nDiscoverPaths:
             raise ValueError(f"Not a directory: {root}")
         if ref_root:
             ref_root = normpath(join(root, ref_root))
+        if source_locale is None:
+            source_locale = ["en-US", "en"]
+        elif isinstance(source_locale, str):
+            source_locale = [source_locale]
+        ref_dir_scores: dict[str, int] = {
+            lc_var: idx
+            for idx, lc in enumerate(source_locale)
+            for lc_var in locale_code_variants(lc)
+        }
 
-        ref_dirs: dict[str, int] = {}  # dir -> score
+        # dir -> score
+        ref_dirs: dict[str, int] = {ref_root: len(source_locale)} if ref_root else {}
         base_dirs: list[tuple[str, list[str]]] = []  # [(root, [locale_dir])]
         pot_dirs: list[str] = []
         l10n_dirs: list[str] = []
-        for dirpath, dirnames, filenames in walk(root):
+        if ref_root and not dir_contains(root, ref_root):
+            walk_roots: Iterator[tuple[str, list[str], list[str]]] = chain(
+                walk(root), walk(ref_root)
+            )
+        else:
+            walk_roots = walk(root)
+        for dirpath, dirnames, filenames in walk_roots:
             locale_dirs = []
             for dir in dirnames:
-                if dir in REF_DIR_SCORES:
-                    if not ref_root:
-                        ref_dirs[join(dirpath, dir)] = REF_DIR_SCORES[dir]
+                if dir in ref_dir_scores:
+                    ref_dirs[join(dirpath, dir)] = ref_dir_scores[dir]
                 elif locale_id.fullmatch(dir):
                     locale_dirs.append(dir)
             if locale_dirs:
@@ -117,50 +134,40 @@ class L10nDiscoverPaths:
                 l10n_dirs.append(dirpath)
 
         if ref_root:
-            self._ref_root = ref_root
-        else:
-            # Filter reference dirs to those with localizable contents,
-            # with a preference for .pot template files.
-            ref_dirs_with_files = [
-                dir for dir in ref_dirs if any(dir_contains(dir, pd) for pd in pot_dirs)
-            ] or [
-                dir
-                for dir in ref_dirs
-                if any(dir_contains(dir, ld) for ld in l10n_dirs)
-            ]
-            if ref_dirs_with_files:
-                self._ref_root = max(
-                    (rd for rd in ref_dirs.items() if rd[0] in ref_dirs_with_files),
-                    key=lambda s: s[1],
-                )[0]
-            else:
-                raise MissingSourceDirectoryError
+            for dir in list(ref_dirs):
+                if not dir_contains(ref_root, dir):
+                    del ref_dirs[dir]
 
-        if dir_contains(self._ref_root, root):
-            self.base = None
+        # Filter reference dirs to those with localizable contents,
+        # with a preference for .pot template files.
+        ref_dirs_with_files = [
+            dir for dir in ref_dirs if any(dir_contains(dir, pd) for pd in pot_dirs)
+        ] or [dir for dir in ref_dirs if any(dir_contains(dir, ld) for ld in l10n_dirs)]
+        if ref_dirs_with_files:
+            self._ref_root = min(
+                (rd for rd in ref_dirs.items() if rd[0] in ref_dirs_with_files),
+                key=lambda s: s[1],
+            )[0]
+        else:
+            raise MissingSourceDirectoryError
+
+        # Pick the localization base dir not in the reference directory
+        # with the most locale subdirectories,
+        # with a preference for directories with localizable contents.
+        base_dirs = [bd for bd in base_dirs if not dir_contains(self._ref_root, bd[0])]
+        base_dirs = [
+            bd for bd in base_dirs if any(dir_contains(bd[0], ld) for ld in l10n_dirs)
+        ] or base_dirs
+
+        locale_dirs_: list[str] | None
+        self.base, locale_dirs_ = max(
+            base_dirs, key=lambda s: len(s[1]), default=(None, None)
+        )
+        if locale_dirs_:
+            self.locales = [dir.replace("_", "-") for dir in locale_dirs_]
+            self.locales.sort()
+        else:
             self.locales = None
-        else:
-            # Pick the localization base dir not in the reference directory
-            # with the most locale subdirectories,
-            # with a preference for directories with localizable contents.
-            base_dirs = [
-                bd for bd in base_dirs if not dir_contains(self._ref_root, bd[0])
-            ]
-            base_dirs = [
-                bd
-                for bd in base_dirs
-                if any(dir_contains(bd[0], ld) for ld in l10n_dirs)
-            ] or base_dirs
-
-            locale_dirs_: list[str] | None
-            self.base, locale_dirs_ = max(
-                base_dirs, key=lambda s: len(s[1]), default=(None, None)
-            )
-            if locale_dirs_:
-                self.locales = [dir.replace("_", "-") for dir in locale_dirs_]
-                self.locales.sort()
-            else:
-                self.locales = None
 
         self.ref_paths = (
             tuple(walk_files(self._ref_root, ignorepath=ignorepath))
@@ -232,3 +239,11 @@ class L10nDiscoverPaths:
             if path_parts and locale_id.fullmatch(locale)
             else None
         )
+
+
+def locale_code_variants(locale_code: str) -> Iterable[str]:
+    yield locale_code
+    yield locale_code.lower()
+    lc_ = locale_code.replace("-", "_")
+    yield lc_
+    yield lc_.lower()
