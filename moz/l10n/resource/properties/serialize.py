@@ -14,14 +14,31 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
-from typing import Any, Literal
-
-from translate.storage.properties import propunit
+from re import Match, compile
+from typing import Any, Callable, Iterator, Literal
 
 from moz.l10n.message import Message, PatternMessage
 
 from ..data import Entry, Resource
+
+control_chars = compile(r"[\x00-\x19\x5C\x7F-\x9F]")
+not_ascii_printable_chars = compile(r"[^\x20-\x5B\x5D-\x7E]")
+special_key_trans = str.maketrans({" ": "\\ ", ":": "\\:", "=": "\\="})
+
+
+def encode_char(m: Match[str]) -> str:
+    ch = m.group()
+    if ch == "\\":
+        return r"\\"
+    elif ch == "\t":
+        return r"\t"
+    elif ch == "\n":
+        return r"\n"
+    elif ch == "\f":
+        return r"\f"
+    elif ch == "\r":
+        return r"\r"
+    return f"\\u{ord(ch):04x}"
 
 
 def properties_serialize(
@@ -45,7 +62,6 @@ def properties_serialize(
     as the serialization may lose information about message sections and metadata.
     """
 
-    personality = "java-utf8" if encoding == "utf-8" or encoding == "utf-16" else "java"
     at_empty_line = True
 
     def comment(comment: str, meta: Any, standalone: bool) -> Iterator[str]:
@@ -74,27 +90,38 @@ def properties_serialize(
         for entry in section.entries:
             if isinstance(entry, Entry):
                 yield from comment(entry.comment, entry.meta, False)
-                unit = propunit(personality=personality)
-                unit.out_delimiter_wrappers = " "
-                unit.name = id_prefix + ".".join(entry.id)
+                key = id_prefix + ".".join(entry.id)
+                key = (
+                    control_chars.sub(encode_char, key)
+                    if encoding in {"utf-8", "utf-16"}
+                    else not_ascii_printable_chars.sub(encode_char, key)
+                )
+                key = key.translate(special_key_trans)
 
+                value: str
                 msg = entry.value
                 if isinstance(msg, str):
-                    unit.source = msg
+                    value = msg
                 elif serialize_message:
-                    unit.source = serialize_message(msg)
+                    value = serialize_message(msg)
                 elif isinstance(msg, PatternMessage) and all(
                     isinstance(p, str) for p in msg.pattern
                 ):
-                    unit.source = "".join(msg.pattern)  # type: ignore[arg-type]
+                    value = "".join(msg.pattern)  # type: ignore[arg-type]
                 else:
-                    raise ValueError(f"Unsupported message for {unit.name}: {msg}")
+                    raise ValueError(f"Unsupported message for {key}: {msg}")
 
-                if unit.value[0:1].isspace():
-                    unit.value = "\\" + unit.value
-                if unit.value.endswith(" ") and not unit.value.endswith("\\ "):
-                    unit.value = unit.value[:-1] + "\\u0020"
-                yield unit.getoutput()
+                value = (
+                    control_chars.sub(encode_char, value)
+                    if encoding in {"utf-8", "utf-16"}
+                    else not_ascii_printable_chars.sub(encode_char, value)
+                )
+
+                if value[0:1].isspace():
+                    value = "\\" + value
+                if value.endswith(" ") and not value.endswith("\\ "):
+                    value = value[:-1] + "\\u0020"
+                yield f"{key} = {value}\n" if value else f"{key} =\n"
                 at_empty_line = False
             else:
                 yield from comment(entry.comment, None, True)

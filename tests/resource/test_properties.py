@@ -23,6 +23,8 @@ from moz.l10n.resource.data import Entry, Resource, Section
 from moz.l10n.resource.format import Format
 from moz.l10n.resource.properties import properties_parse, properties_serialize
 
+from . import get_linepos
+
 
 class TestProperties(TestCase):
     def test_backslashes(self):
@@ -40,14 +42,20 @@ and still has another line coming
                 Section(
                     (),
                     [
-                        Entry(("one_line",), PatternMessage(["This is one line"])),
+                        Entry(
+                            ("one_line",),
+                            PatternMessage(["This is one line"]),
+                            linepos=get_linepos(1),
+                        ),
                         Entry(
                             ("two_line",),
                             PatternMessage(["This is the first of two lines"]),
+                            linepos=get_linepos(2, end=4),
                         ),
                         Entry(
                             ("one_line_trailing",),
                             PatternMessage(["This line has a \\ and ends in \\"]),
+                            linepos=get_linepos(4),
                         ),
                         Entry(
                             ("two_lines_triple",),
@@ -56,6 +64,7 @@ and still has another line coming
                                     "This line is one of two and ends in \\and still has another line coming"
                                 ]
                             ),
+                            linepos=get_linepos(5, end=7),
                         ),
                     ],
                 )
@@ -84,14 +93,19 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                 Section(
                     (),
                     [
-                        Entry(("1",), PatternMessage(["1"]), comment=cc0),
-                        Entry(("2",), PatternMessage(["2"])),
-                        Entry(("3",), PatternMessage(["3"])),
-                        Entry(("4",), PatternMessage(["4"])),
-                        Entry(("5",), PatternMessage(["5"])),
-                        Entry(("6",), PatternMessage(["6"])),
-                        Entry(("7",), PatternMessage(["7 "])),
-                        Entry(("8",), PatternMessage(["8 "])),
+                        Entry(
+                            ("1",),
+                            PatternMessage(["1"]),
+                            comment=cc0,
+                            linepos=get_linepos(1, 3),
+                        ),
+                        Entry(("2",), PatternMessage(["2"]), linepos=get_linepos(4)),
+                        Entry(("3",), PatternMessage(["3"]), linepos=get_linepos(5)),
+                        Entry(("4",), PatternMessage(["4"]), linepos=get_linepos(6)),
+                        Entry(("5",), PatternMessage(["5"]), linepos=get_linepos(7)),
+                        Entry(("6",), PatternMessage(["6"]), linepos=get_linepos(8)),
+                        Entry(("7",), PatternMessage(["7 "]), linepos=get_linepos(9)),
+                        Entry(("8",), PatternMessage(["8 "]), linepos=get_linepos(10)),
                         Entry(
                             ("9",),
                             PatternMessage(
@@ -100,6 +114,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                                 ]
                             ),
                             comment="this is a comment",
+                            linepos=get_linepos(11, 12, 12, 14),
                         ),
                     ],
                 )
@@ -148,51 +163,65 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                 Section(
                     (),
                     [
-                        Entry(("1",), PatternMessage(["abc"]), comment="simple check"),
+                        Entry(
+                            ("1",),
+                            PatternMessage(["abc"]),
+                            comment="simple check",
+                            linepos=get_linepos(1, 2),
+                        ),
                         Entry(
                             ("2",),
                             PatternMessage(["xy\t"]),
                             comment="test whitespace trimming in key and value",
+                            linepos=get_linepos(3, 4),
                         ),
                         Entry(
                             ("3",),
                             PatternMessage(["\u1234\t\r\n\u00AB\u0001\n"]),
                             comment="test parsing of escaped values",
+                            linepos=get_linepos(5, 6, 6, 8),
                         ),
                         Entry(
                             ("4",),
                             PatternMessage(["this is multiline property"]),
                             comment="test multiline properties",
+                            linepos=get_linepos(8, 9, 9, 11),
                         ),
                         Entry(
                             ("5",),
                             PatternMessage(["this is another multiline property"]),
                             comment="",
+                            linepos=get_linepos(11, end=13),
                         ),
                         Entry(
                             ("6",),
                             PatternMessage(["test\u0036"]),
                             comment="property with DOS EOL",
+                            linepos=get_linepos(13, 14),
                         ),
                         Entry(
                             ("7",),
                             PatternMessage(["yet another multiline propery"]),
                             comment="test multiline property with with DOS EOL",
+                            linepos=get_linepos(15, 16, 16, 18),
                         ),
                         Entry(
                             ("8",),
                             PatternMessage(["\ttest5 \t"]),
                             comment="trimming should not trim escaped whitespaces",
+                            linepos=get_linepos(18, 19),
                         ),
                         Entry(
                             ("9",),
                             PatternMessage([" test6\t\t    "]),
                             comment="another variant of #8",
+                            linepos=get_linepos(20, 21),
                         ),
                         Entry(
                             ("10aሴb",),
                             PatternMessage(["c\uCDEFd"]),
                             comment="test UTF-8 encoded property/value",
+                            linepos=get_linepos(22, 23),
                         ),
                         Entry(
                             ("11",),
@@ -201,6 +230,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                             + "buffer size is expected to be 4096 so add comments to get to this offset\n"
                             + (("#" * 79 + "\n") * 41)
                             + ("#" * 78),
+                            linepos=get_linepos(24, 68),
                         ),
                     ],
                 )
@@ -250,7 +280,10 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
         exp = PatternMessage(
             ["one line with a # part that looks like a comment and an end"]
         )
-        assert res == Resource(Format.properties, [Section((), [Entry(("bar",), exp)])])
+        assert res == Resource(
+            Format.properties,
+            [Section((), [Entry(("bar",), exp, linepos=get_linepos(1, end=4))])],
+        )
         assert (
             "".join(properties_serialize(res))
             == "bar = one line with a # part that looks like a comment and an end\n"
@@ -268,7 +301,18 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
         res = properties_parse(src)
         assert res == Resource(
             Format.properties,
-            [Section((), [Entry(("foo",), PatternMessage(["value"]))])],
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("foo",),
+                            PatternMessage(["value"]),
+                            linepos=get_linepos(4),
+                        )
+                    ],
+                )
+            ],
             comment=dedent(
                 """\
                     Any copyright is dedicated to the Public Domain.
