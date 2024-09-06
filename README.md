@@ -11,6 +11,9 @@ The Message and Resource representations are drawn from work done for the
 Unicode [MessageFormat 2 specification](https://github.com/unicode-org/message-format-wg/tree/main/spec)
 and the [Message resource specification](https://github.com/eemeli/message-resource-wg/).
 
+Support for XML formats (`android`, `xliff`) is an optional extra;
+to support them, install as `moz.l10n[xml]`.
+
 ## Command-line Tools
 
 For usage details, use each command's `--help` argument.

@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install importlib_resources pytest
-      - run: pip install .
+      - run: pip install '.[xml]'
       - run: pytest -vv
 
   lint:
@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r dev-requirements.txt
-      - run: pip install -e .
+      - run: pip install -e '.[xml]'
       - run: python -m flake8 .
       - run: python -m mypy .
       - run: python -m black --check .

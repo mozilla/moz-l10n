@@ -15,10 +15,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import Callable
 
 from moz.l10n.message import Message
 
-from .android.serialize import android_serialize
 from .data import Resource
 from .dtd.serialize import dtd_serialize
 from .fluent.serialize import fluent_serialize
@@ -29,7 +29,19 @@ from .plain_json.serialize import plain_json_serialize
 from .po.serialize import po_serialize
 from .properties.serialize import properties_serialize
 from .webext.serialize import webext_serialize
-from .xliff.serialize import xliff_serialize
+
+android_serialize: (
+    Callable[[Resource[str, str] | Resource[Message, str], bool], Iterator[str]] | None
+)
+xliff_serialize: (
+    Callable[[Resource[str, str] | Resource[Message, str], bool], Iterator[str]] | None
+)
+try:
+    from .android.serialize import android_serialize
+    from .xliff.serialize import xliff_serialize
+except ImportError:
+    android_serialize = None
+    xliff_serialize = None
 
 
 def serialize_resource(
@@ -48,9 +60,7 @@ def serialize_resource(
     # TODO post-py38: should be a match
     if not format:
         format = resource.format
-    if format == Format.android:
-        return android_serialize(resource, trim_comments=trim_comments)
-    elif format == Format.dtd:
+    if format == Format.dtd:
         return dtd_serialize(resource, trim_comments=trim_comments)
     elif format == Format.fluent:
         return fluent_serialize(resource, trim_comments=trim_comments)
@@ -66,7 +76,9 @@ def serialize_resource(
         return properties_serialize(resource, trim_comments=trim_comments)
     elif format == Format.webext:
         return webext_serialize(resource, trim_comments=trim_comments)
-    elif format == Format.xliff:
-        return xliff_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.android and android_serialize is not None:
+        return android_serialize(resource, trim_comments)
+    elif format == Format.xliff and xliff_serialize is not None:
+        return xliff_serialize(resource, trim_comments)
     else:
         raise ValueError(f"Unsupported resource format: {format or resource.format}")

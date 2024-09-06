@@ -14,8 +14,9 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 from ..message import Message
-from .android.parse import android_parse
 from .data import Resource
 from .dtd.parse import dtd_parse
 from .fluent.parse import fluent_parse
@@ -26,7 +27,15 @@ from .plain_json.parse import plain_json_parse
 from .po.parse import po_parse
 from .properties.parse import properties_parse
 from .webext.parse import webext_parse
-from .xliff.parse import xliff_parse
+
+android_parse: Callable[[str | bytes], Resource[Message, str]] | None
+xliff_parse: Callable[[str | bytes], Resource[Message, str]] | None
+try:
+    from .android.parse import android_parse
+    from .xliff.parse import xliff_parse
+except ImportError:
+    android_parse = None
+    xliff_parse = None
 
 
 class UnsupportedResource(Exception):
@@ -55,9 +64,7 @@ def parse_resource(
             source = file.read()
     # TODO post-py38: should be a match
     format = input if isinstance(input, Format) else detect_format(input, source)
-    if format == Format.android:
-        return android_parse(source)
-    elif format == Format.dtd:
+    if format == Format.dtd:
         return dtd_parse(source)
     elif format == Format.fluent:
         return fluent_parse(source)
@@ -73,7 +80,9 @@ def parse_resource(
         return properties_parse(source)
     elif format == Format.webext:
         return webext_parse(source)
-    elif format == Format.xliff:
+    elif format == Format.android and android_parse is not None:
+        return android_parse(source)
+    elif format == Format.xliff and xliff_parse is not None:
         return xliff_parse(source)
     else:
         raise UnsupportedResource(f"Unsupported resource format: {input}")
