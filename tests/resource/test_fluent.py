@@ -28,9 +28,11 @@ from moz.l10n.message import (
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.resource.data import Comment, Entry, LinePos, Metadata, Resource, Section
 from moz.l10n.resource.fluent import fluent_parse, fluent_serialize
 from moz.l10n.resource.format import Format
+
+from . import get_linepos
 
 
 class TestFluent(TestCase):
@@ -151,6 +153,7 @@ class TestFluent(TestCase):
                     ]
                 ),
                 comment="Message Comment\non two lines.",
+                linepos=get_linepos(11, 13),
             ),
             Entry(
                 ("functions",),
@@ -160,13 +163,19 @@ class TestFluent(TestCase):
                         Expression("bar", FunctionAnnotation("foo", {"opt": "val"})),
                     ]
                 ),
+                linepos=get_linepos(14),
             ),
-            Entry(("has-attr",), PatternMessage(["ABC"])),
-            Entry(("has-attr", "attr"), PatternMessage(["Attr"])),
+            Entry(("has-attr",), PatternMessage(["ABC"]), linepos=get_linepos(15)),
+            Entry(
+                ("has-attr", "attr"),
+                PatternMessage(["Attr"]),
+                linepos=get_linepos(16),
+            ),
             Entry(
                 ("has-only-attr", "attr"),
                 PatternMessage(["Attr"]),
                 comment="Attr Comment",
+                linepos=get_linepos(17, 19),
             ),
             Entry(
                 ("single-sel",),
@@ -177,6 +186,7 @@ class TestFluent(TestCase):
                         (other,): ["Other"],
                     },
                 ),
+                linepos=LinePos(21, 21, 22, 26),
             ),
             Entry(
                 ("two-sels",),
@@ -192,6 +202,7 @@ class TestFluent(TestCase):
                         (CatchallKey("2"), CatchallKey("bb")): ["pre Two mid BB post"],
                     },
                 ),
+                linepos=LinePos(26, 26, 27, 34),
             ),
             Entry(
                 ("deep-sels",),
@@ -210,9 +221,10 @@ class TestFluent(TestCase):
                         (other, other): ["x,x"],
                     },
                 ),
+                linepos=LinePos(34, 34, 35, 53),
             ),
-            Entry(("-term",), PatternMessage(["Term"])),
-            Entry(("-term", "attr"), PatternMessage(["foo"])),
+            Entry(("-term",), PatternMessage(["Term"]), linepos=get_linepos(53)),
+            Entry(("-term", "attr"), PatternMessage(["foo"]), linepos=get_linepos(54)),
             Entry(
                 ("term-sel",),
                 SelectMessage(
@@ -222,6 +234,7 @@ class TestFluent(TestCase):
                         (other,): ["Other"],
                     },
                 ),
+                linepos=LinePos(55, 55, 56, 60),
             ),
         ]
         assert res == Resource(
@@ -230,12 +243,17 @@ class TestFluent(TestCase):
                 Section(
                     id=(),
                     entries=[
-                        Entry(("simple",), PatternMessage(["A"])),
+                        Entry(
+                            ("simple",),
+                            PatternMessage(["A"]),
+                            linepos=get_linepos(5),
+                        ),
                         Comment("Standalone Comment"),
                     ],
                     comment="Group Comment",
+                    linepos=get_linepos(3),
                 ),
-                Section((), entries),
+                Section((), entries, linepos=get_linepos(9)),
             ],
             comment="Resource Comment",
         )
@@ -371,7 +389,12 @@ class TestFluent(TestCase):
             [Expression(""), " ", Expression("\t"), " ", Expression("\n")]
         )
         assert res == Resource(
-            Format.fluent, [Section(id=(), entries=[Entry(("key",), exp_msg)])]
+            Format.fluent,
+            [
+                Section(
+                    id=(), entries=[Entry(("key",), exp_msg, linepos=get_linepos(1))]
+                )
+            ],
         )
         assert (
             "".join(fluent_serialize(res))
@@ -443,7 +466,7 @@ class TestFluent(TestCase):
 
     def test_file(self):
         bytes = files("tests.resource.data").joinpath("demo.ftl").read_bytes()
-        res = fluent_parse(bytes)
+        res = fluent_parse(bytes, with_linepos=False)
         copyright = "Any copyright is dedicated to the Public Domain.\nhttp://creativecommons.org/publicdomain/zero/1.0/"
         entries = [
             Entry(
