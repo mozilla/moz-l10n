@@ -27,6 +27,74 @@ from . import get_linepos
 
 
 class TestProperties(TestCase):
+    def test_java_docs(self):
+        # Examples from https://docs.oracle.com/javase/8/docs/api/java/util/Properties.html#load-java.io.Reader-
+        src = r"""
+Truth = Beauty
+ Truth:Beauty
+Truth                    :Beauty
+fruits                           apple, banana, pear, \
+                                 cantaloupe, watermelon, \
+                                 kiwi, mango
+ cheeses
+\:\=
+"""
+        res = properties_parse(src)
+        assert res == Resource(
+            Format.properties,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("Truth",),
+                            PatternMessage(["Beauty"]),
+                            linepos=get_linepos(2),
+                        ),
+                        Entry(
+                            ("Truth",),
+                            PatternMessage(["Beauty"]),
+                            linepos=get_linepos(3),
+                        ),
+                        Entry(
+                            ("Truth",),
+                            PatternMessage(["Beauty"]),
+                            linepos=get_linepos(4),
+                        ),
+                        Entry(
+                            ("fruits",),
+                            PatternMessage(
+                                [
+                                    "apple, banana, pear, cantaloupe, watermelon, kiwi, mango"
+                                ]
+                            ),
+                            linepos=get_linepos(5, end=8),
+                        ),
+                        Entry(
+                            ("cheeses",),
+                            PatternMessage([]),
+                            linepos=get_linepos(8),
+                        ),
+                        Entry(
+                            (":=",),
+                            PatternMessage([]),
+                            linepos=get_linepos(9),
+                        ),
+                    ],
+                )
+            ],
+        )
+        assert "".join(properties_serialize(res)) == dedent(
+            """\
+            Truth = Beauty
+            Truth = Beauty
+            Truth = Beauty
+            fruits = apple, banana, pear, cantaloupe, watermelon, kiwi, mango
+            cheeses =
+            \\:\\= =
+            """
+        )
+
     def test_backslashes(self):
         src = r"""one_line = This is one line
 two_line = This is the first \

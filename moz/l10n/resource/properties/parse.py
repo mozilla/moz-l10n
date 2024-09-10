@@ -88,7 +88,7 @@ def properties_parse(
             entry = None
         else:
             if prev_linepos:
-                prev_linepos.end = line
+                prev_linepos.end = max(prev_linepos.end, line)
                 prev_linepos = None
             entry = None
             if kind == LineKind.KEY:
