@@ -39,6 +39,34 @@ The Message value type.
 
 
 @dataclass
+class LinePos:
+    """
+    The source line position of an entry or section header.
+    """
+
+    start: int
+    """
+    The starting line of the entry or section.
+    May be less than `value` if preceded by a comment.
+    """
+
+    key: int
+    """
+    The start line of the entry or section header key or name.
+    """
+
+    value: int
+    """
+    The start line of the entry pattern or section header.
+    """
+
+    end: int
+    """
+    The line one past the end of the entry or section header.
+    """
+
+
+@dataclass
 class Metadata(Generic[M]):
     """
     Metadata is attached to a resource, section, or a single entry.
@@ -122,6 +150,12 @@ class Entry(Generic[V, M]):
     Metadata attached to this entry.
     """
 
+    linepos: LinePos | None = None
+    """
+    The parsed position of the entry,
+    available for some formats.
+    """
+
 
 @dataclass
 class Section(Generic[V, M]):
@@ -170,6 +204,12 @@ class Section(Generic[V, M]):
     meta: list[Metadata[M]] = field(default_factory=list)
     """
     Metadata attached to this section.
+    """
+
+    linepos: LinePos | None = None
+    """
+    The parsed position of the section,
+    available for some formats.
     """
 
 

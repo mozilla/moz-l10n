@@ -20,8 +20,6 @@ from json import JSONDecodeError, loads
 from os.path import splitext
 from typing import Any
 
-from lxml.etree import LxmlError, iterparse
-
 # from moz.l10n.resource.xliff.common import xliff_ns
 xliff_ns = {
     "urn:oasis:names:tc:xliff:document:1.0",
@@ -115,13 +113,15 @@ def detect_format(name: str | None, source: bytes | str) -> Format | None:
 
     # Let's presume the input is XML and look at its root node.
     try:
+        from lxml.etree import LxmlError, iterparse
+
         bs = source.encode() if isinstance(source, str) else source
         _, xml_root = next(iterparse(BytesIO(bs), events=("start",)))
         ns = xml_root.nsmap.get(None, None)
         if ns:
             return Format.xliff if ns in xliff_ns else None
         return Format.android if xml_root.tag == "resources" else None
-    except LxmlError:
+    except (ImportError, LxmlError):
         pass
 
     return None

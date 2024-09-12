@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from itertools import product
+from re import finditer
 from typing import Any, Literal, Tuple, cast, overload
 
 from fluent.syntax import FluentParser
@@ -29,20 +30,26 @@ from ..format import Format
 @overload
 def fluent_parse(
     source: bytes | str | ftl.Resource,
+    *,
     as_ftl_patterns: Literal[False] = False,
+    with_linepos: bool = True,
 ) -> res.Resource[msg.Message, str]: ...
 
 
 @overload
 def fluent_parse(
     source: bytes | str | ftl.Resource,
+    *,
     as_ftl_patterns: Literal[True],
+    with_linepos: bool = True,
 ) -> res.Resource[ftl.Pattern, str]: ...
 
 
 def fluent_parse(
     source: bytes | str | ftl.Resource,
+    *,
     as_ftl_patterns: bool = False,
+    with_linepos: bool = True,
 ) -> res.Resource[msg.Message, Any] | res.Resource[ftl.Pattern, Any]:
     """
     Parse a .ftl file into a message resource.
@@ -60,9 +67,11 @@ def fluent_parse(
 
     if isinstance(source, ftl.Resource):
         fluent_res = source
+        lpm = None  # Source is required for line positions
     else:
         source_str = source if isinstance(source, str) else source.decode("utf-8")
-        fluent_res = FluentParser().parse(source_str)
+        fluent_res = FluentParser(with_spans=with_linepos).parse(source_str)
+        lpm = LinePosMapper(source_str) if with_linepos else None
 
     entries: list[res.Entry[Any, Any] | res.Comment] = []
     section = res.Section((), entries)
@@ -73,7 +82,7 @@ def fluent_parse(
         fluent_body = fluent_body[1:]
     for entry in fluent_body:
         if isinstance(entry, ftl.Message) or isinstance(entry, ftl.Term):
-            entries.extend(patterns(entry, as_ftl_patterns))
+            entries.extend(patterns(entry, as_ftl_patterns, lpm))
         elif isinstance(entry, ftl.ResourceComment):
             if entry.content:
                 resource.comment = (
@@ -85,9 +94,19 @@ def fluent_parse(
             if entries or section.comment:
                 entries = []
                 section = res.Section((), entries, comment=entry.content or "")
+                if lpm and entry.span:
+                    span = entry.span
+                    section.linepos = lpm.get_linepos(
+                        span.start, span.start, span.start, span.end
+                    )
                 resource.sections.append(section)
             else:
                 section.comment = entry.content or ""
+                if lpm and entry.span:
+                    span = entry.span
+                    section.linepos = lpm.get_linepos(
+                        span.start, span.start, span.start, span.end
+                    )
         elif isinstance(entry, ftl.Comment):
             if entry.content:
                 entries.append(res.Comment(entry.content))
@@ -101,23 +120,50 @@ def fluent_parse(
 
 
 def patterns(
-    entry: ftl.Message | ftl.Term, as_ftl_patterns: bool
+    ftl_entry: ftl.Message | ftl.Term,
+    as_ftl_patterns: bool,
+    lpm: LinePosMapper | None,
 ) -> Generator[res.Entry[msg.Message, Any] | res.Entry[ftl.Pattern, Any], None, None]:
     message = (lambda m: m) if as_ftl_patterns else fluent_parse_message
-    id = entry.id.name
-    if isinstance(entry, ftl.Term):
+    id = ftl_entry.id.name
+    if isinstance(ftl_entry, ftl.Term):
         id = "-" + id
-    comment = entry.comment.content or "" if entry.comment else ""
-    if entry.value:
-        yield res.Entry(id=(id,), value=message(entry.value), comment=comment)
+    comment = ftl_entry.comment.content or "" if ftl_entry.comment else ""
+    if ftl_entry.value:
+        entry: res.Entry[Any, Any] = res.Entry(
+            id=(id,), value=message(ftl_entry.value), comment=comment
+        )
+        if lpm and ftl_entry.span and ftl_entry.value.span:
+            v_span = ftl_entry.value.span
+            c_span = (
+                ftl_entry.comment.span
+                if comment and ftl_entry.comment and ftl_entry.comment.span
+                else ftl_entry.span
+            )
+            k_span = ftl_entry.id.span or ftl_entry.span
+            entry.linepos = lpm.get_linepos(
+                c_span.start, k_span.start, v_span.start, v_span.end
+            )
+        yield entry
         if comment:
             comment = ""
-    for attr in entry.attributes:
-        yield res.Entry(
-            id=(id, attr.id.name),
-            value=message(attr.value),
-            comment=comment,
+    for attr in ftl_entry.attributes:
+        entry = res.Entry(
+            id=(id, attr.id.name), value=message(attr.value), comment=comment
         )
+        if lpm and attr.span:
+            span = attr.span
+            c_span = (
+                ftl_entry.comment.span
+                if comment and ftl_entry.comment and ftl_entry.comment.span
+                else span
+            )
+            k_span = attr.id.span or span
+            v_span = attr.value.span or span
+            entry.linepos = lpm.get_linepos(
+                c_span.start, k_span.start, v_span.start, span.end
+            )
+        yield entry
         if comment:
             comment = ""
 
@@ -307,3 +353,25 @@ def literal_value(arg: ftl.NumberLiteral | ftl.StringLiteral) -> str:
         if isinstance(arg, ftl.NumberLiteral)
         else arg.parse().get("value") or ""
     )
+
+
+class LinePosMapper:
+    def __init__(self, src: str) -> None:
+        self._len = len(src)
+        self._newlines = [m.start() for m in finditer("\n", src)]
+
+    def _get_line(self, char_idx: int) -> int:
+        # Treat the end of the string as a newline.
+        if not self._newlines and char_idx >= self._len:
+            return 2
+        return next(
+            (idx + 1 for idx, nl in enumerate(self._newlines) if nl > char_idx),
+            len(self._newlines) + 1,
+        )
+
+    def get_linepos(self, start: int, key: int, value: int, end: int) -> res.LinePos:
+        start_line = self._get_line(start)
+        key_line = start_line if key == start else self._get_line(key)
+        value_line = key_line if value == key else self._get_line(value)
+        end_line = self._get_line(end)
+        return res.LinePos(start_line, key_line, value_line, end_line)
