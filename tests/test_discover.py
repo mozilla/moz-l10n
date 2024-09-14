@@ -107,8 +107,8 @@ class TestL10nDiscover(TestCase):
     def test_locales(self):
         tree: Tree = {
             "source": {
-                "en": {"c.pot": ""},
-                "en-US": {"a.ftl": "", "b.ftl": ""},
+                "en": {"a.ftl": "", "b.ftl": "", "c.pot": ""},
+                "en-US": {"d.ftl": "", "e.ftl": "", "f.ftl": ""},
             },
             "ignore": {"aa": {}, "bb": {}, "cc": {}, "dd": {}},
             "target": {
@@ -126,16 +126,27 @@ class TestL10nDiscover(TestCase):
             assert paths.locales == ["yy-Latn", "zz"]
             assert paths.all() == {
                 (
+                    join(paths.ref_root, "a.ftl"),
+                    join(paths.base, "{locale}", "a.ftl"),
+                ): paths.locales,
+                (
+                    join(paths.ref_root, "b.ftl"),
+                    join(paths.base, "{locale}", "b.ftl"),
+                ): paths.locales,
+                (
                     join(paths.ref_root, "c.pot"),
                     join(paths.base, "{locale}", "c.po"),
                 ): paths.locales,
             }
             assert paths.target(join(paths.ref_root, "c.pot")) == paths.target("c.pot")
+            assert paths.target("a.ftl") == (
+                join(paths.base, "{locale}", "a.ftl"),
+                paths.locales,
+            )
             assert paths.target("c.pot") == (
                 join(paths.base, "{locale}", "c.po"),
                 paths.locales,
             )
-            assert paths.target("a.ftl") == (None, ())
             assert paths.target(join(root, "source", "en-US", "a.ftl")) == (None, ())
             # This relies on the `yy_Latn` directory being actually present.
             assert paths.format_target_path("{locale}/c.pot", "yy-Latn") == join(
@@ -145,11 +156,12 @@ class TestL10nDiscover(TestCase):
                 join(paths.ref_root, "a.ftl"),
                 {"locale": "zz"},
             )
-            assert paths.find_reference(join(root, "target", "yy_Latn", "c", "d")) == (
-                join(paths.ref_root, "c", "d"),
+            assert paths.find_reference(join(root, "target", "yy_Latn", "c.po")) == (
+                join(paths.ref_root, "c.pot"),
                 {"locale": "yy-Latn"},
             )
             assert paths.find_reference(join(root, "target", "ignore", "a.ftl")) is None
+            assert paths.find_reference(join(root, "target", "zz", "d.ftl")) is None
 
     def test_ref_root(self):
         tree: Tree = {

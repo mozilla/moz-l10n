@@ -234,11 +234,14 @@ class L10nDiscoverPaths:
         """
         base = self._base()
         locale, *path_parts = normpath(relpath(join(base, target), base)).split(sep)
-        return (
-            (join(self._ref_root, *path_parts), {"locale": locale.replace("_", "-")})
-            if path_parts and locale_id.fullmatch(locale)
-            else None
-        )
+        if path_parts and locale_id.fullmatch(locale):
+            ref_path = join(self._ref_root, *path_parts)
+            vars = {"locale": locale.replace("_", "-")}
+            if ref_path in self.ref_paths:
+                return ref_path, vars
+            elif ref_path.endswith(".po") and ref_path + "t" in self.ref_paths:
+                return ref_path + "t", vars
+        return None
 
 
 def locale_code_variants(locale_code: str) -> Iterable[str]:

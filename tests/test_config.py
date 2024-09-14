@@ -93,21 +93,21 @@ class TestL10nConfigPaths(TestCase):
             join(root, "en", "one.pot"),
             {"locale": "xx"},
         )
-        assert paths.find_reference("yy-YY/x/two/z") == (
-            join(root, "en", "two", "z"),
+        assert paths.find_reference("yy-YY/x/two/b.po") == (
+            join(root, "en", "two", "b.pot"),
             {"locale": "yy-YY"},
         )
-        assert paths.find_reference("xx-Latn-XX/y/z/w.ftl") == (
-            join(root, "en", "three", "z", "w.ftl"),
+        assert paths.find_reference("xx-Latn-XX/y/d/e.ftl") == (
+            join(root, "en", "three", "d", "e.ftl"),
             {"locale": "xx-Latn-XX"},
         )
-        assert paths.find_reference("xx-Latn/y/z.ftl") == (
-            join(root, "en", "three", "z.ftl"),
+        assert paths.find_reference("xx-Latn/y/c.ftl") == (
+            join(root, "en", "three", "c.ftl"),
             {"locale": "xx-Latn"},
         )
         assert paths.find_reference("xx//") is None
         assert paths.find_reference("xx/x/two") is None
-        assert paths.find_reference("xx/y/x/w") is None
+        assert paths.find_reference("xx/y/x/w.ftl") is None
 
     def test_firefox(self):
         browser_toml = dedent(
@@ -329,3 +329,4 @@ class TestL10nConfigPaths(TestCase):
             source_strings,
             {"android_locale": "b+de+FG"},
         )
+        assert paths.find_reference("res/values-xx/nonesuch") is None

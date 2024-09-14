@@ -292,7 +292,11 @@ class L10nConfigPaths:
             if match:
                 vars = match.groupdict()
                 star_values = match.groups()[len(vars) :]
-                return normpath(ref.format(*star_values)), vars
+                ref_path = normpath(ref.format(*star_values))
+                if ref_path in self._path_data:
+                    return ref_path, vars
+                elif ref_path.endswith(".po") and ref_path + "t" in self._path_data:
+                    return ref_path + "t", vars
         for incl in self._includes:
             res = incl.find_reference(target)
             if res is not None:
