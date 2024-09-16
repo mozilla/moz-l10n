@@ -69,7 +69,9 @@ class TestL10nConfigPaths(TestCase):
         }
         with TemporaryDirectory() as root:
             build_file_tree(root, tree)
-            paths = L10nConfigPaths(join(root, "cfg"))
+            paths = L10nConfigPaths(
+                join(root, "cfg"), force_paths=[join(root, "en", "three", "extra.ftl")]
+            )
 
         assert paths.base == root
         assert paths.locales is None
@@ -82,6 +84,7 @@ class TestL10nConfigPaths(TestCase):
                 "one.pot": "one.po",
                 "three/c.ftl": "y/c.ftl",
                 "three/d/e.ftl": "y/d/e.ftl",
+                "three/extra.ftl": "y/extra.ftl",
                 "two/a": "x/two/a",
                 "two/b.pot": "x/two/b.po",
             }.items()
@@ -101,8 +104,8 @@ class TestL10nConfigPaths(TestCase):
             join(root, "en", "three", "d", "e.ftl"),
             {"locale": "xx-Latn-XX"},
         )
-        assert paths.find_reference("xx-Latn/y/c.ftl") == (
-            join(root, "en", "three", "c.ftl"),
+        assert paths.find_reference("xx-Latn/y/extra.ftl") == (
+            join(root, "en", "three", "extra.ftl"),
             {"locale": "xx-Latn"},
         )
         assert paths.find_reference("xx//") is None

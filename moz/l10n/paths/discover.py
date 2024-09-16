@@ -51,7 +51,7 @@ class L10nDiscoverPaths:
     """The target base directory, with subdirectories for each locale."""
     locales: list[str] | None
     """Locales detected from subdirectory names under `base`."""
-    ref_paths: tuple[str, ...]
+    ref_paths: list[str]
     """Reference paths"""
 
     def __init__(
@@ -59,6 +59,7 @@ class L10nDiscoverPaths:
         root: str,
         ref_root: str | None = None,
         *,
+        force_paths: list[str] | None = None,
         ignorepath: str | None = ".l10n-ignore",
         source_locale: str | list[str] | None = None,
     ) -> None:
@@ -74,6 +75,10 @@ class L10nDiscoverPaths:
         If it does not contain a directory matching `source_locale`
         but `ref_root` itself contains files with extensions that appear localizable,
         it is used as the reference directory.
+
+        Use `force_paths` to list fully-qualified file paths to include
+        as reference paths if they are within the reference directory,
+        even if no file is present at those paths.
 
         The default `source_locale` is `['en-US', 'en']`,
         with earlier values taking priority.
@@ -170,10 +175,14 @@ class L10nDiscoverPaths:
             self.locales = None
 
         self.ref_paths = (
-            tuple(walk_files(self._ref_root, ignorepath=ignorepath))
+            list(walk_files(self._ref_root, ignorepath=ignorepath))
             if isdir(self._ref_root)
-            else ()
+            else []
         )
+        if force_paths:
+            self.ref_paths.extend(
+                path for path in force_paths if dir_contains(self._ref_root, path)
+            )
 
     @property
     def ref_root(self) -> str:
@@ -201,7 +210,9 @@ class L10nDiscoverPaths:
             paths[(ref_path, target)] = self.locales
         return paths
 
-    def target(self, ref_path: str) -> tuple[str | None, Iterable[str]]:
+    def target(
+        self, ref_path: str, *, ref_required: bool = True
+    ) -> tuple[str | None, Iterable[str]]:
         """
         If `ref_path` is a valid reference path,
         returns its corresponding target path.
@@ -212,7 +223,7 @@ class L10nDiscoverPaths:
         ref_path = normpath(join(self._ref_root, ref_path))
         if ref_path.endswith(".po"):
             ref_path += "t"
-        if ref_path not in self.ref_paths:
+        if ref_required and ref_path not in self.ref_paths:
             return None, ()
         locale_root = join(self._base(), "{locale}")
         target = ref_path.replace(self._ref_root, locale_root, 1)

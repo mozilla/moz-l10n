@@ -48,6 +48,16 @@ class TestL10nDiscover(TestCase):
             build_file_tree(root, tree)
             with self.assertRaises(MissingSourceDirectoryError):
                 L10nDiscoverPaths(root)
+            paths = L10nDiscoverPaths(
+                root, ref_root=root, force_paths=[join(root, "extra.ftl")]
+            )
+            paths.base = join(root, "base")
+        assert paths.ref_root == root
+        assert paths.target("nonesuch.ftl") == (None, ())
+        assert paths.target("extra.ftl") == (
+            join(root, "base", "{locale}", "extra.ftl"),
+            (),
+        )
 
     def test_ref_only(self):
         tree: Tree = {

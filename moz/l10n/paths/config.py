@@ -72,7 +72,9 @@ class L10nConfigPaths:
     def __init__(
         self,
         cfg_path: str,
+        *,
         cfg_load: Callable[[str], dict[str, Any]] | None = None,
+        force_paths: list[str] | None = None,
         locale_map: dict[str, Callable[[str], str]] | None = None,
         _seen: set[str] | None = None,
     ) -> None:
@@ -81,6 +83,10 @@ class L10nConfigPaths:
 
         As configurations may include others, `cfg_load` can get called multiple times.
         `_seen` is used internally to deduplicate file loads.
+
+        Use `force_paths` to list fully-qualified file paths to include
+        as reference paths if they match the `[[paths]]` config,
+        even if no file is present at those paths.
 
         To use custom path variables for locales,
         set `locale_map` to be a mapping of path variable names to functions,
@@ -112,6 +118,7 @@ class L10nConfigPaths:
 
         # ref -> (target, locales)
         self._path_data: dict[str, tuple[str, list[str] | None]] = {}
+        fp = set(force_paths) if force_paths else None
         for path in toml.get("paths", []):
             ref: str = normpath(join(self._ref_root, path["reference"]))
             target: str = path["l10n"]  # Note: not normalised, so sep=="/"
@@ -133,6 +140,17 @@ class L10nConfigPaths:
                     for ref_file in glob(ref, recursive=True)
                     if isfile(ref_file)
                 )
+                if fp:
+                    ref_re = path_regex(ref.replace(sep, "/"))
+                    fp_match = {
+                        path for path in fp if ref_re.fullmatch(path.replace(sep, "/"))
+                    }
+                    if fp_match:
+                        self._path_data.update(
+                            (path, (path.replace(ref_base, target, 1), locales))
+                            for path in fp_match
+                        )
+                        fp -= fp_match
             else:
                 self._path_data[ref] = (target, locales)
 
@@ -148,7 +166,7 @@ class L10nConfigPaths:
                 if incl_path not in _seen:
                     _seen.add(incl_path)
                     self._includes.append(
-                        L10nConfigPaths(incl_path, cfg_load, _seen=_seen)
+                        L10nConfigPaths(incl_path, cfg_load=cfg_load, _seen=_seen)
                     )
 
     @property
