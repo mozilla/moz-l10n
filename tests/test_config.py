@@ -69,7 +69,9 @@ class TestL10nConfigPaths(TestCase):
         }
         with TemporaryDirectory() as root:
             build_file_tree(root, tree)
-            paths = L10nConfigPaths(join(root, "cfg"))
+            paths = L10nConfigPaths(
+                join(root, "cfg"), force_paths=[join(root, "en", "three", "extra.ftl")]
+            )
 
         assert paths.base == root
         assert paths.locales is None
@@ -82,34 +84,33 @@ class TestL10nConfigPaths(TestCase):
                 "one.pot": "one.po",
                 "three/c.ftl": "y/c.ftl",
                 "three/d/e.ftl": "y/d/e.ftl",
+                "three/extra.ftl": "y/extra.ftl",
                 "two/a": "x/two/a",
                 "two/b.pot": "x/two/b.po",
             }.items()
         }
         assert paths.all() == expected
         for ref, tgt in expected:
-            assert paths.target_locales(ref) == set()
-            assert paths.target_path(ref) == tgt
-            assert paths.target_path(ref, "xx") == tgt.format(locale="xx")
+            assert paths.target(ref) == (tgt, ())
         assert paths.find_reference("xx/one.po") == (
             join(root, "en", "one.pot"),
             {"locale": "xx"},
         )
-        assert paths.find_reference("yy-YY/x/two/z") == (
-            join(root, "en", "two", "z"),
+        assert paths.find_reference("yy-YY/x/two/b.po") == (
+            join(root, "en", "two", "b.pot"),
             {"locale": "yy-YY"},
         )
-        assert paths.find_reference("xx-Latn-XX/y/z/w.ftl") == (
-            join(root, "en", "three", "z", "w.ftl"),
+        assert paths.find_reference("xx-Latn-XX/y/d/e.ftl") == (
+            join(root, "en", "three", "d", "e.ftl"),
             {"locale": "xx-Latn-XX"},
         )
-        assert paths.find_reference("xx-Latn/y/z.ftl") == (
-            join(root, "en", "three", "z.ftl"),
+        assert paths.find_reference("xx-Latn/y/extra.ftl") == (
+            join(root, "en", "three", "extra.ftl"),
             {"locale": "xx-Latn"},
         )
         assert paths.find_reference("xx//") is None
         assert paths.find_reference("xx/x/two") is None
-        assert paths.find_reference("xx/y/x/w") is None
+        assert paths.find_reference("xx/y/x/w.ftl") is None
 
     def test_firefox(self):
         browser_toml = dedent(
@@ -225,12 +226,8 @@ class TestL10nConfigPaths(TestCase):
         }
         assert paths.all() == expected
         for ref, tgt in expected:
-            assert paths.target_locales(ref) == set()
-            assert paths.target_path(ref) == tgt
-        assert (
-            paths.target_path(join(root, "browser", "locales", "l10n.toml"), "xx")
-            is None
-        )
+            assert paths.target(ref) == (tgt, ())
+        assert paths.target(join(root, "browser", "locales", "l10n.toml")) == (None, ())
         paths.locales = ["aa", "bb"]
         new_base = join(paths.base, "x", "y", "z")
         paths.base = new_base
@@ -279,16 +276,18 @@ class TestL10nConfigPaths(TestCase):
         res_target = (
             "wagtailpages/templates/about/locale/{locale}/LC_MESSAGES/django.po"
         )
-        assert paths.target_locales(res_source) == set(path_locales)
-        assert paths.target_path(res_source) == join(
-            paths.base,
-            normpath(res_target),
-        )
-        assert paths.target_path(res_source, "de") == join(
+        tgt_path, tgt_locales = paths.target(res_source)
+        assert tgt_path == join(paths.base, normpath(res_target))
+        assert tgt_locales == set(path_locales)
+        assert paths.format_target_path(tgt_path, "de") == join(
             paths.base,
             normpath(res_target).format(locale="de"),
         )
-        assert paths.target_path(res_source, "nl") is None
+
+        paths.locales = ["es", "fr", "nl"]
+        assert paths.target(res_source)[1] == set(("es", "fr"))
+        paths.locales = []
+        assert paths.target(res_source)[1] == path_locales
 
     def test_fenix(self):
         cfg_toml = dedent(
@@ -318,11 +317,7 @@ class TestL10nConfigPaths(TestCase):
         source_strings = join(root, "res", "values", "strings.xml")
         target_strings = join(root, "res", "values-{android_locale}", "strings.xml")
         assert paths.all() == {(source_strings, target_strings): ["abc", "de-FG"]}
-        assert paths.target_locales(source_strings) == set(("abc", "de-FG"))
-        assert paths.target_path(source_strings) == target_strings
-        assert paths.target_path(source_strings, "abc") == target_strings.format(
-            android_locale="b+abc"
-        )
+        assert paths.target(source_strings) == (target_strings, ["abc", "de-FG"])
         assert paths.format_target_path(target_strings, "abc") == target_strings.format(
             android_locale="b+abc"
         )
@@ -337,3 +332,4 @@ class TestL10nConfigPaths(TestCase):
             source_strings,
             {"android_locale": "b+de+FG"},
         )
+        assert paths.find_reference("res/values-xx/nonesuch") is None
