@@ -22,6 +22,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install importlib_resources pytest
+      - run: pip install .
+      - run: pytest -vv
       - run: pip install '.[xml]'
       - run: pytest -vv
 
