@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from importlib_resources import files
 from textwrap import dedent
-from unittest import TestCase
+from unittest import SkipTest, TestCase
 
 from moz.l10n.message import (
     CatchallKey,
@@ -27,9 +27,13 @@ from moz.l10n.message import (
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource.android import android_parse, android_serialize
 from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
 from moz.l10n.resource.format import Format
+
+try:
+    from moz.l10n.resource.android import android_parse, android_serialize
+except ImportError:
+    raise SkipTest("Requires [xml] extra")
 
 source = files("tests.resource.data").joinpath("strings.xml").read_bytes()
 

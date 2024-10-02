@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from importlib_resources import files
 from textwrap import dedent
-from unittest import TestCase
+from unittest import SkipTest, TestCase
 
 from moz.l10n.message import (
     CatchallKey,
@@ -29,7 +29,12 @@ from moz.l10n.message import (
 )
 from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
 from moz.l10n.resource.format import Format
-from moz.l10n.resource.xliff import xliff_parse, xliff_serialize
+
+try:
+    from moz.l10n.resource.xliff import xliff_parse, xliff_serialize
+except ImportError:
+    raise SkipTest("Requires [xml] extra")
+
 
 hello = files("tests.resource.data").joinpath("hello.xliff").read_bytes()
 angular = files("tests.resource.data").joinpath("angular.xliff").read_bytes()
