@@ -42,6 +42,7 @@ xml = ["lxml ~= 5.0"]
 
 [project.scripts]
 l10n-build = "moz.l10n.bin.build:cli"
+l10n-build-one = "moz.l10n.bin.build_one:cli"
 l10n-compare = "moz.l10n.bin.compare:cli"
 l10n-fix = "moz.l10n.bin.fix:cli"
 

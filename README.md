@@ -26,6 +26,13 @@ Iterates source files as defined by `--config`, reads localization sources from 
 Trims out all comments and messages not in the source files for each of the `--locales`.
 Adds empty files for any missing from the target locale.
 
+### `l10n-build-one`
+
+Build one localization file for release.
+
+Uses the `--source` file as a baseline, applying `--l10n` localizations to build `--target`.
+Trims out all comments and messages not in the source file.
+
 ### `l10n-compare`
 
 Compare localizations to their `source`, which may be

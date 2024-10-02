@@ -63,64 +63,78 @@ def cli() -> None:
     log_level = (
         logging.WARNING
         if args.verbose == 0
-        else logging.INFO if args.verbose == 1 else logging.DEBUG
+        else logging.INFO
+        if args.verbose == 1
+        else logging.DEBUG
     )
     logging.basicConfig(format="%(message)s", level=log_level)
 
-    build_targets_for_release(args.config, args.base, args.target, set(args.locales))
+    cfg_path: str = args.config
+    l10n_base: str = args.base
+    l10n_target: str = args.target
+    locales: set[str] = set(args.locales)
 
-
-def build_targets_for_release(
-    cfg_path: str, l10n_base: str, l10n_target: str, locales: set[str]
-) -> None:
     paths = L10nConfigPaths(cfg_path)
     paths.base = l10n_base
     paths.locales = None
     for (source_path, l10n_path_template), path_locales in paths.all().items():
         log.debug(f"source {source_path}")
-        try:
-            source = parse_resource(source_path)
-            source_ids = set(
-                section.id + entry.id
-                for section in source.sections
-                for entry in section.entries
-                if isinstance(entry, Entry)
-            )
-        except UnsupportedResource:
-            source_ids = None
+        source_ids = get_source_message_ids(source_path)
         for locale in locales.intersection(path_locales) if path_locales else locales:
             l10n_path = l10n_path_template.format(locale=locale)
             rel_path = relpath(l10n_path, l10n_base)
             tgt_path = join(l10n_target, rel_path)
             makedirs(dirname(tgt_path), exist_ok=True)
-            if exists(l10n_path):
-                if source_ids:
-                    msg_delta = 0
-                    res = parse_resource(l10n_path)
-                    for section in res.sections:
-                        msg_delta -= len(section.entries)
-                        section.entries = [
-                            entry
-                            for entry in section.entries
-                            if not isinstance(entry, Entry)
-                            or section.id + entry.id in source_ids
-                        ]
-                        msg_delta += len(section.entries)
-                    msg = f"filter {rel_path}"
-                    log.info(f"{msg} ({msg_delta})" if msg_delta != 0 else msg)
-                    with open(tgt_path, "w") as file:
-                        for line in serialize_resource(res, trim_comments=True):
-                            file.write(line)
-                elif l10n_base != l10n_target:
+            if source_ids:
+                write_target_file(rel_path, source_ids, l10n_path, tgt_path)
+            elif exists(l10n_path):
+                if l10n_base != l10n_target:
                     log.info(f"copy {rel_path}")
                     copyfile(l10n_path, tgt_path)
                 else:
                     log.info(f"skip {rel_path}")
-            elif source_ids:
-                log.info(f"create empty {rel_path}")
-                open(tgt_path, "a").close()
             else:
                 log.info(f"skip {rel_path}")
+
+
+def get_source_message_ids(source_path: str) -> set[tuple[str, ...]] | None:
+    try:
+        source = parse_resource(source_path)
+        return set(
+            section.id + entry.id
+            for section in source.sections
+            for entry in section.entries
+            if isinstance(entry, Entry)
+        )
+    except UnsupportedResource:
+        return None
+
+
+def write_target_file(
+    name: str,
+    source_ids: set[tuple[str, ...]],
+    l10n_path: str,
+    tgt_path: str,
+) -> None:
+    if exists(l10n_path):
+        msg_delta = 0
+        res = parse_resource(l10n_path)
+        for section in res.sections:
+            msg_delta -= len(section.entries)
+            section.entries = [
+                entry
+                for entry in section.entries
+                if not isinstance(entry, Entry) or section.id + entry.id in source_ids
+            ]
+            msg_delta += len(section.entries)
+        msg = f"filter {name}"
+        log.info(f"{msg} ({msg_delta})" if msg_delta != 0 else msg)
+        with open(tgt_path, "w") as file:
+            for line in serialize_resource(res, trim_comments=True):
+                file.write(line)
+    else:
+        log.info(f"create empty {name}")
+        open(tgt_path, "a").close()
 
 
 if __name__ == "__main__":
