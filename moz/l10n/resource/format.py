@@ -121,7 +121,10 @@ def detect_format(name: str | None, source: bytes | str) -> Format | None:
         if ns:
             return Format.xliff if ns in xliff_ns else None
         return Format.android if xml_root.tag == "resources" else None
-    except (ImportError, LxmlError):
+    except ImportError:
+        pass
+    except LxmlError:
+        # Must be separate and after ImportError
         pass
 
     return None
