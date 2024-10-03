@@ -52,9 +52,7 @@ def cli() -> None:
     log_level = (
         logging.WARNING
         if args.verbose == 0
-        else logging.INFO
-        if args.verbose == 1
-        else logging.DEBUG
+        else logging.INFO if args.verbose == 1 else logging.DEBUG
     )
     logging.basicConfig(format="%(message)s", level=log_level)
 
