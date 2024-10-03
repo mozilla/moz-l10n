@@ -140,7 +140,7 @@ def parse_group(
     ns: str, parent: list[str], group: etree._Element
 ) -> Iterator[Section[Message, str]]:
     id = group.attrib.get("id", "")
-    path = parent + [id]
+    path = [*parent, id]
     meta = attrib_as_metadata(group, None, ("id",))
     entries: list[Entry[Message, str] | Comment] = []
     if group.text and not group.text.isspace():
