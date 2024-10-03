@@ -21,9 +21,11 @@ from os.path import dirname, exists, join, relpath
 from shutil import copyfile
 from textwrap import dedent
 
+from moz.l10n.message import Message
 from moz.l10n.paths.config import L10nConfigPaths
 from moz.l10n.resource import UnsupportedResource, parse_resource, serialize_resource
-from moz.l10n.resource.data import Entry
+from moz.l10n.resource.data import Comment, Entry, Resource, Section
+from moz.l10n.resource.format import Format
 
 log = logging.getLogger(__name__)
 
@@ -79,14 +81,17 @@ def cli() -> None:
     paths.locales = None
     for (source_path, l10n_path_template), path_locales in paths.all().items():
         log.debug(f"source {source_path}")
-        source_ids = get_source_message_ids(source_path)
+        try:
+            source = parse_resource(source_path)
+        except UnsupportedResource:
+            source = None
         for locale in locales.intersection(path_locales) if path_locales else locales:
             l10n_path = l10n_path_template.format(locale=locale)
             rel_path = relpath(l10n_path, l10n_base)
             tgt_path = join(l10n_target, rel_path)
             makedirs(dirname(tgt_path), exist_ok=True)
-            if source_ids:
-                write_target_file(rel_path, source_ids, l10n_path, tgt_path)
+            if source:
+                write_target_file(rel_path, source, l10n_path, tgt_path)
             elif exists(l10n_path):
                 if l10n_base != l10n_target:
                     log.info(f"copy {rel_path}")
@@ -97,45 +102,95 @@ def cli() -> None:
                 log.info(f"skip {rel_path}")
 
 
-def get_source_message_ids(source_path: str) -> set[tuple[str, ...]] | None:
-    try:
-        source = parse_resource(source_path)
-        return set(
-            section.id + entry.id
-            for section in source.sections
-            for entry in section.entries
-            if isinstance(entry, Entry)
-        )
-    except UnsupportedResource:
-        return None
-
-
 def write_target_file(
     name: str,
-    source_ids: set[tuple[str, ...]],
+    source_res: Resource[Message, str],
     l10n_path: str,
     tgt_path: str,
 ) -> None:
-    if exists(l10n_path):
+    l10n_res = parse_resource(l10n_path) if exists(l10n_path) else None
+
+    if source_res.format == Format.fluent:
+        # Fluent uses per-message fallback at runtime, allowing resources to be incomplete.
+        # Therefore, build result by filtering out any content not in the source.
+        if l10n_res is None:
+            msg_delta = -sum(
+                sum(1 for entry in section.entries if isinstance(entry, Entry))
+                for section in source_res.sections
+            )
+            log.info(f"create empty {name} ({msg_delta})")
+            open(tgt_path, "a").close()
+            return
+
+        source_map = _message_map(name, source_res)
         msg_delta = 0
-        res = parse_resource(l10n_path)
-        for section in res.sections:
+        for section in l10n_res.sections:
             msg_delta -= len(section.entries)
             section.entries = [
                 entry
                 for entry in section.entries
-                if not isinstance(entry, Entry) or section.id + entry.id in source_ids
+                if isinstance(entry, Entry) and section.id + entry.id in source_map
             ]
             msg_delta += len(section.entries)
         msg = f"filter {name}"
         log.info(f"{msg} ({msg_delta})" if msg_delta != 0 else msg)
         with open(tgt_path, "w") as file:
-            for line in serialize_resource(res, trim_comments=True):
+            for line in serialize_resource(l10n_res, trim_comments=True):
                 file.write(line)
-    else:
-        log.info(f"create empty {name}")
-        open(tgt_path, "a").close()
+        return
 
+    # For other formats, build result from source,
+    # using any localized messages that are available.
+    if l10n_res is None:
+        l10n_map = {}
+        l10n_res = Resource(source_res.format, [])
+    else:
+        l10n_map = _message_map(l10n_path, l10n_res)
+        l10n_res.sections = []
+    msg_delta = 0
+
+    def get_entry(
+        section_id: tuple[str, ...], source_entry: Entry[Message, str]
+    ) -> Entry[Message, str] | Comment:
+        id = section_id + source_entry.id
+        if id in l10n_map:
+            return l10n_map[id]
+        else:
+            nonlocal msg_delta
+            msg_delta += 1
+            return source_entry
+
+    for section in source_res.sections:
+        tgt_entries = [
+            get_entry(section.id, entry)
+            for entry in section.entries
+            if isinstance(entry, Entry)
+        ]
+        l10n_res.sections.append(Section(section.id, tgt_entries))
+    msg = f"fill {name}"
+    log.info(f"{msg} (+{msg_delta})" if msg_delta != 0 else msg)
+    with open(tgt_path, "w") as file:
+        for line in serialize_resource(l10n_res, trim_comments=True):
+            file.write(line)
+
+
+def _message_map(
+    path: str,
+    resource: Resource[Message, str],
+) -> dict[tuple[str, ...], Entry[Message, str]]:
+    if path in _message_id_map_cache:
+        return _message_id_map_cache[path]
+    else:
+        id_map = _message_id_map_cache[path] = {
+            section.id + entry.id: entry
+            for section in resource.sections
+            for entry in section.entries
+            if isinstance(entry, Entry)
+        }
+        return id_map
+
+
+_message_id_map_cache: dict[str, dict[tuple[str, ...], Entry[Message, str]]] = {}
 
 if __name__ == "__main__":
     cli()

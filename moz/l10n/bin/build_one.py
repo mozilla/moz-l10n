@@ -20,7 +20,8 @@ from os import makedirs
 from os.path import dirname
 from textwrap import dedent
 
-from moz.l10n.bin.build import get_source_message_ids, write_target_file
+from moz.l10n.bin.build import write_target_file
+from moz.l10n.resource import UnsupportedResource, parse_resource
 
 log = logging.getLogger(__name__)
 
@@ -57,11 +58,11 @@ def cli() -> None:
     )
     logging.basicConfig(format="%(message)s", level=log_level)
 
-    source_ids = get_source_message_ids(args.source)
-    if source_ids is not None:
+    try:
+        source_res = parse_resource(args.source)
         makedirs(dirname(args.target), exist_ok=True)
-        write_target_file(args.source, source_ids, args.l10n, args.target)
-    else:
+        write_target_file(args.source, source_res, args.l10n, args.target)
+    except UnsupportedResource:
         log.warning(f"Not a localization file: {args.source}")
         exit(-1)
 
