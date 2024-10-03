@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from collections import defaultdict
 from os import makedirs
 from os.path import dirname, exists, join, relpath
 from shutil import copyfile
@@ -76,6 +77,9 @@ def cli() -> None:
     l10n_target: str = args.target
     locales: set[str] = set(args.locales)
 
+    # locale -> [ftl_filtered, l10n_fallback]
+    msg_data: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+
     paths = L10nConfigPaths(cfg_path)
     paths.base = l10n_base
     paths.locales = None
@@ -91,7 +95,13 @@ def cli() -> None:
             tgt_path = join(l10n_target, rel_path)
             makedirs(dirname(tgt_path), exist_ok=True)
             if source:
-                write_target_file(rel_path, source, l10n_path, tgt_path)
+                msg_delta = write_target_file(rel_path, source, l10n_path, tgt_path)
+                if msg_delta < 0:
+                    msg_data[locale][0] -= msg_delta
+                elif msg_delta > 0:
+                    msg_data[locale][1] += msg_delta
+                else:
+                    msg_data[locale]
             elif exists(l10n_path):
                 if l10n_base != l10n_target:
                     log.info(f"copy {rel_path}")
@@ -101,13 +111,21 @@ def cli() -> None:
             else:
                 log.info(f"skip {rel_path}")
 
+    log.info("----")
+    for locale, (ftl_missing, l10n_fallback) in sorted(
+        msg_data.items(), key=lambda d: d[0]
+    ):
+        log.info(f"{locale}:")
+        log.info(f"  missing_ftl {ftl_missing:>6}")
+        log.info(f"  fallback    {l10n_fallback:>6}")
+
 
 def write_target_file(
     name: str,
     source_res: Resource[Message, str],
     l10n_path: str,
     tgt_path: str,
-) -> None:
+) -> int:
     l10n_res = parse_resource(l10n_path) if exists(l10n_path) else None
 
     if source_res.format == Format.fluent:
@@ -120,7 +138,7 @@ def write_target_file(
             )
             log.info(f"create empty {name} ({msg_delta})")
             open(tgt_path, "a").close()
-            return
+            return msg_delta
 
         source_map = _message_map(name, source_res)
         msg_delta = 0
@@ -137,7 +155,7 @@ def write_target_file(
         with open(tgt_path, "w") as file:
             for line in serialize_resource(l10n_res, trim_comments=True):
                 file.write(line)
-        return
+        return msg_delta
 
     # For other formats, build result from source,
     # using any localized messages that are available.
@@ -172,6 +190,7 @@ def write_target_file(
     with open(tgt_path, "w") as file:
         for line in serialize_resource(l10n_res, trim_comments=True):
             file.write(line)
+    return msg_delta
 
 
 def _message_map(
