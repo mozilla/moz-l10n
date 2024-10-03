@@ -60,6 +60,8 @@ def cli() -> None:
         source_res = parse_resource(args.source)
         makedirs(dirname(args.target), exist_ok=True)
         write_target_file(args.source, source_res, args.l10n, args.target)
+    except OSError as error:
+        raise SystemExit(error)
     except UnsupportedResource:
         log.warning(f"Not a localization file: {args.source}")
         exit(-1)
