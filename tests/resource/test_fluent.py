@@ -281,12 +281,12 @@ class TestFluent(TestCase):
             has-only-attr =
                 .attr = Attr
             single-sel =
-                { NUMBER($num) ->
+                { $num ->
                     [one] One
                    *[other] Other
                 }
             two-sels =
-                { NUMBER($a) ->
+                { $a ->
                     [1]
                         { $b ->
                             [cc] pre One mid CC post
@@ -299,19 +299,19 @@ class TestFluent(TestCase):
                         }
                 }
             deep-sels =
-                { NUMBER($a) ->
+                { $a ->
                     [0]
-                        { NUMBER($b) ->
+                        { $b ->
                             [one] { "" }
                            *[other] 0,x
                         }
                     [one]
-                        { NUMBER($b) ->
+                        { $b ->
                             [one] { "1,1" }
                            *[other] 1,x
                         }
                    *[other]
-                        { NUMBER($b) ->
+                        { $b ->
                             [0] x,0
                             [one] x,1
                            *[other] x,x
@@ -336,12 +336,12 @@ class TestFluent(TestCase):
             has-only-attr =
                 .attr = Attr
             single-sel =
-                { NUMBER($num) ->
+                { $num ->
                     [one] One
                    *[other] Other
                 }
             two-sels =
-                { NUMBER($a) ->
+                { $a ->
                     [1]
                         { $b ->
                             [cc] pre One mid CC post
@@ -354,19 +354,19 @@ class TestFluent(TestCase):
                         }
                 }
             deep-sels =
-                { NUMBER($a) ->
+                { $a ->
                     [0]
-                        { NUMBER($b) ->
+                        { $b ->
                             [one] { "" }
                            *[other] 0,x
                         }
                     [one]
-                        { NUMBER($b) ->
+                        { $b ->
                             [one] { "1,1" }
                            *[other] 1,x
                         }
                    *[other]
-                        { NUMBER($b) ->
+                        { $b ->
                             [0] x,0
                             [one] x,1
                            *[other] x,x
@@ -749,13 +749,13 @@ class TestFluent(TestCase):
                 .title = This shot does not expire
             # Plurals
             delete-all-message =
-                { NUMBER($num) ->
+                { $num ->
                     [one] Delete this download?
                    *[other] Delete { $num } downloads?
                 }
             # Plurals with custom values
             delete-all-message-special-cases =
-                { NUMBER($num) ->
+                { $num ->
                     [1] Delete this download?
                     [2] Delete this pair of downloads?
                     [12] Delete this dozen of downloads?
@@ -800,7 +800,7 @@ class TestFluent(TestCase):
                     }
             # Multiple selectors
             selector-multi =
-                { NUMBER($num) ->
+                { $num ->
                     [one]
                         { $gender ->
                             [feminine] There is one email for her
@@ -826,12 +826,12 @@ class TestFluent(TestCase):
             selector-nested =
                 { $gender ->
                     [masculine]
-                        { NUMBER($num) ->
+                        { $num ->
                             [one] There is one email for him
                            *[other] There are many emails for him
                         }
                    *[feminine]
-                        { NUMBER($num) ->
+                        { $num ->
                             [one] There is one email for her
                            *[other] There are many emails for her
                         }
