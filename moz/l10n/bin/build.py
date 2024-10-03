@@ -16,14 +16,17 @@ from __future__ import annotations
 
 import logging
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from collections import defaultdict
 from os import makedirs
 from os.path import dirname, exists, join, relpath
 from shutil import copyfile
 from textwrap import dedent
 
+from moz.l10n.message import Message
 from moz.l10n.paths.config import L10nConfigPaths
 from moz.l10n.resource import UnsupportedResource, parse_resource, serialize_resource
-from moz.l10n.resource.data import Entry
+from moz.l10n.resource.data import Comment, Entry, Resource, Section
+from moz.l10n.resource.format import Format
 
 log = logging.getLogger(__name__)
 
@@ -67,12 +70,14 @@ def cli() -> None:
     )
     logging.basicConfig(format="%(message)s", level=log_level)
 
-    build_targets_for_release(args.config, args.base, args.target, set(args.locales))
+    cfg_path: str = args.config
+    l10n_base: str = args.base
+    l10n_target: str = args.target
+    locales: set[str] = set(args.locales)
 
+    # locale -> [ftl_missing, src_fallback]
+    msg_data: dict[str, list[int]] = defaultdict(lambda: [0, 0])
 
-def build_targets_for_release(
-    cfg_path: str, l10n_base: str, l10n_target: str, locales: set[str]
-) -> None:
     paths = L10nConfigPaths(cfg_path)
     paths.base = l10n_base
     paths.locales = None
@@ -80,47 +85,91 @@ def build_targets_for_release(
         log.debug(f"source {source_path}")
         try:
             source = parse_resource(source_path)
-            source_ids = set(
-                section.id + entry.id
-                for section in source.sections
-                for entry in section.entries
-                if isinstance(entry, Entry)
-            )
         except UnsupportedResource:
-            source_ids = None
+            source = None
         for locale in locales.intersection(path_locales) if path_locales else locales:
             l10n_path = l10n_path_template.format(locale=locale)
             rel_path = relpath(l10n_path, l10n_base)
             tgt_path = join(l10n_target, rel_path)
             makedirs(dirname(tgt_path), exist_ok=True)
-            if exists(l10n_path):
-                if source_ids:
-                    msg_delta = 0
-                    res = parse_resource(l10n_path)
-                    for section in res.sections:
-                        msg_delta -= len(section.entries)
-                        section.entries = [
-                            entry
-                            for entry in section.entries
-                            if not isinstance(entry, Entry)
-                            or section.id + entry.id in source_ids
-                        ]
-                        msg_delta += len(section.entries)
-                    msg = f"filter {rel_path}"
-                    log.info(f"{msg} ({msg_delta})" if msg_delta != 0 else msg)
-                    with open(tgt_path, "w") as file:
-                        for line in serialize_resource(res, trim_comments=True):
-                            file.write(line)
-                elif l10n_base != l10n_target:
+            if source:
+                msg_delta = write_target_file(rel_path, source, l10n_path, tgt_path)
+                if msg_delta < 0:
+                    msg_data[locale][0] -= msg_delta
+                elif msg_delta > 0:
+                    msg_data[locale][1] += msg_delta
+                else:
+                    msg_data[locale]
+            elif exists(l10n_path):
+                if l10n_base != l10n_target:
                     log.info(f"copy {rel_path}")
                     copyfile(l10n_path, tgt_path)
                 else:
                     log.info(f"skip {rel_path}")
-            elif source_ids:
-                log.info(f"create empty {rel_path}")
-                open(tgt_path, "a").close()
             else:
                 log.info(f"skip {rel_path}")
+
+    log.info("----")
+    for locale, (ftl_missing, src_fallback) in sorted(
+        msg_data.items(), key=lambda d: d[0]
+    ):
+        log.info(f"{locale}:")
+        log.info(f"  ftl_missing  {ftl_missing:>6}")
+        log.info(f"  src_fallback {src_fallback:>6}")
+
+
+def write_target_file(
+    name: str,
+    source_res: Resource[Message, str],
+    l10n_path: str,
+    tgt_path: str,
+) -> int:
+    if exists(l10n_path):
+        l10n_res = parse_resource(l10n_path)
+        l10n_map = {
+            section.id + entry.id: entry
+            for section in l10n_res.sections
+            for entry in section.entries
+            if isinstance(entry, Entry)
+        }
+        l10n_res.sections = []
+    else:
+        l10n_res = Resource(source_res.format, [])
+        l10n_map = {}
+    # Fluent uses per-message fallback at runtime, allowing resources to be incomplete.
+    fill_from_source = source_res.format != Format.fluent
+    msg_delta = 0
+
+    def get_entry(
+        section_id: tuple[str, ...], source_entry: Entry[Message, str] | Comment
+    ) -> Entry[Message, str] | Comment | None:
+        nonlocal msg_delta
+        if isinstance(source_entry, Comment):
+            return None
+        id = section_id + source_entry.id
+        if id in l10n_map:
+            return l10n_map[id]
+        elif fill_from_source:
+            msg_delta += 1
+            return source_entry
+        else:
+            msg_delta -= 1
+            return None
+
+    for section in source_res.sections:
+        tgt_entries = [
+            entry
+            for entry_ in section.entries
+            if (entry := get_entry(section.id, entry_)) is not None
+        ]
+        l10n_res.sections.append(Section(section.id, tgt_entries))
+
+    msg = f"merge {name}"
+    log.info(f"{msg} ({msg_delta:+d})" if msg_delta != 0 else msg)
+    with open(tgt_path, "w") as file:
+        for line in serialize_resource(l10n_res, trim_comments=True):
+            file.write(line)
+    return msg_delta
 
 
 if __name__ == "__main__":
