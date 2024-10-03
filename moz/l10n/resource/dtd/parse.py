@@ -28,11 +28,11 @@ from ..data import Comment, Entry, Resource, Section
 from ..format import Format
 
 name_start_char = (
-    ":A-Z_a-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF"
-    "\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF"
-    "\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD"
+    ":A-Z_a-z\xc0-\xd6\xd8-\xf6\xf8-\u02ff"
+    "\u0370-\u037d\u037f-\u1fff\u200c-\u200d\u2070-\u218f\u2c00-\u2fef"
+    "\u3001-\ud7ff\uf900-\ufdcf\ufdf0-\ufffd"
 )
-name_char = name_start_char + r"\-\.0-9" + "\xB7\u0300-\u036F\u203F-\u2040"
+name_char = name_start_char + r"\-\.0-9" + "\xb7\u0300-\u036f\u203f-\u2040"
 name = f"[{name_start_char}][{name_char}]*"
 re_entity = compile(
     r"<!ENTITY\s+(" + name + r")\s+((?:\"[^\"]*\")|(?:'[^']*'))\s*>",

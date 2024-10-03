@@ -87,7 +87,7 @@ def fluent_astify(
             | res.Section[Any, Any]
             | res.Entry[Any, Any]
             | res.Comment
-        )
+        ),
     ) -> str:
         if trim_comments:
             return ""

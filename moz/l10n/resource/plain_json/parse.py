@@ -42,7 +42,7 @@ def plain_json_parse(source: str | bytes) -> Resource[Message, Any]:
 
 def plain_object(path: list[str], obj: dict[str, Any]) -> Iterator[Entry[Message, Any]]:
     for k, value in obj.items():
-        key = path + [k]
+        key = [*path, k]
         if isinstance(value, str):
             yield Entry(tuple(key), PatternMessage([value]))
         elif isinstance(value, dict):

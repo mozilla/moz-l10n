@@ -49,10 +49,6 @@ l10n-fix = "moz.l10n.bin.fix:cli"
 [project.urls]
 repository = "https://github.com/mozilla/moz-l10n"
 
-[tool.isort]
-extra_standard_library = ["importlib_resources"]
-profile = "black"
-
 [tool.mypy]
 exclude = "^(build|tests)/"
 explicit_package_bases = true
@@ -61,6 +57,23 @@ strict = true
 [[tool.mypy.overrides]]
 module = "translate.storage.properties"
 ignore_missing_imports = true
+
+[tool.ruff.lint.isort]
+extra-standard-library = ["importlib_resources"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "PLC", # pylint conventions
+  "PLE", # pyline errors
+  "RUF", # ruff-specific rules
+]
+ignore = [
+  "E501", # Line too long
+]
 
 [tool.setuptools]
 platforms = ["any"]
