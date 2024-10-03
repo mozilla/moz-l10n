@@ -49,10 +49,6 @@ l10n-fix = "moz.l10n.bin.fix:cli"
 [project.urls]
 repository = "https://github.com/mozilla/moz-l10n"
 
-[tool.isort]
-extra_standard_library = ["importlib_resources"]
-profile = "black"
-
 [tool.mypy]
 exclude = "^(build|tests)/"
 explicit_package_bases = true
@@ -61,6 +57,9 @@ strict = true
 [[tool.mypy.overrides]]
 module = "translate.storage.properties"
 ignore_missing_imports = true
+
+[tool.ruff.lint.isort]
+extra-standard-library = ["importlib_resources"]
 
 [tool.setuptools]
 platforms = ["any"]

@@ -62,7 +62,7 @@ def l10n_entries(section: Section[Any, Any]) -> _L10nData[Any]:
 
 
 def l10n_meta(
-    x: Entry[Any, Any] | Section[Any, Any] | Resource[Any, Any]
+    x: Entry[Any, Any] | Section[Any, Any] | Resource[Any, Any],
 ) -> dict[str, set[Any]]:
     md: dict[str, set[Any]] = defaultdict(set)
     for m in x.meta:

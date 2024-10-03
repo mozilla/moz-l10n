@@ -74,7 +74,8 @@ def po_serialize(
                     )
                 ):
                     values = [
-                        "".join(pattern) for pattern in msg.variants.values()  # type: ignore[arg-type]
+                        "".join(pattern)  # type: ignore[arg-type]
+                        for pattern in msg.variants.values()
                     ]
                     if len(values) == 1:
                         pe.msgstr = values[0]

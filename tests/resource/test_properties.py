@@ -245,7 +245,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                         ),
                         Entry(
                             ("3",),
-                            PatternMessage(["\u1234\t\r\n\u00AB\u0001\n"]),
+                            PatternMessage(["\u1234\t\r\n\u00ab\u0001\n"]),
                             comment="test parsing of escaped values",
                             linepos=get_linepos(5, 6, 6, 8),
                         ),
@@ -287,13 +287,13 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                         ),
                         Entry(
                             ("10aሴb",),
-                            PatternMessage(["c\uCDEFd"]),
+                            PatternMessage(["c\ucdefd"]),
                             comment="test UTF-8 encoded property/value",
                             linepos=get_linepos(22, 23),
                         ),
                         Entry(
                             ("11",),
-                            PatternMessage(["\uABCD"]),
+                            PatternMessage(["\uabcd"]),
                             comment="next property should test unicode escaping at the boundary of parsing buffer\n"
                             + "buffer size is expected to be 4096 so add comments to get to this offset\n"
                             + (("#" * 79 + "\n") * 41)
@@ -313,7 +313,7 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                 # test whitespace trimming in key and value
                 2 = xy\\t
                 # test parsing of escaped values
-                3 = \u1234\\t\\r\\n\u00AB\\u0001\\n
+                3 = \u1234\\t\\r\\n\u00ab\\u0001\\n
                 # test multiline properties
                 4 = this is multiline property
                 5 = this is another multiline property
@@ -326,14 +326,14 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                 # another variant of #8
                 9 = \\ test6\\t\\t   \\u0020
                 # test UTF-8 encoded property/value
-                10aሴb = c\uCDEFd
+                10aሴb = c\ucdefd
                 # next property should test unicode escaping at the boundary of parsing buffer
                 # buffer size is expected to be 4096 so add comments to get to this offset
                 """
             )
             + ("#" * 80 + "\n") * 41
             + ("#" * 79 + "\n")
-            + "11 = \uABCD\n"
+            + "11 = \uabcd\n"
         )
 
     def test_comment_in_multi(self):
