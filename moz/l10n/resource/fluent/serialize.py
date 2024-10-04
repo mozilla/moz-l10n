@@ -211,6 +211,14 @@ def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
     keys0 = variants[0][0]
     while keys0:
         selector = expression(decl, message.selectors[len(keys0) - 1])
+        if (
+            isinstance(selector, ftl.FunctionReference)
+            and selector.id.name == "NUMBER"
+            and selector.arguments.positional
+            and isinstance(selector.arguments.positional[0], ftl.VariableReference)
+            and not selector.arguments.named
+        ):
+            selector = selector.arguments.positional[0]
         base_keys = []
         sel_exp = None
         i = 0
