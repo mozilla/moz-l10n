@@ -80,3 +80,13 @@ platforms = ["any"]
 
 [tool.setuptools.packages.find]
 include = ["moz.l10n*"]
+
+[tool.uv]
+dev-dependencies = [
+    "importlib-resources>=6.4.5",
+    "mypy>=1.11.2",
+    "pytest>=8.3.3",
+    "ruff>=0.6.8",
+    "types-lxml>=2024.9.16",
+    "types-polib>=1.2.0.20240811",
+]
