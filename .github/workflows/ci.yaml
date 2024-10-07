@@ -17,25 +17,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'uv.lock'
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install importlib_resources pytest
-      - run: pip install .
-      - run: pytest -vv
-      - run: pip install '.[xml]'
-      - run: pytest -vv
+      - run: uv sync --dev
+      - run: uv run pytest -vv
+      - run: uv sync --all-extras
+      - run: uv run pytest -vv
 
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'uv.lock'
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r dev-requirements.txt
-      - run: pip install -e '.[xml]'
-      - run: mypy .
-      - run: ruff check
-      - run: ruff format --check
+      - run: uv sync --dev --all-extras
+      - run: uv run mypy .
+      - run: uv run ruff check
+      - run: uv run ruff format --check
