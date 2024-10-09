@@ -36,6 +36,8 @@ def path_regex(path: str) -> Pattern[str]:
     Captures * groups as indexed and {vars} as named.
     Expects `path` to use `/` as separator.
     """
+    if path.startswith("{l10n_base}/"):
+        path = path[12:]
     path = path_stars.sub(
         lambda m: (
             "([^/]*)" if m[0] == "*" else "((?:.*/)?)" if m[0] == "**/" else "(.*)"

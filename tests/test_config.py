@@ -234,6 +234,10 @@ class TestL10nConfigPaths(TestCase):
         assert paths.all() == {
             (ref, tgt.replace(root, new_base)): ["aa", "bb"] for ref, tgt in expected
         }
+        assert paths.find_reference("xx/dom/a") == (
+            join(root, normpath("dom/locales/en-US/a")),
+            {"locale": "xx"},
+        )
 
     def test_fomo_buyersguide(self):
         cfg_toml = dedent(
