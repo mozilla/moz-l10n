@@ -24,7 +24,7 @@ from moz.l10n.resource.format import l10n_extensions
 from moz.l10n.util import walk_files
 
 locale_id = re.compile(
-    r"[a-z]{2}(?:[-_][A-Z][a-z]{3})?(?:[-_][A-Z]{2})?|ca-valencia|ja-JP-mac"
+    r"[a-z]{2,3}(?:[-_][A-Z][a-z]{3})?(?:[-_][A-Z]{2})?|ca-valencia|ja-JP-mac"
 )
 
 

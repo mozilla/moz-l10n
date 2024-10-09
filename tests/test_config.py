@@ -22,7 +22,7 @@ from textwrap import dedent
 from typing import Any, Dict, Union
 from unittest import TestCase
 
-from moz.l10n.paths import L10nConfigPaths
+from moz.l10n.paths import L10nConfigPaths, get_android_locale
 
 if sys.version_info >= (3, 11):
     from tomllib import load
@@ -333,3 +333,65 @@ class TestL10nConfigPaths(TestCase):
             {"android_locale": "b+de+FG"},
         )
         assert paths.find_reference("res/values-xx/nonesuch") is None
+
+    def test_firefox_for_android(self):
+        root_toml = dedent(
+            """
+            basepath = "."
+            [[includes]]
+                path = "mozilla-mobile/android-components/l10n.toml"
+            """
+        )
+        ac_toml = dedent(
+            """
+            basepath = "."
+            [[paths]]
+                reference = "components/**/src/main/res/values/strings.xml"
+                l10n = "components/**/src/main/res/values-{android_locale}/strings.xml"
+            """
+        )
+        tree: Tree = {
+            "l10n.toml": root_toml,
+            "mozilla-mobile": {
+                "android-components": {
+                    "l10n.toml": ac_toml,
+                    "components": {
+                        "foo": {
+                            "src": {
+                                "main": {
+                                    "res": {
+                                        "values": {"strings.xml": ""},
+                                        "values-fr": {"strings.xml": ""},
+                                    }
+                                }
+                            }
+                        }
+                    },
+                },
+            },
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+            paths = L10nConfigPaths(
+                join(root, "l10n.toml"),
+                locale_map={"android_locale": get_android_locale},
+            )
+
+        assert paths.base == root
+        assert paths.locales is None
+        res_path = normpath(
+            "mozilla-mobile/android-components/components/foo/src/main/res"
+        )
+        exp_ref = join(root, res_path, normpath("values/strings.xml"))
+        exp_tgt = join(root, res_path, normpath("values-{android_locale}/strings.xml"))
+        assert paths.all() == {(exp_ref, exp_tgt): None}
+        assert paths.target(exp_ref) == (exp_tgt, ())
+        assert paths.find_reference("values-xx/strings.xml") is None
+        assert paths.find_reference(join(res_path, "values-xx/strings.xml")) == (
+            exp_ref,
+            {"android_locale": "xx"},
+        )
+        assert paths.find_reference(exp_tgt.format(android_locale="b+de+FG")) == (
+            exp_ref,
+            {"android_locale": "b+de+FG"},
+        )
