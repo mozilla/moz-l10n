@@ -27,7 +27,7 @@ if sys.version_info >= (3, 11):
 else:
     from tomli import load
 
-path_stars = compile(r"[*]([*]([/\\][*]*)?)?")
+path_stars = compile(r"[*](?:[*](?:[/\\][*]*)?)?")
 path_var = compile(r"{(\w+)}")
 
 
@@ -36,6 +36,8 @@ def path_regex(path: str) -> Pattern[str]:
     Captures * groups as indexed and {vars} as named.
     Expects `path` to use `/` as separator.
     """
+    if path.startswith("{l10n_base}/"):
+        path = path[12:]
     path = path_stars.sub(
         lambda m: (
             "([^/]*)" if m[0] == "*" else "((?:.*/)?)" if m[0] == "**/" else "(.*)"
@@ -116,8 +118,8 @@ class L10nConfigPaths:
         which are also the indexed groups captured in `target`.
         """
 
-        # ref -> (target, locales)
         self._path_data: dict[str, tuple[str, list[str] | None]] = {}
+        """ ref -> (target, locales) """
         fp = set(force_paths) if force_paths else None
         for path in toml.get("paths", []):
             ref: str = normpath(join(self._ref_root, path["reference"]))
@@ -127,16 +129,24 @@ class L10nConfigPaths:
             self._templates.append((path_stars.sub("{}", ref), path_regex(target)))
             locales: list[str] | None = path.get("locales", None)
             if "*" in ref:
-                tail = ref[ref.index("*") :].replace(sep, "/")
-                ref_base = ref[: -len(tail)]
-                if target.endswith(tail):
-                    target = target[: -len(tail)]
-                elif "*" in target:
+                if ref.count("*") != target.count("*"):
                     raise ValueError(
                         f"Wildcard mismatch between reference & l10n: {path}"
                     )
+                ref_re = compile(
+                    path_stars.sub("(.*)", ref.replace(sep, "/").replace(".", r"\."))
+                )
+                *tgt_parts, tgt_end = path_stars.split(target)
+
+                def get_target(ref_file: str) -> str:
+                    m = ref_re.fullmatch(ref_file.replace(sep, "/"))
+                    assert m is not None, f"Unexpected ref with path {path}"
+                    return (
+                        "".join(a + b for a, b in zip(tgt_parts, m.groups())) + tgt_end
+                    )
+
                 self._path_data.update(
-                    (ref_file, (ref_file.replace(ref_base, target, 1), locales))
+                    (ref_file, (get_target(ref_file), locales))
                     for ref_file in glob(ref, recursive=True)
                     if isfile(ref_file)
                 )
@@ -147,8 +157,7 @@ class L10nConfigPaths:
                     }
                     if fp_match:
                         self._path_data.update(
-                            (path, (path.replace(ref_base, target, 1), locales))
-                            for path in fp_match
+                            (path, (get_target(path), locales)) for path in fp_match
                         )
                         fp -= fp_match
             else:
@@ -303,20 +312,25 @@ class L10nConfigPaths:
         A reverse lookup for the reference path and variables matching `target`,
         or `None` if not found.
         """
-        target = relpath(join(self._base, normpath(target)), self._base)
-        target = normpath(target).replace(sep, "/")
+        abs_target = join(self._base, normpath(target))
+        rel_target = normpath(relpath(abs_target, self._base)).replace(sep, "/")
         for ref, pattern in self._templates:
-            match = pattern.fullmatch(target)
+            match = pattern.fullmatch(rel_target)
             if match:
                 vars = match.groupdict()
-                star_values = match.groups()[len(vars) :]
+                var_spans = {match.span(name) for name in vars}
+                star_values = [
+                    group
+                    for idx, group in enumerate(match.groups())
+                    if match.span(idx + 1) not in var_spans
+                ]
                 ref_path = normpath(ref.format(*star_values))
                 if ref_path in self._path_data:
                     return ref_path, vars
                 elif ref_path.endswith(".po") and ref_path + "t" in self._path_data:
                     return ref_path + "t", vars
         for incl in self._includes:
-            res = incl.find_reference(target)
+            res = incl.find_reference(abs_target)
             if res is not None:
                 return res
         return None
