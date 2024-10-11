@@ -395,6 +395,10 @@ class TestL10nConfigPaths(TestCase):
             exp_ref,
             {"android_locale": "xx"},
         )
+        assert paths.find_reference(join(res_path, "values-de-FG/strings.xml")) == (
+            exp_ref,
+            {"android_locale": "de-FG"},
+        )
         assert paths.find_reference(exp_tgt.format(android_locale="b+de+FG")) == (
             exp_ref,
             {"android_locale": "b+de+FG"},
