@@ -386,20 +386,22 @@ class TestL10nConfigPaths(TestCase):
         res_path = normpath(
             "mozilla-mobile/android-components/components/foo/src/main/res"
         )
-        exp_ref = join(root, res_path, normpath("values/strings.xml"))
+        rel_ref_path = join(res_path, normpath("values/strings.xml"))
+        abs_ref_path = join(root, rel_ref_path)
         exp_tgt = join(root, res_path, normpath("values-{android_locale}/strings.xml"))
-        assert paths.all() == {(exp_ref, exp_tgt): None}
-        assert paths.target(exp_ref) == (exp_tgt, ())
+        assert paths.all() == {(abs_ref_path, exp_tgt): None}
+        assert paths.target(abs_ref_path) == (exp_tgt, ())
+        assert paths.target(rel_ref_path) == (exp_tgt, ())
         assert paths.find_reference("values-xx/strings.xml") is None
         assert paths.find_reference(join(res_path, "values-xx/strings.xml")) == (
-            exp_ref,
+            abs_ref_path,
             {"android_locale": "xx"},
         )
         assert paths.find_reference(join(res_path, "values-de-FG/strings.xml")) == (
-            exp_ref,
+            abs_ref_path,
             {"android_locale": "de-FG"},
         )
         assert paths.find_reference(exp_tgt.format(android_locale="b+de+FG")) == (
-            exp_ref,
+            abs_ref_path,
             {"android_locale": "b+de+FG"},
         )

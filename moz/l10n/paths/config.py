@@ -189,9 +189,10 @@ class L10nConfigPaths:
 
     @base.setter
     def base(self, base: str) -> None:
-        self._base = base
         for incl in self._includes:
-            incl.base = base
+            rel_base = relpath(incl._base, self._base)
+            incl.base = join(base, rel_base)
+        self._base = base
 
     @property
     def locales(self) -> list[str] | None:
@@ -280,7 +281,7 @@ class L10nConfigPaths:
         pd = self._path_data.get(norm_ref_path, None)
         if pd is None:
             for incl in self._includes:
-                target = incl.target(ref_path, format_map=format_map)
+                target = incl.target(norm_ref_path, format_map=format_map)
                 if target[0] is not None:
                     return target
             return None, ()
