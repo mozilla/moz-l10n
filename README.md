@@ -119,11 +119,12 @@ Modifies `target` by adding entries from `source` that are not already present i
 Standalone comments are not added.
 
 If `use_source_entries` is set,
-entries from `source` override those in `target` when they differ.
+entries from `source` override those in `target` when they differ,
+as well as updating section comments and metadata from `source`.
 
 Entries are not copied, so further changes will be reflected in both resources.
 
-Returns a count of added entries.
+Returns a count of added or changed entries and sections.
 
 ### detect_format
 
