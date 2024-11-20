@@ -48,6 +48,16 @@ def l10n_sections(resource: Resource[Any, Any]) -> _L10nData[_L10nData[Any]]:
         if any(isinstance(entry, Entry) for entry in section.entries)
     ]
     ls.sort()
+    nonempty_idx = next(
+        (idx for idx, (id, comment, meta, _) in enumerate(ls) if id or comment or meta),
+        len(ls),
+    )
+    if nonempty_idx > 1:
+        # Anonymous sections are considered equivalent
+        first = ls[0]
+        for sd in ls[1:nonempty_idx]:
+            first[3].extend(sd[3])
+        del ls[1:nonempty_idx]
     return ls
 
 
