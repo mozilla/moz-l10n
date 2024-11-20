@@ -95,8 +95,14 @@ class TestL10nEqual(TestCase):
         assert l10n_equal(a, b)
 
     def test_empty_sections(self):
-        a = Resource(None, [Section((), [Entry(("foo",), "Foo"), Entry(("bar",), "Bar")])])
+        a = Resource(
+            None, [Section((), [Entry(("foo",), "Foo"), Entry(("bar",), "Bar")])]
+        )
         b = Resource(
-            None, [Section((), [Entry(("bar",), "Bar")]), Section((), [Entry(("foo",), "Foo")])]
+            None,
+            [
+                Section((), [Entry(("bar",), "Bar")]),
+                Section((), [Entry(("foo",), "Foo")]),
+            ],
         )
         assert l10n_equal(a, b)
