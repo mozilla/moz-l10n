@@ -33,14 +33,15 @@ def add_entries(
     Modifies `target` by adding entries from `source` that are not already present in `target`.
     Standalone comments are not added.
     If `use_source_entries` is set,
-    entries from `source` override those in `target` when they differ.
+    entries from `source` override those in `target` when they differ,
+    as well as updating section comments and metadata from `source`.
 
     Entries are not copied, so further changes will be reflected in both resources.
 
-    Returns a count of added entries.
+    Returns a count of added or changed entries and sections.
     """
 
-    added = 0
+    change_count = 0
     cur_tgt_section: RS | None = None
     for src_section in source.sections:
         tgt_match = [s for s in target.sections if s.id == src_section.id]
@@ -57,18 +58,23 @@ def add_entries(
                     ),
                     None,
                 )
+                sc = src_section.comment
+                sm = src_section.meta
                 if target_pos:
                     cur_tgt_section, idx = target_pos
                     if use_source_entries:
                         if cur_tgt_section.entries[idx] != entry:
                             cur_tgt_section.entries[idx] = entry
-                            added += 1
+                            change_count += 1
+                        if cur_tgt_section.comment != sc or cur_tgt_section.meta != sm:
+                            cur_tgt_section.comment = sc
+                            cur_tgt_section.meta = sm
+                            change_count += 1
                     prev_pos = target_pos
                 else:
                     # Entry has no section-id + entry-id match in target,
                     # so needs to be added.
-                    added += 1
-                    sc = src_section.comment
+                    change_count += 1
                     if prev_pos and prev_pos[0].comment == sc:
                         # The preceding entry did have a match in a section
                         # exactly matching this one, so we can add an entry there.
@@ -90,4 +96,4 @@ def add_entries(
             idx = target.sections.index(cur_tgt_section) + 1 if cur_tgt_section else 0
             cur_tgt_section = replace(src_section, entries=new_entries)
             target.sections.insert(idx, cur_tgt_section)
-    return added
+    return change_count

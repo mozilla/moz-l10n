@@ -190,3 +190,28 @@ class TestAddEntries(TestCase):
                 ),
             ],
         )
+
+    def test_anon_section_comments(self):
+        target = Resource(
+            None,
+            [
+                Section((), [Entry(("id-1",), "msg 1")], "Section Comment A"),
+                Section((), [Entry(("id-2",), "msg 2")], "Section Comment B"),
+            ],
+        )
+        source = Resource(
+            None,
+            [
+                Section((), [Entry(("id-1",), "msg 1")], "Section Comment A"),
+                Section((), [Entry(("id-2",), "msg 2")], "Section Comment X"),
+            ],
+        )
+        assert add_entries(target, source) == 0
+        assert add_entries(target, source, use_source_entries=True) == 1
+        assert target == Resource(
+            None,
+            [
+                Section((), [Entry(("id-1",), "msg 1")], "Section Comment A"),
+                Section((), [Entry(("id-2",), "msg 2")], "Section Comment X"),
+            ],
+        )
