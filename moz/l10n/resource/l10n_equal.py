@@ -57,6 +57,7 @@ def l10n_sections(resource: Resource[Any, Any]) -> _L10nData[_L10nData[Any]]:
         first = ls[0]
         for sd in ls[1:nonempty_idx]:
             first[3].extend(sd[3])
+        first[3].sort()
         del ls[1:nonempty_idx]
     return ls
 
