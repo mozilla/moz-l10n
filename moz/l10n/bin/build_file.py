@@ -17,7 +17,8 @@ from __future__ import annotations
 import logging
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from os import makedirs
-from os.path import dirname
+from os.path import dirname, exists
+from shutil import copyfile
 from textwrap import dedent
 
 from moz.l10n.bin.build import write_target_file
@@ -59,14 +60,18 @@ def cli() -> None:
     logging.basicConfig(format="%(message)s", level=log_level)
 
     try:
-        source_res = parse_resource(args.source)
+        try:
+            source_res = parse_resource(args.source)
+        except UnsupportedResource:
+            source_res = None
         makedirs(dirname(args.target), exist_ok=True)
-        write_target_file(args.source, source_res, args.l10n, args.target)
-    except OSError as error:
+        if source_res is None:
+            from_path = args.l10n if exists(args.l10n) else args.source
+            copyfile(from_path, args.target)
+        else:
+            write_target_file(args.source, source_res, args.l10n, args.target)
+    except (OSError, UnsupportedResource) as error:
         raise SystemExit(error)
-    except UnsupportedResource:
-        log.warning(f"Not a localization file: {args.source}")
-        exit(-1)
 
 
 if __name__ == "__main__":
