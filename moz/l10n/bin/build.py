@@ -41,7 +41,8 @@ def cli() -> None:
 
             Trims out all comments and messages not in the source files for each of the --locales.
 
-            Adds empty files for any missing from the target locale.
+            For Fluent, adds empty files for any missing from the target locale.
+            For other formats, copies file from the source locale if they are missing from the target.
             """
         ),
         formatter_class=RawDescriptionHelpFormatter,
@@ -102,14 +103,14 @@ def cli() -> None:
                     msg_data[locale][1] += msg_delta
                 else:
                     msg_data[locale]
-            elif exists(l10n_path):
-                if l10n_base != l10n_target:
-                    log.info(f"copy {rel_path}")
-                    copyfile(l10n_path, tgt_path)
+            else:
+                from_path = l10n_path if exists(l10n_path) else source_path
+                if from_path != tgt_path:
+                    copy = "copy" if from_path == l10n_path else "copy-src"
+                    log.info(f"{copy} {rel_path}")
+                    copyfile(from_path, tgt_path)
                 else:
                     log.info(f"skip {rel_path}")
-            else:
-                log.info(f"skip {rel_path}")
 
     log.info("----")
     for locale, (ftl_missing, src_fallback) in sorted(
