@@ -405,3 +405,89 @@ class TestL10nConfigPaths(TestCase):
             abs_ref_path,
             {"android_locale": "b+de+FG"},
         )
+
+    def test_thunderbird(self):
+        mail_toml = dedent(
+            """
+            basepath = "../.."
+            [env]
+                l = "{l10n_base}/{locale}/"
+                mozilla = ".."
+            [[includes]]
+                path = "{mozilla}/toolkit/locales/l10n.toml"
+            [[includes]]
+                path = "calendar/locales/l10n.toml"
+            [[paths]]
+                reference = "mail/locales/en-US/**"
+                l10n = "{l}mail/**"
+            """
+        )
+        calendar_toml = dedent(
+            """
+            basepath = "../.."
+            [env]
+                l = "{l10n_base}/{locale}/"
+            [[paths]]
+                reference = "calendar/locales/en-US/**"
+                l10n = "{l}calendar/**"
+            """
+        )
+        toolkit_toml = dedent(
+            """
+            basepath = "../.."
+            [env]
+                l = "{l10n_base}/{locale}/"
+            [[paths]]
+                reference = "toolkit/locales/en-US/**"
+                l10n = "{l}toolkit/**"
+            """
+        )
+        tree: Tree = {
+            "comm": {
+                "calendar": {
+                    "locales": {
+                        "l10n.toml": calendar_toml,
+                        "en-US": {"calendar": {"calendar.ftl": ""}},
+                    }
+                },
+                "mail": {
+                    "locales": {
+                        "l10n.toml": mail_toml,
+                        "en-US": {"installer": {"override.properties": ""}},
+                    }
+                },
+            },
+            "toolkit": {
+                "locales": {
+                    "l10n.toml": toolkit_toml,
+                    "en-US": {"toolkit": {"about": {"config.ftl": ""}}},
+                }
+            },
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+            paths = L10nConfigPaths(join(root, "comm", "mail", "locales", "l10n.toml"))
+
+        override = join("installer", "override.properties")
+        config = join("toolkit", "about", "config.ftl")
+        calendar = join("calendar", "calendar.ftl")
+        assert set(paths.all()) == {
+            (
+                join(root, "comm", "mail", "locales", "en-US", override),
+                join(root, "comm", "{locale}", "mail", override),
+            ),
+            (
+                join(root, "toolkit", "locales", "en-US", config),
+                join(root, "{locale}", "toolkit", config),
+            ),
+            (
+                join(root, "comm", "calendar", "locales", "en-US", calendar),
+                join(root, "comm", "{locale}", "calendar", calendar),
+            ),
+        }
+        paths.base = join(root, "foo")
+        assert set(tgt for _, tgt in paths.all()) == {
+            join(root, "foo", "{locale}", "mail", override),
+            join(root, "foo", "{locale}", "toolkit", config),
+            join(root, "foo", "{locale}", "calendar", calendar),
+        }
