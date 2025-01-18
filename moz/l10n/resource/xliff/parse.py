@@ -21,7 +21,7 @@ from typing import List, Union, cast
 
 from lxml import etree
 
-from ...message import Expression, Message, PatternMessage
+from ...message.data import Expression, Message, PatternMessage
 from ..data import Comment, Entry, Metadata, Resource, Section
 from ..format import Format
 from .common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns

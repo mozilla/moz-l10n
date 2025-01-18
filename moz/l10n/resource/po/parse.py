@@ -18,7 +18,7 @@ from collections import OrderedDict
 
 from polib import pofile
 
-from ...message import (
+from ...message.data import (
     Expression,
     FunctionAnnotation,
     Message,

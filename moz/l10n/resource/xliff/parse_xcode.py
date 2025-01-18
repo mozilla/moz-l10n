@@ -21,7 +21,7 @@ from typing import NoReturn
 
 from lxml import etree
 
-from ...message import (
+from ...message.data import (
     CatchallKey,
     Expression,
     FunctionAnnotation,

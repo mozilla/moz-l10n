@@ -21,7 +21,7 @@ from typing import Any, Iterator
 from fluent.syntax import FluentSerializer
 from fluent.syntax import ast as ftl
 
-from ... import message as msg
+from ...message import data as msg
 from .. import data as res
 
 

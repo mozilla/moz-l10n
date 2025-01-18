@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Callable
 
-from moz.l10n.message import Message
+from moz.l10n.message.data import Message
 
 from .data import Resource
 from .dtd.serialize import dtd_serialize

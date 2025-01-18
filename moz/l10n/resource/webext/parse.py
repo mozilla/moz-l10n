@@ -18,7 +18,7 @@ from json import loads
 from re import compile
 from typing import Any
 
-from ...message import (
+from ...message.data import (
     Declaration,
     Expression,
     Message,

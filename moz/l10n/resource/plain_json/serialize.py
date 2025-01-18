@@ -19,7 +19,7 @@ from collections.abc import Iterator
 from json import dumps
 from typing import Any
 
-from moz.l10n.message import Message, PatternMessage
+from moz.l10n.message.data import Message, PatternMessage
 
 from ..data import Entry, Resource
 

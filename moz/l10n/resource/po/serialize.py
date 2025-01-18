@@ -18,7 +18,7 @@ from collections.abc import Iterator
 
 from polib import POEntry, POFile
 
-from ...message import FunctionAnnotation, Message, PatternMessage, SelectMessage
+from ...message.data import FunctionAnnotation, Message, PatternMessage, SelectMessage
 from ..data import Entry, Resource
 
 

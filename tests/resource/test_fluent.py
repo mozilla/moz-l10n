@@ -20,7 +20,7 @@ from unittest import TestCase
 
 from fluent.syntax import ast as ftl
 
-from moz.l10n.message import (
+from moz.l10n.message.data import (
     CatchallKey,
     Expression,
     FunctionAnnotation,

@@ -19,7 +19,7 @@ from collections.abc import Iterator
 
 from lxml import etree
 
-from ...message import Markup, Message, PatternMessage, VariableRef
+from ...message.data import Markup, Message, PatternMessage, VariableRef
 from ..data import Entry, Metadata
 from .common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
 

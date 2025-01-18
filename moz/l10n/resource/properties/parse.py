@@ -18,7 +18,7 @@ from enum import Enum
 from re import Match, compile
 from typing import Any, Callable
 
-from moz.l10n.message import Message, PatternMessage
+from moz.l10n.message.data import Message, PatternMessage
 
 from ..data import Comment, Entry, LinePos, Resource, Section
 from ..format import Format

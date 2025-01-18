@@ -18,7 +18,7 @@ from importlib_resources import files
 from textwrap import dedent
 from unittest import TestCase
 
-from moz.l10n.message import PatternMessage
+from moz.l10n.message.data import PatternMessage
 from moz.l10n.resource.data import Comment, Entry, Resource, Section
 from moz.l10n.resource.dtd import dtd_parse, dtd_serialize
 from moz.l10n.resource.format import Format

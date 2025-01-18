@@ -19,7 +19,7 @@ from typing import cast
 
 from lxml import etree
 
-from ...message import (
+from ...message.data import (
     CatchallKey,
     Expression,
     FunctionAnnotation,

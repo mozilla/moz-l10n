@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from ..message import Message
+from ..message.data import Message
 from .data import Resource
 from .dtd.parse import dtd_parse
 from .fluent.parse import fluent_parse

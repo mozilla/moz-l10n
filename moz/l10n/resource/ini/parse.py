@@ -19,7 +19,7 @@ from typing import Any, Generator, TextIO
 
 from iniparse import ini  # type: ignore[import-untyped]
 
-from moz.l10n.message import Message, PatternMessage
+from moz.l10n.message.data import Message, PatternMessage
 
 from ..data import Comment, Entry, Resource, Section
 from ..format import Format

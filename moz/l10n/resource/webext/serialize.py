@@ -19,7 +19,13 @@ from json import dumps
 from re import sub
 from typing import Any
 
-from ...message import Declaration, Expression, Message, PatternMessage, VariableRef
+from ...message.data import (
+    Declaration,
+    Expression,
+    Message,
+    PatternMessage,
+    VariableRef,
+)
 from ..data import Entry, Resource
 
 

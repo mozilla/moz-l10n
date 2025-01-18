@@ -22,7 +22,7 @@ from typing import Any, Literal, Tuple, cast, overload
 from fluent.syntax import FluentParser
 from fluent.syntax import ast as ftl
 
-from ... import message as msg
+from ...message import data as msg
 from .. import data as res
 from ..format import Format
 

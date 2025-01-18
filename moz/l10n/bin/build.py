@@ -22,7 +22,7 @@ from os.path import dirname, exists, join, relpath
 from shutil import copyfile
 from textwrap import dedent
 
-from moz.l10n.message import Message
+from moz.l10n.message.data import Message
 from moz.l10n.paths.config import L10nConfigPaths
 from moz.l10n.resource import UnsupportedResource, parse_resource, serialize_resource
 from moz.l10n.resource.data import Comment, Entry, Resource, Section

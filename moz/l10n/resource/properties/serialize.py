@@ -17,7 +17,7 @@ from __future__ import annotations
 from re import Match, compile
 from typing import Any, Callable, Iterator, Literal
 
-from moz.l10n.message import Message, PatternMessage
+from moz.l10n.message.data import Message, PatternMessage
 
 from ..data import Entry, Resource
 

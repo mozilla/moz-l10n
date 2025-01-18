@@ -17,7 +17,7 @@ from __future__ import annotations
 from importlib_resources import files
 from unittest import TestCase
 
-from moz.l10n.message import (
+from moz.l10n.message.data import (
     Expression,
     FunctionAnnotation,
     PatternMessage,
