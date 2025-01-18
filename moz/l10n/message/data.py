@@ -19,7 +19,6 @@ from typing import Dict, List, Literal, Tuple, Union
 
 __all__ = [
     "CatchallKey",
-    "Declaration",
     "Expression",
     "FunctionAnnotation",
     "Markup",
@@ -86,19 +85,13 @@ class CatchallKey:
 
 
 @dataclass
-class Declaration:
-    name: str
-    value: Expression
-
-
-@dataclass
 class PatternMessage:
     """
     A message without selectors and with a single pattern.
     """
 
     pattern: Pattern
-    declarations: list[Declaration] = field(default_factory=list)
+    declarations: dict[str, Expression] = field(default_factory=dict)
 
     def placeholders(self) -> set[Expression | Markup]:
         return {part for part in self.pattern if not isinstance(part, str)}
@@ -113,7 +106,7 @@ class SelectMessage:
     A message with one or more selectors and a corresponding number of variants.
     """
 
-    declarations: list[Declaration]
+    declarations: dict[str, Expression]
     selectors: list[VariableRef]
     variants: Variants
 
@@ -126,10 +119,7 @@ class SelectMessage:
         }
 
     def selector_expressions(self) -> list[Expression]:
-        return [
-            next(decl.value for decl in self.declarations if decl.name == var.name)
-            for var in self.selectors
-        ]
+        return [self.declarations[var.name] for var in self.selectors]
 
 
 Message = Union[PatternMessage, SelectMessage]

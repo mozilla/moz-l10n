@@ -21,7 +21,6 @@ from unittest import SkipTest, TestCase
 from moz.l10n.formats import Format
 from moz.l10n.message.data import (
     CatchallKey,
-    Declaration,
     Expression,
     FunctionAnnotation,
     Markup,
@@ -538,16 +537,13 @@ class TestXliff1(TestCase):
                         Entry(
                             id=("[Generic/Count/EntriesSelected]",),
                             value=SelectMessage(
-                                declarations=[
-                                    Declaration(
-                                        "GenericCountEntriesSelected",
-                                        Expression(
-                                            VariableRef("GenericCountEntriesSelected"),
-                                            FunctionAnnotation("number"),
-                                            {"source": None},
-                                        ),
+                                declarations={
+                                    "GenericCountEntriesSelected": Expression(
+                                        VariableRef("GenericCountEntriesSelected"),
+                                        FunctionAnnotation("number"),
+                                        {"source": None},
                                     )
-                                ],
+                                },
                                 selectors=[VariableRef("GenericCountEntriesSelected")],
                                 variants={
                                     ("one",): [
@@ -578,16 +574,13 @@ class TestXliff1(TestCase):
                         Entry(
                             id=("[Generic/Count/Threads]",),
                             value=SelectMessage(
-                                declarations=[
-                                    Declaration(
-                                        "GenericCountThreads",
-                                        Expression(
-                                            VariableRef("GenericCountThreads"),
-                                            FunctionAnnotation("number"),
-                                            {"source": None},
-                                        ),
+                                declarations={
+                                    "GenericCountThreads": Expression(
+                                        VariableRef("GenericCountThreads"),
+                                        FunctionAnnotation("number"),
+                                        {"source": None},
                                     )
-                                ],
+                                },
                                 selectors=[VariableRef("GenericCountThreads")],
                                 variants={
                                     ("one",): [
@@ -641,16 +634,13 @@ class TestXliff1(TestCase):
                                 ),
                             ],
                             value=SelectMessage(
-                                declarations=[
-                                    Declaration(
-                                        "OTHERS",
-                                        Expression(
-                                            VariableRef("OTHERS"),
-                                            FunctionAnnotation("number"),
-                                            {"source": "%#@OTHERS@"},
-                                        ),
+                                declarations={
+                                    "OTHERS": Expression(
+                                        VariableRef("OTHERS"),
+                                        FunctionAnnotation("number"),
+                                        {"source": "%#@OTHERS@"},
                                     )
-                                ],
+                                },
                                 selectors=[VariableRef("OTHERS")],
                                 variants={
                                     ("one",): [

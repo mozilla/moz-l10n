@@ -20,7 +20,6 @@ from re import sub
 from typing import Any
 
 from ...message.data import (
-    Declaration,
     Expression,
     Message,
     PatternMessage,
@@ -92,14 +91,7 @@ def webext_message(
         ):
             ph_name = part.arg.name
             source = part.attributes.get("source", None)
-            local = next(
-                (
-                    d.value
-                    for d in entry.value.declarations
-                    if isinstance(d, Declaration) and d.name == ph_name
-                ),
-                None,
-            )
+            local = entry.value.declarations.get(ph_name, None)
             if local:
                 local_source = local.attributes.get("source", None)
                 if isinstance(local_source, str):

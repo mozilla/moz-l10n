@@ -21,7 +21,6 @@ from lxml import etree
 
 from ...message.data import (
     CatchallKey,
-    Declaration,
     Expression,
     FunctionAnnotation,
     Markup,
@@ -207,12 +206,11 @@ def parse_plurals(
     name: str, el: etree._Element, add_comment: Callable[[Iterable[str | None]], None]
 ) -> SelectMessage:
     msg = SelectMessage(
-        declarations=[
-            Declaration(
-                "quantity",
-                Expression(VariableRef("quantity"), FunctionAnnotation("number")),
+        declarations={
+            "quantity": Expression(
+                VariableRef("quantity"), FunctionAnnotation("number")
             )
-        ],
+        },
         selectors=[VariableRef("quantity")],
         variants={},
     )

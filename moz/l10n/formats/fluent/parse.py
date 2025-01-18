@@ -219,7 +219,7 @@ def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
     add_pattern(ftl_pattern)
 
     if sel_expressions:
-        declarations = []
+        declarations = {}
         selectors = []
         for expr in sel_expressions:
             stem = expr.arg.name if isinstance(expr.arg, msg.VariableRef) else ""
@@ -228,7 +228,7 @@ def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
             while name in var_names or name == "":
                 i += 1
                 name = f"{stem}_{i}"
-            declarations.append(msg.Declaration(name, expr))
+            declarations[name] = expr
             selectors.append(msg.VariableRef(name))
             var_names.add(name)
         variants = {

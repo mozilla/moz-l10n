@@ -21,7 +21,6 @@ from unittest import SkipTest, TestCase
 from moz.l10n.formats import Format
 from moz.l10n.message.data import (
     CatchallKey,
-    Declaration,
     Expression,
     FunctionAnnotation,
     Markup,
@@ -309,15 +308,12 @@ class TestAndroid(TestCase):
                         Entry(
                             ("numberOfSongsAvailable",),
                             SelectMessage(
-                                declarations=[
-                                    Declaration(
-                                        "quantity",
-                                        Expression(
-                                            VariableRef("quantity"),
-                                            FunctionAnnotation("number"),
-                                        ),
+                                declarations={
+                                    "quantity": Expression(
+                                        VariableRef("quantity"),
+                                        FunctionAnnotation("number"),
                                     )
-                                ],
+                                },
                                 selectors=[VariableRef("quantity")],
                                 variants={
                                     ("one",): [
@@ -350,15 +346,12 @@ class TestAndroid(TestCase):
                         Entry(
                             ("numberOfSongsAvailable_pl",),
                             SelectMessage(
-                                declarations=[
-                                    Declaration(
-                                        "quantity",
-                                        Expression(
-                                            VariableRef("quantity"),
-                                            FunctionAnnotation("number"),
-                                        ),
+                                declarations={
+                                    "quantity": Expression(
+                                        VariableRef("quantity"),
+                                        FunctionAnnotation("number"),
                                     )
-                                ],
+                                },
                                 selectors=[VariableRef("quantity")],
                                 variants={
                                     ("one",): [

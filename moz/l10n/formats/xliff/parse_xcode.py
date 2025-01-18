@@ -23,7 +23,6 @@ from lxml import etree
 
 from ...message.data import (
     CatchallKey,
-    Declaration,
     Expression,
     FunctionAnnotation,
     SelectMessage,
@@ -101,7 +100,7 @@ def parse_xliff_stringsdict(
             Entry(
                 (msg_id,),
                 SelectMessage(
-                    declarations=[Declaration(plural.var_name, selector)],
+                    declarations={plural.var_name: selector},
                     selectors=[VariableRef(plural.var_name)],
                     variants=variants,
                 ),

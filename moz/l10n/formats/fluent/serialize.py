@@ -190,11 +190,8 @@ def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
         return ftl.Pattern([ftl.TextElement(message)])
     if not isinstance(message, (msg.PatternMessage, msg.SelectMessage)):
         raise ValueError(f"Unsupported message: {message}")
-    decl = [d for d in message.declarations if isinstance(d, msg.Declaration)]
-    if len(decl) != len(message.declarations):
-        raise ValueError("Unsupported statements are not supported")
     if isinstance(message, msg.PatternMessage):
-        return flat_pattern(decl, message.pattern)
+        return flat_pattern(message.declarations, message.pattern)
 
     # It gets a bit complicated for SelectMessage. We'll be modifying this list,
     # building select expressions for each selector starting from the last one
@@ -203,14 +200,14 @@ def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
     # We rely on the variants being in order, so that a variant with N keys
     # will be next to all other variants for which the first N-1 keys are equal.
     variants = [
-        (list(keys), flat_pattern(decl, value))
+        (list(keys), flat_pattern(message.declarations, value))
         for keys, value in message.variants.items()
     ]
 
     other = fallback_name(message.variants)
     keys0 = variants[0][0]
     while keys0:
-        selector = value(decl, message.selectors[len(keys0) - 1])
+        selector = value(message.declarations, message.selectors[len(keys0) - 1])
         if (
             isinstance(selector, ftl.FunctionReference)
             and selector.id.name == "NUMBER"
@@ -270,7 +267,7 @@ def variant_key(
         raise ValueError(f"Unsupported variant key: {kv}")
 
 
-def flat_pattern(decl: list[msg.Declaration], pattern: msg.Pattern) -> ftl.Pattern:
+def flat_pattern(decl: dict[str, msg.Expression], pattern: msg.Pattern) -> ftl.Pattern:
     elements: list[ftl.TextElement | ftl.Placeable] = []
     for el in pattern:
         if isinstance(el, str):
@@ -283,7 +280,7 @@ def flat_pattern(decl: list[msg.Declaration], pattern: msg.Pattern) -> ftl.Patte
 
 
 def expression(
-    decl: list[msg.Declaration], expr: msg.Expression, decl_name: str = ""
+    decl: dict[str, msg.Expression], expr: msg.Expression, decl_name: str = ""
 ) -> ftl.InlineExpression:
     arg = value(decl, expr.arg, decl_name) if expr.arg is not None else None
     if isinstance(expr.function, msg.FunctionAnnotation):
@@ -296,7 +293,7 @@ def expression(
 
 
 def function_ref(
-    decl: list[msg.Declaration],
+    decl: dict[str, msg.Expression],
     arg: ftl.InlineExpression | None,
     function: msg.FunctionAnnotation,
 ) -> ftl.InlineExpression:
@@ -344,7 +341,7 @@ esc_cc = {n: f"\\u{n:04X}" for r in (range(0, 32), range(127, 160)) for n in r}
 
 
 def value(
-    decl: list[msg.Declaration], val: str | msg.VariableRef, decl_name: str = ""
+    decl: dict[str, msg.Expression], val: str | msg.VariableRef, decl_name: str = ""
 ) -> ftl.InlineExpression:
     if isinstance(val, str):
         try:
@@ -352,10 +349,7 @@ def value(
             return ftl.NumberLiteral(val)
         except Exception:
             return ftl.StringLiteral(val.translate(esc_cc))
+    elif val.name != decl_name and val.name in decl:
+        return expression(decl, decl[val.name], val.name)
     else:
-        local = next((d for d in decl if d.name == val.name), None)
-        return (
-            expression(decl, local.value, local.name)
-            if local and local.name != decl_name
-            else ftl.VariableReference(ftl.Identifier(val.name))
-        )
+        return ftl.VariableReference(ftl.Identifier(val.name))

@@ -19,7 +19,6 @@ from collections import OrderedDict
 from polib import pofile
 
 from ...message.data import (
-    Declaration,
     Expression,
     FunctionAnnotation,
     Message,
@@ -75,7 +74,7 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
                 for idx in range(keys[-1] + 1)
             }
             value: Message = SelectMessage(
-                declarations=[Declaration("n", sel)],
+                declarations={"n": sel},
                 selectors=[VariableRef("n")],
                 variants=variants,
             )

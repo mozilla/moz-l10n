@@ -20,7 +20,6 @@ from unittest import TestCase
 from moz.l10n.formats import Format
 from moz.l10n.formats.po import po_parse, po_serialize
 from moz.l10n.message.data import (
-    Declaration,
     Expression,
     FunctionAnnotation,
     PatternMessage,
@@ -71,15 +70,12 @@ class TestPo(TestCase):
                                 Metadata("plural", "%d translated messages"),
                             ],
                             value=SelectMessage(
-                                declarations=[
-                                    Declaration(
-                                        "n",
-                                        Expression(
-                                            VariableRef("n"),
-                                            FunctionAnnotation("number"),
-                                        ),
+                                declarations={
+                                    "n": Expression(
+                                        VariableRef("n"),
+                                        FunctionAnnotation("number"),
                                     )
-                                ],
+                                },
                                 selectors=[VariableRef("n")],
                                 variants={
                                     ("0",): ["%d prevedenih sporočil"],
