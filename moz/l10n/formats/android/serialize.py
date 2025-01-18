@@ -238,8 +238,8 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
     if (
         msg.declarations
         or not sel
-        or not isinstance(sel.annotation, FunctionAnnotation)
-        or sel.annotation.name != "number"
+        or not isinstance(sel.function, FunctionAnnotation)
+        or sel.function.name != "number"
     ):
         raise ValueError(f"Unsupported message: {msg}")
     for keys, value in msg.variants.items():
@@ -267,7 +267,7 @@ def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
 def set_pattern(el: etree._Element, pattern: Pattern) -> None:
     node: etree._Element | None
     if len(pattern) == 1 and isinstance(pattern[0], Expression):
-        annot = pattern[0].annotation
+        annot = pattern[0].function
         if isinstance(annot, FunctionAnnotation) and annot.name == "reference":
             # A "string" could be an Android resource reference,
             # which should not have its @ or ? sigil escaped.
@@ -292,8 +292,8 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
             if part.attributes.get("translate", None) == "no":
                 # <xliff:g>
                 attrib = (
-                    cast(Dict[str, str], part.annotation.options)
-                    if isinstance(part.annotation, FunctionAnnotation)
+                    cast(Dict[str, str], part.function.options)
+                    if isinstance(part.function, FunctionAnnotation)
                     else None
                 )
                 nsmap = {"xliff": xliff_ns} if not el.nsmap.get("xliff", None) else None
@@ -359,10 +359,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
 
 
 def entity_name(part: Expression) -> str | None:
-    if (
-        isinstance(part.annotation, FunctionAnnotation)
-        and part.annotation.name == "entity"
-    ):
+    if isinstance(part.function, FunctionAnnotation) and part.function.name == "entity":
         name = part.arg.name if isinstance(part.arg, VariableRef) else None
         if name:
             return name

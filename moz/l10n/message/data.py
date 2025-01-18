@@ -50,7 +50,7 @@ class Expression:
     """
 
     arg: str | VariableRef | None
-    annotation: FunctionAnnotation | None = None
+    function: FunctionAnnotation | None = None
     attributes: dict[str, str | VariableRef | None] = field(default_factory=dict)
 
 

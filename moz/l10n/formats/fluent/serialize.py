@@ -286,9 +286,9 @@ def expression(
     decl: list[msg.Declaration], expr: msg.Expression
 ) -> ftl.InlineExpression:
     arg = value(decl, expr.arg) if expr.arg is not None else None
-    if isinstance(expr.annotation, msg.FunctionAnnotation):
-        return function_ref(decl, arg, expr.annotation)
-    elif expr.annotation:
+    if isinstance(expr.function, msg.FunctionAnnotation):
+        return function_ref(decl, arg, expr.function)
+    elif expr.function:
         raise ValueError("Unsupported annotations are not supported")
     if arg:
         return arg

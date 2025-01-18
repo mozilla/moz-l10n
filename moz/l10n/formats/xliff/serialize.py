@@ -183,8 +183,8 @@ def add_xliff_stringsdict_plural(
     sel = msg.selectors[0]
     if (
         not isinstance(sel.arg, VariableRef)
-        or not isinstance(sel.annotation, FunctionAnnotation)
-        or sel.annotation.name != "number"
+        or not isinstance(sel.function, FunctionAnnotation)
+        or sel.function.name != "number"
     ):
         raise ValueError(f"Unsupported selector: {sel}")
 

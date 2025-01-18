@@ -88,7 +88,7 @@ def webext_message(
         elif (
             isinstance(part, Expression)
             and isinstance(part.arg, VariableRef)
-            and part.annotation is None
+            and part.function is None
         ):
             ph_name = part.arg.name
             source = part.attributes.get("source", None)
@@ -114,7 +114,7 @@ def webext_message(
                     raise ValueError(
                         f"Unsupported placeholder for {ph_name} in {name}: {local}"
                     )
-                if local.annotation:
+                if local.function:
                     raise ValueError(
                         f"Unsupported annotation for {ph_name} in {name}: {local}"
                     )

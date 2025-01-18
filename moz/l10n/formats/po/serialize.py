@@ -65,9 +65,9 @@ def po_serialize(
                     isinstance(msg, SelectMessage)
                     and not msg.declarations
                     and len(msg.selectors) == 1
-                    and isinstance(msg.selectors[0].annotation, FunctionAnnotation)
-                    and msg.selectors[0].annotation.name == "number"
-                    and not msg.selectors[0].annotation.options
+                    and isinstance(msg.selectors[0].function, FunctionAnnotation)
+                    and msg.selectors[0].function.name == "number"
+                    and not msg.selectors[0].function.options
                     and all(
                         len(keys) == 1 and all(isinstance(p, str) for p in pattern)
                         for keys, pattern in msg.variants.items()

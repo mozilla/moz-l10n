@@ -294,7 +294,7 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
                             )
                         else:
                             gc.attributes["translate"] = "no"
-                            gc.annotation.options = dict(child.attrib)  # type: ignore[union-attr]
+                            gc.function.options = dict(child.attrib)  # type: ignore[union-attr]
                             yield gc
             else:
                 yield Markup("open", name, options=dict(child.attrib))
