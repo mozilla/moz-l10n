@@ -17,10 +17,10 @@ from __future__ import annotations
 from textwrap import dedent
 from unittest import TestCase
 
+from moz.l10n.formats import Format
+from moz.l10n.formats.ini import ini_parse, ini_serialize
 from moz.l10n.message.data import PatternMessage
 from moz.l10n.resource.data import Comment, Entry, Resource, Section
-from moz.l10n.resource.format import Format
-from moz.l10n.resource.ini import ini_parse, ini_serialize
 
 
 class TestIni(TestCase):

@@ -18,7 +18,7 @@ from importlib.util import find_spec
 from importlib_resources import files
 from unittest import TestCase, skipIf
 
-from moz.l10n.resource import Format, detect_format
+from moz.l10n.formats import Format, detect_format
 
 no_xml = find_spec("lxml") is None
 

@@ -20,6 +20,8 @@ from unittest import TestCase
 
 from fluent.syntax import ast as ftl
 
+from moz.l10n.formats import Format
+from moz.l10n.formats.fluent import fluent_parse, fluent_serialize
 from moz.l10n.message.data import (
     CatchallKey,
     Expression,
@@ -29,8 +31,6 @@ from moz.l10n.message.data import (
     VariableRef,
 )
 from moz.l10n.resource.data import Comment, Entry, LinePos, Metadata, Resource, Section
-from moz.l10n.resource.fluent import fluent_parse, fluent_serialize
-from moz.l10n.resource.format import Format
 
 from . import get_linepos
 

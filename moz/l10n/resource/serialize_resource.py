@@ -17,18 +17,17 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Callable
 
-from moz.l10n.message.data import Message
-
+from ..formats import Format
+from ..formats.dtd.serialize import dtd_serialize
+from ..formats.fluent.serialize import fluent_serialize
+from ..formats.inc.serialize import inc_serialize
+from ..formats.ini.serialize import ini_serialize
+from ..formats.plain_json.serialize import plain_json_serialize
+from ..formats.po.serialize import po_serialize
+from ..formats.properties.serialize import properties_serialize
+from ..formats.webext.serialize import webext_serialize
+from ..message.data import Message
 from .data import Resource
-from .dtd.serialize import dtd_serialize
-from .fluent.serialize import fluent_serialize
-from .format import Format
-from .inc.serialize import inc_serialize
-from .ini.serialize import ini_serialize
-from .plain_json.serialize import plain_json_serialize
-from .po.serialize import po_serialize
-from .properties.serialize import properties_serialize
-from .webext.serialize import webext_serialize
 
 android_serialize: (
     Callable[[Resource[str, str] | Resource[Message, str], bool], Iterator[str]] | None
@@ -37,8 +36,8 @@ xliff_serialize: (
     Callable[[Resource[str, str] | Resource[Message, str], bool], Iterator[str]] | None
 )
 try:
-    from .android.serialize import android_serialize
-    from .xliff.serialize import xliff_serialize
+    from ..formats.android.serialize import android_serialize
+    from ..formats.xliff.serialize import xliff_serialize
 except ImportError:
     android_serialize = None
     xliff_serialize = None

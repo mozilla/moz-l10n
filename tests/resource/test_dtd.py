@@ -18,10 +18,10 @@ from importlib_resources import files
 from textwrap import dedent
 from unittest import TestCase
 
+from moz.l10n.formats import Format
+from moz.l10n.formats.dtd import dtd_parse, dtd_serialize
 from moz.l10n.message.data import PatternMessage
 from moz.l10n.resource.data import Comment, Entry, Resource, Section
-from moz.l10n.resource.dtd import dtd_parse, dtd_serialize
-from moz.l10n.resource.format import Format
 
 source = (
     files("tests.resource.data").joinpath("accounts.dtd").read_bytes().decode("utf-8")

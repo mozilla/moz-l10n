@@ -17,6 +17,8 @@ from __future__ import annotations
 from importlib_resources import files
 from unittest import TestCase
 
+from moz.l10n.formats import Format
+from moz.l10n.formats.po import po_parse, po_serialize
 from moz.l10n.message.data import (
     Expression,
     FunctionAnnotation,
@@ -25,8 +27,6 @@ from moz.l10n.message.data import (
     VariableRef,
 )
 from moz.l10n.resource.data import Entry, Metadata, Resource, Section
-from moz.l10n.resource.format import Format
-from moz.l10n.resource.po import po_parse, po_serialize
 
 source = files("tests.resource.data").joinpath("foo.po").read_bytes().decode("utf-8")
 

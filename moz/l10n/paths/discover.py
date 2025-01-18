@@ -20,7 +20,7 @@ from itertools import chain
 from os import sep, walk
 from os.path import commonpath, isdir, join, normpath, relpath, splitext
 
-from moz.l10n.resource.format import l10n_extensions
+from moz.l10n.formats import l10n_extensions
 from moz.l10n.util import walk_files
 
 locale_id = re.compile(

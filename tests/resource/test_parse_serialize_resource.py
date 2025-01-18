@@ -18,8 +18,8 @@ from importlib.util import find_spec
 from importlib_resources import files
 from unittest import TestCase, skipIf
 
+from moz.l10n.formats import Format
 from moz.l10n.resource import (
-    Format,
     UnsupportedResource,
     parse_resource,
     serialize_resource,

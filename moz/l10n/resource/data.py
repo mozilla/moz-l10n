@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Generic, TypeVar
 
-from .format import Format
+from ..formats import Format
 
 __all__ = [
     "Comment",

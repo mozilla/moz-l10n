@@ -18,6 +18,7 @@ from importlib_resources import files
 from textwrap import dedent
 from unittest import SkipTest, TestCase
 
+from moz.l10n.formats import Format
 from moz.l10n.message.data import (
     CatchallKey,
     Expression,
@@ -28,10 +29,9 @@ from moz.l10n.message.data import (
     VariableRef,
 )
 from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
-from moz.l10n.resource.format import Format
 
 try:
-    from moz.l10n.resource.xliff import xliff_parse, xliff_serialize
+    from moz.l10n.formats.xliff import xliff_parse, xliff_serialize
 except ImportError:
     raise SkipTest("Requires [xml] extra")
 

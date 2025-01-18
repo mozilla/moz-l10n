@@ -18,10 +18,10 @@ from importlib_resources import files
 from textwrap import dedent
 from unittest import TestCase
 
+from moz.l10n.formats import Format
+from moz.l10n.formats.plain_json import plain_json_parse, plain_json_serialize
 from moz.l10n.message.data import PatternMessage
 from moz.l10n.resource.data import Entry, Resource, Section
-from moz.l10n.resource.format import Format
-from moz.l10n.resource.plain_json import plain_json_parse, plain_json_serialize
 
 source = files("tests.resource.data").joinpath("messages.json").read_bytes()
 
