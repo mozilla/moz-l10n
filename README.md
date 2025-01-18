@@ -11,7 +11,20 @@ The Message and Resource representations are drawn from work done for the
 Unicode [MessageFormat 2 specification](https://github.com/unicode-org/message-format-wg/tree/main/spec)
 and the [Message resource specification](https://github.com/eemeli/message-resource-wg/).
 
-Support for XML formats (`android`, `xliff`) is an optional extra;
+The library currently supports the following resource formats:
+
+- `android`†: Android string resources (strings.xml)
+- `dtd`: .dtd
+- `fluent`: Fluent (.ftl)
+- `inc`: .inc
+- `ini`: .ini
+- `plain_json`: Plain JSON (.json)
+- `po`: Gettext (.po, .pot)
+- `properties`: .properties
+- `webext`: WebExtensions (messages.json)
+- `xliff`†: XLIFF 1.2, including XCode customizations (.xlf, .xliff)
+
+**†** Support for XML formats (`android`, `xliff`) is an optional extra;
 to support them, install as `moz.l10n[xml]`.
 
 ## Command-line Tools
@@ -48,9 +61,33 @@ Fix the formatting for localization resources.
 If `paths` is a single directory, it is iterated with `L10nConfigPaths` if `--config` is set, or `L10nDiscoverPaths` otherwise.
 If `paths` is not a single directory, its values are treated as glob expressions, with `**` support.
 
-## moz.l10n.paths
+## Python API
 
-### L10nConfigPaths
+### moz.l10n.formats.FORMAT
+
+Parsers and serializers are provided for a number of formats,
+using common and well-established libraries to take care of the details.
+A unified API for these is provided,
+such that `FORMAT_parse(text)` will always accept `str` input,
+and `FORMAT_serialize(resource)` will always provide a `str` iterator.
+All the serializers accept a `trim_comments` argument
+which leaves out comments from the serialized result,
+but additional input types and options vary by format.
+
+### moz.l10n.formats.detect_format
+
+```python
+from moz.l10n.formats import detect_format
+
+def detect_format(name: str | None, source: bytes | str) -> Format | None
+```
+
+Detect the format of the input based on its file extension
+and/or contents.
+
+Returns a `Format` enum value, or `None` if the input is not recognized.
+
+### moz.l10n.paths.L10nConfigPaths
 
 Wrapper for localization config files.
 
@@ -66,7 +103,7 @@ Differences:
 
 Does not consider `.l10n-ignore` files.
 
-### L10nDiscoverPaths
+### moz.l10n.paths.L10nDiscoverPaths
 
 Automagical localization resource discovery.
 
@@ -80,33 +117,11 @@ BCP 47 locale identifiers, i.e. like `aa`, `aa-AA`, `aa-Aaaa`, or `aa-Aaaa-AA`.
 
 An underscore may also be used as a separator, as in `en_US`.
 
-## moz.l10n.resources
-
-Parsers and serializers are provided for a number of formats,
-using common and well-established libraries to take care of the details.
-A unified API for these is provided,
-such that `FORMAT_parse(text)` will always accept `str` input,
-and `FORMAT_serialize(resource)` will always provide a `str` iterator.
-All the serializers accept a `trim_comments` argument
-which leaves out comments from the serialized result,
-but additional input types and options vary by format.
-
-The library currently supports the following resource formats:
-
-- `android`: Android string resources (strings.xml)
-- `dtd`: .dtd
-- `fluent`: Fluent (.ftl)
-- `inc`: .inc
-- `ini`: .ini
-- `plain_json`: Plain JSON (.json)
-- `po`: Gettext (.po, .pot)
-- `properties`: .properties
-- `webext`: WebExtensions (messages.json)
-- `xliff`: XLIFF 1.2, including XCode customizations (.xlf, .xliff)
-
-### add_entries
+### moz.l10n.resource.add_entries
 
 ```python
+from moz.l10n.resource import add_entries
+
 def add_entries(
     target: Resource,
     source: Resource,
@@ -126,42 +141,11 @@ Entries are not copied, so further changes will be reflected in both resources.
 
 Returns a count of added or changed entries and sections.
 
-### detect_format
+### moz.l10n.resource.l10n_equal
 
 ```python
-def detect_format(name: str | None, source: bytes | str) -> Format | None
-```
+from moz.l10n.resource import l10n_equal
 
-Detect the format of the input based on its file extension
-and/or contents.
-
-Returns a `Format` enum value, or `None` if the input is not recognized.
-
-### iter_resources
-
-```python
-def iter_resources(
-    root: str,
-    dirs: list[str] | None = None,
-    ignorepath: str = ".l10n-ignore"
-) -> Iterator[tuple[str, Resource[Message, str] | None]]
-```
-
-Iterate through localizable resources under the `root` directory.
-Use `dirs` to limit the search to only some subdirectories under `root`.
-
-Yields `(str, Resource | None)` tuples,
-with the file path and the corresponding `Resource`,
-or `None` for files that could not be parsed as localization resources.
-
-To ignore files, include a `.l10n-ignore` file in `root`,
-or some other location passed in as `ignorepath`.
-This file uses a git-ignore syntax,
-and is always based in the `root` directory.
-
-### l10n_equal
-
-```python
 def l10n_equal(a: Resource, b: Resource) -> bool
 ```
 
@@ -171,9 +155,11 @@ Compares the localization-relevant content
 Sections with no message entries are ignored,
 and the order of sections, entries, and metadata is ignored.
 
-### parse_resource
+### moz.l10n.resource.parse_resource
 
 ```python
+from moz.l10n.resource import parse_resource
+
 def parse_resource(
     input: Format | str | None,
     source: str | bytes | None = None
@@ -191,9 +177,11 @@ If the first argument is a string path,
 the `source` argument is optional,
 as the file will be opened and read.
 
-### serialize_resource
+### moz.l10n.resource.serialize_resource
 
 ```python
+from moz.l10n.resource import serialize_resource
+
 def serialize_resource(
     resource: Resource[str, str] | Resource[Message, str],
     format: Format | None = None,
@@ -207,3 +195,24 @@ If `format` is set, it overrides the `resource.format` value.
 
 With `trim_comments`,
 all standalone and attached comments are left out of the serialization.
+
+### moz.l10n.util.walk_files
+
+```python
+from moz.l10n.util import walk_files
+
+def walk_files(
+    root: str,
+    dirs: list[str] | None = None,
+    ignorepath: str | None = ".l10n-ignore"
+) -> Iterator[str]
+```
+
+Iterate through all files under the `root` directory.
+Use `dirs` to limit the search to only some subdirectories under `root`.
+
+All files and directories with names starting with `.` are ignored.
+To ignore other files, include a `.l10n-ignore` file in `root`,
+or some other location passed in as `ignorepath`.
+This file uses git-ignore syntax,
+and is always based in the `root` directory.
