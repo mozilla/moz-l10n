@@ -51,7 +51,7 @@ class Expression:
 
     arg: str | VariableRef | None
     function: FunctionAnnotation | None = None
-    attributes: dict[str, str | VariableRef | None] = field(default_factory=dict)
+    attributes: dict[str, str | None] = field(default_factory=dict)
 
 
 @dataclass
@@ -59,7 +59,7 @@ class Markup:
     kind: Literal["open", "standalone", "close"]
     name: str
     options: dict[str, str | VariableRef] = field(default_factory=dict)
-    attributes: dict[str, str | VariableRef | None] = field(default_factory=dict)
+    attributes: dict[str, str | None] = field(default_factory=dict)
 
 
 Pattern = List[Union[str, Expression, Markup]]
