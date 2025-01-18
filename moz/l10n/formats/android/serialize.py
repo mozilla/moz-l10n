@@ -234,9 +234,9 @@ def set_string_array_item(
 
 
 def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
-    sel = msg.selectors[0] if len(msg.selectors) == 1 else None
+    sel = msg.selector_expressions()[0] if len(msg.selectors) == 1 else None
     if (
-        msg.declarations
+        len(msg.declarations) != 1
         or not sel
         or not isinstance(sel.function, FunctionAnnotation)
         or sel.function.name != "number"

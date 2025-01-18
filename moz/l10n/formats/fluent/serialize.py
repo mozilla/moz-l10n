@@ -210,7 +210,7 @@ def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
     other = fallback_name(message.variants)
     keys0 = variants[0][0]
     while keys0:
-        selector = expression(decl, message.selectors[len(keys0) - 1])
+        selector = value(decl, message.selectors[len(keys0) - 1])
         if (
             isinstance(selector, ftl.FunctionReference)
             and selector.id.name == "NUMBER"
@@ -283,9 +283,9 @@ def flat_pattern(decl: list[msg.Declaration], pattern: msg.Pattern) -> ftl.Patte
 
 
 def expression(
-    decl: list[msg.Declaration], expr: msg.Expression
+    decl: list[msg.Declaration], expr: msg.Expression, decl_name: str = ""
 ) -> ftl.InlineExpression:
-    arg = value(decl, expr.arg) if expr.arg is not None else None
+    arg = value(decl, expr.arg, decl_name) if expr.arg is not None else None
     if isinstance(expr.function, msg.FunctionAnnotation):
         return function_ref(decl, arg, expr.function)
     elif expr.function:
@@ -298,25 +298,25 @@ def expression(
 def function_ref(
     decl: list[msg.Declaration],
     arg: ftl.InlineExpression | None,
-    annotation: msg.FunctionAnnotation,
+    function: msg.FunctionAnnotation,
 ) -> ftl.InlineExpression:
     named: list[ftl.NamedArgument] = []
-    for name, val in annotation.options.items():
+    for name, val in function.options.items():
         ftl_val = value(decl, val)
         if isinstance(ftl_val, ftl.Literal):
             named.append(ftl.NamedArgument(ftl.Identifier(name), ftl_val))
         else:
             raise ValueError(f"Fluent option value not literal for {name}: {ftl_val}")
 
-    if annotation.name == "string":
+    if function.name == "string":
         if not arg:
             raise ValueError("Argument required for :string")
         if named:
             raise ValueError("Options on :string are not supported")
         return arg
-    if annotation.name == "number" and isinstance(arg, ftl.NumberLiteral) and not named:
+    if function.name == "number" and isinstance(arg, ftl.NumberLiteral) and not named:
         return arg
-    if annotation.name == "message":
+    if function.name == "message":
         if not isinstance(arg, ftl.Literal):
             raise ValueError(
                 "Message and term references must have a literal message identifier"
@@ -336,7 +336,7 @@ def function_ref(
             return ftl.MessageReference(ftl.Identifier(msg_id), attr)
 
     args = ftl.CallArguments([arg] if arg else None, named)
-    return ftl.FunctionReference(ftl.Identifier(annotation.name.upper()), args)
+    return ftl.FunctionReference(ftl.Identifier(function.name.upper()), args)
 
 
 # Non-printable ASCII C0 & C1 / Unicode Cc characters
@@ -344,7 +344,7 @@ esc_cc = {n: f"\\u{n:04X}" for r in (range(0, 32), range(127, 160)) for n in r}
 
 
 def value(
-    decl: list[msg.Declaration], val: str | msg.VariableRef
+    decl: list[msg.Declaration], val: str | msg.VariableRef, decl_name: str = ""
 ) -> ftl.InlineExpression:
     if isinstance(val, str):
         try:
@@ -355,7 +355,7 @@ def value(
     else:
         local = next((d for d in decl if d.name == val.name), None)
         return (
-            expression(decl, local.value)
-            if local
+            expression(decl, local.value, local.name)
+            if local and local.name != decl_name
             else ftl.VariableReference(ftl.Identifier(val.name))
         )

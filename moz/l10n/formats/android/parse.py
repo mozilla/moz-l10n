@@ -21,6 +21,7 @@ from lxml import etree
 
 from ...message.data import (
     CatchallKey,
+    Declaration,
     Expression,
     FunctionAnnotation,
     Markup,
@@ -205,8 +206,16 @@ def parse_entity_value(src: str | None) -> Iterator[str | Expression]:
 def parse_plurals(
     name: str, el: etree._Element, add_comment: Callable[[Iterable[str | None]], None]
 ) -> SelectMessage:
-    sel = Expression(VariableRef("quantity"), FunctionAnnotation("number"))
-    msg = SelectMessage([sel], {})
+    msg = SelectMessage(
+        [VariableRef("quantity")],
+        {},
+        [
+            Declaration(
+                "quantity",
+                Expression(VariableRef("quantity"), FunctionAnnotation("number")),
+            )
+        ],
+    )
     var_comment: list[str | None] = []
     for item in el:
         if isinstance(item, etree._Comment):
@@ -275,9 +284,7 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
                     for gc in body:
                         if isinstance(gc, str):
                             options: dict[str, str | VariableRef] = dict(child.attrib)
-                            attr: dict[str, str | VariableRef | None] = {
-                                "translate": "no"
-                            }
+                            attr: dict[str, str | None] = {"translate": "no"}
                             arg: str | VariableRef | None
                             if id:
                                 arg = VariableRef(get_var_name(id))

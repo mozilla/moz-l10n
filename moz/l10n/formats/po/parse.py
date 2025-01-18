@@ -19,6 +19,7 @@ from collections import OrderedDict
 from polib import pofile
 
 from ...message.data import (
+    Declaration,
     Expression,
     FunctionAnnotation,
     Message,
@@ -73,7 +74,9 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
                 )
                 for idx in range(keys[-1] + 1)
             }
-            value: Message = SelectMessage([sel], variants)
+            value: Message = SelectMessage(
+                [VariableRef("n")], variants, [Declaration("n", sel)]
+            )
         else:
             value = PatternMessage([pe.msgstr])
         entry = Entry((pe.msgid,), value, meta=meta)

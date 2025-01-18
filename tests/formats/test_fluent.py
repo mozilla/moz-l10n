@@ -24,6 +24,7 @@ from moz.l10n.formats import Format
 from moz.l10n.formats.fluent import fluent_parse, fluent_serialize
 from moz.l10n.message.data import (
     CatchallKey,
+    Declaration,
     Expression,
     FunctionAnnotation,
     PatternMessage,
@@ -71,6 +72,66 @@ class TestFluent(TestCase):
         res1 = fluent_parse(source1)
         res2 = fluent_parse(source2)
         assert res1 == res2
+
+    def test_number_selector(self):
+        src = dedent(
+            """\
+            no-placeholder =
+                { $num ->
+                    [one] One
+                   *[other] Other
+                }
+            has-placeholder =
+                { $num ->
+                    [one] One { $num }
+                   *[other] Other
+                }
+            """
+        )
+        res = fluent_parse(src)
+        other = CatchallKey("other")
+        entries = [
+            Entry(
+                ("no-placeholder",),
+                SelectMessage(
+                    declarations=[
+                        Declaration(
+                            "num",
+                            Expression(
+                                VariableRef("num"), FunctionAnnotation("number")
+                            ),
+                        )
+                    ],
+                    selectors=[VariableRef("num")],
+                    variants={
+                        ("one",): ["One"],
+                        (other,): ["Other"],
+                    },
+                ),
+                linepos=LinePos(1, 1, 2, 6),
+            ),
+            Entry(
+                ("has-placeholder",),
+                SelectMessage(
+                    declarations=[
+                        Declaration(
+                            "num_1",
+                            Expression(
+                                VariableRef("num"), FunctionAnnotation("number")
+                            ),
+                        )
+                    ],
+                    selectors=[VariableRef("num_1")],
+                    variants={
+                        ("one",): ["One ", Expression(VariableRef("num"))],
+                        (other,): ["Other"],
+                    },
+                ),
+                linepos=LinePos(6, 6, 7, 11),
+            ),
+        ]
+        assert res == Resource(Format.fluent, [Section((), entries)])
+        assert "".join(fluent_serialize(res)) == src
 
     def test_resource(self):
         res = fluent_parse(
@@ -180,8 +241,16 @@ class TestFluent(TestCase):
             Entry(
                 ("single-sel",),
                 SelectMessage(
-                    [Expression(VariableRef("num"), FunctionAnnotation("number"))],
-                    {
+                    declarations=[
+                        Declaration(
+                            "num",
+                            Expression(
+                                VariableRef("num"), FunctionAnnotation("number")
+                            ),
+                        )
+                    ],
+                    selectors=[VariableRef("num")],
+                    variants={
                         ("one",): ["One"],
                         (other,): ["Other"],
                     },
@@ -191,11 +260,18 @@ class TestFluent(TestCase):
             Entry(
                 ("two-sels",),
                 SelectMessage(
-                    [
-                        Expression(VariableRef("a"), FunctionAnnotation("number")),
-                        Expression(VariableRef("b"), FunctionAnnotation("string")),
+                    declarations=[
+                        Declaration(
+                            "a",
+                            Expression(VariableRef("a"), FunctionAnnotation("number")),
+                        ),
+                        Declaration(
+                            "b",
+                            Expression(VariableRef("b"), FunctionAnnotation("string")),
+                        ),
                     ],
-                    {
+                    selectors=[VariableRef("a"), VariableRef("b")],
+                    variants={
                         ("1", "cc"): ["pre One mid CC post"],
                         ("1", CatchallKey("bb")): ["pre One mid BB post"],
                         (CatchallKey("2"), "cc"): ["pre Two mid CC post"],
@@ -207,11 +283,18 @@ class TestFluent(TestCase):
             Entry(
                 ("deep-sels",),
                 SelectMessage(
-                    [
-                        Expression(VariableRef("a"), FunctionAnnotation("number")),
-                        Expression(VariableRef("b"), FunctionAnnotation("number")),
+                    declarations=[
+                        Declaration(
+                            "a",
+                            Expression(VariableRef("a"), FunctionAnnotation("number")),
+                        ),
+                        Declaration(
+                            "b",
+                            Expression(VariableRef("b"), FunctionAnnotation("number")),
+                        ),
                     ],
-                    {
+                    selectors=[VariableRef("a"), VariableRef("b")],
+                    variants={
                         ("0", "one"): [Expression("")],
                         ("0", other): ["0,x"],
                         ("one", "one"): [Expression("1,1")],
@@ -228,8 +311,14 @@ class TestFluent(TestCase):
             Entry(
                 ("term-sel",),
                 SelectMessage(
-                    [Expression("-term.attr", FunctionAnnotation("message"))],
-                    {
+                    declarations=[
+                        Declaration(
+                            "_1",
+                            Expression("-term.attr", FunctionAnnotation("message")),
+                        )
+                    ],
+                    selectors=[VariableRef("_1")],
+                    variants={
                         ("foo",): ["Foo"],
                         (other,): ["Other"],
                     },
@@ -521,9 +610,15 @@ class TestFluent(TestCase):
             Entry(
                 id=("delete-all-message",),
                 value=SelectMessage(
-                    selectors=[
-                        Expression(VariableRef("num"), FunctionAnnotation("number"))
+                    declarations=[
+                        Declaration(
+                            "num_1",
+                            Expression(
+                                VariableRef("num"), FunctionAnnotation("number")
+                            ),
+                        )
                     ],
+                    selectors=[VariableRef("num_1")],
                     variants={
                         ("one",): ["Delete this download?"],
                         (CatchallKey("other"),): [
@@ -538,9 +633,15 @@ class TestFluent(TestCase):
             Entry(
                 id=("delete-all-message-special-cases",),
                 value=SelectMessage(
-                    selectors=[
-                        Expression(VariableRef("num"), FunctionAnnotation("number"))
+                    declarations=[
+                        Declaration(
+                            "num_1",
+                            Expression(
+                                VariableRef("num"), FunctionAnnotation("number")
+                            ),
+                        )
                     ],
+                    selectors=[VariableRef("num_1")],
                     variants={
                         ("12",): ["Delete this dozen of downloads?"],
                         ("2",): ["Delete this pair of downloads?"],
@@ -578,7 +679,12 @@ class TestFluent(TestCase):
             Entry(
                 id=("platform",),
                 value=SelectMessage(
-                    selectors=[Expression(None, FunctionAnnotation("platform"))],
+                    declarations=[
+                        Declaration(
+                            "_1", Expression(None, FunctionAnnotation("platform"))
+                        )
+                    ],
+                    selectors=[VariableRef("_1")],
                     variants={
                         ("win",): ["Options"],
                         (CatchallKey("other"),): ["Preferences"],
@@ -589,12 +695,16 @@ class TestFluent(TestCase):
             Entry(
                 id=("number",),
                 value=SelectMessage(
-                    selectors=[
-                        Expression(
-                            VariableRef("var"),
-                            FunctionAnnotation("number", {"type": "ordinal"}),
+                    declarations=[
+                        Declaration(
+                            "var_1",
+                            Expression(
+                                VariableRef("var"),
+                                FunctionAnnotation("number", {"type": "ordinal"}),
+                            ),
                         )
                     ],
+                    selectors=[VariableRef("var_1")],
                     variants={
                         ("1",): ["first"],
                         ("one",): [Expression(VariableRef("var")), "st"],
@@ -606,7 +716,12 @@ class TestFluent(TestCase):
             Entry(
                 id=("platform-attribute", "title"),
                 value=SelectMessage(
-                    selectors=[Expression(None, FunctionAnnotation("platform"))],
+                    declarations=[
+                        Declaration(
+                            "_1", Expression(None, FunctionAnnotation("platform"))
+                        )
+                    ],
+                    selectors=[VariableRef("_1")],
                     variants={
                         ("win",): ["Options"],
                         (CatchallKey("other"),): ["Preferences"],
@@ -617,7 +732,12 @@ class TestFluent(TestCase):
             Entry(
                 id=("download-choose-folder", "label"),
                 value=SelectMessage(
-                    selectors=[Expression(None, FunctionAnnotation("platform"))],
+                    declarations=[
+                        Declaration(
+                            "_1", Expression(None, FunctionAnnotation("platform"))
+                        )
+                    ],
+                    selectors=[VariableRef("_1")],
                     variants={
                         ("macos",): ["Choose…"],
                         (CatchallKey("other"),): ["Browse…"],
@@ -628,17 +748,33 @@ class TestFluent(TestCase):
             Entry(
                 id=("download-choose-folder", "accesskey"),
                 value=SelectMessage(
-                    selectors=[Expression(None, FunctionAnnotation("platform"))],
+                    declarations=[
+                        Declaration(
+                            "_1", Expression(None, FunctionAnnotation("platform"))
+                        )
+                    ],
+                    selectors=[VariableRef("_1")],
                     variants={("macos",): ["e"], (CatchallKey("other"),): ["o"]},
                 ),
             ),
             Entry(
                 id=("selector-multi",),
                 value=SelectMessage(
-                    selectors=[
-                        Expression(VariableRef("num"), FunctionAnnotation("number")),
-                        Expression(VariableRef("gender"), FunctionAnnotation("string")),
+                    declarations=[
+                        Declaration(
+                            "num",
+                            Expression(
+                                VariableRef("num"), FunctionAnnotation("number")
+                            ),
+                        ),
+                        Declaration(
+                            "gender",
+                            Expression(
+                                VariableRef("gender"), FunctionAnnotation("string")
+                            ),
+                        ),
                     ],
+                    selectors=[VariableRef("num"), VariableRef("gender")],
                     variants={
                         ("one", "feminine"): ["There is one email for her"],
                         ("one", CatchallKey("masculine")): [
@@ -692,10 +828,21 @@ class TestFluent(TestCase):
             Entry(
                 id=("selector-nested",),
                 value=SelectMessage(
-                    selectors=[
-                        Expression(VariableRef("gender"), FunctionAnnotation("string")),
-                        Expression(VariableRef("num"), FunctionAnnotation("number")),
+                    declarations=[
+                        Declaration(
+                            "gender",
+                            Expression(
+                                VariableRef("gender"), FunctionAnnotation("string")
+                            ),
+                        ),
+                        Declaration(
+                            "num",
+                            Expression(
+                                VariableRef("num"), FunctionAnnotation("number")
+                            ),
+                        ),
                     ],
+                    selectors=[VariableRef("gender"), VariableRef("num")],
                     variants={
                         ("masculine", "one"): ["There is one email for him"],
                         ("masculine", CatchallKey("other")): [

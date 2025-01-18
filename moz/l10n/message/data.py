@@ -100,6 +100,9 @@ class PatternMessage:
     pattern: Pattern
     declarations: list[Declaration] = field(default_factory=list)
 
+    def placeholders(self) -> set[Expression | Markup]:
+        return {part for part in self.pattern if not isinstance(part, str)}
+
 
 Variants = Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
 
@@ -110,9 +113,23 @@ class SelectMessage:
     A message with one or more selectors and a corresponding number of variants.
     """
 
-    selectors: list[Expression]
+    selectors: list[VariableRef]
     variants: Variants
     declarations: list[Declaration] = field(default_factory=list)
+
+    def placeholders(self) -> set[Expression | Markup]:
+        return {
+            part
+            for pattern in self.variants.values()
+            for part in pattern
+            if not isinstance(part, str)
+        }
+
+    def selector_expressions(self) -> list[Expression]:
+        return [
+            next(decl.value for decl in self.declarations if decl.name == var.name)
+            for var in self.selectors
+        ]
 
 
 Message = Union[PatternMessage, SelectMessage]

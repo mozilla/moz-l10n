@@ -180,7 +180,7 @@ def add_xliff_stringsdict_plural(
     msg = entry.value
     if len(msg.selectors) != 1:
         raise ValueError(f"Exactly one selector is required: {msg.selectors}")
-    sel = msg.selectors[0]
+    sel = msg.selector_expressions()[0]
     if (
         not isinstance(sel.arg, VariableRef)
         or not isinstance(sel.function, FunctionAnnotation)

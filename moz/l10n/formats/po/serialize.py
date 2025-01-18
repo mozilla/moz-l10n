@@ -18,7 +18,7 @@ from collections.abc import Iterator
 
 from polib import POEntry, POFile
 
-from ...message.data import FunctionAnnotation, Message, PatternMessage, SelectMessage
+from ...message.data import Message, PatternMessage, SelectMessage
 from ...resource.data import Entry, Resource
 
 
@@ -63,11 +63,11 @@ def po_serialize(
                     pe.msgstr = "".join(msg.pattern)  # type: ignore[arg-type]
                 elif (
                     isinstance(msg, SelectMessage)
-                    and not msg.declarations
+                    and len(msg.declarations) == 1
                     and len(msg.selectors) == 1
-                    and isinstance(msg.selectors[0].function, FunctionAnnotation)
-                    and msg.selectors[0].function.name == "number"
-                    and not msg.selectors[0].function.options
+                    and (sel_fn := msg.selector_expressions()[0].function)
+                    and sel_fn.name == "number"
+                    and not sel_fn.options
                     and all(
                         len(keys) == 1 and all(isinstance(p, str) for p in pattern)
                         for keys, pattern in msg.variants.items()

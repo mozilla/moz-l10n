@@ -23,6 +23,7 @@ from lxml import etree
 
 from ...message.data import (
     CatchallKey,
+    Declaration,
     Expression,
     FunctionAnnotation,
     SelectMessage,
@@ -96,7 +97,17 @@ def parse_xliff_stringsdict(
             variants[(CatchallKey("other") if key == "other" else key,)] = list(
                 parse_pattern(pattern_src)
             )
-        entries.append(Entry((msg_id,), SelectMessage([selector], variants), meta=meta))
+        entries.append(
+            Entry(
+                (msg_id,),
+                SelectMessage(
+                    [VariableRef(plural.var_name)],
+                    variants,
+                    [Declaration(plural.var_name, selector)],
+                ),
+                meta=meta,
+            )
+        )
     return entries
 
 

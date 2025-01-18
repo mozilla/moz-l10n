@@ -170,10 +170,11 @@ def patterns(
 
 def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
     sel_data = find_selectors(ftl_pattern, [])
-    selectors = [sd[0] for sd in sel_data]
-    filter: list[Key | None] = [None] * len(selectors)
+    sel_expressions = [sd[0] for sd in sel_data]
+    filter: list[Key | None] = [None] * len(sel_expressions)
     msg_variants: dict[tuple[Key, ...], msg.Pattern]
-    if selectors:
+    var_names: set[str] = set()
+    if sel_expressions:
         key_lists = [list(dict.fromkeys(sd[2])) for sd in sel_data]
         for keys in key_lists:
             keys.sort(key=lambda k: (k[2], not k[1]))
@@ -193,7 +194,7 @@ def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
                 el = el.expression
             if isinstance(el, ftl.SelectExpression):
                 msg_sel = next(sd[0] for sd in sel_data if el.selector in sd[1])
-                idx = selectors.index(msg_sel)
+                idx = sel_expressions.index(msg_sel)
                 prev_filt = filter[idx]
                 for v in el.variants:
                     filter[idx] = variant_key(v)
@@ -210,17 +211,32 @@ def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
                             else:
                                 msg_pattern.append(el.value)
                         else:
-                            msg_pattern.append(inline_expression(el))
+                            expr = inline_expression(el)
+                            if isinstance(expr.arg, msg.VariableRef):
+                                var_names.add(expr.arg.name)
+                            msg_pattern.append(expr)
 
     add_pattern(ftl_pattern)
 
-    if selectors:
+    if sel_expressions:
+        declarations = []
+        selectors = []
+        for expr in sel_expressions:
+            stem = expr.arg.name if isinstance(expr.arg, msg.VariableRef) else ""
+            i = 0
+            name = stem
+            while name in var_names or name == "":
+                i += 1
+                name = f"{stem}_{i}"
+            declarations.append(msg.Declaration(name, expr))
+            selectors.append(msg.VariableRef(name))
+            var_names.add(name)
         variants = {
             tuple(map(message_key, keys)): msg_pattern
             for keys, msg_pattern in msg_variants.items()
             if msg_pattern
         }
-        return msg.SelectMessage(selectors, variants)
+        return msg.SelectMessage(selectors, variants, declarations)
     else:
         return msg.PatternMessage(next(iter(msg_variants.values())))
 
