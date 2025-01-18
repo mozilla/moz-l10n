@@ -236,7 +236,7 @@ def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
             for keys, msg_pattern in msg_variants.items()
             if msg_pattern
         }
-        return msg.SelectMessage(selectors, variants, declarations)
+        return msg.SelectMessage(declarations, selectors, variants)
     else:
         return msg.PatternMessage(next(iter(msg_variants.values())))
 

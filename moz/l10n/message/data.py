@@ -113,9 +113,9 @@ class SelectMessage:
     A message with one or more selectors and a corresponding number of variants.
     """
 
+    declarations: list[Declaration]
     selectors: list[VariableRef]
     variants: Variants
-    declarations: list[Declaration] = field(default_factory=list)
 
     def placeholders(self) -> set[Expression | Markup]:
         return {

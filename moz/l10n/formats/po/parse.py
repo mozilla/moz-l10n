@@ -75,7 +75,9 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
                 for idx in range(keys[-1] + 1)
             }
             value: Message = SelectMessage(
-                [VariableRef("n")], variants, [Declaration("n", sel)]
+                declarations=[Declaration("n", sel)],
+                selectors=[VariableRef("n")],
+                variants=variants,
             )
         else:
             value = PatternMessage([pe.msgstr])

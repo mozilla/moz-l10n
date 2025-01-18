@@ -207,14 +207,14 @@ def parse_plurals(
     name: str, el: etree._Element, add_comment: Callable[[Iterable[str | None]], None]
 ) -> SelectMessage:
     msg = SelectMessage(
-        [VariableRef("quantity")],
-        {},
-        [
+        declarations=[
             Declaration(
                 "quantity",
                 Expression(VariableRef("quantity"), FunctionAnnotation("number")),
             )
         ],
+        selectors=[VariableRef("quantity")],
+        variants={},
     )
     var_comment: list[str | None] = []
     for item in el:
