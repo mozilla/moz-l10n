@@ -465,7 +465,7 @@ class TestFluent(TestCase):
             fluent_parse("msg = value\n# Comment\nLine of junk", as_ftl_patterns=True)
 
     def test_file(self):
-        bytes = files("tests.resource.data").joinpath("demo.ftl").read_bytes()
+        bytes = files("tests.formats.data").joinpath("demo.ftl").read_bytes()
         res = fluent_parse(bytes, with_linepos=False)
         copyright = "Any copyright is dedicated to the Public Domain.\nhttp://creativecommons.org/publicdomain/zero/1.0/"
         entries = [

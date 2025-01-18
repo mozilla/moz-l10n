@@ -36,10 +36,10 @@ except ImportError:
     raise SkipTest("Requires [xml] extra")
 
 
-hello = files("tests.resource.data").joinpath("hello.xliff").read_bytes()
-angular = files("tests.resource.data").joinpath("angular.xliff").read_bytes()
-icu_docs = files("tests.resource.data").joinpath("icu-docs.xliff").read_bytes()
-xcode = files("tests.resource.data").joinpath("xcode.xliff").read_bytes()
+hello = files("tests.formats.data").joinpath("hello.xliff").read_bytes()
+angular = files("tests.formats.data").joinpath("angular.xliff").read_bytes()
+icu_docs = files("tests.formats.data").joinpath("icu-docs.xliff").read_bytes()
+xcode = files("tests.formats.data").joinpath("xcode.xliff").read_bytes()
 
 
 class TestXliff1(TestCase):

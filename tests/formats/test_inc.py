@@ -24,7 +24,7 @@ from moz.l10n.message.data import PatternMessage
 from moz.l10n.resource.data import Comment, Entry, Resource, Section
 
 source = (
-    files("tests.resource.data").joinpath("defines.inc").read_bytes().decode("utf-8")
+    files("tests.formats.data").joinpath("defines.inc").read_bytes().decode("utf-8")
 )
 
 

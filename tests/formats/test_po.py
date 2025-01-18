@@ -28,7 +28,7 @@ from moz.l10n.message.data import (
 )
 from moz.l10n.resource.data import Entry, Metadata, Resource, Section
 
-source = files("tests.resource.data").joinpath("foo.po").read_bytes().decode("utf-8")
+source = files("tests.formats.data").joinpath("foo.po").read_bytes().decode("utf-8")
 
 
 class TestPo(TestCase):

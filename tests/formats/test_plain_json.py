@@ -23,7 +23,7 @@ from moz.l10n.formats.plain_json import plain_json_parse, plain_json_serialize
 from moz.l10n.message.data import PatternMessage
 from moz.l10n.resource.data import Entry, Resource, Section
 
-source = files("tests.resource.data").joinpath("messages.json").read_bytes()
+source = files("tests.formats.data").joinpath("messages.json").read_bytes()
 
 
 class TestPlain(TestCase):

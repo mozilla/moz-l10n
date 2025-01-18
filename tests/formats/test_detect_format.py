@@ -35,7 +35,7 @@ class TestDetectFormat(TestCase):
             "test.properties": Format.properties,
         }
         for file, exp_format in data.items():
-            source = files("tests.resource.data").joinpath(file).read_bytes()
+            source = files("tests.formats.data").joinpath(file).read_bytes()
             assert detect_format(file, source) == exp_format
 
     @skipIf(no_xml, "Requires [xml] extra")
@@ -48,11 +48,11 @@ class TestDetectFormat(TestCase):
             "xcode.xliff": Format.xliff,
         }
         for file, exp_format in data.items():
-            source = files("tests.resource.data").joinpath(file).read_bytes()
+            source = files("tests.formats.data").joinpath(file).read_bytes()
             assert detect_format(file, source) == exp_format
 
     @skipIf(no_xml, "Requires [xml] extra")
     def test_xliff_source(self):
         for file in ("angular.xliff", "hello.xliff", "icu-docs.xliff", "xcode.xliff"):
-            source = files("tests.resource.data").joinpath(file).read_bytes()
+            source = files("tests.formats.data").joinpath(file).read_bytes()
             assert detect_format(None, source) == Format.xliff

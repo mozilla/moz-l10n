@@ -23,7 +23,7 @@ from moz.l10n.formats.webext import webext_parse, webext_serialize
 from moz.l10n.message.data import Declaration, Expression, PatternMessage, VariableRef
 from moz.l10n.resource.data import Entry, Resource, Section
 
-source = files("tests.resource.data").joinpath("messages.json").read_bytes()
+source = files("tests.formats.data").joinpath("messages.json").read_bytes()
 
 
 class TestWebext(TestCase):

@@ -30,7 +30,7 @@ no_xml = find_spec("lxml") is None
 
 
 def get_source(filename: str) -> bytes:
-    return files("tests.resource.data").joinpath(filename).read_bytes()
+    return files("tests.formats.data").joinpath(filename).read_bytes()
 
 
 class TesteParseResource(TestCase):

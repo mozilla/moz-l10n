@@ -35,7 +35,7 @@ try:
 except ImportError:
     raise SkipTest("Requires [xml] extra")
 
-source = files("tests.resource.data").joinpath("strings.xml").read_bytes()
+source = files("tests.formats.data").joinpath("strings.xml").read_bytes()
 
 
 class TestAndroid(TestCase):
