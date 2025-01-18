@@ -24,7 +24,6 @@ from ...message.data import (
     Message,
     Pattern,
     PatternMessage,
-    UnsupportedStatement,
     VariableRef,
 )
 from ...resource.data import Comment, Entry, Resource, Section
@@ -53,7 +52,7 @@ def webext_parse(source: str | bytes) -> Resource[Message, Any]:
             if "placeholders" in msg
             else {}
         )
-        declarations: list[Declaration | UnsupportedStatement] = []
+        declarations: list[Declaration] = []
         pattern: Pattern = []
         pos = 0
         for m in placeholder.finditer(src):

@@ -27,8 +27,6 @@ __all__ = [
     "Pattern",
     "PatternMessage",
     "SelectMessage",
-    "UnsupportedAnnotation",
-    "UnsupportedStatement",
     "VariableRef",
     "Variants",
 ]
@@ -46,21 +44,13 @@ class FunctionAnnotation:
 
 
 @dataclass
-class UnsupportedAnnotation:
-    source: str
-    """
-    The "raw" value (i.e. escape sequences are not processed).
-    """
-
-
-@dataclass
 class Expression:
     """
     A valid Expression must contain a non-None `arg`, `annotation`, or both.
     """
 
     arg: str | VariableRef | None
-    annotation: FunctionAnnotation | UnsupportedAnnotation | None = None
+    annotation: FunctionAnnotation | None = None
     attributes: dict[str, str | VariableRef | None] = field(default_factory=dict)
 
 
@@ -102,30 +92,13 @@ class Declaration:
 
 
 @dataclass
-class UnsupportedStatement:
-    keyword: str
-    """
-    A non-empty string name.
-    """
-
-    body: str | None
-    """
-    If not empty, the "raw" value (i.e. escape sequences are not processed)
-    starting after the keyword and up to the first expression,
-    not including leading or trailing whitespace.
-    """
-
-    expressions: list[Expression]
-
-
-@dataclass
 class PatternMessage:
     """
     A message without selectors and with a single pattern.
     """
 
     pattern: Pattern
-    declarations: list[Declaration | UnsupportedStatement] = field(default_factory=list)
+    declarations: list[Declaration] = field(default_factory=list)
 
 
 Variants = Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
@@ -139,7 +112,7 @@ class SelectMessage:
 
     selectors: list[Expression]
     variants: Variants
-    declarations: list[Declaration | UnsupportedStatement] = field(default_factory=list)
+    declarations: list[Declaration] = field(default_factory=list)
 
 
 Message = Union[PatternMessage, SelectMessage]
