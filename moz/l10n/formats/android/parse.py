@@ -211,7 +211,7 @@ def parse_plurals(
                 VariableRef("quantity"), FunctionAnnotation("number")
             )
         },
-        selectors=[VariableRef("quantity")],
+        selectors=(VariableRef("quantity"),),
         variants={},
     )
     var_comment: list[str | None] = []

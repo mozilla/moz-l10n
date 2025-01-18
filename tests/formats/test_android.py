@@ -314,7 +314,7 @@ class TestAndroid(TestCase):
                                         FunctionAnnotation("number"),
                                     )
                                 },
-                                selectors=[VariableRef("quantity")],
+                                selectors=(VariableRef("quantity"),),
                                 variants={
                                     ("one",): [
                                         Expression(
@@ -352,7 +352,7 @@ class TestAndroid(TestCase):
                                         FunctionAnnotation("number"),
                                     )
                                 },
-                                selectors=[VariableRef("quantity")],
+                                selectors=(VariableRef("quantity"),),
                                 variants={
                                     ("one",): [
                                         "Znaleziono ",

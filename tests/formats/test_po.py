@@ -76,7 +76,7 @@ class TestPo(TestCase):
                                         FunctionAnnotation("number"),
                                     )
                                 },
-                                selectors=[VariableRef("n")],
+                                selectors=(VariableRef("n"),),
                                 variants={
                                     ("0",): ["%d prevedenih sporočil"],
                                     ("1",): ["%d prevedeno sporočilo"],

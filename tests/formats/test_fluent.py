@@ -98,7 +98,7 @@ class TestFluent(TestCase):
                             VariableRef("num"), FunctionAnnotation("number")
                         )
                     },
-                    selectors=[VariableRef("num")],
+                    selectors=(VariableRef("num"),),
                     variants={
                         ("one",): ["One"],
                         (other,): ["Other"],
@@ -114,7 +114,7 @@ class TestFluent(TestCase):
                             VariableRef("num"), FunctionAnnotation("number")
                         )
                     },
-                    selectors=[VariableRef("num_1")],
+                    selectors=(VariableRef("num_1"),),
                     variants={
                         ("one",): ["One ", Expression(VariableRef("num"))],
                         (other,): ["Other"],
@@ -239,7 +239,7 @@ class TestFluent(TestCase):
                             VariableRef("num"), FunctionAnnotation("number")
                         )
                     },
-                    selectors=[VariableRef("num")],
+                    selectors=(VariableRef("num"),),
                     variants={
                         ("one",): ["One"],
                         (other,): ["Other"],
@@ -254,7 +254,7 @@ class TestFluent(TestCase):
                         "a": Expression(VariableRef("a"), FunctionAnnotation("number")),
                         "b": Expression(VariableRef("b"), FunctionAnnotation("string")),
                     },
-                    selectors=[VariableRef("a"), VariableRef("b")],
+                    selectors=(VariableRef("a"), VariableRef("b")),
                     variants={
                         ("1", "cc"): ["pre One mid CC post"],
                         ("1", CatchallKey("bb")): ["pre One mid BB post"],
@@ -271,7 +271,7 @@ class TestFluent(TestCase):
                         "a": Expression(VariableRef("a"), FunctionAnnotation("number")),
                         "b": Expression(VariableRef("b"), FunctionAnnotation("number")),
                     },
-                    selectors=[VariableRef("a"), VariableRef("b")],
+                    selectors=(VariableRef("a"), VariableRef("b")),
                     variants={
                         ("0", "one"): [Expression("")],
                         ("0", other): ["0,x"],
@@ -292,7 +292,7 @@ class TestFluent(TestCase):
                     declarations={
                         "_1": Expression("-term.attr", FunctionAnnotation("message"))
                     },
-                    selectors=[VariableRef("_1")],
+                    selectors=(VariableRef("_1"),),
                     variants={
                         ("foo",): ["Foo"],
                         (other,): ["Other"],
@@ -590,7 +590,7 @@ class TestFluent(TestCase):
                             VariableRef("num"), FunctionAnnotation("number")
                         )
                     },
-                    selectors=[VariableRef("num_1")],
+                    selectors=(VariableRef("num_1"),),
                     variants={
                         ("one",): ["Delete this download?"],
                         (CatchallKey("other"),): [
@@ -610,7 +610,7 @@ class TestFluent(TestCase):
                             VariableRef("num"), FunctionAnnotation("number")
                         )
                     },
-                    selectors=[VariableRef("num_1")],
+                    selectors=(VariableRef("num_1"),),
                     variants={
                         ("12",): ["Delete this dozen of downloads?"],
                         ("2",): ["Delete this pair of downloads?"],
@@ -651,7 +651,7 @@ class TestFluent(TestCase):
                     declarations={
                         "_1": Expression(None, FunctionAnnotation("platform"))
                     },
-                    selectors=[VariableRef("_1")],
+                    selectors=(VariableRef("_1"),),
                     variants={
                         ("win",): ["Options"],
                         (CatchallKey("other"),): ["Preferences"],
@@ -668,7 +668,7 @@ class TestFluent(TestCase):
                             FunctionAnnotation("number", {"type": "ordinal"}),
                         )
                     },
-                    selectors=[VariableRef("var_1")],
+                    selectors=(VariableRef("var_1"),),
                     variants={
                         ("1",): ["first"],
                         ("one",): [Expression(VariableRef("var")), "st"],
@@ -683,7 +683,7 @@ class TestFluent(TestCase):
                     declarations={
                         "_1": Expression(None, FunctionAnnotation("platform"))
                     },
-                    selectors=[VariableRef("_1")],
+                    selectors=(VariableRef("_1"),),
                     variants={
                         ("win",): ["Options"],
                         (CatchallKey("other"),): ["Preferences"],
@@ -697,7 +697,7 @@ class TestFluent(TestCase):
                     declarations={
                         "_1": Expression(None, FunctionAnnotation("platform"))
                     },
-                    selectors=[VariableRef("_1")],
+                    selectors=(VariableRef("_1"),),
                     variants={
                         ("macos",): ["Choose…"],
                         (CatchallKey("other"),): ["Browse…"],
@@ -711,7 +711,7 @@ class TestFluent(TestCase):
                     declarations={
                         "_1": Expression(None, FunctionAnnotation("platform"))
                     },
-                    selectors=[VariableRef("_1")],
+                    selectors=(VariableRef("_1"),),
                     variants={("macos",): ["e"], (CatchallKey("other"),): ["o"]},
                 ),
             ),
@@ -726,7 +726,7 @@ class TestFluent(TestCase):
                             VariableRef("gender"), FunctionAnnotation("string")
                         ),
                     },
-                    selectors=[VariableRef("num"), VariableRef("gender")],
+                    selectors=(VariableRef("num"), VariableRef("gender")),
                     variants={
                         ("one", "feminine"): ["There is one email for her"],
                         ("one", CatchallKey("masculine")): [
@@ -788,7 +788,7 @@ class TestFluent(TestCase):
                             VariableRef("num"), FunctionAnnotation("number")
                         ),
                     },
-                    selectors=[VariableRef("gender"), VariableRef("num")],
+                    selectors=(VariableRef("gender"), VariableRef("num")),
                     variants={
                         ("masculine", "one"): ["There is one email for him"],
                         ("masculine", CatchallKey("other")): [

@@ -544,7 +544,7 @@ class TestXliff1(TestCase):
                                         {"source": None},
                                     )
                                 },
-                                selectors=[VariableRef("GenericCountEntriesSelected")],
+                                selectors=(VariableRef("GenericCountEntriesSelected"),),
                                 variants={
                                     ("one",): [
                                         Expression(
@@ -581,7 +581,7 @@ class TestXliff1(TestCase):
                                         {"source": None},
                                     )
                                 },
-                                selectors=[VariableRef("GenericCountThreads")],
+                                selectors=(VariableRef("GenericCountThreads"),),
                                 variants={
                                     ("one",): [
                                         Expression(
@@ -641,7 +641,7 @@ class TestXliff1(TestCase):
                                         {"source": "%#@OTHERS@"},
                                     )
                                 },
-                                selectors=[VariableRef("OTHERS")],
+                                selectors=(VariableRef("OTHERS"),),
                                 variants={
                                     ("one",): [
                                         "Followed by ",

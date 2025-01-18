@@ -101,7 +101,7 @@ def parse_xliff_stringsdict(
                 (msg_id,),
                 SelectMessage(
                     declarations={plural.var_name: selector},
-                    selectors=[VariableRef(plural.var_name)],
+                    selectors=(VariableRef(plural.var_name),),
                     variants=variants,
                 ),
                 meta=meta,

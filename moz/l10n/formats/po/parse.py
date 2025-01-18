@@ -75,7 +75,7 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
             }
             value: Message = SelectMessage(
                 declarations={"n": sel},
-                selectors=[VariableRef("n")],
+                selectors=(VariableRef("n"),),
                 variants=variants,
             )
         else:

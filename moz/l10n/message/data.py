@@ -107,7 +107,7 @@ class SelectMessage:
     """
 
     declarations: dict[str, Expression]
-    selectors: list[VariableRef]
+    selectors: tuple[VariableRef, ...]
     variants: Variants
 
     def placeholders(self) -> set[Expression | Markup]:
@@ -118,8 +118,8 @@ class SelectMessage:
             if not isinstance(part, str)
         }
 
-    def selector_expressions(self) -> list[Expression]:
-        return [self.declarations[var.name] for var in self.selectors]
+    def selector_expressions(self) -> tuple[Expression, ...]:
+        return tuple(self.declarations[var.name] for var in self.selectors)
 
 
 Message = Union[PatternMessage, SelectMessage]
