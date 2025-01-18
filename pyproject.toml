@@ -77,6 +77,7 @@ ignore = [
 
 [tool.setuptools]
 platforms = ["any"]
+license-files = []  # https://github.com/pypa/setuptools/issues/4759
 
 [tool.setuptools.packages.find]
 include = ["moz.l10n*"]
