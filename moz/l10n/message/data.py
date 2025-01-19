@@ -26,7 +26,6 @@ __all__ = [
     "PatternMessage",
     "SelectMessage",
     "VariableRef",
-    "Variants",
 ]
 
 
@@ -93,9 +92,6 @@ class PatternMessage:
         return {part for part in self.pattern if not isinstance(part, str)}
 
 
-Variants = Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
-
-
 @dataclass
 class SelectMessage:
     """
@@ -104,7 +100,7 @@ class SelectMessage:
 
     declarations: dict[str, Expression]
     selectors: tuple[VariableRef, ...]
-    variants: Variants
+    variants: Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
 
     def placeholders(self) -> set[Expression | Markup]:
         return {

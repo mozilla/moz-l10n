@@ -26,7 +26,6 @@ from ...message.data import (
     Expression,
     SelectMessage,
     VariableRef,
-    Variants,
 )
 from ...resource.data import Entry, Metadata
 from .common import attrib_as_metadata
@@ -85,7 +84,11 @@ def parse_xliff_stringsdict(
             meta += attrib_as_metadata(plural.format_key.unit, "format", ("id",))
             if plural.format_key.target is not None:
                 meta += attrib_as_metadata(plural.format_key.target, "format/target")
-        variants: Variants = {}
+        msg = SelectMessage(
+            declarations={plural.var_name: selector},
+            selectors=(VariableRef(plural.var_name),),
+            variants={},
+        )
         for key, variant in plural.variants.items():
             meta += attrib_as_metadata(variant.unit, key, ("id",))
             meta.append(Metadata(f"{key}/source", variant.source.text or ""))
@@ -94,20 +97,10 @@ def parse_xliff_stringsdict(
             else:
                 meta += attrib_as_metadata(variant.target, f"{key}/target")
                 pattern_src = variant.target.text
-            variants[(CatchallKey("other") if key == "other" else key,)] = list(
+            msg.variants[(CatchallKey("other") if key == "other" else key,)] = list(
                 parse_pattern(pattern_src)
             )
-        entries.append(
-            Entry(
-                (msg_id,),
-                SelectMessage(
-                    declarations={plural.var_name: selector},
-                    selectors=(VariableRef(plural.var_name),),
-                    variants=variants,
-                ),
-                meta=meta,
-            )
-        )
+        entries.append(Entry((msg_id,), msg, meta=meta))
     return entries
 
 

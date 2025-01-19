@@ -204,7 +204,7 @@ def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
         for keys, value in message.variants.items()
     ]
 
-    other = fallback_name(message.variants)
+    other = fallback_name(message)
     keys0 = variants[0][0]
     while keys0:
         selector = value(message.declarations, message.selectors[len(keys0) - 1])
@@ -238,7 +238,7 @@ def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
     return variants[0][1]
 
 
-def fallback_name(variants: msg.Variants) -> str:
+def fallback_name(message: msg.SelectMessage) -> str:
     """
     Try `other`, `other1`, `other2`, ... until a free one is found.
     """
@@ -246,7 +246,7 @@ def fallback_name(variants: msg.Variants) -> str:
     key = root = "other"
     while any(
         key == (k.value if isinstance(k, msg.CatchallKey) else k)
-        for keys in variants
+        for keys in message.variants
         for k in keys
     ):
         i += 1

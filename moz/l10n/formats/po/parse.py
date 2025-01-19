@@ -24,7 +24,6 @@ from ...message.data import (
     PatternMessage,
     SelectMessage,
     VariableRef,
-    Variants,
 )
 from ...resource.data import Entry, Metadata, Resource, Section
 from .. import Format
@@ -66,16 +65,15 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
             keys = list(pe.msgstr_plural)
             keys.sort()
             sel = Expression(VariableRef("n"), "number")
-            variants: Variants = {
-                (str(idx),): (
-                    [pe.msgstr_plural[idx]] if idx in pe.msgstr_plural else []
-                )
-                for idx in range(keys[-1] + 1)
-            }
             value: Message = SelectMessage(
                 declarations={"n": sel},
                 selectors=(VariableRef("n"),),
-                variants=variants,
+                variants={
+                    (str(idx),): (
+                        [pe.msgstr_plural[idx]] if idx in pe.msgstr_plural else []
+                    )
+                    for idx in range(keys[-1] + 1)
+                },
             )
         else:
             value = PatternMessage([pe.msgstr])
