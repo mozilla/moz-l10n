@@ -20,7 +20,6 @@ from typing import Dict, List, Literal, Tuple, Union
 __all__ = [
     "CatchallKey",
     "Expression",
-    "FunctionAnnotation",
     "Markup",
     "Message",
     "Pattern",
@@ -37,19 +36,16 @@ class VariableRef:
 
 
 @dataclass
-class FunctionAnnotation:
-    name: str
-    options: dict[str, str | VariableRef] = field(default_factory=dict)
-
-
-@dataclass
 class Expression:
     """
-    A valid Expression must contain a non-None `arg`, `annotation`, or both.
+    A valid Expression must contain a non-None `arg`, `function`, or both.
+
+    An Expression with no `function` and non-empty `options` is not valid.
     """
 
     arg: str | VariableRef | None
-    function: FunctionAnnotation | None = None
+    function: str | None = None
+    options: dict[str, str | VariableRef] = field(default_factory=dict)
     attributes: dict[str, str | None] = field(default_factory=dict)
 
 

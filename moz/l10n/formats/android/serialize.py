@@ -23,7 +23,6 @@ from lxml import etree
 from ...message.data import (
     CatchallKey,
     Expression,
-    FunctionAnnotation,
     Message,
     Pattern,
     PatternMessage,
@@ -235,12 +234,7 @@ def set_string_array_item(
 
 def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
     sel = msg.selector_expressions()[0] if len(msg.selectors) == 1 else None
-    if (
-        len(msg.declarations) != 1
-        or not sel
-        or not isinstance(sel.function, FunctionAnnotation)
-        or sel.function.name != "number"
-    ):
+    if len(msg.declarations) != 1 or not sel or sel.function != "number":
         raise ValueError(f"Unsupported message: {msg}")
     for keys, value in msg.variants.items():
         key = keys[0] if len(keys) == 1 else None
@@ -266,12 +260,11 @@ def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
 
 def set_pattern(el: etree._Element, pattern: Pattern) -> None:
     node: etree._Element | None
-    if len(pattern) == 1 and isinstance(pattern[0], Expression):
-        annot = pattern[0].function
-        if isinstance(annot, FunctionAnnotation) and annot.name == "reference":
+    if len(pattern) == 1 and isinstance(part0 := pattern[0], Expression):
+        if part0.function == "reference":
             # A "string" could be an Android resource reference,
             # which should not have its @ or ? sigil escaped.
-            arg = pattern[0].arg
+            arg = part0.arg
             if isinstance(arg, str) and resource_ref.fullmatch(arg):
                 el.text = arg
                 return
@@ -291,11 +284,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
             ent_name = entity_name(part)
             if part.attributes.get("translate", None) == "no":
                 # <xliff:g>
-                attrib = (
-                    cast(Dict[str, str], part.function.options)
-                    if isinstance(part.function, FunctionAnnotation)
-                    else None
-                )
+                attrib = cast(Dict[str, str], part.options) if part.function else None
                 nsmap = {"xliff": xliff_ns} if not el.nsmap.get("xliff", None) else None
                 node = etree.SubElement(parent, xliff_g, attrib=attrib, nsmap=nsmap)
                 if ent_name:
@@ -359,7 +348,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
 
 
 def entity_name(part: Expression) -> str | None:
-    if isinstance(part.function, FunctionAnnotation) and part.function.name == "entity":
+    if part.function == "entity":
         name = part.arg.name if isinstance(part.arg, VariableRef) else None
         if name:
             return name

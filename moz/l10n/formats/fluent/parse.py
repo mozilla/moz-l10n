@@ -295,11 +295,9 @@ def select_expression(ftl_sel: ftl.InlineExpression, keys: list[Key]) -> msg.Exp
             )
             else "string"
         )
-        return msg.Expression(
-            msg.VariableRef(ftl_sel.id.name), msg.FunctionAnnotation(name)
-        )
+        return msg.Expression(msg.VariableRef(ftl_sel.id.name), name)
     elif isinstance(ftl_sel, ftl.StringLiteral):
-        return msg.Expression(literal_value(ftl_sel), msg.FunctionAnnotation("string"))
+        return msg.Expression(literal_value(ftl_sel), "string")
     else:
         return inline_expression(ftl_sel)
 
@@ -307,7 +305,7 @@ def select_expression(ftl_sel: ftl.InlineExpression, keys: list[Key]) -> msg.Exp
 def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
     if isinstance(exp, ftl.NumberLiteral):
         value = exp.value
-        return msg.Expression(value, msg.FunctionAnnotation("number"))
+        return msg.Expression(value, "number")
     elif isinstance(exp, ftl.StringLiteral):
         value = exp.parse().get("value") or ""
         return msg.Expression(value)
@@ -315,7 +313,7 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
         name = exp.id.name
         if exp.attribute is not None:
             name += "." + exp.attribute.name
-        return msg.Expression(name, msg.FunctionAnnotation("message"))
+        return msg.Expression(name, "message")
     elif isinstance(exp, ftl.TermReference):
         name = "-" + exp.id.name
         if exp.attribute is not None:
@@ -323,10 +321,8 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
         ftl_named = exp.arguments.named if exp.arguments else []
         return msg.Expression(
             name,
-            msg.FunctionAnnotation(
-                "message",
-                {opt.name.name: literal_value(opt.value) for opt in ftl_named},
-            ),
+            "message",
+            {opt.name.name: literal_value(opt.value) for opt in ftl_named},
         )
     elif isinstance(exp, ftl.VariableReference):
         name = exp.id.name
@@ -356,10 +352,8 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
         ftl_named = exp.arguments.named
         return msg.Expression(
             arg,
-            msg.FunctionAnnotation(
-                name,
-                {opt.name.name: literal_value(opt.value) for opt in ftl_named},
-            ),
+            name,
+            {opt.name.name: literal_value(opt.value) for opt in ftl_named},
         )
 
 

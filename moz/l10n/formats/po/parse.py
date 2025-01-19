@@ -20,7 +20,6 @@ from polib import pofile
 
 from ...message.data import (
     Expression,
-    FunctionAnnotation,
     Message,
     PatternMessage,
     SelectMessage,
@@ -66,7 +65,7 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
         if pe.msgstr_plural:
             keys = list(pe.msgstr_plural)
             keys.sort()
-            sel = Expression(VariableRef("n"), FunctionAnnotation("number"))
+            sel = Expression(VariableRef("n"), "number")
             variants: Variants = {
                 (str(idx),): (
                     [pe.msgstr_plural[idx]] if idx in pe.msgstr_plural else []

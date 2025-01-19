@@ -21,7 +21,6 @@ from moz.l10n.formats import Format
 from moz.l10n.formats.po import po_parse, po_serialize
 from moz.l10n.message.data import (
     Expression,
-    FunctionAnnotation,
     PatternMessage,
     SelectMessage,
     VariableRef,
@@ -71,10 +70,7 @@ class TestPo(TestCase):
                             ],
                             value=SelectMessage(
                                 declarations={
-                                    "n": Expression(
-                                        VariableRef("n"),
-                                        FunctionAnnotation("number"),
-                                    )
+                                    "n": Expression(VariableRef("n"), "number")
                                 },
                                 selectors=(VariableRef("n"),),
                                 variants={

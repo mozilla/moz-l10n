@@ -65,9 +65,9 @@ def po_serialize(
                     isinstance(msg, SelectMessage)
                     and len(msg.declarations) == 1
                     and len(msg.selectors) == 1
-                    and (sel_fn := msg.selector_expressions()[0].function)
-                    and sel_fn.name == "number"
-                    and not sel_fn.options
+                    and (sel := msg.selector_expressions()[0])
+                    and sel.function == "number"
+                    and not sel.options
                     and all(
                         len(keys) == 1 and all(isinstance(p, str) for p in pattern)
                         for keys, pattern in msg.variants.items()

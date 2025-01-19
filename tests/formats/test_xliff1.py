@@ -22,7 +22,6 @@ from moz.l10n.formats import Format
 from moz.l10n.message.data import (
     CatchallKey,
     Expression,
-    FunctionAnnotation,
     Markup,
     PatternMessage,
     SelectMessage,
@@ -540,8 +539,8 @@ class TestXliff1(TestCase):
                                 declarations={
                                     "GenericCountEntriesSelected": Expression(
                                         VariableRef("GenericCountEntriesSelected"),
-                                        FunctionAnnotation("number"),
-                                        {"source": None},
+                                        "number",
+                                        attributes={"source": None},
                                     )
                                 },
                                 selectors=(VariableRef("GenericCountEntriesSelected"),),
@@ -549,16 +548,16 @@ class TestXliff1(TestCase):
                                     ("one",): [
                                         Expression(
                                             VariableRef("int"),
-                                            FunctionAnnotation("integer"),
-                                            {"source": "%d"},
+                                            "integer",
+                                            attributes={"source": "%d"},
                                         ),
                                         " voce selezionata",
                                     ],
                                     (CatchallKey("other"),): [
                                         Expression(
                                             VariableRef("int"),
-                                            FunctionAnnotation("integer"),
-                                            {"source": "%d"},
+                                            "integer",
+                                            attributes={"source": "%d"},
                                         ),
                                         " voci selezionate",
                                     ],
@@ -577,8 +576,8 @@ class TestXliff1(TestCase):
                                 declarations={
                                     "GenericCountThreads": Expression(
                                         VariableRef("GenericCountThreads"),
-                                        FunctionAnnotation("number"),
-                                        {"source": None},
+                                        "number",
+                                        attributes={"source": None},
                                     )
                                 },
                                 selectors=(VariableRef("GenericCountThreads"),),
@@ -586,16 +585,16 @@ class TestXliff1(TestCase):
                                     ("one",): [
                                         Expression(
                                             VariableRef("int"),
-                                            FunctionAnnotation("integer"),
-                                            {"source": "%d"},
+                                            "integer",
+                                            attributes={"source": "%d"},
                                         ),
                                         " thread",
                                     ],
                                     (CatchallKey(value="other"),): [
                                         Expression(
                                             VariableRef("int"),
-                                            FunctionAnnotation("integer"),
-                                            {"source": "%d"},
+                                            "integer",
+                                            attributes={"source": "%d"},
                                         ),
                                         " thread",
                                     ],
@@ -637,8 +636,8 @@ class TestXliff1(TestCase):
                                 declarations={
                                     "OTHERS": Expression(
                                         VariableRef("OTHERS"),
-                                        FunctionAnnotation("number"),
-                                        {"source": "%#@OTHERS@"},
+                                        "number",
+                                        attributes={"source": "%#@OTHERS@"},
                                     )
                                 },
                                 selectors=(VariableRef("OTHERS"),),
@@ -662,7 +661,7 @@ class TestXliff1(TestCase):
                                         " & ",
                                         Expression(
                                             VariableRef("int1"),
-                                            FunctionAnnotation("integer"),
+                                            "integer",
                                             attributes={"source": "%1$d"},
                                         ),
                                         " other",
@@ -686,7 +685,7 @@ class TestXliff1(TestCase):
                                         " & ",
                                         Expression(
                                             VariableRef("int1"),
-                                            FunctionAnnotation("integer"),
+                                            "integer",
                                             attributes={"source": "%1$d"},
                                         ),
                                         " others",

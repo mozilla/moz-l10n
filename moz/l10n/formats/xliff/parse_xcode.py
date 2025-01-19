@@ -24,7 +24,6 @@ from lxml import etree
 from ...message.data import (
     CatchallKey,
     Expression,
-    FunctionAnnotation,
     SelectMessage,
     VariableRef,
     Variants,
@@ -76,8 +75,10 @@ def parse_xliff_stringsdict(
     for msg_id, plural in plurals.items():
         selector = Expression(
             VariableRef(plural.var_name),
-            FunctionAnnotation("number"),
-            {"source": plural.format_key.source.text if plural.format_key else None},
+            "number",
+            attributes={
+                "source": plural.format_key.source.text if plural.format_key else None
+            },
         )
         meta: list[Metadata[str]] = []
         if plural.format_key:
@@ -215,7 +216,7 @@ def parse_pattern(src: str | None) -> Iterator[str | Expression]:
                 name += m[1][0]
             yield Expression(
                 VariableRef(name),
-                FunctionAnnotation(func) if func else None,
+                func,
                 attributes={"source": source},
             )
         pos = m.end()

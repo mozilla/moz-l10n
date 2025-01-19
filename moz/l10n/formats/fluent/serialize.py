@@ -283,8 +283,8 @@ def expression(
     decl: dict[str, msg.Expression], expr: msg.Expression, decl_name: str = ""
 ) -> ftl.InlineExpression:
     arg = value(decl, expr.arg, decl_name) if expr.arg is not None else None
-    if isinstance(expr.function, msg.FunctionAnnotation):
-        return function_ref(decl, arg, expr.function)
+    if expr.function:
+        return function_ref(decl, arg, expr.function, expr.options)
     elif expr.function:
         raise ValueError("Unsupported annotations are not supported")
     if arg:
@@ -295,25 +295,26 @@ def expression(
 def function_ref(
     decl: dict[str, msg.Expression],
     arg: ftl.InlineExpression | None,
-    function: msg.FunctionAnnotation,
+    function: str,
+    options: dict[str, str | msg.VariableRef],
 ) -> ftl.InlineExpression:
     named: list[ftl.NamedArgument] = []
-    for name, val in function.options.items():
+    for name, val in options.items():
         ftl_val = value(decl, val)
         if isinstance(ftl_val, ftl.Literal):
             named.append(ftl.NamedArgument(ftl.Identifier(name), ftl_val))
         else:
             raise ValueError(f"Fluent option value not literal for {name}: {ftl_val}")
 
-    if function.name == "string":
+    if function == "string":
         if not arg:
             raise ValueError("Argument required for :string")
         if named:
             raise ValueError("Options on :string are not supported")
         return arg
-    if function.name == "number" and isinstance(arg, ftl.NumberLiteral) and not named:
+    if function == "number" and isinstance(arg, ftl.NumberLiteral) and not named:
         return arg
-    if function.name == "message":
+    if function == "message":
         if not isinstance(arg, ftl.Literal):
             raise ValueError(
                 "Message and term references must have a literal message identifier"
@@ -333,7 +334,7 @@ def function_ref(
             return ftl.MessageReference(ftl.Identifier(msg_id), attr)
 
     args = ftl.CallArguments([arg] if arg else None, named)
-    return ftl.FunctionReference(ftl.Identifier(function.name.upper()), args)
+    return ftl.FunctionReference(ftl.Identifier(function.upper()), args)
 
 
 # Non-printable ASCII C0 & C1 / Unicode Cc characters
