@@ -24,10 +24,8 @@ from lxml import etree
 from ...message.data import (
     CatchallKey,
     Expression,
-    FunctionAnnotation,
     SelectMessage,
     VariableRef,
-    Variants,
 )
 from ...resource.data import Entry, Metadata
 from .common import attrib_as_metadata
@@ -76,15 +74,21 @@ def parse_xliff_stringsdict(
     for msg_id, plural in plurals.items():
         selector = Expression(
             VariableRef(plural.var_name),
-            FunctionAnnotation("number"),
-            {"source": plural.format_key.source.text if plural.format_key else None},
+            "number",
+            attributes={
+                "source": plural.format_key.source.text if plural.format_key else None
+            },
         )
         meta: list[Metadata[str]] = []
         if plural.format_key:
             meta += attrib_as_metadata(plural.format_key.unit, "format", ("id",))
             if plural.format_key.target is not None:
                 meta += attrib_as_metadata(plural.format_key.target, "format/target")
-        variants: Variants = {}
+        msg = SelectMessage(
+            declarations={plural.var_name: selector},
+            selectors=(VariableRef(plural.var_name),),
+            variants={},
+        )
         for key, variant in plural.variants.items():
             meta += attrib_as_metadata(variant.unit, key, ("id",))
             meta.append(Metadata(f"{key}/source", variant.source.text or ""))
@@ -93,10 +97,10 @@ def parse_xliff_stringsdict(
             else:
                 meta += attrib_as_metadata(variant.target, f"{key}/target")
                 pattern_src = variant.target.text
-            variants[(CatchallKey("other") if key == "other" else key,)] = list(
+            msg.variants[(CatchallKey("other") if key == "other" else key,)] = list(
                 parse_pattern(pattern_src)
             )
-        entries.append(Entry((msg_id,), SelectMessage([selector], variants), meta=meta))
+        entries.append(Entry((msg_id,), msg, meta=meta))
     return entries
 
 
@@ -205,7 +209,7 @@ def parse_pattern(src: str | None) -> Iterator[str | Expression]:
                 name += m[1][0]
             yield Expression(
                 VariableRef(name),
-                FunctionAnnotation(func) if func else None,
+                func,
                 attributes={"source": source},
             )
         pos = m.end()

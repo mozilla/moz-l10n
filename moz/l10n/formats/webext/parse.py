@@ -19,12 +19,10 @@ from re import compile
 from typing import Any
 
 from ...message.data import (
-    Declaration,
     Expression,
     Message,
     Pattern,
     PatternMessage,
-    UnsupportedStatement,
     VariableRef,
 )
 from ...resource.data import Comment, Entry, Resource, Section
@@ -53,7 +51,7 @@ def webext_parse(source: str | bytes) -> Resource[Message, Any]:
             if "placeholders" in msg
             else {}
         )
-        declarations: list[Declaration | UnsupportedStatement] = []
+        declarations = {}
         pattern: Pattern = []
         pos = 0
         for m in placeholder.finditer(src):
@@ -84,7 +82,7 @@ def webext_parse(source: str | bytes) -> Resource[Message, Any]:
                     ph_name = m[1].replace("@", "_")
                     if ph_name[0].isdigit():
                         ph_name = f"_{ph_name}"
-                    declarations.append(Declaration(ph_name, decl_value))
+                    declarations[ph_name] = decl_value
                     ph["_name"] = ph_name
                 exp = Expression(VariableRef(ph_name), attributes={"source": m[0]})
                 pattern.append(exp)

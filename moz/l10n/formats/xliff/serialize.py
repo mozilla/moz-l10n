@@ -22,7 +22,6 @@ from lxml import etree
 from ...message.data import (
     CatchallKey,
     Expression,
-    FunctionAnnotation,
     Markup,
     Message,
     Pattern,
@@ -180,12 +179,8 @@ def add_xliff_stringsdict_plural(
     msg = entry.value
     if len(msg.selectors) != 1:
         raise ValueError(f"Exactly one selector is required: {msg.selectors}")
-    sel = msg.selectors[0]
-    if (
-        not isinstance(sel.arg, VariableRef)
-        or not isinstance(sel.annotation, FunctionAnnotation)
-        or sel.annotation.name != "number"
-    ):
+    sel = msg.selector_expressions()[0]
+    if not isinstance(sel.arg, VariableRef) or sel.function != "number":
         raise ValueError(f"Unsupported selector: {sel}")
 
     id = entry.id[0]

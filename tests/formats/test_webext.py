@@ -20,7 +20,7 @@ from unittest import TestCase
 
 from moz.l10n.formats import Format
 from moz.l10n.formats.webext import webext_parse, webext_serialize
-from moz.l10n.message.data import Declaration, Expression, PatternMessage, VariableRef
+from moz.l10n.message.data import Expression, PatternMessage, VariableRef
 from moz.l10n.resource.data import Entry, Resource, Section
 
 source = files("tests.formats.data").joinpath("messages.json").read_bytes()
@@ -64,18 +64,15 @@ class TestWebext(TestCase):
                                         attributes={"source": "$2"},
                                     ),
                                 ],
-                                declarations=[
-                                    Declaration(
-                                        "_1YOUR_NAME",
-                                        Expression(
-                                            VariableRef("arg1"),
-                                            attributes={
-                                                "source": "$1",
-                                                "example": "Cira",
-                                            },
-                                        ),
+                                declarations={
+                                    "_1YOUR_NAME": Expression(
+                                        VariableRef("arg1"),
+                                        attributes={
+                                            "source": "$1",
+                                            "example": "Cira",
+                                        },
                                     )
-                                ],
+                                },
                             ),
                             comment="Peer greeting",
                         ),
@@ -93,15 +90,12 @@ class TestWebext(TestCase):
                                         attributes={"source": "$Foo$"},
                                     ),
                                 ],
-                                declarations=[
-                                    Declaration(
-                                        "foo",
-                                        Expression(
-                                            VariableRef("arg1"),
-                                            attributes={"source": "$1"},
-                                        ),
+                                declarations={
+                                    "foo": Expression(
+                                        VariableRef("arg1"),
+                                        attributes={"source": "$1"},
                                     )
-                                ],
+                                },
                             ),
                         ),
                     ],

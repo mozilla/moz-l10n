@@ -21,7 +21,6 @@ from moz.l10n.formats import Format
 from moz.l10n.formats.po import po_parse, po_serialize
 from moz.l10n.message.data import (
     Expression,
-    FunctionAnnotation,
     PatternMessage,
     SelectMessage,
     VariableRef,
@@ -70,13 +69,11 @@ class TestPo(TestCase):
                                 Metadata("plural", "%d translated messages"),
                             ],
                             value=SelectMessage(
-                                [
-                                    Expression(
-                                        VariableRef("n"),
-                                        FunctionAnnotation("number"),
-                                    )
-                                ],
-                                {
+                                declarations={
+                                    "n": Expression(VariableRef("n"), "number")
+                                },
+                                selectors=(VariableRef("n"),),
+                                variants={
                                     ("0",): ["%d prevedenih sporočil"],
                                     ("1",): ["%d prevedeno sporočilo"],
                                     ("2",): ["%d prevedeni sporočili"],

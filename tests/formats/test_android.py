@@ -22,7 +22,6 @@ from moz.l10n.formats import Format
 from moz.l10n.message.data import (
     CatchallKey,
     Expression,
-    FunctionAnnotation,
     Markup,
     PatternMessage,
     SelectMessage,
@@ -57,10 +56,7 @@ class TestAndroid(TestCase):
                             PatternMessage(
                                 [
                                     "Bar ",
-                                    Expression(
-                                        VariableRef("foo"),
-                                        FunctionAnnotation("entity"),
-                                    ),
+                                    Expression(VariableRef("foo"), "entity"),
                                 ]
                             ),
                         ),
@@ -79,14 +75,7 @@ class TestAndroid(TestCase):
                         ),
                         Entry(
                             ("five",),
-                            PatternMessage(
-                                [
-                                    Expression(
-                                        "@string/three",
-                                        FunctionAnnotation("reference"),
-                                    )
-                                ]
-                            ),
+                            PatternMessage([Expression("@string/three", "reference")]),
                             meta=[Metadata("translatable", "false")],
                         ),
                         Comment("standalone"),
@@ -96,10 +85,7 @@ class TestAndroid(TestCase):
                                 [
                                     "Welcome to ",
                                     Markup("open", "b"),
-                                    Expression(
-                                        VariableRef("foo"),
-                                        FunctionAnnotation("entity"),
-                                    ),
+                                    Expression(VariableRef("foo"), "entity"),
                                     Markup("close", "b"),
                                     "!",
                                 ]
@@ -112,14 +98,14 @@ class TestAndroid(TestCase):
                                     "Hello, ",
                                     Expression(
                                         VariableRef("arg1"),
-                                        FunctionAnnotation("string"),
-                                        {"source": "%1$s"},
+                                        "string",
+                                        attributes={"source": "%1$s"},
                                     ),
                                     "! You have ",
                                     Expression(
                                         VariableRef("arg2"),
-                                        FunctionAnnotation("integer"),
-                                        {"source": "%2$d"},
+                                        "integer",
+                                        attributes={"source": "%2$d"},
                                     ),
                                     " new messages.",
                                 ]
@@ -132,15 +118,15 @@ class TestAndroid(TestCase):
                                     "Hello, ",
                                     Expression(
                                         VariableRef("arg1"),
-                                        FunctionAnnotation("string"),
-                                        {"source": "%1$s"},
+                                        "string",
+                                        attributes={"source": "%1$s"},
                                     ),
                                     "! You have ",
                                     Markup("open", "b"),
                                     Expression(
                                         VariableRef("arg2"),
-                                        FunctionAnnotation("integer"),
-                                        {"source": "%2$d"},
+                                        "integer",
+                                        attributes={"source": "%2$d"},
                                     ),
                                     " new messages",
                                     Markup("close", "b"),
@@ -155,18 +141,18 @@ class TestAndroid(TestCase):
                                     "Hello, ",
                                     Expression(
                                         VariableRef("arg1"),
-                                        FunctionAnnotation("string"),
-                                        {"source": "%1$s"},
+                                        "string",
+                                        attributes={"source": "%1$s"},
                                     ),
                                     "! You have ",
-                                    Expression("<b>", FunctionAnnotation("html")),
+                                    Expression("<b>", "html"),
                                     Expression(
                                         VariableRef("arg2"),
-                                        FunctionAnnotation("integer"),
-                                        {"source": "%2$d"},
+                                        "integer",
+                                        attributes={"source": "%2$d"},
                                     ),
                                     " new messages",
-                                    Expression("</b>", FunctionAnnotation("html")),
+                                    Expression("</b>", "html"),
                                     ".",
                                 ]
                             ),
@@ -178,16 +164,22 @@ class TestAndroid(TestCase):
                                     "Hello, ",
                                     Expression(
                                         VariableRef("user"),
-                                        FunctionAnnotation(
-                                            "xliff:g", {"id": "user", "example": "Bob"}
-                                        ),
-                                        {"translate": "no", "source": "%1$s"},
+                                        "xliff:g",
+                                        {"id": "user", "example": "Bob"},
+                                        attributes={
+                                            "translate": "no",
+                                            "source": "%1$s",
+                                        },
                                     ),
                                     "! You have ",
                                     Expression(
                                         VariableRef("count"),
-                                        FunctionAnnotation("xliff:g", {"id": "count"}),
-                                        {"translate": "no", "source": "%2$d"},
+                                        "xliff:g",
+                                        {"id": "count"},
+                                        attributes={
+                                            "translate": "no",
+                                            "source": "%2$d",
+                                        },
                                     ),
                                     " new messages.",
                                 ]
@@ -204,7 +196,7 @@ class TestAndroid(TestCase):
                                         attributes={"translate": "no"},
                                     ),
                                     Markup("open", "b"),
-                                    Expression("Foo", None, {"translate": "no"}),
+                                    Expression("Foo", attributes={"translate": "no"}),
                                     Markup("close", "b"),
                                     "!",
                                     Markup(
@@ -230,14 +222,14 @@ class TestAndroid(TestCase):
                                     " one ",
                                     Expression(
                                         VariableRef("foo"),
-                                        FunctionAnnotation("entity"),
-                                        {"translate": "no"},
+                                        "entity",
+                                        attributes={"translate": "no"},
                                     ),
                                     Expression(" two ", attributes={"translate": "no"}),
                                     Expression(
                                         VariableRef("bar"),
-                                        FunctionAnnotation("entity"),
-                                        {"translate": "no"},
+                                        "entity",
+                                        attributes={"translate": "no"},
                                     ),
                                     " three ",
                                 ]
@@ -275,11 +267,11 @@ class TestAndroid(TestCase):
                                     'Foo Bar <a href="foo?id=',
                                     Expression(
                                         VariableRef("arg"),
-                                        FunctionAnnotation("string"),
-                                        {"source": "%s"},
+                                        "string",
+                                        attributes={"source": "%s"},
                                     ),
                                     '">baz',
-                                    Expression("</a>", FunctionAnnotation("html")),
+                                    Expression("</a>", "html"),
                                     " is cool",
                                 ]
                             ),
@@ -289,14 +281,11 @@ class TestAndroid(TestCase):
                             PatternMessage(
                                 [
                                     "Sorry, ",
-                                    Expression(
-                                        VariableRef("foo"),
-                                        FunctionAnnotation("entity"),
-                                    ),
+                                    Expression(VariableRef("foo"), "entity"),
                                     " is ",
-                                    Expression("<i>", FunctionAnnotation("html")),
+                                    Expression("<i>", "html"),
                                     "not available",
-                                    Expression("</i>", FunctionAnnotation("html")),
+                                    Expression("</i>", "html"),
                                     " just now.",
                                 ]
                             ),
@@ -308,26 +297,27 @@ class TestAndroid(TestCase):
                         Entry(
                             ("numberOfSongsAvailable",),
                             SelectMessage(
-                                [
-                                    Expression(
+                                declarations={
+                                    "quantity": Expression(
                                         VariableRef("quantity"),
-                                        FunctionAnnotation("number"),
+                                        "number",
                                     )
-                                ],
-                                {
+                                },
+                                selectors=(VariableRef("quantity"),),
+                                variants={
                                     ("one",): [
                                         Expression(
                                             VariableRef("arg"),
-                                            FunctionAnnotation("integer"),
-                                            {"source": "%d"},
+                                            "integer",
+                                            attributes={"source": "%d"},
                                         ),
                                         " song found.",
                                     ],
                                     (CatchallKey("other"),): [
                                         Expression(
                                             VariableRef("arg"),
-                                            FunctionAnnotation("integer"),
-                                            {"source": "%d"},
+                                            "integer",
+                                            attributes={"source": "%d"},
                                         ),
                                         " songs found.",
                                     ],
@@ -345,19 +335,20 @@ class TestAndroid(TestCase):
                         Entry(
                             ("numberOfSongsAvailable_pl",),
                             SelectMessage(
-                                [
-                                    Expression(
+                                declarations={
+                                    "quantity": Expression(
                                         VariableRef("quantity"),
-                                        FunctionAnnotation("number"),
+                                        "number",
                                     )
-                                ],
-                                {
+                                },
+                                selectors=(VariableRef("quantity"),),
+                                variants={
                                     ("one",): [
                                         "Znaleziono ",
                                         Expression(
                                             VariableRef("arg"),
-                                            FunctionAnnotation("integer"),
-                                            {"source": "%d"},
+                                            "integer",
+                                            attributes={"source": "%d"},
                                         ),
                                         " piosenkę.",
                                     ],
@@ -365,8 +356,8 @@ class TestAndroid(TestCase):
                                         "Znaleziono ",
                                         Expression(
                                             VariableRef("arg"),
-                                            FunctionAnnotation("integer"),
-                                            {"source": "%d"},
+                                            "integer",
+                                            attributes={"source": "%d"},
                                         ),
                                         " piosenki.",
                                     ],
@@ -374,8 +365,8 @@ class TestAndroid(TestCase):
                                         "Znaleziono ",
                                         Expression(
                                             VariableRef("arg"),
-                                            FunctionAnnotation("integer"),
-                                            {"source": "%d"},
+                                            "integer",
+                                            attributes={"source": "%d"},
                                         ),
                                         " piosenek.",
                                     ],
@@ -522,7 +513,7 @@ class TestAndroid(TestCase):
         assert res1 == res2
 
     def test_xliff_xmlns(self):
-        exp = Expression(" X ", FunctionAnnotation("foo", {"opt": "OPT"}))
+        exp = Expression(" X ", "foo", {"opt": "OPT"})
         res = Resource(
             Format.android, [Section((), [Entry(("x",), PatternMessage([exp]))])]
         )

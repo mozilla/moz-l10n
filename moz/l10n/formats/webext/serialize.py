@@ -20,7 +20,6 @@ from re import sub
 from typing import Any
 
 from ...message.data import (
-    Declaration,
     Expression,
     Message,
     PatternMessage,
@@ -88,18 +87,11 @@ def webext_message(
         elif (
             isinstance(part, Expression)
             and isinstance(part.arg, VariableRef)
-            and part.annotation is None
+            and part.function is None
         ):
             ph_name = part.arg.name
             source = part.attributes.get("source", None)
-            local = next(
-                (
-                    d.value
-                    for d in entry.value.declarations
-                    if isinstance(d, Declaration) and d.name == ph_name
-                ),
-                None,
-            )
+            local = entry.value.declarations.get(ph_name, None)
             if local:
                 local_source = local.attributes.get("source", None)
                 if isinstance(local_source, str):
@@ -114,7 +106,7 @@ def webext_message(
                     raise ValueError(
                         f"Unsupported placeholder for {ph_name} in {name}: {local}"
                     )
-                if local.annotation:
+                if local.function:
                     raise ValueError(
                         f"Unsupported annotation for {ph_name} in {name}: {local}"
                     )

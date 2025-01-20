@@ -22,7 +22,6 @@ from lxml import etree
 from ...message.data import (
     CatchallKey,
     Expression,
-    FunctionAnnotation,
     Markup,
     Message,
     PatternMessage,
@@ -196,7 +195,7 @@ def parse_entity_value(src: str | None) -> Iterator[str | Expression]:
             start = m.start()
             if start > pos:
                 yield src[pos:start]
-            yield Expression(VariableRef(m[1]), FunctionAnnotation("entity"))
+            yield Expression(VariableRef(m[1]), "entity")
             pos = m.end()
         if pos < len(src):
             yield src[pos:]
@@ -205,8 +204,11 @@ def parse_entity_value(src: str | None) -> Iterator[str | Expression]:
 def parse_plurals(
     name: str, el: etree._Element, add_comment: Callable[[Iterable[str | None]], None]
 ) -> SelectMessage:
-    sel = Expression(VariableRef("quantity"), FunctionAnnotation("number"))
-    msg = SelectMessage([sel], {})
+    msg = SelectMessage(
+        declarations={"quantity": Expression(VariableRef("quantity"), "number")},
+        selectors=(VariableRef("quantity"),),
+        variants={},
+    )
     var_comment: list[str | None] = []
     for item in el:
         if isinstance(item, etree._Comment):
@@ -239,7 +241,7 @@ resource_ref = compile(r"@(?:\w+:)?\w+/\w+|\?(?:\w+:)?(\w+/)?\w+")
 def parse_pattern(el: etree._Element) -> Iterator[str | Expression | Markup]:
     if len(el) == 0 and el.text and resource_ref.fullmatch(el.text):
         # https://developer.android.com/guide/topics/resources/providing-resources#ResourcesFromXml
-        yield Expression(el.text, FunctionAnnotation("reference"))
+        yield Expression(el.text, "reference")
     else:
         flat = flatten(el)
         spaced = parse_quotes(flat)
@@ -251,7 +253,7 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
         yield el.text
     for child in el:
         if isinstance(child, etree._Entity):
-            yield Expression(VariableRef(child.name), FunctionAnnotation("entity"))
+            yield Expression(VariableRef(child.name), "entity")
         else:
             name = (
                 f"{child.prefix}:{etree.QName(child.tag).localname}"
@@ -275,9 +277,7 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
                     for gc in body:
                         if isinstance(gc, str):
                             options: dict[str, str | VariableRef] = dict(child.attrib)
-                            attr: dict[str, str | VariableRef | None] = {
-                                "translate": "no"
-                            }
+                            attr: dict[str, str | None] = {"translate": "no"}
                             arg: str | VariableRef | None
                             if id:
                                 arg = VariableRef(get_var_name(id))
@@ -287,14 +287,13 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
                                 attr["source"] = gc
                             else:
                                 arg = gc
-                            yield Expression(
-                                arg,
-                                FunctionAnnotation(name, options) if options else None,
-                                attr,
-                            )
+                            if options:
+                                yield Expression(arg, name, options, attributes=attr)
+                            else:
+                                yield Expression(arg, attributes=attr)
                         else:
                             gc.attributes["translate"] = "no"
-                            gc.annotation.options = dict(child.attrib)  # type: ignore[union-attr]
+                            gc.options = dict(child.attrib)
                             yield gc
             else:
                 yield Markup("open", name, options=dict(child.attrib))
@@ -392,7 +391,7 @@ def parse_inline(
                     if acc:
                         yield acc
                         acc = ""
-                    yield Expression(m[3], FunctionAnnotation("html"))
+                    yield Expression(m[3], "html")
                 else:
                     if acc:
                         yield acc
@@ -418,9 +417,7 @@ def parse_inline(
                             func = "datetime" if c0 == "t" or c0 == "T" else None
                         name = get_var_name(m[4])
                         yield Expression(
-                            VariableRef(name),
-                            FunctionAnnotation(func) if func else None,
-                            {"source": m[4]},
+                            VariableRef(name), func, attributes={"source": m[4]}
                         )
                 pos = m.end()
             acc += part[pos:]

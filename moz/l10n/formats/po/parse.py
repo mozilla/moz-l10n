@@ -20,12 +20,10 @@ from polib import pofile
 
 from ...message.data import (
     Expression,
-    FunctionAnnotation,
     Message,
     PatternMessage,
     SelectMessage,
     VariableRef,
-    Variants,
 )
 from ...resource.data import Entry, Metadata, Resource, Section
 from .. import Format
@@ -66,14 +64,17 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
         if pe.msgstr_plural:
             keys = list(pe.msgstr_plural)
             keys.sort()
-            sel = Expression(VariableRef("n"), FunctionAnnotation("number"))
-            variants: Variants = {
-                (str(idx),): (
-                    [pe.msgstr_plural[idx]] if idx in pe.msgstr_plural else []
-                )
-                for idx in range(keys[-1] + 1)
-            }
-            value: Message = SelectMessage([sel], variants)
+            sel = Expression(VariableRef("n"), "number")
+            value: Message = SelectMessage(
+                declarations={"n": sel},
+                selectors=(VariableRef("n"),),
+                variants={
+                    (str(idx),): (
+                        [pe.msgstr_plural[idx]] if idx in pe.msgstr_plural else []
+                    )
+                    for idx in range(keys[-1] + 1)
+                },
+            )
         else:
             value = PatternMessage([pe.msgstr])
         entry = Entry((pe.msgid,), value, meta=meta)

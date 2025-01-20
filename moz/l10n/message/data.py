@@ -19,18 +19,13 @@ from typing import Dict, List, Literal, Tuple, Union
 
 __all__ = [
     "CatchallKey",
-    "Declaration",
     "Expression",
-    "FunctionAnnotation",
     "Markup",
     "Message",
     "Pattern",
     "PatternMessage",
     "SelectMessage",
-    "UnsupportedAnnotation",
-    "UnsupportedStatement",
     "VariableRef",
-    "Variants",
 ]
 
 
@@ -40,28 +35,17 @@ class VariableRef:
 
 
 @dataclass
-class FunctionAnnotation:
-    name: str
-    options: dict[str, str | VariableRef] = field(default_factory=dict)
-
-
-@dataclass
-class UnsupportedAnnotation:
-    source: str
-    """
-    The "raw" value (i.e. escape sequences are not processed).
-    """
-
-
-@dataclass
 class Expression:
     """
-    A valid Expression must contain a non-None `arg`, `annotation`, or both.
+    A valid Expression must contain a non-None `arg`, `function`, or both.
+
+    An Expression with no `function` and non-empty `options` is not valid.
     """
 
     arg: str | VariableRef | None
-    annotation: FunctionAnnotation | UnsupportedAnnotation | None = None
-    attributes: dict[str, str | VariableRef | None] = field(default_factory=dict)
+    function: str | None = None
+    options: dict[str, str | VariableRef] = field(default_factory=dict)
+    attributes: dict[str, str | None] = field(default_factory=dict)
 
 
 @dataclass
@@ -69,7 +53,7 @@ class Markup:
     kind: Literal["open", "standalone", "close"]
     name: str
     options: dict[str, str | VariableRef] = field(default_factory=dict)
-    attributes: dict[str, str | VariableRef | None] = field(default_factory=dict)
+    attributes: dict[str, str | None] = field(default_factory=dict)
 
 
 Pattern = List[Union[str, Expression, Markup]]
@@ -96,39 +80,16 @@ class CatchallKey:
 
 
 @dataclass
-class Declaration:
-    name: str
-    value: Expression
-
-
-@dataclass
-class UnsupportedStatement:
-    keyword: str
-    """
-    A non-empty string name.
-    """
-
-    body: str | None
-    """
-    If not empty, the "raw" value (i.e. escape sequences are not processed)
-    starting after the keyword and up to the first expression,
-    not including leading or trailing whitespace.
-    """
-
-    expressions: list[Expression]
-
-
-@dataclass
 class PatternMessage:
     """
     A message without selectors and with a single pattern.
     """
 
     pattern: Pattern
-    declarations: list[Declaration | UnsupportedStatement] = field(default_factory=list)
+    declarations: dict[str, Expression] = field(default_factory=dict)
 
-
-Variants = Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
+    def placeholders(self) -> set[Expression | Markup]:
+        return {part for part in self.pattern if not isinstance(part, str)}
 
 
 @dataclass
@@ -137,9 +98,20 @@ class SelectMessage:
     A message with one or more selectors and a corresponding number of variants.
     """
 
-    selectors: list[Expression]
-    variants: Variants
-    declarations: list[Declaration | UnsupportedStatement] = field(default_factory=list)
+    declarations: dict[str, Expression]
+    selectors: tuple[VariableRef, ...]
+    variants: Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
+
+    def placeholders(self) -> set[Expression | Markup]:
+        return {
+            part
+            for pattern in self.variants.values()
+            for part in pattern
+            if not isinstance(part, str)
+        }
+
+    def selector_expressions(self) -> tuple[Expression, ...]:
+        return tuple(self.declarations[var.name] for var in self.selectors)
 
 
 Message = Union[PatternMessage, SelectMessage]
