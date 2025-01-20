@@ -14,9 +14,20 @@
 
 from __future__ import annotations
 
-import pytest
+from importlib_resources import files
+from json import loads
+from typing import Any
 
-from moz.l10n.formats.mf2 import MF2ParseError, mf2_parse_message, mf2_serialize_message
+import pytest
+from jsonschema import validate
+
+from moz.l10n.formats.mf2 import (
+    MF2ParseError,
+    mf2_parse_message,
+    mf2_serialize_message,
+    mf2_to_json,
+)
+from moz.l10n.formats.mf2.from_json import mf2_from_json
 from moz.l10n.message.data import (
     CatchallKey,
     Expression,
@@ -27,11 +38,20 @@ from moz.l10n.message.data import (
     VariableRef,
 )
 
+schema_src = (
+    files("tests.formats.data").joinpath("mf2-message-schema.json").read_bytes()
+)
+schema: dict[str, dict[str, Any]] = loads(schema_src)
+
 
 def ok(src: str, exp_msg: Message, exp_str: str | None = None):
     msg = mf2_parse_message(src)
     assert msg == exp_msg
     assert msg_str(msg) == exp_str or src
+    json = mf2_to_json(msg)
+    validate(json, schema)
+    msg2 = mf2_from_json(json)
+    assert msg2 == msg
 
 
 def fail(src: str) -> str:
@@ -124,6 +144,7 @@ def test_placeholder_attributes():
 
 
 def test_placeholder_with_function():
+    ok("{:string}", PatternMessage([Expression(None, "string")]))
     ok("{$var :string}", PatternMessage([Expression(VariableRef("var"), "string")]))
     ok(
         "{ $var :string }",

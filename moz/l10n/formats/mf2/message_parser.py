@@ -254,8 +254,8 @@ class MF2Parser:
             arg_end = self.pos
             ch = self.skip_opt_space()
         if ch == ":":
-            if self.pos == arg_end:
-                raise MF2ParseError(self, "Espected space")
+            if arg and self.pos == arg_end:
+                raise MF2ParseError(self, "Expected space")
             function = self.identifier(1)
             options = self.options()
         else:
