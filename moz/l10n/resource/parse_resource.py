@@ -16,23 +16,23 @@ from __future__ import annotations
 
 from typing import Callable
 
-from ..message import Message
+from ..formats import Format, detect_format
+from ..formats.dtd.parse import dtd_parse
+from ..formats.fluent.parse import fluent_parse
+from ..formats.inc.parse import inc_parse
+from ..formats.ini.parse import ini_parse
+from ..formats.plain_json.parse import plain_json_parse
+from ..formats.po.parse import po_parse
+from ..formats.properties.parse import properties_parse
+from ..formats.webext.parse import webext_parse
+from ..message.data import Message
 from .data import Resource
-from .dtd.parse import dtd_parse
-from .fluent.parse import fluent_parse
-from .format import Format, detect_format
-from .inc.parse import inc_parse
-from .ini.parse import ini_parse
-from .plain_json.parse import plain_json_parse
-from .po.parse import po_parse
-from .properties.parse import properties_parse
-from .webext.parse import webext_parse
 
 android_parse: Callable[[str | bytes], Resource[Message, str]] | None
 xliff_parse: Callable[[str | bytes], Resource[Message, str]] | None
 try:
-    from .android.parse import android_parse
-    from .xliff.parse import xliff_parse
+    from ..formats.android.parse import android_parse
+    from ..formats.xliff.parse import xliff_parse
 except ImportError:
     android_parse = None
     xliff_parse = None

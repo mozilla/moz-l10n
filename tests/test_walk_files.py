@@ -39,15 +39,15 @@ test_data_files = (
 
 class TestWalkFiles(TestCase):
     def test_direct_children(self):
-        root = join(getcwd(), "tests", "resource", "data")
+        root = join(getcwd(), "tests", "formats", "data")
         files = set(walk_files(root))
         assert files == {join(root, path) for path in test_data_files}
 
     def test_dirs(self):
         root = getcwd()
-        files = set(walk_files(root, dirs=[f"tests{sep}resource{sep}data"]))
+        files = set(walk_files(root, dirs=[f"tests{sep}formats{sep}data"]))
         assert files == {
-            join(root, "tests", "resource", "data", path) for path in test_data_files
+            join(root, "tests", "formats", "data", path) for path in test_data_files
         }
 
     def test_l10nignore(self):
@@ -58,10 +58,9 @@ class TestWalkFiles(TestCase):
                 file.write("__pycache__\n*.py\n")
             files = set(
                 walk_files(
-                    root, dirs=["src", f"tests{sep}resource"], ignorepath=ignorepath
+                    root, dirs=["src", f"tests{sep}formats"], ignorepath=ignorepath
                 )
             )
             assert files == {
-                join(root, "tests", "resource", "data", path)
-                for path in test_data_files
+                join(root, "tests", "formats", "data", path) for path in test_data_files
             }
