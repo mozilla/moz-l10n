@@ -28,9 +28,10 @@ from moz.l10n.message.data import (
 )
 
 
-def fail(src: str) -> None:
-    with pytest.raises(MF2ParseError):
+def fail(src: str) -> str:
+    with pytest.raises(MF2ParseError) as err_info:
         mf2_parse_message(src)
+    return err_info.value.args[0]
 
 
 def msg_str(msg: Message):
@@ -373,33 +374,33 @@ def test_declarations():
 
 
 def test_select_message():
-    msg = mf2_parse_message(".input{$foo}.match $foo *{{variant}}")
+    msg = mf2_parse_message(".input{$foo :string}.match $foo *{{variant}}")
     assert msg == SelectMessage(
-        declarations={"foo": Expression(VariableRef("foo"))},
+        declarations={"foo": Expression(VariableRef("foo"), "string")},
         selectors=(VariableRef("foo"),),
         variants={(CatchallKey(),): ["variant"]},
     )
-    assert msg_str(msg) == ".input {$foo}\n.match $foo\n* {{variant}}"
+    assert msg_str(msg) == ".input {$foo :string}\n.match $foo\n* {{variant}}"
 
     msg = mf2_parse_message(
         """
-        .input {$var}
+        .input {$var :string}
         .match $var
         key {{one}}
         * {{two}}
         """
     )
     assert msg == SelectMessage(
-        declarations={"var": Expression(VariableRef("var"))},
+        declarations={"var": Expression(VariableRef("var"), "string")},
         selectors=(VariableRef("var"),),
         variants={("key",): ["one"], (CatchallKey(),): ["two"]},
     )
-    assert msg_str(msg) == ".input {$var}\n.match $var\nkey {{one}}\n* {{two}}"
+    assert msg_str(msg) == ".input {$var :string}\n.match $var\nkey {{one}}\n* {{two}}"
 
     fail(".match $var * {{quoted}}")
     fail(
         """
-            .input {$var}
+            .input {$var :string}
             .match $var
             key {{one}}
             key {{repeat}}
@@ -409,7 +410,7 @@ def test_select_message():
 
     msg = mf2_parse_message(
         """
-        .input {$foo}
+        .input {$foo :string}
         .local $bar = {$foo}
         .match $foo $bar
         key |quoted key| {{one}}
@@ -420,7 +421,7 @@ def test_select_message():
     )
     assert msg == SelectMessage(
         declarations={
-            "foo": Expression(VariableRef("foo")),
+            "foo": Expression(VariableRef("foo"), "string"),
             "bar": Expression(VariableRef("foo")),
         },
         selectors=(VariableRef("foo"), VariableRef("bar")),
@@ -433,11 +434,15 @@ def test_select_message():
     )
     assert (
         msg_str(msg)
-        == ".input {$foo}\n.local $bar = {$foo}\n.match $foo $bar\n"
+        == ".input {$foo :string}\n.local $bar = {$foo}\n.match $foo $bar\n"
         + "key |quoted key| {{one}}\n"
         + "key |*| {{two}}\n"
         + "* key {{three}}\n"
         + "* * {{four}}"
     )
 
-    fail(".input {$foo} .match $foo key {{one}}")
+    fail(".input {$foo} .match $foo key {{one}}").startswith("Missing fallback variant")
+
+    fail(".input {$foo} .match $foo * {{one}}").startswith(
+        "Missing selector annotation"
+    )

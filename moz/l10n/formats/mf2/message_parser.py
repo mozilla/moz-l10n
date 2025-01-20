@@ -14,15 +14,10 @@
 
 from __future__ import annotations
 
-from re import compile
 from typing import Literal
 
 from ...message import data as msg
-
-_name_start = r"a-zA-Z_\xC0-\xD6\xD8-\xF6\xF8-\u02FF\u0370-\u037D\u037F-\u061B\u061D-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFC\U00010000-\U000EFFFF"
-name_re = compile(f"[{_name_start}][{_name_start}0-9-.\xb7\u0300-\u036f\u203f-\u2040]*")
-
-number_re = compile(r"-?(?:0|(?:[1-9]\d*))(?:.\d+)?(?:[eE][-+]?\d+)?")
+from .validate import name_re, number_re
 
 esc_chars = {"\\", "{", "|", "}"}
 
@@ -103,7 +98,18 @@ class MF2Parser:
         if keyword == ".match":
             selectors = self.match_statement()
             for sel in selectors:
-                if sel.name not in declarations:
+                sel_name = sel.name
+                sel_expr = declarations.get(sel_name, None)
+                while sel_expr is not None and sel_expr.function is None:
+                    if (
+                        isinstance(sel_expr.arg, msg.VariableRef)
+                        and sel_expr.arg.name != sel_name
+                    ):
+                        sel_name = sel_expr.arg.name
+                        sel_expr = declarations.get(sel_name, None)
+                    else:
+                        sel_expr = None
+                if sel_expr is None:
                     raise MF2ParseError(
                         self, f"Missing selector annotation for ${sel.name}"
                     )
