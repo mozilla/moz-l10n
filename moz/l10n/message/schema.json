@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+
+  "oneOf": [
+    { "$ref": "#/$defs/pattern" },
+    { "$ref": "#/$defs/message" },
+    { "$ref": "#/$defs/select" }
+  ],
+
+  "$defs": {
+    "options": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "properties": {
+              "$": { "type": "string" }
+            },
+            "required": ["$"]
+          }
+        ]
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [{ "type": "string" }, { "const": true }]
+      }
+    },
+
+    "expression": {
+      "type": "object",
+      "properties": {
+        "_": { "type": "string" },
+        "$": { "type": "string" },
+        "fn": { "type": "string" },
+        "opt": { "$ref": "#/$defs/options" },
+        "attr": { "$ref": "#/$defs/attributes" }
+      },
+      "anyOf": [
+        { "required": ["_"], "not": { "required": ["$"] } },
+        { "required": ["$"], "not": { "required": ["_"] } },
+        { "required": ["fn"] }
+      ]
+    },
+
+    "markup": {
+      "type": "object",
+      "properties": {
+        "open": { "type": "string" },
+        "close": { "type": "string" },
+        "elem": { "type": "string" },
+        "opt": { "$ref": "#/$defs/options" },
+        "attr": { "$ref": "#/$defs/attributes" }
+      },
+      "oneOf": [
+        { "required": ["open"] },
+        { "required": ["close"] },
+        { "required": ["elem"] }
+      ]
+    },
+
+    "pattern": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          { "$ref": "#/$defs/expression" },
+          { "$ref": "#/$defs/markup" }
+        ]
+      }
+    },
+
+    "declarations": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/expression" }
+    },
+
+    "message": {
+      "type": "object",
+      "properties": {
+        "decl": { "$ref": "#/$defs/declarations" },
+        "msg": { "$ref": "#/$defs/pattern" }
+      },
+      "required": ["decl", "msg"]
+    },
+    "select": {
+      "type": "object",
+      "properties": {
+        "decl": { "$ref": "#/$defs/declarations" },
+        "sel": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "alt": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keys": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    { "type": "string" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "*": { "type": "string" }
+                      },
+                      "required": ["*"]
+                    }
+                  ]
+                }
+              },
+              "pat": { "$ref": "#/$defs/pattern" }
+            },
+            "required": ["keys", "pat"]
+          }
+        }
+      },
+      "required": ["decl", "sel", "alt"]
+    }
+  }
+}
