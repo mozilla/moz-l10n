@@ -261,7 +261,7 @@ class TestXliff1(TestCase):
                         Entry(
                             id=("logo",),
                             value=PatternMessage(
-                                [Expression(None, attributes={"bin-unit": None})]
+                                [Expression(None, attributes={"bin-unit": True})]
                             ),
                             meta=[
                                 Metadata("@resname", "logo"),
@@ -278,7 +278,7 @@ class TestXliff1(TestCase):
                         Entry(
                             id=("md5_sum",),
                             value=PatternMessage(
-                                [Expression(None, attributes={"bin-unit": None})]
+                                [Expression(None, attributes={"bin-unit": True})]
                             ),
                             meta=[
                                 Metadata("@resname", "md5_sum"),
@@ -540,7 +540,6 @@ class TestXliff1(TestCase):
                                     "GenericCountEntriesSelected": Expression(
                                         VariableRef("GenericCountEntriesSelected"),
                                         "number",
-                                        attributes={"source": None},
                                     )
                                 },
                                 selectors=(VariableRef("GenericCountEntriesSelected"),),
@@ -575,9 +574,7 @@ class TestXliff1(TestCase):
                             value=SelectMessage(
                                 declarations={
                                     "GenericCountThreads": Expression(
-                                        VariableRef("GenericCountThreads"),
-                                        "number",
-                                        attributes={"source": None},
+                                        VariableRef("GenericCountThreads"), "number"
                                     )
                                 },
                                 selectors=(VariableRef("GenericCountThreads"),),

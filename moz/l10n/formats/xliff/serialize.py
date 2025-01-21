@@ -188,11 +188,9 @@ def add_xliff_stringsdict_plural(
     var_name = sel.arg.name
 
     sel_source = sel.attributes.get("source", None)
-    if isinstance(sel_source, VariableRef):
-        raise ValueError(f"Unsupported format key source for {id}: {sel_source}")
     meta_base = "format/"
     meta = [m for m in entry.meta if m.key.startswith(meta_base)]
-    if sel_source:
+    if isinstance(sel_source, str):
         xcode_id = f"{id_base}/NSStringLocalizedFormatKey:dict/:string"
         unit = etree.SubElement(parent, "trans-unit", {"id": xcode_id})
         assign_metadata(unit, meta, trim_comments, meta_base)

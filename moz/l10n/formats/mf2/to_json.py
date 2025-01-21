@@ -100,10 +100,10 @@ def _options(options: dict[str, str | msg.VariableRef]) -> dict[str, dict[str, s
 
 
 def _attributes(
-    attributes: dict[str, str | None],
+    attributes: dict[str, str | Literal[True]],
 ) -> dict[str, dict[str, str] | Literal[True]]:
     return {
-        name: True if value is None else _literal(value)
+        name: True if value is True else _literal(value)
         for name, value in attributes.items()
     }
 

@@ -308,8 +308,8 @@ class MF2Parser:
             opt_end = self.pos
         return options
 
-    def attributes(self) -> dict[str, str | None]:
-        attributes: dict[str, str | None] = {}
+    def attributes(self) -> dict[str, str | Literal[True]]:
+        attributes: dict[str, str | Literal[True]] = {}
         attr_end = self.pos
         while self.req_space():
             ch = self.char()
@@ -326,7 +326,7 @@ class MF2Parser:
                 attributes[id] = self.literal()
             else:
                 self.pos = id_end
-                attributes[id] = None
+                attributes[id] = True
             attr_end = self.pos
         return attributes
 

@@ -120,7 +120,7 @@ def test_placeholder():
 
 def test_placeholder_attributes():
     fail("{@foo}")
-    ok("{42 @foo}", PatternMessage([Expression("42", attributes={"foo": None})]))
+    ok("{42 @foo}", PatternMessage([Expression("42", attributes={"foo": True})]))
     ok(
         "{42 @foo = 13 }",
         PatternMessage([Expression("42", attributes={"foo": "13"})]),
@@ -134,7 +134,7 @@ def test_placeholder_attributes():
     ok(
         "{$var @foo @bar=baz}",
         PatternMessage(
-            [Expression(VariableRef("var"), attributes={"foo": None, "bar": "baz"})]
+            [Expression(VariableRef("var"), attributes={"foo": True, "bar": "baz"})]
         ),
     )
     fail("{$var@foo}")
@@ -186,7 +186,7 @@ def test_placeholder_with_function():
                     VariableRef("var"),
                     "test:string",
                     {"opt-a": "42", "opt:b": VariableRef("var")},
-                    attributes={"foo": None, "bar": "baz"},
+                    attributes={"foo": True, "bar": "baz"},
                 ),
             ]
         ),
@@ -236,7 +236,7 @@ def test_markup():
         "{#aa @attr}{/bb @attr=42}{#cc @ns:attr=|42|/}",
         PatternMessage(
             [
-                Markup("open", "aa", attributes={"attr": None}),
+                Markup("open", "aa", attributes={"attr": True}),
                 Markup("close", "bb", attributes={"attr": "42"}),
                 Markup("standalone", "cc", attributes={"ns:attr": "42"}),
             ]

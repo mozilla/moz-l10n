@@ -17,6 +17,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from functools import cmp_to_key
 from re import compile
+from typing import Literal
 
 from ...message.data import (
     CatchallKey,
@@ -200,13 +201,13 @@ def _validate_options(options: dict[str, str | VariableRef]) -> None:
             raise MF2ValidationError(f"Invalid option value: {value}")
 
 
-def _validate_attributes(attributes: dict[str, str | None]) -> None:
+def _validate_attributes(attributes: dict[str, str | Literal[True]]) -> None:
     if not isinstance(attributes, Mapping):
         raise MF2ValidationError(f"Invalid attributes: {attributes}")
     for name, value in attributes.items():
         if not isinstance(name, str) or not identifier_re.fullmatch(name):
             raise MF2ValidationError(f"Invalid attribute name: {name}")
-        elif value is not None and not isinstance(value, str):
+        elif value is not True and not isinstance(value, str):
             raise MF2ValidationError(f"Invalid option value: {value}")
 
 
