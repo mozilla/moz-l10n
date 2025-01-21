@@ -8,7 +8,7 @@ as format-independent representations of localizable and localized messages and 
 so that operations like linting and transforms can be applied to them.
 
 The Message and Resource representations are drawn from work done for the
-Unicode [MessageFormat 2 specification](https://github.com/unicode-org/message-format-wg/tree/main/spec)
+Unicode [MessageFormat 2 specification](https://unicode.org/reports/tr35/tr35-messageFormat.html)
 and the [Message resource specification](https://github.com/eemeli/message-resource-wg/).
 
 The library currently supports the following resource formats:
@@ -73,6 +73,23 @@ and `FORMAT_serialize(resource)` will always provide a `str` iterator.
 All the serializers accept a `trim_comments` argument
 which leaves out comments from the serialized result,
 but additional input types and options vary by format.
+
+### moz.l10n.formats.mf2
+
+```python
+from moz.l10n.formats.mf2 import (
+    MF2ParseError,          # May be raised by mf2_parse_message()
+    MF2ValidationError,     # May be raised by mf2_from_json() and mf2_validate_message()
+    mf2_parse_message,      # Parse MF2 message syntax into a Message
+    mf2_serialize_message,  # Serialize a Message using MF2 syntax
+    mf2_from_json,          # Marshal a MF2 data model JSON Schema object into a Message
+    mf2_to_json,            # Represent a Message using the MF2 data model JSON Schema
+    mf2_validate_message    # Validate that a Message meets all of the MF2 validity constraints
+)
+```
+
+Tools for working with [MessageFormat 2.0](https://unicode.org/reports/tr35/tr35-messageFormat.html) messages,
+which may be embedded in resource formats.
 
 ### moz.l10n.formats.detect_format
 

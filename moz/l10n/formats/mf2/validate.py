@@ -38,7 +38,11 @@ class MF2ValidationError(ValueError):
 
 
 def mf2_validate_message(msg: PatternMessage | SelectMessage) -> None:
-    """Validate that the message satisfies MessageFormat 2 validity constraints."""
+    """
+    Validate that the message satisfies MessageFormat 2 validity constraints.
+
+    May raise `MF2ValidationError`.
+    """
     if isinstance(msg, PatternMessage):
         _validate_declarations(msg.declarations)
         _validate_pattern(msg.pattern)

@@ -41,6 +41,11 @@ space_chars = {
 
 
 def mf2_parse_message(source: bytes | str) -> msg.Message:
+    """
+    Parse MF2 message syntax into a Message.
+
+    May raise `MF2ParseError`.
+    """
     if not isinstance(source, str):
         source = source.decode()
     parser = MF2Parser(source)

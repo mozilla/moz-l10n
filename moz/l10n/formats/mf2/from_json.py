@@ -24,6 +24,8 @@ def mf2_from_json(json: dict[str, Any]) -> msg.Message:
     """
     Marshal a MessageFormat 2 data model [JSON Schema](https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model/message.json)
     object into a parsed `moz.l10n.message.data.Message`.
+
+    May raise `MF2ValidationError`.
     """
     try:
         msg_type = json["type"]
