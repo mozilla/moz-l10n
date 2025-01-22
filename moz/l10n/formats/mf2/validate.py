@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from functools import cmp_to_key
 from re import compile
 
 from ...message.data import (
@@ -40,6 +41,8 @@ class MF2ValidationError(ValueError):
 def mf2_validate_message(msg: PatternMessage | SelectMessage) -> None:
     """
     Validate that the message satisfies MessageFormat 2 validity constraints.
+
+    May reorder declarations.
 
     May raise `MF2ValidationError`.
     """
@@ -91,16 +94,58 @@ def mf2_validate_message(msg: PatternMessage | SelectMessage) -> None:
 
 
 def _validate_declarations(declarations: dict[str, Expression]) -> None:
+    decl_data: list[tuple[str, bool]] = []
+    dependencies: dict[str, set[str]] = {}
+
+    def deep_dependencies(name: str, res: set[str]) -> set[str]:
+        if name in dependencies:
+            for dep in dependencies[name]:
+                if dep not in res:
+                    res.add(dep)
+                    deep_dependencies(dep, res)
+        return res
+
+    def cmp_decl_data(a: tuple[str, bool], b: tuple[str, bool]) -> int:
+        a_name, a_input = a
+        b_name, b_input = b
+        if a_name in dependencies[b_name]:
+            return -1
+        if b_name in dependencies[a_name]:
+            return 1
+        if a_input != b_input:
+            return -1 if a_input else 1
+        return -1 if a_name < b_name else 1
+
     if not isinstance(declarations, Mapping):
         raise MF2ValidationError(f"Invalid declarations: {declarations}")
-    # TODO: Check for dependency loops
     for name, expr in declarations.items():
         if not isinstance(name, str) or not name_re.fullmatch(name):
             raise MF2ValidationError(f"Invalid declaration name: {name}")
-        if isinstance(expr, Expression):
-            _validate_expression(expr)
-        else:
+        if not isinstance(expr, Expression):
             raise MF2ValidationError(f"Invalid declaration expression: {expr}")
+        _validate_expression(expr)
+        var_name = expr.arg.name if isinstance(expr.arg, VariableRef) else None
+        is_input = var_name == name
+        decl_data.append((name, is_input))
+        deps: set[str] = set()
+        if var_name is not None and not is_input:
+            deps.add(var_name)
+        for opt in expr.options.values():
+            if isinstance(opt, VariableRef):
+                deps.add(opt.name)
+        dependencies[name] = deps
+
+    for name in dependencies:
+        deps = deep_dependencies(name, set())
+        if name in deps:
+            raise MF2ValidationError(f"Duplicate declaration for ${name}")
+        dependencies[name] = deps
+
+    if len(declarations) > 1:
+        decl_data.sort(key=cmp_to_key(cmp_decl_data))
+        inserts = [(name, declarations.pop(name)) for name, _ in decl_data[1:]]
+        for name, expr in inserts:
+            declarations[name] = expr
 
 
 def _validate_pattern(pattern: Pattern) -> None:

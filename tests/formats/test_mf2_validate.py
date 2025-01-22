@@ -27,15 +27,25 @@ from moz.l10n.message.data import (
 )
 
 
-def ok(part: Expression | Markup | PatternMessage | SelectMessage) -> None:
-    mf2_validate_message(
-        PatternMessage([part])
-        if isinstance(part, Expression) or isinstance(part, Markup)
-        else part
-    )
+def ok(
+    part: Expression | Markup | PatternMessage | SelectMessage | dict[str, Expression],
+    exp_decl: list[str] | None = None,
+) -> None:
+    if isinstance(part, dict):
+        mf2_validate_message(PatternMessage(declarations=part, pattern=[]))
+        if exp_decl is not None:
+            assert list(part.keys()) == exp_decl
+    else:
+        mf2_validate_message(
+            PatternMessage([part])
+            if isinstance(part, Expression) or isinstance(part, Markup)
+            else part
+        )
 
 
-def fail(part: Expression | Markup | PatternMessage | SelectMessage) -> None:
+def fail(
+    part: Expression | Markup | PatternMessage | SelectMessage | dict[str, Expression],
+) -> None:
     with pytest.raises(MF2ValidationError):
         ok(part)
 
@@ -99,48 +109,75 @@ def test_validate_patternmessage():
     fail(PatternMessage([42]))
     fail(PatternMessage([Expression(42)]))
 
+
+def test_validate_declarations():
+    ok({})
+    ok({"a": Expression("42")})
+    ok({"a": Expression(VariableRef("a"))})
+    ok({"a": Expression(VariableRef("b"))})
+    ok({"a": Expression("42", "func", {"o": VariableRef("b")})})
+    fail({42: Expression("a")})
+
+    fail(PatternMessage(declarations="decl", pattern=[]))
+    fail(PatternMessage(declarations=["decl"], pattern=[]))
+
+    ok({"a": Expression(VariableRef("a")), "b": Expression(VariableRef("a"))})
     ok(
-        PatternMessage(
-            declarations={"var": Expression("var")},
-            pattern=["pattern"],
-        )
+        {"b": Expression("42"), "a": Expression("42")},
+        ["a", "b"],
     )
-    fail(PatternMessage(declarations="decl", pattern=["pattern"]))
-    fail(PatternMessage(declarations=["decl"], pattern=["pattern"]))
+    ok(
+        {"a": Expression("42"), "b": Expression(VariableRef("b"))},
+        ["b", "a"],
+    )
+    ok(
+        {"a": Expression(VariableRef("b")), "b": Expression(VariableRef("b"))},
+        ["b", "a"],
+    )
+
+    ok(
+        {
+            "a": Expression(VariableRef("b")),
+            "b": Expression(VariableRef("c")),
+            "c": Expression("42"),
+        },
+        ["c", "b", "a"],
+    )
+    ok(
+        {
+            "a": Expression("42", "func", {"o": VariableRef("b")}),
+            "c": Expression("42"),
+            "b": Expression("42"),
+        },
+        ["b", "a", "c"],
+    )
+    ok(
+        {
+            "a": Expression(
+                "42", "func", {"o1": VariableRef("b"), "o2": VariableRef("c")}
+            ),
+            "c": Expression("42"),
+            "b": Expression("42"),
+        },
+        ["b", "c", "a"],
+    )
+
+    fail({"a": Expression("42", "func", {"o": VariableRef("a")})})
+    fail({"a": Expression(VariableRef("b")), "b": Expression(VariableRef("a"))})
     fail(
-        PatternMessage(
-            declarations={42: Expression("var")},
-            pattern=["pattern"],
-        )
+        {
+            "a": Expression(VariableRef("b")),
+            "b": Expression(VariableRef("c")),
+            "c": Expression(VariableRef("a")),
+        }
     )
-    ok(
-        PatternMessage(
-            declarations={"var": Expression(VariableRef("var"))},
-            pattern=["pattern"],
-        )
+    fail(
+        {
+            "c": Expression(VariableRef("a")),
+            "b": Expression(VariableRef("c")),
+            "a": Expression(VariableRef("b")),
+        }
     )
-    ok(
-        PatternMessage(
-            declarations={"var2": Expression(VariableRef("var1"))},
-            pattern=["pattern"],
-        )
-    )
-    ok(
-        PatternMessage(
-            declarations={
-                "var1": Expression(VariableRef("var1")),
-                "var2": Expression(VariableRef("var1")),
-            },
-            pattern=["pattern"],
-        )
-    )
-    # fail(PatternMessage(
-    #         declarations={
-    #             "var1": Expression(VariableRef("var2")),
-    #             "var2": Expression(VariableRef("var1")),
-    #         },
-    #         pattern=["pattern"],
-    #     ))
 
 
 def test_validate_selectmessage():
