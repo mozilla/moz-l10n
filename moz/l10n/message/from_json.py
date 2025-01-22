@@ -21,6 +21,7 @@ from moz.l10n.message.data import (
     CatchallKey,
     Expression,
     Markup,
+    Message,
     Pattern,
     PatternMessage,
     SelectMessage,
@@ -28,9 +29,13 @@ from moz.l10n.message.data import (
 )
 
 
-def message_from_json(
-    json: list[Any] | dict[str, Any],
-) -> PatternMessage | SelectMessage:
+def message_from_json(json: list[Any] | dict[str, Any]) -> Message:
+    """
+    Marshal the JSON output of `moz.l10n.message.to_json()`
+    back into a parsed `moz.l10n.message.data.Message`.
+
+    May raise `MF2ValidationError`.
+    """
     if isinstance(json, Mapping) and "sel" in json:
         return SelectMessage(
             declarations={
