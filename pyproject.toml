@@ -85,6 +85,7 @@ include = ["moz.l10n*"]
 [tool.uv]
 dev-dependencies = [
     "importlib-resources>=6.4.5",
+    "jsonschema>=4.23.0",
     "mypy>=1.11.2",
     "pytest>=8.3.3",
     "ruff>=0.6.8",

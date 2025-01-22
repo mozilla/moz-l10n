@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model/message.json",
+
+  "oneOf": [{ "$ref": "#/$defs/message" }, { "$ref": "#/$defs/select" }],
+
+  "$defs": {
+    "literal": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "literal" },
+        "value": { "type": "string" }
+      },
+      "required": ["type", "value"]
+    },
+    "variable": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "variable" },
+        "name": { "type": "string" }
+      },
+      "required": ["type", "name"]
+    },
+    "literal-or-variable": {
+      "oneOf": [{ "$ref": "#/$defs/literal" }, { "$ref": "#/$defs/variable" }]
+    },
+
+    "options": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/literal-or-variable" }
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [{ "$ref": "#/$defs/literal" }, { "const": true }]
+      }
+    },
+
+    "function": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "function" },
+        "name": { "type": "string" },
+        "options": { "$ref": "#/$defs/options" }
+      },
+      "required": ["type", "name"]
+    },
+    "expression": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "expression" },
+        "arg": { "$ref": "#/$defs/literal-or-variable" },
+        "function": { "$ref": "#/$defs/function" },
+        "attributes": { "$ref": "#/$defs/attributes" }
+      },
+      "anyOf": [
+        { "required": ["type", "arg"] },
+        { "required": ["type", "function"] }
+      ]
+    },
+
+    "markup": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "markup" },
+        "kind": { "enum": ["open", "standalone", "close"] },
+        "name": { "type": "string" },
+        "options": { "$ref": "#/$defs/options" },
+        "attributes": { "$ref": "#/$defs/attributes" }
+      },
+      "required": ["type", "kind", "name"]
+    },
+
+    "pattern": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          { "$ref": "#/$defs/expression" },
+          { "$ref": "#/$defs/markup" }
+        ]
+      }
+    },
+
+    "input-declaration": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "input" },
+        "name": { "type": "string" },
+        "value": {
+          "allOf": [
+            { "$ref": "#/$defs/expression" },
+            {
+              "properties": {
+                "arg": { "$ref": "#/$defs/variable" }
+              },
+              "required": ["type", "arg"]
+            }
+          ]
+        }
+      },
+      "required": ["type", "name", "value"]
+    },
+    "local-declaration": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "local" },
+        "name": { "type": "string" },
+        "value": { "$ref": "#/$defs/expression" }
+      },
+      "required": ["type", "name", "value"]
+    },
+    "declarations": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/input-declaration" },
+          { "$ref": "#/$defs/local-declaration" }
+        ]
+      }
+    },
+
+    "variant-key": {
+      "oneOf": [
+        { "$ref": "#/$defs/literal" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "*" },
+            "value": { "type": "string" }
+          },
+          "required": ["type"]
+        }
+      ]
+    },
+    "message": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "message" },
+        "declarations": { "$ref": "#/$defs/declarations" },
+        "pattern": { "$ref": "#/$defs/pattern" }
+      },
+      "required": ["type", "declarations", "pattern"]
+    },
+    "select": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "select" },
+        "declarations": { "$ref": "#/$defs/declarations" },
+        "selectors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/variable" }
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keys": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/variant-key" }
+              },
+              "value": { "$ref": "#/$defs/pattern" }
+            },
+            "required": ["keys", "value"]
+          }
+        }
+      },
+      "required": ["type", "declarations", "selectors", "variants"]
+    }
+  }
+}
