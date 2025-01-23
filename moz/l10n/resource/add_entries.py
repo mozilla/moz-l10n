@@ -17,15 +17,22 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any
 
-from . import data as res
+from ..model import (
+    Comment,
+    Entry,
+    M,
+    Resource,
+    Section,
+    V,
+)
 
-RS = res.Section[Any, Any]
-RE = res.Entry[Any, Any]
+RS = Section[Any, Any]
+RE = Entry[Any, Any]
 
 
 def add_entries(
-    target: res.Resource[res.V, res.M],
-    source: res.Resource[res.V, res.M],
+    target: Resource[V, M],
+    source: Resource[V, M],
     *,
     use_source_entries: bool = False,
 ) -> int:
@@ -46,15 +53,15 @@ def add_entries(
     for src_section in source.sections:
         tgt_match = [s for s in target.sections if s.id == src_section.id]
         prev_pos: tuple[RS, int] | None = None
-        new_entries: list[RE | res.Comment] = []
+        new_entries: list[RE | Comment] = []
         for entry in src_section.entries:
-            if isinstance(entry, res.Entry):
+            if isinstance(entry, Entry):
                 target_pos = next(
                     (
                         (s, i)
                         for s in tgt_match
                         for i, e in enumerate(s.entries)
-                        if isinstance(e, res.Entry) and e.id == entry.id
+                        if isinstance(e, Entry) and e.id == entry.id
                     ),
                     None,
                 )

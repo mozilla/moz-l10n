@@ -22,8 +22,21 @@ from typing import Any, Literal, Tuple, cast, overload
 from fluent.syntax import FluentParser
 from fluent.syntax import ast as ftl
 
-from ...message import data as msg
-from ...resource import data as res
+from ...model import (
+    CatchallKey,
+    Comment,
+    Entry,
+    Expression,
+    LinePos,
+    Message,
+    Metadata,
+    Pattern,
+    PatternMessage,
+    Resource,
+    Section,
+    SelectMessage,
+    VariableRef,
+)
 from .. import Format
 
 
@@ -33,7 +46,7 @@ def fluent_parse(
     *,
     as_ftl_patterns: Literal[False] = False,
     with_linepos: bool = True,
-) -> res.Resource[msg.Message, str]: ...
+) -> Resource[Message, str]: ...
 
 
 @overload
@@ -42,7 +55,7 @@ def fluent_parse(
     *,
     as_ftl_patterns: Literal[True],
     with_linepos: bool = True,
-) -> res.Resource[ftl.Pattern, str]: ...
+) -> Resource[ftl.Pattern, str]: ...
 
 
 def fluent_parse(
@@ -50,7 +63,7 @@ def fluent_parse(
     *,
     as_ftl_patterns: bool = False,
     with_linepos: bool = True,
-) -> res.Resource[msg.Message, Any] | res.Resource[ftl.Pattern, Any]:
+) -> Resource[Message, Any] | Resource[ftl.Pattern, Any]:
     """
     Parse a .ftl file into a message resource.
 
@@ -73,12 +86,12 @@ def fluent_parse(
         fluent_res = FluentParser(with_spans=with_linepos).parse(source_str)
         lpm = LinePosMapper(source_str) if with_linepos else None
 
-    entries: list[res.Entry[Any, Any] | res.Comment] = []
-    section = res.Section((), entries)
-    resource = res.Resource(Format.fluent, [section])
+    entries: list[Entry[Any, Any] | Comment] = []
+    section = Section((), entries)
+    resource = Resource(Format.fluent, [section])
     fluent_body = fluent_res.body
     if fluent_body and isinstance(fluent_body[0], ftl.Comment):
-        resource.meta.append(res.Metadata("info", fluent_body[0].content))
+        resource.meta.append(Metadata("info", fluent_body[0].content))
         fluent_body = fluent_body[1:]
     for entry in fluent_body:
         if isinstance(entry, ftl.Message) or isinstance(entry, ftl.Term):
@@ -93,7 +106,7 @@ def fluent_parse(
         elif isinstance(entry, ftl.GroupComment):
             if entries or section.comment:
                 entries = []
-                section = res.Section((), entries, comment=entry.content or "")
+                section = Section((), entries, comment=entry.content or "")
                 if lpm and entry.span:
                     span = entry.span
                     section.linepos = lpm.get_linepos(
@@ -109,7 +122,7 @@ def fluent_parse(
                     )
         elif isinstance(entry, ftl.Comment):
             if entry.content:
-                entries.append(res.Comment(entry.content))
+                entries.append(Comment(entry.content))
         else:  # Junk
             try:
                 message = entry.annotations[0].message
@@ -123,14 +136,14 @@ def patterns(
     ftl_entry: ftl.Message | ftl.Term,
     as_ftl_patterns: bool,
     lpm: LinePosMapper | None,
-) -> Generator[res.Entry[msg.Message, Any] | res.Entry[ftl.Pattern, Any], None, None]:
+) -> Generator[Entry[Message, Any] | Entry[ftl.Pattern, Any], None, None]:
     message = (lambda m: m) if as_ftl_patterns else fluent_parse_message
     id = ftl_entry.id.name
     if isinstance(ftl_entry, ftl.Term):
         id = "-" + id
     comment = ftl_entry.comment.content or "" if ftl_entry.comment else ""
     if ftl_entry.value:
-        entry: res.Entry[Any, Any] = res.Entry(
+        entry: Entry[Any, Any] = Entry(
             id=(id,), value=message(ftl_entry.value), comment=comment
         )
         if lpm and ftl_entry.span and ftl_entry.value.span:
@@ -148,9 +161,7 @@ def patterns(
         if comment:
             comment = ""
     for attr in ftl_entry.attributes:
-        entry = res.Entry(
-            id=(id, attr.id.name), value=message(attr.value), comment=comment
-        )
+        entry = Entry(id=(id, attr.id.name), value=message(attr.value), comment=comment)
         if lpm and attr.span:
             span = attr.span
             c_span = (
@@ -168,11 +179,11 @@ def patterns(
             comment = ""
 
 
-def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
+def fluent_parse_message(ftl_pattern: ftl.Pattern) -> Message:
     sel_data = find_selectors(ftl_pattern, [])
     sel_expressions = [sd[0] for sd in sel_data]
     filter: list[Key | None] = [None] * len(sel_expressions)
-    msg_variants: dict[tuple[Key, ...], msg.Pattern]
+    msg_variants: dict[tuple[Key, ...], Pattern]
     var_names: set[str] = set()
     if sel_expressions:
         key_lists = [list(dict.fromkeys(sd[2])) for sd in sel_data]
@@ -212,7 +223,7 @@ def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
                                 msg_pattern.append(el.value)
                         else:
                             expr = inline_expression(el)
-                            if isinstance(expr.arg, msg.VariableRef):
+                            if isinstance(expr.arg, VariableRef):
                                 var_names.add(expr.arg.name)
                             msg_pattern.append(expr)
 
@@ -222,23 +233,23 @@ def fluent_parse_message(ftl_pattern: ftl.Pattern) -> msg.Message:
         declarations = {}
         selectors = []
         for expr in sel_expressions:
-            stem = expr.arg.name if isinstance(expr.arg, msg.VariableRef) else ""
+            stem = expr.arg.name if isinstance(expr.arg, VariableRef) else ""
             i = 0
             name = stem
             while name in var_names or name == "":
                 i += 1
                 name = f"{stem}_{i}"
             declarations[name] = expr
-            selectors.append(msg.VariableRef(name))
+            selectors.append(VariableRef(name))
             var_names.add(name)
         variants = {
             tuple(map(message_key, keys)): msg_pattern
             for keys, msg_pattern in msg_variants.items()
             if msg_pattern
         }
-        return msg.SelectMessage(declarations, tuple(selectors), variants)
+        return SelectMessage(declarations, tuple(selectors), variants)
     else:
-        return msg.PatternMessage(next(iter(msg_variants.values())))
+        return PatternMessage(next(iter(msg_variants.values())))
 
 
 Key = Tuple[str, bool, bool]
@@ -257,15 +268,15 @@ def variant_key(v: ftl.Variant) -> Key:
     return (name, is_numeric, v.default)
 
 
-def message_key(key: Key) -> str | msg.CatchallKey:
+def message_key(key: Key) -> str | CatchallKey:
     name, _, is_default = key
-    return msg.CatchallKey(name) if is_default else name
+    return CatchallKey(name) if is_default else name
 
 
 def find_selectors(
     pattern: ftl.Pattern,
-    result: list[tuple[msg.Expression, list[ftl.InlineExpression], list[Key]]],
-) -> list[tuple[msg.Expression, list[ftl.InlineExpression], list[Key]]]:
+    result: list[tuple[Expression, list[ftl.InlineExpression], list[Key]]],
+) -> list[tuple[Expression, list[ftl.InlineExpression], list[Key]]]:
     for el in pattern.elements:
         if isinstance(el, ftl.Placeable) and isinstance(
             el.expression, ftl.SelectExpression
@@ -285,7 +296,7 @@ def find_selectors(
     return result
 
 
-def select_expression(ftl_sel: ftl.InlineExpression, keys: list[Key]) -> msg.Expression:
+def select_expression(ftl_sel: ftl.InlineExpression, keys: list[Key]) -> Expression:
     plural_categories = ("zero", "one", "two", "few", "many", "other")
     if isinstance(ftl_sel, ftl.VariableReference):
         name = (
@@ -295,38 +306,38 @@ def select_expression(ftl_sel: ftl.InlineExpression, keys: list[Key]) -> msg.Exp
             )
             else "string"
         )
-        return msg.Expression(msg.VariableRef(ftl_sel.id.name), name)
+        return Expression(VariableRef(ftl_sel.id.name), name)
     elif isinstance(ftl_sel, ftl.StringLiteral):
-        return msg.Expression(literal_value(ftl_sel), "string")
+        return Expression(literal_value(ftl_sel), "string")
     else:
         return inline_expression(ftl_sel)
 
 
-def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
+def inline_expression(exp: ftl.InlineExpression) -> Expression:
     if isinstance(exp, ftl.NumberLiteral):
         value = exp.value
-        return msg.Expression(value, "number")
+        return Expression(value, "number")
     elif isinstance(exp, ftl.StringLiteral):
         value = exp.parse().get("value") or ""
-        return msg.Expression(value)
+        return Expression(value)
     elif isinstance(exp, ftl.MessageReference):
         name = exp.id.name
         if exp.attribute is not None:
             name += "." + exp.attribute.name
-        return msg.Expression(name, "message")
+        return Expression(name, "message")
     elif isinstance(exp, ftl.TermReference):
         name = "-" + exp.id.name
         if exp.attribute is not None:
             name += "." + exp.attribute.name
         ftl_named = exp.arguments.named if exp.arguments else []
-        return msg.Expression(
+        return Expression(
             name,
             "message",
             {opt.name.name: literal_value(opt.value) for opt in ftl_named},
         )
     elif isinstance(exp, ftl.VariableReference):
         name = exp.id.name
-        return msg.Expression(msg.VariableRef(name))
+        return Expression(VariableRef(name))
     else:  # ftl.FunctionReference
         name = exp.id.name.lower()
         if len(exp.arguments.positional) > 1:
@@ -338,7 +349,7 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
         )
         while isinstance(ftl_arg, ftl.Placeable):
             ftl_arg = cast(ftl.InlineExpression, ftl_arg.expression)
-        arg: str | msg.VariableRef | None
+        arg: str | VariableRef | None
         if not ftl_arg:
             arg = None
         elif isinstance(ftl_arg, ftl.NumberLiteral) or isinstance(
@@ -346,11 +357,11 @@ def inline_expression(exp: ftl.InlineExpression) -> msg.Expression:
         ):
             arg = literal_value(ftl_arg)
         elif isinstance(ftl_arg, ftl.VariableReference):
-            arg = msg.VariableRef(ftl_arg.id.name)
+            arg = VariableRef(ftl_arg.id.name)
         else:
             raise ValueError(f"Unexpected value: {ftl_arg}")
         ftl_named = exp.arguments.named
-        return msg.Expression(
+        return Expression(
             arg,
             name,
             {opt.name.name: literal_value(opt.value) for opt in ftl_named},
@@ -379,9 +390,9 @@ class LinePosMapper:
             len(self._newlines) + 1,
         )
 
-    def get_linepos(self, start: int, key: int, value: int, end: int) -> res.LinePos:
+    def get_linepos(self, start: int, key: int, value: int, end: int) -> LinePos:
         start_line = self._get_line(start)
         key_line = start_line if key == start else self._get_line(key)
         value_line = key_line if value == key else self._get_line(value)
         end_line = self._get_line(end)
-        return res.LinePos(start_line, key_line, value_line, end_line)
+        return LinePos(start_line, key_line, value_line, end_line)

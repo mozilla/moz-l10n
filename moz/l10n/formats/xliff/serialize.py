@@ -19,17 +19,20 @@ from typing import cast
 
 from lxml import etree
 
-from ...message.data import (
+from ...model import (
     CatchallKey,
+    Comment,
+    Entry,
     Expression,
     Markup,
     Message,
+    Metadata,
     Pattern,
     PatternMessage,
+    Resource,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Comment, Entry, Metadata, Resource
 from .common import clark_name
 
 

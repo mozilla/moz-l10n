@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Dict, List, Set, Tuple, TypeVar
 
-from .data import Entry, Resource, Section
+from ..model import Entry, Resource, Section
 
 _T = TypeVar("_T")
 _L10nData = List[

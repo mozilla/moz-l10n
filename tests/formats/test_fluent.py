@@ -22,14 +22,19 @@ from fluent.syntax import ast as ftl
 
 from moz.l10n.formats import Format
 from moz.l10n.formats.fluent import fluent_parse, fluent_serialize
-from moz.l10n.message.data import (
+from moz.l10n.model import (
     CatchallKey,
+    Comment,
+    Entry,
     Expression,
+    LinePos,
+    Metadata,
     PatternMessage,
+    Resource,
+    Section,
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource.data import Comment, Entry, LinePos, Metadata, Resource, Section
 
 from . import get_linepos
 

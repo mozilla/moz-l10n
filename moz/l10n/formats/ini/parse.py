@@ -19,8 +19,7 @@ from typing import Any, Generator, TextIO
 
 from iniparse import ini  # type: ignore[import-untyped]
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Comment, Entry, Resource, Section
+from ...model import Comment, Entry, Message, PatternMessage, Resource, Section
 from .. import Format
 
 

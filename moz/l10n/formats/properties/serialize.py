@@ -17,8 +17,7 @@ from __future__ import annotations
 from re import Match, compile
 from typing import Any, Callable, Iterator, Literal
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Entry, Resource
+from ...model import Entry, Message, PatternMessage, Resource
 
 control_chars = compile(r"[\x00-\x19\x5C\x7F-\x9F]")
 not_ascii_printable_chars = compile(r"[^\x20-\x5B\x5D-\x7E]")

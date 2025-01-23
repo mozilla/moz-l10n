@@ -20,8 +20,14 @@ from unittest import TestCase
 
 from moz.l10n.formats import Format
 from moz.l10n.formats.webext import webext_parse, webext_serialize
-from moz.l10n.message.data import Expression, PatternMessage, VariableRef
-from moz.l10n.resource.data import Entry, Resource, Section
+from moz.l10n.model import (
+    Entry,
+    Expression,
+    PatternMessage,
+    Resource,
+    Section,
+    VariableRef,
+)
 
 source = files("tests.formats.data").joinpath("messages.json").read_bytes()
 

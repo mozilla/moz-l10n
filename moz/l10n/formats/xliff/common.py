@@ -19,7 +19,7 @@ from collections.abc import Iterator
 
 from lxml.etree import QName, _Comment, _Element
 
-from ...resource.data import Metadata
+from ...model import Metadata
 
 xliff_ns = {
     "urn:oasis:names:tc:xliff:document:1.0",

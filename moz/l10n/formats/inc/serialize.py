@@ -17,8 +17,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Entry, Resource
+from ...model import Entry, Message, PatternMessage, Resource
 
 
 def inc_serialize(

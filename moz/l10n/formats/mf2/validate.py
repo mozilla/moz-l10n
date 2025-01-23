@@ -19,7 +19,7 @@ from functools import cmp_to_key
 from re import compile
 from typing import Literal
 
-from ...message.data import (
+from ...model import (
     CatchallKey,
     Expression,
     Markup,

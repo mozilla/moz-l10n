@@ -17,8 +17,7 @@ from __future__ import annotations
 from re import compile
 from typing import Any
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Comment, Entry, Resource, Section
+from ...model import Comment, Entry, Message, PatternMessage, Resource, Section
 from .. import Format
 
 re_define = compile(r"#define[ \t]+(\w+)(?:[ \t](.*))?")

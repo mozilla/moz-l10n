@@ -19,8 +19,7 @@ from collections.abc import Iterator
 from json import dumps
 from typing import Any
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Entry, Resource
+from ...model import Entry, Message, PatternMessage, Resource
 
 
 def plain_json_serialize(

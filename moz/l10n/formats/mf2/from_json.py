@@ -16,11 +16,20 @@ from __future__ import annotations
 
 from typing import Any, Literal, cast
 
-from ...message import data as msg
+from ...model import (
+    CatchallKey,
+    Expression,
+    Markup,
+    Message,
+    Pattern,
+    PatternMessage,
+    SelectMessage,
+    VariableRef,
+)
 from .validate import MF2ValidationError
 
 
-def mf2_from_json(json: dict[str, Any]) -> msg.Message:
+def mf2_from_json(json: dict[str, Any]) -> Message:
     """
     Marshal a MessageFormat 2 data model [JSON Schema](https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model/message.json)
     object into a parsed `moz.l10n.message.data.Message`.
@@ -32,7 +41,7 @@ def mf2_from_json(json: dict[str, Any]) -> msg.Message:
         if msg_type not in {"message", "select"}:
             raise MF2ValidationError(f"Invalid JSON message: {json}")
 
-        declarations: dict[str, msg.Expression] = {}
+        declarations: dict[str, Expression] = {}
         for decl in json["declarations"]:
             decl_type = decl["type"]
             if decl_type not in {"input", "local"}:
@@ -41,7 +50,7 @@ def mf2_from_json(json: dict[str, Any]) -> msg.Message:
             decl_expr = _expression(decl["value"])
             if decl_type == "input":
                 if (
-                    not isinstance(decl_expr.arg, msg.VariableRef)
+                    not isinstance(decl_expr.arg, VariableRef)
                     or decl_expr.arg.name != decl_name
                 ):
                     raise MF2ValidationError(f"Invalid JSON .input declaration: {decl}")
@@ -51,7 +60,7 @@ def mf2_from_json(json: dict[str, Any]) -> msg.Message:
 
         if msg_type == "message":
             pattern = _pattern(json["pattern"])
-            return msg.PatternMessage(pattern, declarations)
+            return PatternMessage(pattern, declarations)
 
         assert msg_type == "select"
         selectors = tuple(_variable(sel) for sel in json["selectors"])
@@ -59,12 +68,12 @@ def mf2_from_json(json: dict[str, Any]) -> msg.Message:
             tuple(_key(key) for key in vari["keys"]): _pattern(vari["value"])
             for vari in json["variants"]
         }
-        return msg.SelectMessage(declarations, selectors, variants)
+        return SelectMessage(declarations, selectors, variants)
     except (IndexError, KeyError, TypeError) as err:
         raise MF2ValidationError(f"Invalid JSON: {err!r}")
 
 
-def _pattern(json: list[Any]) -> msg.Pattern:
+def _pattern(json: list[Any]) -> Pattern:
     return [
         part
         if isinstance(part, str)
@@ -75,7 +84,7 @@ def _pattern(json: list[Any]) -> msg.Pattern:
     ]
 
 
-def _expression(json: dict[str, Any]) -> msg.Expression:
+def _expression(json: dict[str, Any]) -> Expression:
     if json["type"] != "expression":
         raise MF2ValidationError(f"Invalid JSON expression type: {json}")
     arg = _value(json["arg"]) if "arg" in json else None
@@ -93,10 +102,10 @@ def _expression(json: dict[str, Any]) -> msg.Expression:
             f"Invalid JSON expression with no operand and no function: {json}"
         )
     attributes = _attributes(json["attributes"]) if "attributes" in json else {}
-    return msg.Expression(arg, function, options, attributes)
+    return Expression(arg, function, options, attributes)
 
 
-def _markup(json: dict[str, Any]) -> msg.Markup:
+def _markup(json: dict[str, Any]) -> Markup:
     assert json["type"] == "markup"
     kind = cast(Literal["open", "standalone", "close"], _string(json, "kind"))
     if kind not in {"open", "standalone", "close"}:
@@ -104,10 +113,10 @@ def _markup(json: dict[str, Any]) -> msg.Markup:
     name = _string(json, "name")
     options = _options(json["options"]) if "options" in json else {}
     attributes = _attributes(json["attributes"]) if "attributes" in json else {}
-    return msg.Markup(kind, name, options, attributes)
+    return Markup(kind, name, options, attributes)
 
 
-def _options(json: dict[str, Any]) -> dict[str, str | msg.VariableRef]:
+def _options(json: dict[str, Any]) -> dict[str, str | VariableRef]:
     return {name: _value(json_value) for name, json_value in json.items()}
 
 
@@ -118,18 +127,18 @@ def _attributes(json: dict[str, Any]) -> dict[str, str | Literal[True]]:
     }
 
 
-def _key(json: dict[str, Any]) -> str | msg.CatchallKey:
+def _key(json: dict[str, Any]) -> str | CatchallKey:
     type = json["type"]
     if type == "literal":
         return _string(json, "value")
     elif json["type"] == "*":
         value = _string(json, "value") if "value" in json else None
-        return msg.CatchallKey(value)
+        return CatchallKey(value)
     else:
         raise MF2ValidationError(f"Invalid JSON variant key: {json}")
 
 
-def _value(json: dict[str, Any]) -> str | msg.VariableRef:
+def _value(json: dict[str, Any]) -> str | VariableRef:
     return _string(json, "value") if json["type"] == "literal" else _variable(json)
 
 
@@ -139,10 +148,10 @@ def _literal(json: dict[str, Any]) -> str:
     return _string(json, "value")
 
 
-def _variable(json: dict[str, Any]) -> msg.VariableRef:
+def _variable(json: dict[str, Any]) -> VariableRef:
     if json["type"] != "variable":
         raise MF2ValidationError(f"Invalid JSON variable: {json}")
-    return msg.VariableRef(_string(json, "name"))
+    return VariableRef(_string(json, "name"))
 
 
 def _string(obj: dict[str, Any], key: str | None = None) -> str:

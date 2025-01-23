@@ -17,8 +17,8 @@ from __future__ import annotations
 from unittest import TestCase
 
 from moz.l10n.formats import Format
+from moz.l10n.model import Comment, Entry, Metadata, Resource, Section
 from moz.l10n.resource import l10n_equal
-from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
 
 
 class TestL10nEqual(TestCase):

@@ -18,14 +18,17 @@ from json import loads
 from re import compile
 from typing import Any
 
-from ...message.data import (
+from ...model import (
+    Comment,
+    Entry,
     Expression,
     Message,
     Pattern,
     PatternMessage,
+    Resource,
+    Section,
     VariableRef,
 )
-from ...resource.data import Comment, Entry, Resource, Section
 from .. import Format
 
 placeholder = compile(r"\$([a-zA-Z0-9_@]+)\$|(\$[1-9])|\$(\$+)")

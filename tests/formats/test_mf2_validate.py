@@ -17,7 +17,7 @@ from __future__ import annotations
 import pytest
 
 from moz.l10n.formats.mf2 import MF2ValidationError, mf2_validate_message
-from moz.l10n.message.data import (
+from moz.l10n.model import (
     CatchallKey,
     Expression,
     Markup,

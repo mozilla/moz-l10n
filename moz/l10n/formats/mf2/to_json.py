@@ -16,10 +16,19 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from ...message import data as msg
+from ...model import (
+    CatchallKey,
+    Expression,
+    Markup,
+    Message,
+    Pattern,
+    PatternMessage,
+    SelectMessage,
+    VariableRef,
+)
 
 
-def mf2_to_json(message: msg.Message) -> dict[str, Any]:
+def mf2_to_json(message: Message) -> dict[str, Any]:
     """
     Represent a message using the MessageFormat 2 data model [JSON Schema](https://github.com/unicode-org/message-format-wg/blob/main/spec/data-model/message.json).
 
@@ -29,7 +38,7 @@ def mf2_to_json(message: msg.Message) -> dict[str, Any]:
         {
             "type": (
                 "input"
-                if isinstance(expr.arg, msg.VariableRef) and expr.arg.name == name
+                if isinstance(expr.arg, VariableRef) and expr.arg.name == name
                 else "local"
             ),
             "name": name,
@@ -38,14 +47,14 @@ def mf2_to_json(message: msg.Message) -> dict[str, Any]:
         for name, expr in message.declarations.items()
     ]
 
-    if isinstance(message, msg.PatternMessage):
+    if isinstance(message, PatternMessage):
         return {
             "type": "message",
             "declarations": json_declarations,
             "pattern": _pattern(message.pattern),
         }
     else:
-        assert isinstance(message, msg.SelectMessage)
+        assert isinstance(message, SelectMessage)
         return {
             "type": "select",
             "declarations": json_declarations,
@@ -57,18 +66,18 @@ def mf2_to_json(message: msg.Message) -> dict[str, Any]:
         }
 
 
-def _pattern(pattern: msg.Pattern) -> list[Any]:
+def _pattern(pattern: Pattern) -> list[Any]:
     return [
         part
         if isinstance(part, str)
         else _markup(part)
-        if isinstance(part, msg.Markup)
+        if isinstance(part, Markup)
         else _expression(part)
         for part in pattern
     ]
 
 
-def _expression(expr: msg.Expression) -> dict[str, str | dict[str, Any]]:
+def _expression(expr: Expression) -> dict[str, str | dict[str, Any]]:
     json: dict[str, Any] = {"type": "expression"}
     if expr.arg is not None:
         json["arg"] = _value(expr.arg)
@@ -82,7 +91,7 @@ def _expression(expr: msg.Expression) -> dict[str, str | dict[str, Any]]:
     return json
 
 
-def _markup(markup: msg.Markup) -> dict[str, str | dict[str, Any]]:
+def _markup(markup: Markup) -> dict[str, str | dict[str, Any]]:
     json: dict[str, Any] = {
         "type": "markup",
         "kind": markup.kind,
@@ -95,7 +104,9 @@ def _markup(markup: msg.Markup) -> dict[str, str | dict[str, Any]]:
     return json
 
 
-def _options(options: dict[str, str | msg.VariableRef]) -> dict[str, dict[str, str]]:
+def _options(
+    options: dict[str, str | VariableRef],
+) -> dict[str, dict[str, str]]:
     return {name: _value(value) for name, value in options.items()}
 
 
@@ -108,7 +119,7 @@ def _attributes(
     }
 
 
-def _key(key: str | msg.CatchallKey) -> str | dict[str, str]:
+def _key(key: str | CatchallKey) -> str | dict[str, str]:
     if isinstance(key, str):
         return _literal(key)
     else:
@@ -118,7 +129,7 @@ def _key(key: str | msg.CatchallKey) -> str | dict[str, str]:
         return json
 
 
-def _value(value: str | msg.VariableRef) -> dict[str, str]:
+def _value(value: str | VariableRef) -> dict[str, str]:
     return _literal(value) if isinstance(value, str) else _variable(value)
 
 
@@ -126,5 +137,5 @@ def _literal(value: str) -> dict[str, str]:
     return {"type": "literal", "value": value}
 
 
-def _variable(var: msg.VariableRef) -> dict[str, str]:
+def _variable(var: VariableRef) -> dict[str, str]:
     return {"type": "variable", "name": var.name}

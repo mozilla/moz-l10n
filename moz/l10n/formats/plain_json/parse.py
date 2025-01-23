@@ -18,8 +18,7 @@ from collections.abc import Iterator
 from json import loads
 from typing import Any
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Entry, Resource, Section
+from ...model import Entry, Message, PatternMessage, Resource, Section
 from .. import Format
 
 

@@ -18,8 +18,7 @@ from enum import Enum
 from re import Match, compile
 from typing import Any, Callable
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Comment, Entry, LinePos, Resource, Section
+from ...model import Comment, Entry, LinePos, Message, PatternMessage, Resource, Section
 from .. import Format
 
 

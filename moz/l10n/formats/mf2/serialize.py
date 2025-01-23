@@ -18,7 +18,16 @@ from collections.abc import Iterator
 from re import compile
 from typing import Literal
 
-from ...message import data as msg
+from ...model import (
+    CatchallKey,
+    Expression,
+    Markup,
+    Message,
+    Pattern,
+    PatternMessage,
+    SelectMessage,
+    VariableRef,
+)
 from .validate import name_re, number_re
 
 complex_start_re = compile(r"[\t\n\r \u3000]*\.")
@@ -26,7 +35,7 @@ literal_esc_re = compile(r"[\\|]")
 text_esc_re = compile(r"[\\{}]")
 
 
-def mf2_serialize_message(message: msg.Message) -> Iterator[str]:
+def mf2_serialize_message(message: Message) -> Iterator[str]:
     """
     Serialize a message using MessageFormat 2 syntax.
 
@@ -34,7 +43,7 @@ def mf2_serialize_message(message: msg.Message) -> Iterator[str]:
     for that, use `mf2_validate_message()`.
     """
     if (
-        isinstance(message, msg.PatternMessage)
+        isinstance(message, PatternMessage)
         and not message.declarations
         and (
             not message.pattern
@@ -48,47 +57,47 @@ def mf2_serialize_message(message: msg.Message) -> Iterator[str]:
 
     for name, expr in message.declarations.items():
         # TODO: Fix order by dependencies
-        if isinstance(expr.arg, msg.VariableRef) and expr.arg.name == name:
+        if isinstance(expr.arg, VariableRef) and expr.arg.name == name:
             yield ".input "
         else:
             yield f".local ${name} = "
         yield from _expression(expr)
         yield "\n"
 
-    if isinstance(message, msg.PatternMessage):
+    if isinstance(message, PatternMessage):
         yield from _quoted_pattern(message.pattern)
     else:
-        assert isinstance(message, msg.SelectMessage)
+        assert isinstance(message, SelectMessage)
         yield ".match"
         for sel in message.selectors:
             yield f" ${sel.name}"
         for keys, pattern in message.variants.items():
             yield "\n"
             for key in keys:
-                yield "* " if isinstance(key, msg.CatchallKey) else f"{_literal(key)} "
+                yield ("* " if isinstance(key, CatchallKey) else f"{_literal(key)} ")
             yield from _quoted_pattern(pattern)
 
 
-def mf2_serialize_pattern(pattern: msg.Pattern) -> Iterator[str]:
+def mf2_serialize_pattern(pattern: Pattern) -> Iterator[str]:
     if not pattern:
         yield ""
     for part in pattern:
-        if isinstance(part, msg.Expression):
+        if isinstance(part, Expression):
             yield from _expression(part)
-        elif isinstance(part, msg.Markup):
+        elif isinstance(part, Markup):
             yield from _markup(part)
         else:
             assert isinstance(part, str)
             yield text_esc_re.sub(r"\\\g<0>", part)
 
 
-def _quoted_pattern(pattern: msg.Pattern) -> Iterator[str]:
+def _quoted_pattern(pattern: Pattern) -> Iterator[str]:
     yield "{{"
     yield from mf2_serialize_pattern(pattern)
     yield "}}"
 
 
-def _expression(expr: msg.Expression) -> Iterator[str]:
+def _expression(expr: Expression) -> Iterator[str]:
     yield "{"
     if expr.arg:
         yield _value(expr.arg)
@@ -99,7 +108,7 @@ def _expression(expr: msg.Expression) -> Iterator[str]:
     yield "}"
 
 
-def _markup(markup: msg.Markup) -> Iterator[str]:
+def _markup(markup: Markup) -> Iterator[str]:
     yield "{/" if markup.kind == "close" else "{#"
     yield markup.name
     yield from _options(markup.options)
@@ -107,7 +116,7 @@ def _markup(markup: msg.Markup) -> Iterator[str]:
     yield "/}" if markup.kind == "standalone" else "}"
 
 
-def _options(options: dict[str, str | msg.VariableRef]) -> Iterator[str]:
+def _options(options: dict[str, str | VariableRef]) -> Iterator[str]:
     for name, value in options.items():
         yield f" {name}={_value(value)}"
 
@@ -117,7 +126,7 @@ def _attributes(attributes: dict[str, str | Literal[True]]) -> Iterator[str]:
         yield f" @{name}" if value is True else f" @{name}={_literal(value)}"
 
 
-def _value(value: str | msg.VariableRef) -> str:
+def _value(value: str | VariableRef) -> str:
     return _literal(value) if isinstance(value, str) else f"${value.name}"
 
 

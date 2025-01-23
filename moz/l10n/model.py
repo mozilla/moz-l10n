@@ -15,27 +15,113 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Generic, TypeVar
+from typing import Dict, Generic, List, Literal, Tuple, TypeVar, Union
 
-from ..formats import Format
+from .formats import Format
 
 __all__ = [
-    "Comment",
-    "Entry",
-    "Metadata",
     "Resource",
     "Section",
+    "Entry",
+    "Comment",
+    "Metadata",
+    "Message",
+    "PatternMessage",
+    "SelectMessage",
+    "CatchallKey",
+    "Pattern",
+    "Expression",
+    "Markup",
+    "VariableRef",
 ]
 
-M = TypeVar("M")
+
+@dataclass
+class VariableRef:
+    name: str
+
+
+@dataclass
+class Expression:
+    """
+    A valid Expression must contain a non-None `arg`, `function`, or both.
+
+    An Expression with no `function` and non-empty `options` is not valid.
+    """
+
+    arg: str | VariableRef | None
+    function: str | None = None
+    options: dict[str, str | VariableRef] = field(default_factory=dict)
+    attributes: dict[str, str | Literal[True]] = field(default_factory=dict)
+
+
+@dataclass
+class Markup:
+    kind: Literal["open", "standalone", "close"]
+    name: str
+    options: dict[str, str | VariableRef] = field(default_factory=dict)
+    attributes: dict[str, str | Literal[True]] = field(default_factory=dict)
+
+
+Pattern = List[Union[str, Expression, Markup]]
 """
-The metadata value type.
+A linear sequence of text and placeholders corresponding to potential output of a message.
+
+String values represent literal text.
+String values include all processing of the underlying text values, including escape sequence processing.
 """
 
-V = TypeVar("V")
-"""
-The Message value type.
-"""
+
+@dataclass
+class PatternMessage:
+    """
+    A message without selectors and with a single pattern.
+    """
+
+    pattern: Pattern
+    declarations: dict[str, Expression] = field(default_factory=dict)
+
+    def placeholders(self) -> set[Expression | Markup]:
+        return {part for part in self.pattern if not isinstance(part, str)}
+
+
+@dataclass
+class CatchallKey:
+    value: str | None = field(default=None, compare=False)
+    """
+    An optional string identifier for the default/catch-all variant.
+    """
+
+    def __hash__(self) -> int:
+        """
+        Consider all catchall-keys as equivalent to each other
+        """
+        return 1
+
+
+@dataclass
+class SelectMessage:
+    """
+    A message with one or more selectors and a corresponding number of variants.
+    """
+
+    declarations: dict[str, Expression]
+    selectors: tuple[VariableRef, ...]
+    variants: Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
+
+    def placeholders(self) -> set[Expression | Markup]:
+        return {
+            part
+            for pattern in self.variants.values()
+            for part in pattern
+            if not isinstance(part, str)
+        }
+
+    def selector_expressions(self) -> tuple[Expression, ...]:
+        return tuple(self.declarations[var.name] for var in self.selectors)
+
+
+Message = Union[PatternMessage, SelectMessage]
 
 
 @dataclass
@@ -64,6 +150,17 @@ class LinePos:
     """
     The line one past the end of the entry or section header.
     """
+
+
+M = TypeVar("M")
+"""
+The metadata value type.
+"""
+
+V = TypeVar("V")
+"""
+The Message value type.
+"""
 
 
 @dataclass

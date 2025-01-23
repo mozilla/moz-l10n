@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from moz.l10n.resource.data import LinePos
+from moz.l10n.model import LinePos
 
 
 def get_linepos(

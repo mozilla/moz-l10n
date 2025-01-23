@@ -18,14 +18,17 @@ from collections import OrderedDict
 
 from polib import pofile
 
-from ...message.data import (
+from ...model import (
+    Entry,
     Expression,
     Message,
+    Metadata,
     PatternMessage,
+    Resource,
+    Section,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Entry, Metadata, Resource, Section
 from .. import Format
 
 

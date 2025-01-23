@@ -22,8 +22,7 @@ from re import DOTALL, MULTILINE, UNICODE, compile
 from sys import maxsize
 from typing import Any
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Comment, Entry, Resource, Section
+from ...model import Comment, Entry, Message, PatternMessage, Resource, Section
 from .. import Format
 
 name_start_char = (

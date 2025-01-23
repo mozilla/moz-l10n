@@ -21,13 +21,14 @@ from typing import NoReturn
 
 from lxml import etree
 
-from ...message.data import (
+from ...model import (
     CatchallKey,
+    Entry,
     Expression,
+    Metadata,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Entry, Metadata
 from .common import attrib_as_metadata
 
 

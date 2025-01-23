@@ -19,13 +19,14 @@ from json import dumps
 from re import sub
 from typing import Any
 
-from ...message.data import (
+from ...model import (
+    Entry,
     Expression,
     Message,
     PatternMessage,
+    Resource,
     VariableRef,
 )
-from ...resource.data import Entry, Resource
 
 
 def webext_serialize(

@@ -19,13 +19,16 @@ from unittest import TestCase
 
 from moz.l10n.formats import Format
 from moz.l10n.formats.po import po_parse, po_serialize
-from moz.l10n.message.data import (
+from moz.l10n.model import (
+    Entry,
     Expression,
+    Metadata,
     PatternMessage,
+    Resource,
+    Section,
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource.data import Entry, Metadata, Resource, Section
 
 source = files("tests.formats.data").joinpath("foo.po").read_bytes().decode("utf-8")
 

@@ -20,16 +20,20 @@ from typing import Literal
 
 from lxml import etree
 
-from ...message.data import (
+from ...model import (
     CatchallKey,
+    Comment,
+    Entry,
     Expression,
     Markup,
     Message,
+    Metadata,
     PatternMessage,
+    Resource,
+    Section,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Comment, Entry, Metadata, Resource, Section
 from .. import Format
 
 plural_categories = ("zero", "one", "two", "few", "many", "other")

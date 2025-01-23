@@ -20,16 +20,18 @@ from typing import Dict, cast
 
 from lxml import etree
 
-from ...message.data import (
+from ...model import (
     CatchallKey,
+    Entry,
     Expression,
     Message,
+    Metadata,
     Pattern,
     PatternMessage,
+    Resource,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Entry, Metadata, Resource
 from .parse import plural_categories, resource_ref, xliff_g, xliff_ns, xml_name
 
 
