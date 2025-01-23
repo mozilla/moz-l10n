@@ -238,7 +238,7 @@ class TestXliff1(TestCase):
                     meta=[Metadata("@restype", "x-icu-table")],
                     entries=[
                         Comment(
-                            "The resources for a fictious Hello World application. The application displays a single window with a logo and the hello message."
+                            "The resources for a fictitious Hello World application. The application displays a single window with a logo and the hello message."
                         ),
                         Entry(
                             id=("authors",),
@@ -368,7 +368,7 @@ class TestXliff1(TestCase):
                 </header>
                 <body>
                   <group id="en" restype="x-icu-table">
-                    <!-- The resources for a fictious Hello World application. The application displays a single window with a logo and the hello message. -->
+                    <!-- The resources for a fictitious Hello World application. The application displays a single window with a logo and the hello message. -->
                     <trans-unit id="authors" resname="authors" restype="x-icu-alias">
                       <source>root/authors</source>
                       <target/>
@@ -620,7 +620,6 @@ class TestXliff1(TestCase):
                         Entry(
                             id=("followed_by_three_and_others",),
                             meta=[
-                                Metadata("format/@xml:space", "preserve"),
                                 Metadata("one/@xml:space", "preserve"),
                                 Metadata(
                                     "one/source",
@@ -744,7 +743,7 @@ class TestXliff1(TestCase):
               </file>
               <file original="xcode2/en.lproj/Localizable.stringsdict" source-language="en" target-language="en" datatype="plaintext">
                 <body>
-                  <trans-unit id="/followed_by_three_and_others:dict/NSStringLocalizedFormatKey:dict/:string" xml:space="preserve">
+                  <trans-unit id="/followed_by_three_and_others:dict/NSStringLocalizedFormatKey:dict/:string">
                     <source>%#@OTHERS@</source>
                     <target>%#@OTHERS@</target>
                   </trans-unit>

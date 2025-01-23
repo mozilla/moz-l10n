@@ -39,7 +39,7 @@ Assicurati di avere una copia.</target>
   </file>
   <file original="xcode2/en.lproj/Localizable.stringsdict" source-language="en" target-language="en" datatype="plaintext">
     <body>
-      <trans-unit id="/followed_by_three_and_others:dict/NSStringLocalizedFormatKey:dict/:string" xml:space="preserve">
+      <trans-unit id="/followed_by_three_and_others:dict/NSStringLocalizedFormatKey:dict/:string">
         <source>%#@OTHERS@</source>
         <target>%#@OTHERS@</target>
         <note/>
