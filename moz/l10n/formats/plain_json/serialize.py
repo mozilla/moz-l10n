@@ -23,7 +23,7 @@ from ...model import Entry, Message, PatternMessage, Resource
 
 
 def plain_json_serialize(
-    resource: Resource[str, Any] | Resource[Message, Any],
+    resource: Resource[str] | Resource[Message],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """

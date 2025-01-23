@@ -122,7 +122,7 @@ def cli() -> None:
 
 def write_target_file(
     name: str,
-    source_res: Resource[Message, str],
+    source_res: Resource[Message],
     l10n_path: str,
     tgt_path: str,
 ) -> int:
@@ -143,8 +143,8 @@ def write_target_file(
     msg_delta = 0
 
     def get_entry(
-        section_id: tuple[str, ...], source_entry: Entry[Message, str] | Comment
-    ) -> Entry[Message, str] | Comment | None:
+        section_id: tuple[str, ...], source_entry: Entry[Message] | Comment
+    ) -> Entry[Message] | Comment | None:
         nonlocal msg_delta
         if isinstance(source_entry, Comment):
             return None

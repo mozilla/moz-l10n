@@ -26,7 +26,6 @@ from ...model import (
     Comment,
     Entry,
     Expression,
-    M,
     Message,
     Metadata,
     Pattern,
@@ -39,8 +38,8 @@ from ...model import (
 
 
 def fluent_serialize(
-    resource: (Resource[str, M] | Resource[Message, M] | Resource[ftl.Pattern, M]),
-    serialize_metadata: Callable[[Metadata[M]], str | None] | None = None,
+    resource: (Resource[str] | Resource[Message] | Resource[ftl.Pattern]),
+    serialize_metadata: Callable[[Metadata], str | None] | None = None,
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -67,8 +66,8 @@ def fluent_serialize(
 
 
 def fluent_astify(
-    resource: (Resource[str, M] | Resource[Message, M] | Resource[ftl.Pattern, M]),
-    serialize_metadata: Callable[[Metadata[M]], str | None] | None = None,
+    resource: (Resource[str] | Resource[Message] | Resource[ftl.Pattern]),
+    serialize_metadata: Callable[[Metadata], str | None] | None = None,
     trim_comments: bool = False,
 ) -> ftl.Resource:
     """
@@ -87,7 +86,7 @@ def fluent_astify(
     """
 
     def comment(
-        node: (Resource[Any, Any] | Section[Any, Any] | Entry[Any, Any] | Comment),
+        node: (Resource[Any] | Section[Any] | Entry[Any] | Comment),
     ) -> str:
         if trim_comments:
             return ""

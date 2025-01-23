@@ -152,19 +152,8 @@ class LinePos:
     """
 
 
-M = TypeVar("M")
-"""
-The metadata value type.
-"""
-
-V = TypeVar("V")
-"""
-The Message value type.
-"""
-
-
 @dataclass
-class Metadata(Generic[M]):
+class Metadata:
     """
     Metadata is attached to a resource, section, or a single entry.
 
@@ -180,11 +169,11 @@ class Metadata(Generic[M]):
     which might require escaping in the syntax.
     """
 
-    value: M
+    value: str
     """
     The metadata contents.
 
-    String values have all their character \\escapes processed.
+    Values have all their character \\escapes processed.
     """
 
 
@@ -202,8 +191,14 @@ class Comment:
     """
 
 
+V = TypeVar("V")
+"""
+The Message value type.
+"""
+
+
 @dataclass
-class Entry(Generic[V, M]):
+class Entry(Generic[V]):
     """
     A message entry.
 
@@ -242,7 +237,7 @@ class Entry(Generic[V, M]):
     An empty or whitespace-only comment will be represented by an empty string.
     """
 
-    meta: list[Metadata[M]] = field(default_factory=list)
+    meta: list[Metadata] = field(default_factory=list)
     """
     Metadata attached to this entry.
     """
@@ -255,7 +250,7 @@ class Entry(Generic[V, M]):
 
 
 @dataclass
-class Section(Generic[V, M]):
+class Section(Generic[V]):
     """
     A section of a resource.
 
@@ -280,7 +275,7 @@ class Section(Generic[V, M]):
     i.e. they do not include this identifier.
     """
 
-    entries: list[Entry[V, M] | Comment]
+    entries: list[Entry[V] | Comment]
     """
     Section entries consist of message entries and comments.
 
@@ -298,7 +293,7 @@ class Section(Generic[V, M]):
     An empty or whitespace-only comment will be represented by an empty string.
     """
 
-    meta: list[Metadata[M]] = field(default_factory=list)
+    meta: list[Metadata] = field(default_factory=list)
     """
     Metadata attached to this section.
     """
@@ -311,7 +306,7 @@ class Section(Generic[V, M]):
 
 
 @dataclass
-class Resource(Generic[V, M]):
+class Resource(Generic[V]):
     """
     A message resource.
 
@@ -324,7 +319,7 @@ class Resource(Generic[V, M]):
     The serialization format for the resource, if any.
     """
 
-    sections: list[Section[V, M]]
+    sections: list[Section[V]]
     """
     The body of a resource, consisting of an array of sections.
 
@@ -342,7 +337,7 @@ class Resource(Generic[V, M]):
     An empty or whitespace-only comment will be represented by an empty string.
     """
 
-    meta: list[Metadata[M]] = field(default_factory=list)
+    meta: list[Metadata] = field(default_factory=list)
     """
     Metadata attached to the whole resource.
     """

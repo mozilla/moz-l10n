@@ -20,19 +20,18 @@ from typing import Any
 from ..model import (
     Comment,
     Entry,
-    M,
     Resource,
     Section,
     V,
 )
 
-RS = Section[Any, Any]
-RE = Entry[Any, Any]
+RS = Section[Any]
+RE = Entry[Any]
 
 
 def add_entries(
-    target: Resource[V, M],
-    source: Resource[V, M],
+    target: Resource[V],
+    source: Resource[V],
     *,
     use_source_entries: bool = False,
 ) -> int:

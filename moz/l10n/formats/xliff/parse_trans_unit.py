@@ -23,7 +23,7 @@ from ...model import Entry, Markup, Message, Metadata, PatternMessage, VariableR
 from .common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
 
 
-def parse_trans_unit(unit: etree._Element) -> Entry[Message, str]:
+def parse_trans_unit(unit: etree._Element) -> Entry[Message]:
     id = unit.attrib.get("id", None)
     if id is None:
         raise ValueError(f'Missing "id" attribute for <trans-unit>: {unit}')

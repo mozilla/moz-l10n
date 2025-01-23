@@ -46,7 +46,7 @@ def fluent_parse(
     *,
     as_ftl_patterns: Literal[False] = False,
     with_linepos: bool = True,
-) -> Resource[Message, str]: ...
+) -> Resource[Message]: ...
 
 
 @overload
@@ -55,7 +55,7 @@ def fluent_parse(
     *,
     as_ftl_patterns: Literal[True],
     with_linepos: bool = True,
-) -> Resource[ftl.Pattern, str]: ...
+) -> Resource[ftl.Pattern]: ...
 
 
 def fluent_parse(
@@ -63,7 +63,7 @@ def fluent_parse(
     *,
     as_ftl_patterns: bool = False,
     with_linepos: bool = True,
-) -> Resource[Message, Any] | Resource[ftl.Pattern, Any]:
+) -> Resource[Message] | Resource[ftl.Pattern]:
     """
     Parse a .ftl file into a message resource.
 
@@ -86,12 +86,12 @@ def fluent_parse(
         fluent_res = FluentParser(with_spans=with_linepos).parse(source_str)
         lpm = LinePosMapper(source_str) if with_linepos else None
 
-    entries: list[Entry[Any, Any] | Comment] = []
+    entries: list[Entry[Any] | Comment] = []
     section = Section((), entries)
     resource = Resource(Format.fluent, [section])
     fluent_body = fluent_res.body
-    if fluent_body and isinstance(fluent_body[0], ftl.Comment):
-        resource.meta.append(Metadata("info", fluent_body[0].content))
+    if fluent_body and isinstance(fbc := fluent_body[0], ftl.Comment) and fbc.content:
+        resource.meta.append(Metadata("info", fbc.content))
         fluent_body = fluent_body[1:]
     for entry in fluent_body:
         if isinstance(entry, ftl.Message) or isinstance(entry, ftl.Term):
@@ -136,14 +136,14 @@ def patterns(
     ftl_entry: ftl.Message | ftl.Term,
     as_ftl_patterns: bool,
     lpm: LinePosMapper | None,
-) -> Generator[Entry[Message, Any] | Entry[ftl.Pattern, Any], None, None]:
+) -> Generator[Entry[Message] | Entry[ftl.Pattern], None, None]:
     message = (lambda m: m) if as_ftl_patterns else fluent_parse_message
     id = ftl_entry.id.name
     if isinstance(ftl_entry, ftl.Term):
         id = "-" + id
     comment = ftl_entry.comment.content or "" if ftl_entry.comment else ""
     if ftl_entry.value:
-        entry: Entry[Any, Any] = Entry(
+        entry: Entry[Any] = Entry(
             id=(id,), value=message(ftl_entry.value), comment=comment
         )
         if lpm and ftl_entry.span and ftl_entry.value.span:

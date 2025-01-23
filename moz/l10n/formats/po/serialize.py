@@ -22,7 +22,7 @@ from ...model import Entry, Message, PatternMessage, Resource, SelectMessage
 
 
 def po_serialize(
-    resource: Resource[str, str] | Resource[Message, str],
+    resource: Resource[str] | Resource[Message],
     trim_comments: bool = False,
     wrapwidth: int = 78,
 ) -> Iterator[str]:

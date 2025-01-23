@@ -20,7 +20,6 @@ from __future__ import annotations
 from collections.abc import Iterator
 from re import DOTALL, MULTILINE, UNICODE, compile
 from sys import maxsize
-from typing import Any
 
 from ...model import Comment, Entry, Message, PatternMessage, Resource, Section
 from .. import Format
@@ -40,13 +39,13 @@ re_entity = compile(
 re_comment = compile(r"\<!\s*--(.*?)--\s*\>", MULTILINE | DOTALL)
 
 
-def dtd_parse(source: str | bytes) -> Resource[Message, Any]:
+def dtd_parse(source: str | bytes) -> Resource[Message]:
     """
     Parse a .dtd file into a message resource.
 
     The parsed resource will not include any metadata.
     """
-    entries: list[Entry[Message, Any] | Comment] = []
+    entries: list[Entry[Message] | Comment] = []
     resource = Resource(Format.dtd, [Section((), entries)])
     pos = 0
     at_newline = True
@@ -103,7 +102,7 @@ def dtd_parse(source: str | bytes) -> Resource[Message, Any]:
 
 def dtd_iter(
     text: str, pos: int, endpos: int = maxsize
-) -> Iterator[str | Entry[Message, Any]]:
+) -> Iterator[str | Entry[Message]]:
     for match in re_entity.finditer(text, pos, endpos):
         yield text[pos : match.start(0)]
         id, value = match.groups()

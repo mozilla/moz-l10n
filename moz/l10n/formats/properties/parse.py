@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from enum import Enum
 from re import Match, compile
-from typing import Any, Callable
+from typing import Callable
 
 from ...model import Comment, Entry, LinePos, Message, PatternMessage, Resource, Section
 from .. import Format
@@ -53,7 +53,7 @@ def properties_parse(
     source: bytes | str,
     encoding: str = "utf-8",
     parse_message: Callable[[str], Message] | None = None,
-) -> Resource[Message, Any]:
+) -> Resource[Message]:
     """
     Parse a .properties file into a message resource.
 
@@ -65,13 +65,13 @@ def properties_parse(
     if not isinstance(source, str):
         source = source.decode(encoding)
     parser = PropertiesParser(source)
-    entries: list[Entry[Message, Any] | Comment] = []
+    entries: list[Entry[Message] | Comment] = []
     resource = Resource(Format.properties, [Section((), entries)])
 
     start_line = 0
     comment = ""
     prev_linepos: LinePos | None = None
-    entry: Entry[Message, Any] | None = None
+    entry: Entry[Message] | None = None
     for kind, line, value in parser:
         if kind == LineKind.VALUE:
             assert entry

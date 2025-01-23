@@ -25,7 +25,7 @@ _L10nData = List[
 ]  # id, comment, value
 
 
-def l10n_equal(a: Resource[Any, Any], b: Resource[Any, Any]) -> bool:
+def l10n_equal(a: Resource[Any], b: Resource[Any]) -> bool:
     """
     Compares the localization-relevant content
     (id, comment, metadata, message values) of two resources.
@@ -41,7 +41,7 @@ def l10n_equal(a: Resource[Any, Any], b: Resource[Any, Any]) -> bool:
     )
 
 
-def l10n_sections(resource: Resource[Any, Any]) -> _L10nData[_L10nData[Any]]:
+def l10n_sections(resource: Resource[Any]) -> _L10nData[_L10nData[Any]]:
     ls = [
         (section.id, section.comment.strip(), l10n_meta(section), l10n_entries(section))
         for section in resource.sections
@@ -62,7 +62,7 @@ def l10n_sections(resource: Resource[Any, Any]) -> _L10nData[_L10nData[Any]]:
     return ls
 
 
-def l10n_entries(section: Section[Any, Any]) -> _L10nData[Any]:
+def l10n_entries(section: Section[Any]) -> _L10nData[Any]:
     le = [
         (entry.id, entry.comment.strip(), l10n_meta(entry), entry.value)
         for entry in section.entries
@@ -73,7 +73,7 @@ def l10n_entries(section: Section[Any, Any]) -> _L10nData[Any]:
 
 
 def l10n_meta(
-    x: Entry[Any, Any] | Section[Any, Any] | Resource[Any, Any],
+    x: Entry[Any] | Section[Any] | Resource[Any],
 ) -> dict[str, set[Any]]:
     md: dict[str, set[Any]] = defaultdict(set)
     for m in x.meta:

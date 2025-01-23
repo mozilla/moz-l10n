@@ -40,7 +40,7 @@ def encode_char(m: Match[str]) -> str:
 
 
 def properties_serialize(
-    resource: Resource[str, Any] | Resource[Message, Any],
+    resource: Resource[str] | Resource[Message],
     encoding: Literal["iso-8859-1", "utf-8", "utf-16"] = "utf-8",
     serialize_message: Callable[[Message], str] | None = None,
     trim_comments: bool = False,
