@@ -238,7 +238,7 @@ class TestXliff1(TestCase):
                     meta=[Metadata("@restype", "x-icu-table")],
                     entries=[
                         Comment(
-                            "The resources for a fictious Hello World application. The application displays a single window with a logo and the hello message."
+                            "The resources for a fictitious Hello World application. The application displays a single window with a logo and the hello message."
                         ),
                         Entry(
                             id=("authors",),
@@ -368,7 +368,7 @@ class TestXliff1(TestCase):
                 </header>
                 <body>
                   <group id="en" restype="x-icu-table">
-                    <!-- The resources for a fictious Hello World application. The application displays a single window with a logo and the hello message. -->
+                    <!-- The resources for a fictitious Hello World application. The application displays a single window with a logo and the hello message. -->
                     <trans-unit id="authors" resname="authors" restype="x-icu-alias">
                       <source>root/authors</source>
                       <target/>
