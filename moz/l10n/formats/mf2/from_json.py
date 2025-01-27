@@ -111,9 +111,9 @@ def _options(json: dict[str, Any]) -> dict[str, str | msg.VariableRef]:
     return {name: _value(json_value) for name, json_value in json.items()}
 
 
-def _attributes(json: dict[str, Any]) -> dict[str, str | None]:
+def _attributes(json: dict[str, Any]) -> dict[str, str | Literal[True]]:
     return {
-        name: None if json_value is True else _literal(json_value)
+        name: True if json_value is True else _literal(json_value)
         for name, json_value in json.items()
     }
 

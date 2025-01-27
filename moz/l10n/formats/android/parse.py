@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Iterator
 from re import compile
+from typing import Literal
 
 from lxml import etree
 
@@ -277,7 +278,7 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
                     for gc in body:
                         if isinstance(gc, str):
                             options: dict[str, str | VariableRef] = dict(child.attrib)
-                            attr: dict[str, str | None] = {"translate": "no"}
+                            attr: dict[str, str | Literal[True]] = {"translate": "no"}
                             arg: str | VariableRef | None
                             if id:
                                 arg = VariableRef(get_var_name(id))

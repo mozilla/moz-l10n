@@ -75,9 +75,9 @@ def parse_xliff_stringsdict(
         selector = Expression(
             VariableRef(plural.var_name),
             "number",
-            attributes={
-                "source": plural.format_key.source.text if plural.format_key else None
-            },
+            attributes={"source": plural.format_key.source.text}
+            if plural.format_key and plural.format_key.source.text
+            else {},
         )
         meta: list[Metadata[str]] = []
         if plural.format_key:

@@ -72,11 +72,11 @@ def test_validate_expression():
     fail(Expression(None, "func", {"opt": 42}))
     fail(Expression(None, "func", {42: "opt"}))
 
-    ok(Expression("42", attributes={"attr": None}))
+    ok(Expression("42", attributes={"attr": True}))
     ok(Expression("42", attributes={"attr": "some attr value"}))
     fail(Expression(None, attributes="attr"))
     fail(Expression(None, attributes=["attr"]))
-    fail(Expression(None, attributes={"attr": None}))
+    fail(Expression(None, attributes={"attr": True}))
     fail(Expression("42", None, attributes={"attr": 42}))
     fail(Expression("42", None, attributes={"attr": VariableRef("var")}))
     fail(Expression("42", None, attributes={42: "attr"}))

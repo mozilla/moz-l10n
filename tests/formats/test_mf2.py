@@ -28,6 +28,7 @@ from moz.l10n.formats.mf2 import (
     mf2_to_json,
 )
 from moz.l10n.formats.mf2.from_json import mf2_from_json
+from moz.l10n.message import message_from_json, message_to_json
 from moz.l10n.message.data import (
     CatchallKey,
     Expression,
@@ -38,20 +39,31 @@ from moz.l10n.message.data import (
     VariableRef,
 )
 
-schema_src = (
+mf2_schema_src = (
     files("tests.formats.data").joinpath("mf2-message-schema.json").read_bytes()
 )
-schema: dict[str, dict[str, Any]] = loads(schema_src)
+mf2_schema: dict[str, dict[str, Any]] = loads(mf2_schema_src)
+
+moz_schema_src = files("moz.l10n.message").joinpath("schema.json").read_bytes()
+moz_schema: dict[str, dict[str, Any]] = loads(moz_schema_src)
 
 
 def ok(src: str, exp_msg: Message, exp_str: str | None = None):
     msg = mf2_parse_message(src)
     assert msg == exp_msg
     assert msg_str(msg) == exp_str or src
-    json = mf2_to_json(msg)
-    validate(json, schema)
-    msg2 = mf2_from_json(json)
+
+    mf2_json = mf2_to_json(msg)
+    validate(mf2_json, mf2_schema)
+    msg2 = mf2_from_json(mf2_json)
     assert msg2 == msg
+
+    # These tests are for the moz.l10n.message converters rather than any MF2 code,
+    # included here to avoid duplicating this test suite.
+    moz_json = message_to_json(msg)
+    validate(moz_json, moz_schema)
+    msg3 = message_from_json(moz_json)
+    assert msg3 == msg
 
 
 def fail(src: str) -> str:
@@ -120,7 +132,7 @@ def test_placeholder():
 
 def test_placeholder_attributes():
     fail("{@foo}")
-    ok("{42 @foo}", PatternMessage([Expression("42", attributes={"foo": None})]))
+    ok("{42 @foo}", PatternMessage([Expression("42", attributes={"foo": True})]))
     ok(
         "{42 @foo = 13 }",
         PatternMessage([Expression("42", attributes={"foo": "13"})]),
@@ -134,7 +146,7 @@ def test_placeholder_attributes():
     ok(
         "{$var @foo @bar=baz}",
         PatternMessage(
-            [Expression(VariableRef("var"), attributes={"foo": None, "bar": "baz"})]
+            [Expression(VariableRef("var"), attributes={"foo": True, "bar": "baz"})]
         ),
     )
     fail("{$var@foo}")
@@ -186,7 +198,7 @@ def test_placeholder_with_function():
                     VariableRef("var"),
                     "test:string",
                     {"opt-a": "42", "opt:b": VariableRef("var")},
-                    attributes={"foo": None, "bar": "baz"},
+                    attributes={"foo": True, "bar": "baz"},
                 ),
             ]
         ),
@@ -236,7 +248,7 @@ def test_markup():
         "{#aa @attr}{/bb @attr=42}{#cc @ns:attr=|42|/}",
         PatternMessage(
             [
-                Markup("open", "aa", attributes={"attr": None}),
+                Markup("open", "aa", attributes={"attr": True}),
                 Markup("close", "bb", attributes={"attr": "42"}),
                 Markup("standalone", "cc", attributes={"ns:attr": "42"}),
             ]

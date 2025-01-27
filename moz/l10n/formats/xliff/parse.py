@@ -176,7 +176,7 @@ def parse_bin_unit(unit: etree._Element) -> Entry[Message, str]:
         raise ValueError(f'Missing "id" attribute for <bin-unit>: {unit}')
     meta = attrib_as_metadata(unit, None, ("id",))
     meta += element_as_metadata(unit, "", False)
-    msg = PatternMessage([Expression(None, attributes={"bin-unit": None})])
+    msg = PatternMessage([Expression(None, attributes={"bin-unit": True})])
     return Entry((id,), msg, meta=meta)
 
 

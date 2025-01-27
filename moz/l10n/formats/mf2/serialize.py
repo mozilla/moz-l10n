@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from re import compile
+from typing import Literal
 
 from ...message import data as msg
 from .validate import name_re, number_re
@@ -111,9 +112,9 @@ def _options(options: dict[str, str | msg.VariableRef]) -> Iterator[str]:
         yield f" {name}={_value(value)}"
 
 
-def _attributes(attributes: dict[str, str | None]) -> Iterator[str]:
+def _attributes(attributes: dict[str, str | Literal[True]]) -> Iterator[str]:
     for name, value in attributes.items():
-        yield f" @{name}" if value is None else f" @{name}={_literal(value)}"
+        yield f" @{name}" if value is True else f" @{name}={_literal(value)}"
 
 
 def _value(value: str | msg.VariableRef) -> str:
