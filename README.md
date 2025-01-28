@@ -141,7 +141,7 @@ from moz.l10n.model import (
 ```
 
 Dataclasses defining the library's representation of a messages and resources,
-with messages as either as a single-pattern `PatternMessage`,
+with messages either as a single-pattern `PatternMessage`,
 or as a `SelectMessage` with one or more selectors and multiple variant patterns.
 
 ### moz.l10n.paths.L10nConfigPaths
