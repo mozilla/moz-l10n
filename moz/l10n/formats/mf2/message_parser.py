@@ -16,7 +16,16 @@ from __future__ import annotations
 
 from typing import Literal
 
-from ...message import data as msg
+from ...model import (
+    CatchallKey,
+    Expression,
+    Markup,
+    Message,
+    Pattern,
+    PatternMessage,
+    SelectMessage,
+    VariableRef,
+)
 from .validate import name_re, number_re
 
 esc_chars = {"\\", "{", "|", "}"}
@@ -40,7 +49,7 @@ space_chars = {
 }
 
 
-def mf2_parse_message(source: bytes | str) -> msg.Message:
+def mf2_parse_message(source: bytes | str) -> Message:
     """
     Parse MF2 message syntax into a Message.
 
@@ -65,35 +74,35 @@ class MF2Parser:
         self.source = source if isinstance(source, str) else source.decode()
         self.pos = 0
 
-    def parse(self) -> msg.Message:
+    def parse(self) -> Message:
         ch = self.skip_opt_space()
         if ch == ".":
             message = self.complex_message()
         elif self.source.startswith("{{", self.pos):
-            message = msg.PatternMessage(self.quoted_pattern())
+            message = PatternMessage(self.quoted_pattern())
         else:
             self.pos = 0
-            message = msg.PatternMessage(self.pattern())
+            message = PatternMessage(self.pattern())
         if self.pos != len(self.source):
             raise MF2ParseError(self, "Extra content at message end")
         return message
 
-    def complex_message(self) -> msg.Message:
+    def complex_message(self) -> Message:
         assert self.char() == "."
-        declarations: dict[str, msg.Expression] = {}
+        declarations: dict[str, Expression] = {}
         declared: set[str] = set()
         while keyword := self.source[self.pos : self.pos + 6]:
             if keyword == ".input":
                 name, expr = self.input_declaration()
             elif keyword == ".local":
                 name, expr = self.local_declaration()
-                if isinstance(expr.arg, msg.VariableRef):
+                if isinstance(expr.arg, VariableRef):
                     declared.add(expr.arg.name)
             else:
                 break
             if expr.function:
                 for opt_value in expr.options.values():
-                    if isinstance(opt_value, msg.VariableRef):
+                    if isinstance(opt_value, VariableRef):
                         declared.add(opt_value.name)
             if name in declared:
                 raise MF2ParseError(self, f"Duplicate declaration for ${name}")
@@ -107,7 +116,7 @@ class MF2Parser:
                 sel_expr = declarations.get(sel_name, None)
                 while sel_expr is not None and sel_expr.function is None:
                     if (
-                        isinstance(sel_expr.arg, msg.VariableRef)
+                        isinstance(sel_expr.arg, VariableRef)
                         and sel_expr.arg.name != sel_name
                     ):
                         sel_name = sel_expr.arg.name
@@ -124,26 +133,24 @@ class MF2Parser:
                 if keys in variants:
                     raise MF2ParseError(self, f"Duplicate variant with key ${keys}")
                 variants[keys] = pattern
-            fallback_key = (msg.CatchallKey(),) * len(selectors)
+            fallback_key = (CatchallKey(),) * len(selectors)
             if fallback_key not in variants:
                 raise MF2ParseError(self, "Missing fallback variant")
-            return msg.SelectMessage(declarations, selectors, variants)
+            return SelectMessage(declarations, selectors, variants)
         pattern = self.quoted_pattern()
-        return msg.PatternMessage(pattern, declarations)
+        return PatternMessage(pattern, declarations)
 
-    def input_declaration(self) -> tuple[str, msg.Expression]:
+    def input_declaration(self) -> tuple[str, Expression]:
         assert self.source.startswith(".input", self.pos)
         self.pos += 6
         ch = self.skip_opt_space()
         self.expect("{", ch)
         expr = self.expression_or_markup()
-        if not isinstance(expr, msg.Expression) or not isinstance(
-            expr.arg, msg.VariableRef
-        ):
+        if not isinstance(expr, Expression) or not isinstance(expr.arg, VariableRef):
             raise MF2ParseError(self, "Variable argument required for .input")
         return expr.arg.name, expr
 
-    def local_declaration(self) -> tuple[str, msg.Expression]:
+    def local_declaration(self) -> tuple[str, Expression]:
         assert self.source.startswith(".local", self.pos)
         self.pos += 6
         if not self.req_space() or self.char() != "$":
@@ -154,13 +161,13 @@ class MF2Parser:
         ch = self.skip_opt_space()
         self.expect("{", ch)
         expr = self.expression_or_markup()
-        if not isinstance(expr, msg.Expression):
+        if not isinstance(expr, Expression):
             raise MF2ParseError(self, "Markup is not a valid .local value")
-        if isinstance(expr.arg, msg.VariableRef) and expr.arg.name == name:
+        if isinstance(expr.arg, VariableRef) and expr.arg.name == name:
             raise MF2ParseError(self, "A .local declaration cannot be self-referential")
         return name, expr
 
-    def match_statement(self) -> tuple[msg.VariableRef, ...]:
+    def match_statement(self) -> tuple[VariableRef, ...]:
         assert self.source.startswith(".match", self.pos)
         self.pos += 6
         names: list[str] = []
@@ -172,16 +179,14 @@ class MF2Parser:
             )
         if not has_space:
             raise MF2ParseError(self, "Expected space")
-        return tuple(msg.VariableRef(name) for name in names)
+        return tuple(VariableRef(name) for name in names)
 
-    def variant(
-        self, num_sel: int
-    ) -> tuple[tuple[str | msg.CatchallKey, ...], msg.Pattern]:
-        keys: list[str | msg.CatchallKey] = []
+    def variant(self, num_sel: int) -> tuple[tuple[str | CatchallKey, ...], Pattern]:
+        keys: list[str | CatchallKey] = []
         ch = self.char()
         while ch != "{" and ch != "":
             if ch == "*":
-                keys.append(msg.CatchallKey())
+                keys.append(CatchallKey())
                 self.pos += 1
             else:
                 keys.append(self.literal())
@@ -196,7 +201,7 @@ class MF2Parser:
             )
         return tuple(keys), self.quoted_pattern()
 
-    def quoted_pattern(self) -> msg.Pattern:
+    def quoted_pattern(self) -> Pattern:
         if not self.source.startswith("{{", self.pos):
             raise MF2ParseError(self, "Expected {{")
         self.pos += 2
@@ -207,8 +212,8 @@ class MF2Parser:
         self.skip_opt_space()
         return pattern
 
-    def pattern(self) -> msg.Pattern:
-        pattern: msg.Pattern = []
+    def pattern(self) -> Pattern:
+        pattern: Pattern = []
         ch = self.char()
         while ch != "" and ch != "}":
             if ch == "{":
@@ -239,16 +244,16 @@ class MF2Parser:
             self.pos += 1
         return text
 
-    def expression_or_markup(self) -> msg.Expression | msg.Markup:
+    def expression_or_markup(self) -> Expression | Markup:
         ch = self.skip_opt_space()
-        value: msg.Expression | msg.Markup = (
+        value: Expression | Markup = (
             self.markup_body(ch) if ch == "#" or ch == "/" else self.expression_body(ch)
         )
         self.expect("}")
         return value
 
-    def expression_body(self, ch: str) -> msg.Expression:
-        arg: str | msg.VariableRef | None = None
+    def expression_body(self, ch: str) -> Expression:
+        arg: str | VariableRef | None = None
         arg_end = self.pos
         if ch == "$":
             arg = self.variable()
@@ -269,9 +274,9 @@ class MF2Parser:
             self.pos = arg_end
         attributes = self.attributes()
         self.skip_opt_space()
-        return msg.Expression(arg, function, options, attributes)
+        return Expression(arg, function, options, attributes)
 
-    def markup_body(self, ch: str) -> msg.Markup:
+    def markup_body(self, ch: str) -> Markup:
         kind: Literal["open", "standalone", "close"]
         if ch == "#":
             kind = "open"
@@ -289,10 +294,10 @@ class MF2Parser:
             else:
                 raise MF2ParseError(self, "Expected }")
             self.pos += 1
-        return msg.Markup(kind, id, options, attributes)
+        return Markup(kind, id, options, attributes)
 
-    def options(self) -> dict[str, str | msg.VariableRef]:
-        options: dict[str, str | msg.VariableRef] = {}
+    def options(self) -> dict[str, str | VariableRef]:
+        options: dict[str, str | VariableRef] = {}
         opt_end = self.pos
         while self.req_space():
             ch = self.char()
@@ -330,10 +335,10 @@ class MF2Parser:
             attr_end = self.pos
         return attributes
 
-    def variable(self) -> msg.VariableRef:
+    def variable(self) -> VariableRef:
         assert self.char() == "$"
         name = self.name(1)
-        return msg.VariableRef(name)
+        return VariableRef(name)
 
     def literal(self) -> str:
         return self.quoted_literal() if self.char() == "|" else self.unquoted_literal()

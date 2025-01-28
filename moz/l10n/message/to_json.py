@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from moz.l10n.message.data import (
+from ..model import (
     Expression,
     Markup,
     Message,

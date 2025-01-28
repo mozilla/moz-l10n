@@ -19,17 +19,18 @@ from json import dumps
 from re import sub
 from typing import Any
 
-from ...message.data import (
+from ...model import (
+    Entry,
     Expression,
     Message,
     PatternMessage,
+    Resource,
     VariableRef,
 )
-from ...resource.data import Entry, Resource
 
 
 def webext_serialize(
-    resource: Resource[str, Any] | Resource[Message, Any],
+    resource: Resource[str] | Resource[Message],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -77,7 +78,7 @@ def webext_serialize(
 
 
 def webext_message(
-    name: str, entry: Entry[PatternMessage, Any], trim_comments: bool
+    name: str, entry: Entry[PatternMessage], trim_comments: bool
 ) -> dict[str, Any]:
     msg = ""
     placeholders: dict[str, Any] = {}

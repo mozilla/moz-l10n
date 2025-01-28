@@ -20,8 +20,7 @@ from unittest import TestCase
 
 from moz.l10n.formats import Format
 from moz.l10n.formats.inc import inc_parse, inc_serialize
-from moz.l10n.message.data import PatternMessage
-from moz.l10n.resource.data import Comment, Entry, Resource, Section
+from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
 source = (
     files("tests.formats.data").joinpath("defines.inc").read_bytes().decode("utf-8")

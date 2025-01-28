@@ -20,21 +20,23 @@ from typing import Dict, cast
 
 from lxml import etree
 
-from ...message.data import (
+from ...model import (
     CatchallKey,
+    Entry,
     Expression,
     Message,
+    Metadata,
     Pattern,
     PatternMessage,
+    Resource,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Entry, Metadata, Resource
 from .parse import plural_categories, resource_ref, xliff_g, xliff_ns, xml_name
 
 
 def android_serialize(
-    resource: Resource[str, str] | Resource[Message, str],
+    resource: Resource[str] | Resource[Message],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -161,7 +163,7 @@ def android_serialize(
     yield "\n"
 
 
-def get_attrib(name: str, meta: list[Metadata[str]]) -> dict[str, str]:
+def get_attrib(name: str, meta: list[Metadata]) -> dict[str, str]:
     res = {"name": name}
     for m in meta:
         if m.key == "name":
@@ -188,7 +190,7 @@ def add_comment(el: etree._Element, content: str, standalone: bool) -> None:
     el.append(comment)
 
 
-def entity_definition(entry: Entry[str, str] | Entry[Message, str]) -> str:
+def entity_definition(entry: Entry[str] | Entry[Message]) -> str:
     if len(entry.id) != 1 or not xml_name.fullmatch(entry.id[0]):
         raise ValueError(f"Invalid entity identifier: {entry.id}")
     name = entry.id[0]
@@ -218,7 +220,7 @@ def entity_definition(entry: Entry[str, str] | Entry[Message, str]) -> str:
 
 
 def set_string_array_item(
-    parent: etree._Element, entry: Entry[str, str] | Entry[Message, str]
+    parent: etree._Element, entry: Entry[str] | Entry[Message]
 ) -> None:
     try:
         num = int(entry.id[1])

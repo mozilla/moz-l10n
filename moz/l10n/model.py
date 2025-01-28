@@ -15,27 +15,113 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Generic, TypeVar
+from typing import Dict, Generic, List, Literal, Tuple, TypeVar, Union
 
-from ..formats import Format
+from .formats import Format
 
 __all__ = [
-    "Comment",
-    "Entry",
-    "Metadata",
     "Resource",
     "Section",
+    "Entry",
+    "Comment",
+    "Metadata",
+    "Message",
+    "PatternMessage",
+    "SelectMessage",
+    "CatchallKey",
+    "Pattern",
+    "Expression",
+    "Markup",
+    "VariableRef",
 ]
 
-M = TypeVar("M")
+
+@dataclass
+class VariableRef:
+    name: str
+
+
+@dataclass
+class Expression:
+    """
+    A valid Expression must contain a non-None `arg`, `function`, or both.
+
+    An Expression with no `function` and non-empty `options` is not valid.
+    """
+
+    arg: str | VariableRef | None
+    function: str | None = None
+    options: dict[str, str | VariableRef] = field(default_factory=dict)
+    attributes: dict[str, str | Literal[True]] = field(default_factory=dict)
+
+
+@dataclass
+class Markup:
+    kind: Literal["open", "standalone", "close"]
+    name: str
+    options: dict[str, str | VariableRef] = field(default_factory=dict)
+    attributes: dict[str, str | Literal[True]] = field(default_factory=dict)
+
+
+Pattern = List[Union[str, Expression, Markup]]
 """
-The metadata value type.
+A linear sequence of text and placeholders corresponding to potential output of a message.
+
+String values represent literal text.
+String values include all processing of the underlying text values, including escape sequence processing.
 """
 
-V = TypeVar("V")
-"""
-The Message value type.
-"""
+
+@dataclass
+class PatternMessage:
+    """
+    A message without selectors and with a single pattern.
+    """
+
+    pattern: Pattern
+    declarations: dict[str, Expression] = field(default_factory=dict)
+
+    def placeholders(self) -> set[Expression | Markup]:
+        return {part for part in self.pattern if not isinstance(part, str)}
+
+
+@dataclass
+class CatchallKey:
+    value: str | None = field(default=None, compare=False)
+    """
+    An optional string identifier for the default/catch-all variant.
+    """
+
+    def __hash__(self) -> int:
+        """
+        Consider all catchall-keys as equivalent to each other
+        """
+        return 1
+
+
+@dataclass
+class SelectMessage:
+    """
+    A message with one or more selectors and a corresponding number of variants.
+    """
+
+    declarations: dict[str, Expression]
+    selectors: tuple[VariableRef, ...]
+    variants: Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
+
+    def placeholders(self) -> set[Expression | Markup]:
+        return {
+            part
+            for pattern in self.variants.values()
+            for part in pattern
+            if not isinstance(part, str)
+        }
+
+    def selector_expressions(self) -> tuple[Expression, ...]:
+        return tuple(self.declarations[var.name] for var in self.selectors)
+
+
+Message = Union[PatternMessage, SelectMessage]
 
 
 @dataclass
@@ -67,7 +153,7 @@ class LinePos:
 
 
 @dataclass
-class Metadata(Generic[M]):
+class Metadata:
     """
     Metadata is attached to a resource, section, or a single entry.
 
@@ -83,11 +169,11 @@ class Metadata(Generic[M]):
     which might require escaping in the syntax.
     """
 
-    value: M
+    value: str
     """
     The metadata contents.
 
-    String values have all their character \\escapes processed.
+    Values have all their character \\escapes processed.
     """
 
 
@@ -105,8 +191,14 @@ class Comment:
     """
 
 
+V = TypeVar("V")
+"""
+The Message value type.
+"""
+
+
 @dataclass
-class Entry(Generic[V, M]):
+class Entry(Generic[V]):
     """
     A message entry.
 
@@ -145,7 +237,7 @@ class Entry(Generic[V, M]):
     An empty or whitespace-only comment will be represented by an empty string.
     """
 
-    meta: list[Metadata[M]] = field(default_factory=list)
+    meta: list[Metadata] = field(default_factory=list)
     """
     Metadata attached to this entry.
     """
@@ -158,7 +250,7 @@ class Entry(Generic[V, M]):
 
 
 @dataclass
-class Section(Generic[V, M]):
+class Section(Generic[V]):
     """
     A section of a resource.
 
@@ -183,7 +275,7 @@ class Section(Generic[V, M]):
     i.e. they do not include this identifier.
     """
 
-    entries: list[Entry[V, M] | Comment]
+    entries: list[Entry[V] | Comment]
     """
     Section entries consist of message entries and comments.
 
@@ -201,7 +293,7 @@ class Section(Generic[V, M]):
     An empty or whitespace-only comment will be represented by an empty string.
     """
 
-    meta: list[Metadata[M]] = field(default_factory=list)
+    meta: list[Metadata] = field(default_factory=list)
     """
     Metadata attached to this section.
     """
@@ -214,7 +306,7 @@ class Section(Generic[V, M]):
 
 
 @dataclass
-class Resource(Generic[V, M]):
+class Resource(Generic[V]):
     """
     A message resource.
 
@@ -227,7 +319,7 @@ class Resource(Generic[V, M]):
     The serialization format for the resource, if any.
     """
 
-    sections: list[Section[V, M]]
+    sections: list[Section[V]]
     """
     The body of a resource, consisting of an array of sections.
 
@@ -245,7 +337,7 @@ class Resource(Generic[V, M]):
     An empty or whitespace-only comment will be represented by an empty string.
     """
 
-    meta: list[Metadata[M]] = field(default_factory=list)
+    meta: list[Metadata] = field(default_factory=list)
     """
     Metadata attached to the whole resource.
     """

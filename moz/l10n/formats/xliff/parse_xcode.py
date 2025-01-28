@@ -21,13 +21,14 @@ from typing import NoReturn
 
 from lxml import etree
 
-from ...message.data import (
+from ...model import (
     CatchallKey,
+    Entry,
     Expression,
+    Metadata,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Entry, Metadata
 from .common import attrib_as_metadata
 
 
@@ -55,7 +56,7 @@ printf = compile(
 
 def parse_xliff_stringsdict(
     ns: str, body: etree._Element
-) -> list[Entry[SelectMessage, str]] | None:
+) -> list[Entry[SelectMessage]] | None:
     plurals: dict[str, XcodePlural] = {}
     for unit in body:
         if unit.tag != f"{ns}trans-unit":
@@ -79,7 +80,7 @@ def parse_xliff_stringsdict(
             if plural.format_key and plural.format_key.source.text
             else {},
         )
-        meta: list[Metadata[str]] = []
+        meta: list[Metadata] = []
         if plural.format_key:
             meta += attrib_as_metadata(plural.format_key.unit, "format", ("id",))
             if plural.format_key.target is not None:

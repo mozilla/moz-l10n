@@ -20,16 +20,20 @@ from typing import Literal
 
 from lxml import etree
 
-from ...message.data import (
+from ...model import (
     CatchallKey,
+    Comment,
+    Entry,
     Expression,
     Markup,
     Message,
+    Metadata,
     PatternMessage,
+    Resource,
+    Section,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Comment, Entry, Metadata, Resource, Section
 from .. import Format
 
 plural_categories = ("zero", "one", "two", "few", "many", "other")
@@ -65,7 +69,7 @@ xml_name = compile(f"[{xml_name_start}][{xml_name_start}{xml_name_rest}]*")
 # https://developer.android.com/guide/topics/resources/localization#mark-message-parts
 
 
-def android_parse(source: str | bytes) -> Resource[Message, str]:
+def android_parse(source: str | bytes) -> Resource[Message]:
     """
     Parse an Android strings XML file into a message resource.
 
@@ -90,7 +94,7 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
         raise ValueError(f"Unsupported root node: {root}")
     if root.text and not root.text.isspace():
         raise ValueError(f"Unexpected text in resource: {root.text}")
-    res: Resource[Message, str] = Resource(Format.android, [Section((), [])])
+    res: Resource[Message] = Resource(Format.android, [Section((), [])])
     root_comments = [c.text for c in root.itersiblings(etree.Comment, preceding=True)]
     if root_comments:
         root_comments.reverse()
@@ -102,7 +106,7 @@ def android_parse(source: str | bytes) -> Resource[Message, str]:
 
     dtd = root.getroottree().docinfo.internalDTD
     if dtd:
-        entities: list[Entry[Message, str] | Comment] = []
+        entities: list[Entry[Message] | Comment] = []
         for entity in dtd.iterentities():
             name = entity.name
             if not name:

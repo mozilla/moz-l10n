@@ -104,25 +104,6 @@ and/or contents.
 
 Returns a `Format` enum value, or `None` if the input is not recognized.
 
-### moz.l10n.message.data
-
-```python
-from moz.l10n.message.data import (
-    CatchallKey,
-    Expression,
-    Markup,
-    Message,  # type alias for PatternMessage | SelectMessage
-    Pattern,  # type alias for list[str | Expression | Markup]
-    PatternMessage,
-    SelectMessage,
-    VariableRef
-)
-```
-
-Dataclasses defining the library's representation of a single message,
-either as a single-pattern `PatternMessage`,
-or as a `SelectMessage` with one or more selectors and multiple variant patterns.
-
 ### moz.l10n.message: from_json() and to_json()
 
 ```python
@@ -134,6 +115,34 @@ def message_to_json(msg: Message) -> list[Any] | dict[str, Any]: ...
 
 Converters to and from a JSON-serializable representation of a `Message`.
 The format of the output is defined by the [`schema.json`](./moz/l10n/message/schema.json) JSON Schema.
+
+### moz.l10n.model
+
+```python
+from moz.l10n.model import (
+    # Resource dataclasses
+    Resource,
+    Section,
+    Entry,
+    Comment,
+    Metadata,
+    LinePos,  # The source line position of an entry or section header.
+
+    # Message dataclasses
+    Message,  # type alias for PatternMessage | SelectMessage
+    PatternMessage,
+    SelectMessage,
+    CatchallKey,
+    Pattern,  # type alias for list[str | Expression | Markup]
+    Expression,
+    Markup,
+    VariableRef
+)
+```
+
+Dataclasses defining the library's representation of a messages and resources,
+with messages either as a single-pattern `PatternMessage`,
+or as a `SelectMessage` with one or more selectors and multiple variant patterns.
 
 ### moz.l10n.paths.L10nConfigPaths
 

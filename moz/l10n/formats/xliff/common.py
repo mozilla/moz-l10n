@@ -19,7 +19,7 @@ from collections.abc import Iterator
 
 from lxml.etree import QName, _Comment, _Element
 
-from ...resource.data import Metadata
+from ...model import Metadata
 
 xliff_ns = {
     "urn:oasis:names:tc:xliff:document:1.0",
@@ -31,7 +31,7 @@ xml_ns = "http://www.w3.org/XML/1998/namespace"
 
 def element_as_metadata(
     el: _Element, base: str, with_attrib: bool
-) -> Iterator[Metadata[str]]:
+) -> Iterator[Metadata]:
     is_empty = True
     seen: dict[str, int] = defaultdict(int)
     if with_attrib:
@@ -64,7 +64,7 @@ def element_as_metadata(
 
 def attrib_as_metadata(
     el: _Element, base: str | None = None, exclude: tuple[str] | None = None
-) -> list[Metadata[str]]:
+) -> list[Metadata]:
     res = []
     for key, value in el.attrib.items():
         if not exclude or key not in exclude:

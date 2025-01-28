@@ -29,7 +29,7 @@ from moz.l10n.formats.mf2 import (
 )
 from moz.l10n.formats.mf2.from_json import mf2_from_json
 from moz.l10n.message import message_from_json, message_to_json
-from moz.l10n.message.data import (
+from moz.l10n.model import (
     CatchallKey,
     Expression,
     Markup,

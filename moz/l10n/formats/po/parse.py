@@ -18,18 +18,21 @@ from collections import OrderedDict
 
 from polib import pofile
 
-from ...message.data import (
+from ...model import (
+    Entry,
     Expression,
     Message,
+    Metadata,
     PatternMessage,
+    Resource,
+    Section,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Entry, Metadata, Resource, Section
 from .. import Format
 
 
-def po_parse(source: str | bytes) -> Resource[Message, str]:
+def po_parse(source: str | bytes) -> Resource[Message]:
     """
     Parse a .po or .pot file into a message resource
 
@@ -43,12 +46,12 @@ def po_parse(source: str | bytes) -> Resource[Message, str]:
     """
     pf = pofile(source if isinstance(source, str) else source.decode())
     res_comment = pf.header.lstrip("\n").rstrip()
-    res_meta: list[Metadata[str]] = [
+    res_meta: list[Metadata] = [
         Metadata(key, value.strip()) for key, value in pf.metadata.items()
     ]
-    sections: dict[str | None, Section[Message, str]] = OrderedDict()
+    sections: dict[str | None, Section[Message]] = OrderedDict()
     for pe in pf:
-        meta: list[Metadata[str]] = []
+        meta: list[Metadata] = []
         if pe.tcomment:
             meta.append(Metadata("translator-comments", pe.tcomment))
         if pe.comment:

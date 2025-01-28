@@ -19,12 +19,12 @@ from importlib_resources import files
 from unittest import TestCase, skipIf
 
 from moz.l10n.formats import Format
+from moz.l10n.model import Resource
 from moz.l10n.resource import (
     UnsupportedResource,
     parse_resource,
     serialize_resource,
 )
-from moz.l10n.resource.data import Resource
 
 no_xml = find_spec("lxml") is None
 

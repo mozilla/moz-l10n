@@ -19,22 +19,25 @@ from typing import cast
 
 from lxml import etree
 
-from ...message.data import (
+from ...model import (
     CatchallKey,
+    Comment,
+    Entry,
     Expression,
     Markup,
     Message,
+    Metadata,
     Pattern,
     PatternMessage,
+    Resource,
     SelectMessage,
     VariableRef,
 )
-from ...resource.data import Comment, Entry, Metadata, Resource
 from .common import clark_name
 
 
 def xliff_serialize(
-    resource: Resource[str, str] | Resource[Message, str],
+    resource: Resource[str] | Resource[Message],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -60,7 +63,7 @@ def xliff_serialize(
     # The nsmap needs to be set during creation
     # https://bugs.launchpad.net/lxml/+bug/555602
     root_nsmap: dict[str | None, str] = {}
-    root_attrib: list[Metadata[str]] = []
+    root_attrib: list[Metadata] = []
     for m in resource.meta:
         k = m.key
         v = m.value
@@ -172,7 +175,7 @@ def xliff_serialize(
 
 
 def add_xliff_stringsdict_plural(
-    parent: etree._Element, entry: Entry[SelectMessage, str], trim_comments: bool
+    parent: etree._Element, entry: Entry[SelectMessage], trim_comments: bool
 ) -> None:
     if entry.comment:
         raise ValueError(f"Unsupported comment on SelectMessage: {entry.comment}")
@@ -248,7 +251,7 @@ def add_xliff_stringsdict_plural(
 
 
 def assign_metadata(
-    el: etree._Element, meta: list[Metadata[str]], trim_comments: bool, base: str = ""
+    el: etree._Element, meta: list[Metadata], trim_comments: bool, base: str = ""
 ) -> None:
     key_start = len(base)
     done: list[str] = []

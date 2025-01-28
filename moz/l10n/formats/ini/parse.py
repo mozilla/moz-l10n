@@ -15,16 +15,15 @@
 from __future__ import annotations
 
 from io import StringIO
-from typing import Any, Generator, TextIO
+from typing import Generator, TextIO
 
 from iniparse import ini  # type: ignore[import-untyped]
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Comment, Entry, Resource, Section
+from ...model import Comment, Entry, Message, PatternMessage, Resource, Section
 from .. import Format
 
 
-def ini_parse(source: TextIO | str | bytes) -> Resource[Message, Any]:
+def ini_parse(source: TextIO | str | bytes) -> Resource[Message]:
     """
     Parse an .ini file into a message resource.
 
@@ -38,8 +37,8 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[Message, Any]:
         file = source
     cfg = ini.INIConfig(file, optionxformvalue=None)
 
-    resource = Resource[Message, str](Format.ini, [])
-    section: Section[Message, str] | None = None
+    resource = Resource[Message](Format.ini, [])
+    section: Section[Message] | None = None
     pattern: list[str] | None = None
     comment = ""
 

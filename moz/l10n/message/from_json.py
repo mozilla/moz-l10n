@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any, Literal
 
-from moz.l10n.message.data import (
+from ..model import (
     CatchallKey,
     Expression,
     Markup,

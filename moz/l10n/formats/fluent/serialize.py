@@ -21,17 +21,25 @@ from typing import Any, Iterator
 from fluent.syntax import FluentSerializer
 from fluent.syntax import ast as ftl
 
-from ...message import data as msg
-from ...resource import data as res
+from ...model import (
+    CatchallKey,
+    Comment,
+    Entry,
+    Expression,
+    Message,
+    Metadata,
+    Pattern,
+    PatternMessage,
+    Resource,
+    Section,
+    SelectMessage,
+    VariableRef,
+)
 
 
 def fluent_serialize(
-    resource: (
-        res.Resource[str, res.M]
-        | res.Resource[msg.Message, res.M]
-        | res.Resource[ftl.Pattern, res.M]
-    ),
-    serialize_metadata: Callable[[res.Metadata[res.M]], str | None] | None = None,
+    resource: (Resource[str] | Resource[Message] | Resource[ftl.Pattern]),
+    serialize_metadata: Callable[[Metadata], str | None] | None = None,
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -58,12 +66,8 @@ def fluent_serialize(
 
 
 def fluent_astify(
-    resource: (
-        res.Resource[str, res.M]
-        | res.Resource[msg.Message, res.M]
-        | res.Resource[ftl.Pattern, res.M]
-    ),
-    serialize_metadata: Callable[[res.Metadata[res.M]], str | None] | None = None,
+    resource: (Resource[str] | Resource[Message] | Resource[ftl.Pattern]),
+    serialize_metadata: Callable[[Metadata], str | None] | None = None,
     trim_comments: bool = False,
 ) -> ftl.Resource:
     """
@@ -82,22 +86,17 @@ def fluent_astify(
     """
 
     def comment(
-        node: (
-            res.Resource[Any, Any]
-            | res.Section[Any, Any]
-            | res.Entry[Any, Any]
-            | res.Comment
-        ),
+        node: (Resource[Any] | Section[Any] | Entry[Any] | Comment),
     ) -> str:
         if trim_comments:
             return ""
         cs = node.comment.rstrip()
-        if not isinstance(node, res.Comment) and node.meta:
+        if not isinstance(node, Comment) and node.meta:
             if not serialize_metadata:
                 raise ValueError("Metadata requires serialize_metadata parameter")
             for field in node.meta:
                 if (
-                    isinstance(node, res.Resource)
+                    isinstance(node, Resource)
                     and field.key == "info"
                     and field == node.meta[0]
                 ):
@@ -130,7 +129,7 @@ def fluent_astify(
         cur: ftl.Message | ftl.Term | None = None
         cur_id = ""
         for entry in section.entries:  # type: ignore[attr-defined]
-            if isinstance(entry, res.Comment):
+            if isinstance(entry, Comment):
                 if not trim_comments:
                     body.append(ftl.Comment(entry.comment))
                 cur = None
@@ -178,7 +177,7 @@ def fluent_astify(
     return ftl.Resource(body)
 
 
-def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
+def fluent_astify_message(message: str | Message) -> ftl.Pattern:
     """
     Transform a message into a corresponding Fluent AST pattern.
 
@@ -188,9 +187,9 @@ def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
 
     if isinstance(message, str):
         return ftl.Pattern([ftl.TextElement(message)])
-    if not isinstance(message, (msg.PatternMessage, msg.SelectMessage)):
+    if not isinstance(message, (PatternMessage, SelectMessage)):
         raise ValueError(f"Unsupported message: {message}")
-    if isinstance(message, msg.PatternMessage):
+    if isinstance(message, PatternMessage):
         return flat_pattern(message.declarations, message.pattern)
 
     # It gets a bit complicated for SelectMessage. We'll be modifying this list,
@@ -223,7 +222,7 @@ def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
             keys, pattern = variants[i]
             key = keys.pop()  # Ultimately modifies keys0
             ftl_variant = ftl.Variant(
-                variant_key(key, other), pattern, isinstance(key, msg.CatchallKey)
+                variant_key(key, other), pattern, isinstance(key, CatchallKey)
             )
             if sel_exp and keys == base_keys:
                 sel_exp.variants.append(ftl_variant)
@@ -238,14 +237,14 @@ def fluent_astify_message(message: str | msg.Message) -> ftl.Pattern:
     return variants[0][1]
 
 
-def fallback_name(message: msg.SelectMessage) -> str:
+def fallback_name(message: SelectMessage) -> str:
     """
     Try `other`, `other1`, `other2`, ... until a free one is found.
     """
     i = 0
     key = root = "other"
     while any(
-        key == (k.value if isinstance(k, msg.CatchallKey) else k)
+        key == (k.value if isinstance(k, CatchallKey) else k)
         for keys in message.variants
         for k in keys
     ):
@@ -255,9 +254,9 @@ def fallback_name(message: msg.SelectMessage) -> str:
 
 
 def variant_key(
-    key: str | msg.CatchallKey, other: str
+    key: str | CatchallKey, other: str
 ) -> ftl.NumberLiteral | ftl.Identifier:
-    kv = key.value or other if isinstance(key, msg.CatchallKey) else key
+    kv = key.value or other if isinstance(key, CatchallKey) else key
     try:
         float(kv)
         return ftl.NumberLiteral(kv)
@@ -267,12 +266,12 @@ def variant_key(
         raise ValueError(f"Unsupported variant key: {kv}")
 
 
-def flat_pattern(decl: dict[str, msg.Expression], pattern: msg.Pattern) -> ftl.Pattern:
+def flat_pattern(decl: dict[str, Expression], pattern: Pattern) -> ftl.Pattern:
     elements: list[ftl.TextElement | ftl.Placeable] = []
     for el in pattern:
         if isinstance(el, str):
             elements.append(ftl.TextElement(el))
-        elif isinstance(el, msg.Expression):
+        elif isinstance(el, Expression):
             elements.append(ftl.Placeable(expression(decl, el)))
         else:
             raise ValueError(f"Conversion to Fluent not supported: {el}")
@@ -280,7 +279,7 @@ def flat_pattern(decl: dict[str, msg.Expression], pattern: msg.Pattern) -> ftl.P
 
 
 def expression(
-    decl: dict[str, msg.Expression], expr: msg.Expression, decl_name: str = ""
+    decl: dict[str, Expression], expr: Expression, decl_name: str = ""
 ) -> ftl.InlineExpression:
     arg = value(decl, expr.arg, decl_name) if expr.arg is not None else None
     if expr.function:
@@ -293,10 +292,10 @@ def expression(
 
 
 def function_ref(
-    decl: dict[str, msg.Expression],
+    decl: dict[str, Expression],
     arg: ftl.InlineExpression | None,
     function: str,
-    options: dict[str, str | msg.VariableRef],
+    options: dict[str, str | VariableRef],
 ) -> ftl.InlineExpression:
     named: list[ftl.NamedArgument] = []
     for name, val in options.items():
@@ -342,7 +341,7 @@ esc_cc = {n: f"\\u{n:04X}" for r in (range(0, 32), range(127, 160)) for n in r}
 
 
 def value(
-    decl: dict[str, msg.Expression], val: str | msg.VariableRef, decl_name: str = ""
+    decl: dict[str, Expression], val: str | VariableRef, decl_name: str = ""
 ) -> ftl.InlineExpression:
     if isinstance(val, str):
         try:

@@ -25,11 +25,10 @@ from ..formats.plain_json.parse import plain_json_parse
 from ..formats.po.parse import po_parse
 from ..formats.properties.parse import properties_parse
 from ..formats.webext.parse import webext_parse
-from ..message.data import Message
-from .data import Resource
+from ..model import Message, Resource
 
-android_parse: Callable[[str | bytes], Resource[Message, str]] | None
-xliff_parse: Callable[[str | bytes], Resource[Message, str]] | None
+android_parse: Callable[[str | bytes], Resource[Message]] | None
+xliff_parse: Callable[[str | bytes], Resource[Message]] | None
 try:
     from ..formats.android.parse import android_parse
     from ..formats.xliff.parse import xliff_parse
@@ -44,7 +43,7 @@ class UnsupportedResource(Exception):
 
 def parse_resource(
     input: Format | str | None, source: str | bytes | None = None
-) -> Resource[Message, str]:
+) -> Resource[Message]:
     """
     Parse a Resource from its string representation.
 

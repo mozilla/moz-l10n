@@ -21,9 +21,9 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from os.path import abspath, basename, dirname, isdir, join, normpath, relpath
 from textwrap import dedent
 
+from moz.l10n.model import Entry
 from moz.l10n.paths import L10nConfigPaths, L10nDiscoverPaths
 from moz.l10n.resource import UnsupportedResource, parse_resource
-from moz.l10n.resource.data import Entry
 
 
 def cli() -> None:

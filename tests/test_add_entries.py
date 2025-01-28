@@ -16,8 +16,8 @@ from __future__ import annotations
 
 from unittest import TestCase
 
+from moz.l10n.model import Entry, Resource, Section
 from moz.l10n.resource import add_entries
-from moz.l10n.resource.data import Entry, Resource, Section
 
 
 class TestAddEntries(TestCase):

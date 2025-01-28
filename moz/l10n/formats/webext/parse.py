@@ -18,21 +18,24 @@ from json import loads
 from re import compile
 from typing import Any
 
-from ...message.data import (
+from ...model import (
+    Comment,
+    Entry,
     Expression,
     Message,
     Pattern,
     PatternMessage,
+    Resource,
+    Section,
     VariableRef,
 )
-from ...resource.data import Comment, Entry, Resource, Section
 from .. import Format
 
 placeholder = compile(r"\$([a-zA-Z0-9_@]+)\$|(\$[1-9])|\$(\$+)")
 pos_arg = compile(r"\$([1-9])")
 
 
-def webext_parse(source: str | bytes) -> Resource[Message, Any]:
+def webext_parse(source: str | bytes) -> Resource[Message]:
     """
     Parse a messages.json file into a message resource.
 
@@ -42,7 +45,7 @@ def webext_parse(source: str | bytes) -> Resource[Message, Any]:
     The parsed resource will not include any metadata.
     """
     json: dict[str, dict[str, Any]] = loads(source)
-    entries: list[Entry[Message, Any] | Comment] = []
+    entries: list[Entry[Message] | Comment] = []
     for key, msg in json.items():
         src: str = msg["message"]
         comment: str = msg.get("description", "")

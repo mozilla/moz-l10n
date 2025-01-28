@@ -18,15 +18,14 @@ from collections.abc import Iterator
 from re import UNICODE, compile
 from typing import Any
 
-from ...message.data import Message, PatternMessage
-from ...resource.data import Entry, Resource
+from ...model import Entry, Message, PatternMessage, Resource
 from .parse import name, re_comment
 
 re_name = compile(name, UNICODE)
 
 
 def dtd_serialize(
-    resource: Resource[str, Any] | Resource[Message, Any],
+    resource: Resource[str] | Resource[Message],
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """

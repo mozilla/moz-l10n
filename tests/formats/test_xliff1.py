@@ -19,15 +19,19 @@ from textwrap import dedent
 from unittest import SkipTest, TestCase
 
 from moz.l10n.formats import Format
-from moz.l10n.message.data import (
+from moz.l10n.model import (
     CatchallKey,
+    Comment,
+    Entry,
     Expression,
     Markup,
+    Metadata,
     PatternMessage,
+    Resource,
+    Section,
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource.data import Comment, Entry, Metadata, Resource, Section
 
 try:
     from moz.l10n.formats.xliff import xliff_parse, xliff_serialize

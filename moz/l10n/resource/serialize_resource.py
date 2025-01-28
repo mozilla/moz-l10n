@@ -26,14 +26,13 @@ from ..formats.plain_json.serialize import plain_json_serialize
 from ..formats.po.serialize import po_serialize
 from ..formats.properties.serialize import properties_serialize
 from ..formats.webext.serialize import webext_serialize
-from ..message.data import Message
-from .data import Resource
+from ..model import Message, Resource
 
 android_serialize: (
-    Callable[[Resource[str, str] | Resource[Message, str], bool], Iterator[str]] | None
+    Callable[[Resource[str] | Resource[Message], bool], Iterator[str]] | None
 )
 xliff_serialize: (
-    Callable[[Resource[str, str] | Resource[Message, str], bool], Iterator[str]] | None
+    Callable[[Resource[str] | Resource[Message], bool], Iterator[str]] | None
 )
 try:
     from ..formats.android.serialize import android_serialize
@@ -44,7 +43,7 @@ except ImportError:
 
 
 def serialize_resource(
-    resource: Resource[str, str] | Resource[Message, str],
+    resource: Resource[str] | Resource[Message],
     format: Format | None = None,
     trim_comments: bool = False,
 ) -> Iterator[str]:
