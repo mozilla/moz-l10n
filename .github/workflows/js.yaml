@@ -1,0 +1,32 @@
+name: JS
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+        working-directory: ./js
+      - run: npm test
+        working-directory: ./js
+      - run: npm run build
+        working-directory: ./js
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+        working-directory: ./js
+      - run: npm run lint
+        working-directory: ./js
+      - run: npx prettier --check .
+        working-directory: ./js

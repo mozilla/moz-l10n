@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "target": "es2024",
+    "lib": ["dom", "es2024"],
+    "rootDir": "./src/",
+    "outDir": "./dist/",
+
+    "moduleResolution": "nodenext",
+    "rewriteRelativeImportExtensions": true,
+
+    "declaration": true,
+    "importHelpers": true,
+    "stripInternal": true,
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strict": true
+  }
+}
