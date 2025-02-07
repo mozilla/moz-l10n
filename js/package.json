@@ -16,7 +16,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mozilla/moz-l10n.git"
+    "url": "git+https://github.com/mozilla/moz-l10n.git",
+    "directory": "js"
   },
   "type": "module",
   "exports": {
