@@ -14,7 +14,7 @@ The library currently supports the following message pattern formats:
 - `android`: Android string resources
 - `fluent`: Fluent (without internal selectors)
 - `mf2`: MessageFormat 2.0
-- `plain`: Patterns without placeholders
+- `plain`: Patterns without placeholders (used in multiple resource formats)
 - `webext`: WebExtensions (messages.json)
 - `xliff`: XLIFF 1.2, including XCode customizations
 
@@ -69,7 +69,7 @@ class SerializeError extends Error {
 }
 ```
 
-Serialise the data representation of a single flat message pattern into a string
+Serialize the data representation of a single flat message pattern into a string
 
 If `onError` is undefined, errors are thrown.
 

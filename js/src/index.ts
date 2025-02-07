@@ -95,7 +95,7 @@ export function parsePattern(
 }
 
 /**
- * Serialise the data representation of a single flat message pattern into a string.
+ * Serialize the data representation of a single flat message pattern into a string.
  *
  * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/moz/l10n/message/schema.json
  *
