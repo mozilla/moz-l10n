@@ -17,7 +17,8 @@ import { expect, test, vi } from 'vitest'
 
 import { ParseError, SerializeError } from './errors.ts'
 import type { Pattern, PatternMessage } from './model.ts'
-import { webextParsePattern, webextSerializePattern } from './webext.ts'
+import { webextParsePattern } from './webext-parse.ts'
+import { webextSerializePattern } from './webext-serialize.ts'
 
 const ok = (name: string, msg: Pattern | PatternMessage, exp: string) =>
   test(name, () => {

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ERROR_RESULT, ParseError, SerializeError } from './errors.ts'
+import { ParseError } from './errors.ts'
 import type { Message, Pattern } from './model.ts'
 
 export function webextParsePattern(
@@ -52,23 +52,4 @@ export function webextParsePattern(
   }
   if (pos < src.length) addText(src.substring(pos))
   return pattern
-}
-
-export function webextSerializePattern(
-  pattern: Pattern,
-  onError: (error: SerializeError) => void
-): string {
-  let str = ''
-  for (const part of pattern) {
-    if (typeof part === 'string') {
-      str += part.replace(/\$+/g, '$$$&')
-    } else if ('$' in part) {
-      str += part.attr?.source ?? `$${part.$}$`
-    } else {
-      const error = `webext: Unsupported pattern part ${JSON.stringify(part)}`
-      onError(new SerializeError(error, str.length))
-      str += ERROR_RESULT
-    }
-  }
-  return str
 }
