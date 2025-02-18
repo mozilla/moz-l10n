@@ -1,4 +1,4 @@
-name: CI
+name: Python
 
 on:
   push:
@@ -24,9 +24,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: uv sync --dev
+      - run: uv sync --dev --all-packages
       - run: uv run pytest -vv
-      - run: uv sync --all-extras
+      - run: uv sync --all-packages --all-extras
       - run: uv run pytest -vv
 
   lint:
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: uv sync --dev --all-extras
+      - run: uv sync --dev --all-packages --all-extras
       - run: uv run mypy .
       - run: uv run ruff check
       - run: uv run ruff format --check

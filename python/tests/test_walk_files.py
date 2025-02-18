@@ -14,8 +14,9 @@
 
 from __future__ import annotations
 
-from os import getcwd, sep
+from os import sep
 from os.path import join
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
@@ -37,22 +38,23 @@ test_data_files = (
     "xcode.xliff",
 )
 
+# /python/
+root = Path(__file__).parent.parent
+
 
 class TestWalkFiles(TestCase):
     def test_direct_children(self):
-        root = join(getcwd(), "tests", "formats", "data")
-        files = set(walk_files(root))
-        assert files == {join(root, path) for path in test_data_files}
+        dir = join(root, "tests", "formats", "data")
+        files = set(walk_files(dir))
+        assert files == {join(dir, path) for path in test_data_files}
 
     def test_dirs(self):
-        root = getcwd()
         files = set(walk_files(root, dirs=[f"tests{sep}formats{sep}data"]))
         assert files == {
             join(root, "tests", "formats", "data", path) for path in test_data_files
         }
 
     def test_l10nignore(self):
-        root = getcwd()
         with TemporaryDirectory() as tmpdir:
             ignorepath = join(tmpdir, ".l10n-ignore")
             with open(ignorepath, mode="w") as file:
