@@ -33,6 +33,7 @@ test_data_files = (
     "icu-docs.xliff",
     "messages.json",
     "mf2-message-schema.json",
+    "plain.json",
     "strings.xml",
     "test.properties",
     "xcode.xliff",

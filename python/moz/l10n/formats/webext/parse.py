@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from json import loads
 from re import compile
 from typing import Any
 
@@ -29,6 +28,7 @@ from ...model import (
     Section,
     VariableRef,
 )
+from ...util.loads import json_linecomment_loads
 from .. import Format
 
 placeholder = compile(r"\$([a-zA-Z0-9_@]+)\$|(\$[1-9])|\$(\$+)")
@@ -44,7 +44,7 @@ def webext_parse(source: str | bytes) -> Resource[Message]:
 
     The parsed resource will not include any metadata.
     """
-    json: dict[str, dict[str, Any]] = loads(source)
+    json: dict[str, dict[str, Any]] = json_linecomment_loads(source)
     entries: list[Entry[Message] | Comment] = []
     for key, msg in json.items():
         src: str = msg["message"]

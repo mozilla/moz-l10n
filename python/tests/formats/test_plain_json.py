@@ -22,7 +22,7 @@ from moz.l10n.formats import Format
 from moz.l10n.formats.plain_json import plain_json_parse, plain_json_serialize
 from moz.l10n.model import Entry, PatternMessage, Resource, Section
 
-source = files("tests.formats.data").joinpath("messages.json").read_bytes()
+source = files("tests.formats.data").joinpath("plain.json").read_bytes()
 
 
 class TestPlain(TestCase):
@@ -35,20 +35,8 @@ class TestPlain(TestCase):
                     (),
                     [
                         Entry(
-                            ("SourceString", "message"),
+                            ("SourceString",),
                             PatternMessage(["Translated String"]),
-                        ),
-                        Entry(
-                            ("SourceString", "description"),
-                            PatternMessage(["Sample comment"]),
-                        ),
-                        Entry(
-                            ("MultipleComments", "message"),
-                            PatternMessage(["Translated Multiple Comments"]),
-                        ),
-                        Entry(
-                            ("MultipleComments", "description"),
-                            PatternMessage(["Second comment"]),
                         ),
                         Entry(
                             ("NoCommentsorSources", "message"),
@@ -80,14 +68,6 @@ class TestPlain(TestCase):
                             ),
                             PatternMessage(["Cira"]),
                         ),
-                        Entry(
-                            ("repeated_ref", "message"),
-                            PatternMessage(["$foo$ and $Foo$"]),
-                        ),
-                        Entry(
-                            ("repeated_ref", "placeholders", "foo", "content"),
-                            PatternMessage(["$1"]),
-                        ),
                     ],
                 )
             ],
@@ -98,14 +78,7 @@ class TestPlain(TestCase):
         assert "".join(plain_json_serialize(res)) == dedent(
             """\
             {
-              "SourceString": {
-                "message": "Translated String",
-                "description": "Sample comment"
-              },
-              "MultipleComments": {
-                "message": "Translated Multiple Comments",
-                "description": "Second comment"
-              },
+              "SourceString": "Translated String",
               "NoCommentsorSources": {
                 "message": "Translated No Comments or Sources"
               },
@@ -116,14 +89,6 @@ class TestPlain(TestCase):
                   "1your_name": {
                     "content": "$1",
                     "example": "Cira"
-                  }
-                }
-              },
-              "repeated_ref": {
-                "message": "$foo$ and $Foo$",
-                "placeholders": {
-                  "foo": {
-                    "content": "$1"
                   }
                 }
               }
