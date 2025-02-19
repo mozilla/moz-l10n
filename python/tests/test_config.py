@@ -262,6 +262,7 @@ class TestL10nConfigPaths(TestCase):
             paths = L10nConfigPaths(join(root, "l10n.toml"))
         assert paths.base == join(root, "foundation", "translations", "networkapi")
         assert paths.locales == ["de", "es", "fr", "fy-NL", "nl", "pl", "pt-BR", "sw"]
+        assert paths.all_locales == set(paths.locales)
         path_locales = ["de", "es", "fr", "pt-BR"]
         assert paths.all() == {
             (
@@ -290,6 +291,7 @@ class TestL10nConfigPaths(TestCase):
 
         paths.locales = ["es", "fr", "nl"]
         assert paths.target(res_source)[1] == set(("es", "fr"))
+        assert paths.all_locales == {"es", "fr", "nl", "de", "pt-BR"}
         paths.locales = []
         assert paths.target(res_source)[1] == path_locales
 
