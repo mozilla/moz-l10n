@@ -5,6 +5,12 @@ resolution-markers = [
     "python_full_version < '3.9'",
 ]
 
+[manifest]
+members = [
+    "monorepo",
+    "moz-l10n",
+]
+
 [[package]]
 name = "attrs"
 version = "24.3.0"
@@ -268,21 +274,9 @@ wheels = [
 ]
 
 [[package]]
-name = "moz-l10n"
-version = "0.5.7"
-source = { editable = "." }
-dependencies = [
-    { name = "fluent-syntax" },
-    { name = "gitignorant" },
-    { name = "iniparse" },
-    { name = "polib" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
-]
-
-[package.optional-dependencies]
-xml = [
-    { name = "lxml" },
-]
+name = "monorepo"
+version = "0.0.0"
+source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
@@ -296,14 +290,6 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "fluent-syntax", specifier = "~=0.19.0" },
-    { name = "gitignorant", specifier = "~=0.3.1" },
-    { name = "iniparse", specifier = "~=0.5" },
-    { name = "lxml", marker = "extra == 'xml'", specifier = "~=5.0" },
-    { name = "polib", specifier = "~=1.2" },
-    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1.1.0" },
-]
 
 [package.metadata.requires-dev]
 dev = [
@@ -314,6 +300,33 @@ dev = [
     { name = "ruff", specifier = ">=0.6.8" },
     { name = "types-lxml", specifier = ">=2024.9.16" },
     { name = "types-polib", specifier = ">=1.2.0.20240811" },
+]
+
+[[package]]
+name = "moz-l10n"
+version = "0.5.7"
+source = { editable = "python" }
+dependencies = [
+    { name = "fluent-syntax" },
+    { name = "gitignorant" },
+    { name = "iniparse" },
+    { name = "polib" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+
+[package.optional-dependencies]
+xml = [
+    { name = "lxml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fluent-syntax", specifier = "~=0.19.0" },
+    { name = "gitignorant", specifier = "~=0.3.1" },
+    { name = "iniparse", specifier = "~=0.5" },
+    { name = "lxml", marker = "extra == 'xml'", specifier = "~=5.0" },
+    { name = "polib", specifier = "~=1.2" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1.1.0" },
 ]
 
 [[package]]

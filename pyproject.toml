@@ -1,57 +1,15 @@
-[build-system]
-requires = ["setuptools >= 61"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "moz.l10n"
-version = "0.5.7"
+name = "monorepo"
+version = "0.0.0"
 description = "Mozilla tools for localization"
-readme = "README.md"
-license = { text = "Apache-2.0" }
-authors = [
-  { name = "Mozilla", email = "l10n-drivers@mozilla.org" },
-  { name = "Eemeli Aro", email = "eemeli@mozilla.com" },
-]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "Topic :: Software Development :: Localization",
-  "Topic :: Software Development :: Testing",
-]
-requires-python = "~= 3.8"
-dependencies = [
-  "fluent.syntax ~= 0.19.0",
-  "gitignorant ~= 0.3.1",
-  "iniparse ~= 0.5",
-  "polib ~= 1.2",
-  "tomli >= 1.1.0; python_version < '3.11'",
-]
 
-[project.optional-dependencies]
-xml = ["lxml ~= 5.0"]
-
-[project.scripts]
-l10n-build = "moz.l10n.bin.build:cli"
-l10n-build-file = "moz.l10n.bin.build_file:cli"
-l10n-compare = "moz.l10n.bin.compare:cli"
-l10n-fix = "moz.l10n.bin.fix:cli"
-
-[project.urls]
-repository = "https://github.com/mozilla/moz-l10n"
+[tool.uv.workspace]
+members = ["python"]
 
 [tool.mypy]
-exclude = "^(build|tests)/"
+exclude = "/(build|tests)/"
 explicit_package_bases = true
+mypy_path = "python"
 strict = true
 
 [[tool.mypy.overrides]]
@@ -75,20 +33,13 @@ ignore = [
   "E501", # Line too long
 ]
 
-[tool.setuptools]
-platforms = ["any"]
-license-files = []  # https://github.com/pypa/setuptools/issues/4759
-
-[tool.setuptools.packages.find]
-include = ["moz.l10n*"]
-
 [tool.uv]
 dev-dependencies = [
-    "importlib-resources>=6.4.5",
-    "jsonschema>=4.23.0",
-    "mypy>=1.11.2",
-    "pytest>=8.3.3",
-    "ruff>=0.6.8",
-    "types-lxml>=2024.9.16",
-    "types-polib>=1.2.0.20240811",
+  "importlib-resources>=6.4.5",
+  "jsonschema>=4.23.0",
+  "mypy>=1.11.2",
+  "pytest>=8.3.3",
+  "ruff>=0.6.8",
+  "types-lxml>=2024.9.16",
+  "types-polib>=1.2.0.20240811",
 ]

@@ -20,7 +20,6 @@ from typing import Any
 
 import pytest
 from jsonschema import validate
-
 from moz.l10n.formats.mf2 import (
     MF2ParseError,
     mf2_parse_message,

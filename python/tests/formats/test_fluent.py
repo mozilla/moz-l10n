@@ -19,7 +19,6 @@ from textwrap import dedent
 from unittest import TestCase
 
 from fluent.syntax import ast as ftl
-
 from moz.l10n.formats import Format
 from moz.l10n.formats.fluent import fluent_parse, fluent_serialize
 from moz.l10n.model import (
