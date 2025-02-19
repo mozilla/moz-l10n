@@ -15,23 +15,13 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any
 
-from ..model import (
-    Comment,
-    Entry,
-    Resource,
-    Section,
-    V,
-)
-
-RS = Section[Any]
-RE = Entry[Any]
+from ..model import Comment, Entry, Resource, Section
 
 
 def add_entries(
-    target: Resource[V],
-    source: Resource[V],
+    target: Resource,
+    source: Resource,
     *,
     use_source_entries: bool = False,
 ) -> int:
@@ -48,11 +38,11 @@ def add_entries(
     """
 
     change_count = 0
-    cur_tgt_section: RS | None = None
+    cur_tgt_section: Section | None = None
     for src_section in source.sections:
         tgt_match = [s for s in target.sections if s.id == src_section.id]
-        prev_pos: tuple[RS, int] | None = None
-        new_entries: list[RE | Comment] = []
+        prev_pos: tuple[Section, int] | None = None
+        new_entries: list[Entry | Comment] = []
         for entry in src_section.entries:
             if isinstance(entry, Entry):
                 target_pos = next(
