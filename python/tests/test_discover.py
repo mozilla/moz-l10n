@@ -74,6 +74,7 @@ class TestL10nDiscover(TestCase):
         assert paths.ref_root == join(root, "en")
         assert paths.base is None
         assert paths.locales is None
+        assert paths.all_locales == set()
         with self.assertRaises(ValueError):
             paths.all()
         with self.assertRaises(ValueError):
@@ -134,6 +135,7 @@ class TestL10nDiscover(TestCase):
             assert paths.ref_root == join(root, "source", "en")
             assert paths.base == join(root, "target")
             assert paths.locales == ["yy-Latn", "zz"]
+            assert paths.all_locales == {"yy-Latn", "zz"}
             assert paths.all() == {
                 (
                     join(paths.ref_root, "a.ftl"),

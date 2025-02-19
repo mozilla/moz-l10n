@@ -208,6 +208,24 @@ class L10nConfigPaths:
             incl.locales = locales
 
     @property
+    def all_locales(self) -> set[str]:
+        """
+        All locales for the config,
+        including locales set in its imports and paths.
+        """
+        return set(self._all_locales)
+
+    @property
+    def _all_locales(self) -> Iterator[str]:
+        if self._locales is not None:
+            yield from self._locales
+        for _, locales in self._path_data.values():
+            if locales is not None:
+                yield from locales
+        for incl in self._includes:
+            yield from incl._all_locales
+
+    @property
     def ref_root(self) -> str:
         """The reference root directory."""
         return self._ref_root

@@ -185,6 +185,13 @@ class L10nDiscoverPaths:
             )
 
     @property
+    def all_locales(self) -> set[str]:
+        """
+        All locales for the config.
+        """
+        return set() if self.locales is None else set(self.locales)
+
+    @property
     def ref_root(self) -> str:
         """The reference root directory."""
         return self._ref_root
