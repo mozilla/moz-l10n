@@ -1,4 +1,6 @@
 {
+  // Line comments are supported,
+  // and ignored.
   "SourceString": {
     "message": "Translated String",
     "description": "Sample comment"

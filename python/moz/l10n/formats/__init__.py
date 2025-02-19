@@ -20,6 +20,8 @@ from json import JSONDecodeError, loads
 from os.path import splitext
 from typing import Any
 
+from ..util.loads import json_linecomment_loads
+
 # from moz.l10n.formats.xliff.common import xliff_ns
 xliff_ns = {
     "urn:oasis:names:tc:xliff:document:1.0",
@@ -108,6 +110,16 @@ def detect_format(name: str | None, source: bytes | str) -> Format | None:
             if all(is_webext_message(m) for m in json.values()):
                 return Format.webext
             return Format.plain_json
+        except JSONDecodeError:
+            pass
+
+        try:
+            json = json_linecomment_loads(source)
+            if is_object_of_strings(json) and all(
+                is_webext_message(m) for m in json.values()
+            ):
+                return Format.webext
+            return None
         except JSONDecodeError:
             pass
 

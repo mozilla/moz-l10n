@@ -1,0 +1,16 @@
+{
+  "SourceString": "Translated String",
+  "NoCommentsorSources": {
+    "message": "Translated No Comments or Sources"
+  },
+  "placeholders": {
+    "message": "Hello$$$ $1YOUR_NAME$ at $2",
+    "description": "Peer greeting",
+    "placeholders": {
+      "1your_name": {
+        "content": "$1",
+        "example": "Cira"
+      }
+    }
+  }
+}
