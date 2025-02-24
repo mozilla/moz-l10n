@@ -18,16 +18,13 @@ from collections.abc import Iterator
 from re import UNICODE, compile
 from typing import Any
 
-from ...model import Entry, Message, PatternMessage, Resource
+from ...model import Entry, PatternMessage, Resource
 from .parse import name, re_comment
 
 re_name = compile(name, UNICODE)
 
 
-def dtd_serialize(
-    resource: Resource[str] | Resource[Message],
-    trim_comments: bool = False,
-) -> Iterator[str]:
+def dtd_serialize(resource: Resource, trim_comments: bool = False) -> Iterator[str]:
     """
     Serialize a resource as the contents of a DTD file.
 
@@ -81,9 +78,7 @@ def dtd_serialize(
                 if not re_name.fullmatch(name):
                     raise ValueError(f"Unsupported DTD name: {name}")
                 msg = entry.value
-                if isinstance(msg, str):
-                    value = msg
-                elif isinstance(msg, PatternMessage) and all(
+                if isinstance(msg, PatternMessage) and all(
                     isinstance(p, str) for p in msg.pattern
                 ):
                     value = "".join(msg.pattern)  # type: ignore[arg-type]

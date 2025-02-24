@@ -18,13 +18,10 @@ from collections.abc import Iterator
 from re import search
 from typing import Any
 
-from ...model import Entry, Message, PatternMessage, Resource
+from ...model import Entry, PatternMessage, Resource
 
 
-def ini_serialize(
-    resource: Resource[str] | Resource[Message],
-    trim_comments: bool = False,
-) -> Iterator[str]:
+def ini_serialize(resource: Resource, trim_comments: bool = False) -> Iterator[str]:
     """
     Serialize a resource as the contents of an .ini file.
 
@@ -72,9 +69,7 @@ def ini_serialize(
             if isinstance(entry, Entry):
                 yield from comment(entry.comment, entry.meta, False)
                 msg = entry.value
-                if isinstance(msg, str):
-                    value = msg
-                elif isinstance(msg, PatternMessage) and all(
+                if isinstance(msg, PatternMessage) and all(
                     isinstance(p, str) for p in msg.pattern
                 ):
                     value = "".join(msg.pattern)  # type: ignore[arg-type]

@@ -18,11 +18,11 @@ from collections.abc import Iterator
 from json import loads
 from typing import Any
 
-from ...model import Entry, Message, PatternMessage, Resource, Section
+from ...model import Entry, PatternMessage, Resource, Section
 from .. import Format
 
 
-def plain_json_parse(source: str | bytes) -> Resource[Message]:
+def plain_json_parse(source: str | bytes) -> Resource:
     """
     Parse a JSON file into a message resource.
 
@@ -38,7 +38,7 @@ def plain_json_parse(source: str | bytes) -> Resource[Message]:
     )
 
 
-def plain_object(path: list[str], obj: dict[str, Any]) -> Iterator[Entry[Message]]:
+def plain_object(path: list[str], obj: dict[str, Any]) -> Iterator[Entry]:
     for k, value in obj.items():
         key = [*path, k]
         if isinstance(value, str):

@@ -40,7 +40,7 @@ def encode_char(m: Match[str]) -> str:
 
 
 def properties_serialize(
-    resource: Resource[str] | Resource[Message],
+    resource: Resource,
     encoding: Literal["iso-8859-1", "utf-8", "utf-16"] = "utf-8",
     serialize_message: Callable[[Message], str] | None = None,
     trim_comments: bool = False,
@@ -51,7 +51,8 @@ def properties_serialize(
     Section identifiers will be prepended to their constituent message identifiers.
     Multi-part message identifiers will be joined with `.` between each part.
 
-    For non-string message values, a `serialize_message` callable must be provided.
+    A `serialize_message` callable may be provided to customize the serialization,
+    as a .properties file may contain messages in any format.
 
     Metadata is not supported.
 
@@ -98,9 +99,7 @@ def properties_serialize(
 
                 value: str
                 msg = entry.value
-                if isinstance(msg, str):
-                    value = msg
-                elif serialize_message:
+                if serialize_message:
                     value = serialize_message(msg)
                 elif isinstance(msg, PatternMessage) and all(
                     isinstance(p, str) for p in msg.pattern
