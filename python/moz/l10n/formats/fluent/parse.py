@@ -14,10 +14,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
 from itertools import product
 from re import finditer
-from typing import Any, Literal, Tuple, cast, overload
+from typing import Iterable, Tuple, cast
 
 from fluent.syntax import FluentParser
 from fluent.syntax import ast as ftl
@@ -40,38 +39,14 @@ from ...model import (
 from .. import Format
 
 
-@overload
 def fluent_parse(
-    source: bytes | str | ftl.Resource,
-    *,
-    as_ftl_patterns: Literal[False] = False,
-    with_linepos: bool = True,
-) -> Resource[Message]: ...
-
-
-@overload
-def fluent_parse(
-    source: bytes | str | ftl.Resource,
-    *,
-    as_ftl_patterns: Literal[True],
-    with_linepos: bool = True,
-) -> Resource[ftl.Pattern]: ...
-
-
-def fluent_parse(
-    source: bytes | str | ftl.Resource,
-    *,
-    as_ftl_patterns: bool = False,
-    with_linepos: bool = True,
-) -> Resource[Message] | Resource[ftl.Pattern]:
+    source: bytes | str | ftl.Resource, *, with_linepos: bool = True
+) -> Resource[Message]:
     """
     Parse a .ftl file into a message resource.
 
     Message and term references are represented by `message` function annotations,
     with term identifiers prefixed with a `-`.
-
-    By default, messages are parsed as Messages;
-    to keep them as Fluent Patterns, use `as_ftl_patterns=True`.
 
     Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the Resource.
 
@@ -86,7 +61,7 @@ def fluent_parse(
         fluent_res = FluentParser(with_spans=with_linepos).parse(source_str)
         lpm = LinePosMapper(source_str) if with_linepos else None
 
-    entries: list[Entry[Any] | Comment] = []
+    entries: list[Entry[Message] | Comment] = []
     section = Section((), entries)
     resource = Resource(Format.fluent, [section])
     fluent_body = fluent_res.body
@@ -94,8 +69,8 @@ def fluent_parse(
         resource.meta.append(Metadata("info", fbc.content))
         fluent_body = fluent_body[1:]
     for entry in fluent_body:
-        if isinstance(entry, ftl.Message) or isinstance(entry, ftl.Term):
-            entries.extend(patterns(entry, as_ftl_patterns, lpm))
+        if isinstance(entry, (ftl.Message, ftl.Term)):
+            entries.extend(entries_iter(entry, lpm))
         elif isinstance(entry, ftl.ResourceComment):
             if entry.content:
                 resource.comment = (
@@ -132,20 +107,38 @@ def fluent_parse(
     return resource
 
 
-def patterns(
+def fluent_parse_messages(
+    source: str | ftl.Message | ftl.Term, *, with_linepos: bool = True
+) -> list[Entry[Message]]:
+    """
+    Parse a Fluent message or term into a list of Entries.
+
+    Message and term references are represented by `message` function annotations,
+    with term identifiers prefixed with a `-`.
+
+    Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the result.
+    """
+    if isinstance(source, str):
+        fluent_entry = FluentParser(with_spans=with_linepos).parse_entry(source)
+        lpm = LinePosMapper(source) if with_linepos else None
+    else:
+        fluent_entry = source
+        lpm = None  # Source is required for line positions
+    if not isinstance(fluent_entry, (ftl.Message, ftl.Term)):
+        raise ValueError("Source is not a Fluent entry")
+    return list(entries_iter(fluent_entry, lpm))
+
+
+def entries_iter(
     ftl_entry: ftl.Message | ftl.Term,
-    as_ftl_patterns: bool,
     lpm: LinePosMapper | None,
-) -> Generator[Entry[Message] | Entry[ftl.Pattern], None, None]:
-    message = (lambda m: m) if as_ftl_patterns else fluent_parse_message
+) -> Iterable[Entry[Message]]:
     id = ftl_entry.id.name
     if isinstance(ftl_entry, ftl.Term):
         id = "-" + id
     comment = ftl_entry.comment.content or "" if ftl_entry.comment else ""
     if ftl_entry.value:
-        entry: Entry[Any] = Entry(
-            id=(id,), value=message(ftl_entry.value), comment=comment
-        )
+        entry = Entry(id=(id,), value=message(ftl_entry.value), comment=comment)
         if lpm and ftl_entry.span and ftl_entry.value.span:
             v_span = ftl_entry.value.span
             c_span = (
@@ -179,7 +172,7 @@ def patterns(
             comment = ""
 
 
-def fluent_parse_message(ftl_pattern: ftl.Pattern) -> Message:
+def message(ftl_pattern: ftl.Pattern) -> Message:
     sel_data = find_selectors(ftl_pattern, [])
     sel_expressions = [sd[0] for sd in sel_data]
     filter: list[Key | None] = [None] * len(sel_expressions)
