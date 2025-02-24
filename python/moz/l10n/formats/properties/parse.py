@@ -53,7 +53,7 @@ def properties_parse(
     source: bytes | str,
     encoding: str = "utf-8",
     parse_message: Callable[[str], Message] | None = None,
-) -> Resource[Message]:
+) -> Resource:
     """
     Parse a .properties file into a message resource.
 
@@ -65,13 +65,13 @@ def properties_parse(
     if not isinstance(source, str):
         source = source.decode(encoding)
     parser = PropertiesParser(source)
-    entries: list[Entry[Message] | Comment] = []
+    entries: list[Entry | Comment] = []
     resource = Resource(Format.properties, [Section((), entries)])
 
     start_line = 0
     comment = ""
     prev_linepos: LinePos | None = None
-    entry: Entry[Message] | None = None
+    entry: Entry | None = None
     for kind, line, value in parser:
         if kind == LineKind.VALUE:
             assert entry

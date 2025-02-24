@@ -19,11 +19,11 @@ from typing import Generator, TextIO
 
 from iniparse import ini  # type: ignore[import-untyped]
 
-from ...model import Comment, Entry, Message, PatternMessage, Resource, Section
+from ...model import Comment, Entry, PatternMessage, Resource, Section
 from .. import Format
 
 
-def ini_parse(source: TextIO | str | bytes) -> Resource[Message]:
+def ini_parse(source: TextIO | str | bytes) -> Resource:
     """
     Parse an .ini file into a message resource.
 
@@ -37,8 +37,8 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[Message]:
         file = source
     cfg = ini.INIConfig(file, optionxformvalue=None)
 
-    resource = Resource[Message](Format.ini, [])
-    section: Section[Message] | None = None
+    resource = Resource(Format.ini, [])
+    section: Section | None = None
     pattern: list[str] | None = None
     comment = ""
 
