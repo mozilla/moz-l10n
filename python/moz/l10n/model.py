@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Literal, Tuple, Union
+from typing import Dict, Generic, List, Literal, Tuple, TypeVar, Union
 
 from .formats import Format
 
@@ -191,8 +191,14 @@ class Comment:
     """
 
 
+V = TypeVar("V")
+"""
+The Message value type.
+"""
+
+
 @dataclass
-class Entry:
+class Entry(Generic[V]):
     """
     A message entry.
 
@@ -213,7 +219,7 @@ class Entry:
     i.e. the concatenation of its section header identifier (if any) and its own.
     """
 
-    value: Message
+    value: V
     """
     The value of an entry, i.e. the message.
 
@@ -244,7 +250,7 @@ class Entry:
 
 
 @dataclass
-class Section:
+class Section(Generic[V]):
     """
     A section of a resource.
 
@@ -269,7 +275,7 @@ class Section:
     i.e. they do not include this identifier.
     """
 
-    entries: list[Entry | Comment]
+    entries: list[Entry[V] | Comment]
     """
     Section entries consist of message entries and comments.
 
@@ -300,7 +306,7 @@ class Section:
 
 
 @dataclass
-class Resource:
+class Resource(Generic[V]):
     """
     A message resource.
 
@@ -313,7 +319,7 @@ class Resource:
     The serialization format for the resource, if any.
     """
 
-    sections: list[Section]
+    sections: list[Section[V]]
     """
     The body of a resource, consisting of an array of sections.
 

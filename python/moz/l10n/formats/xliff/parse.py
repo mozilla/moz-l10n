@@ -25,6 +25,7 @@ from ...model import (
     Comment,
     Entry,
     Expression,
+    Message,
     Metadata,
     PatternMessage,
     Resource,
@@ -36,7 +37,7 @@ from .parse_trans_unit import parse_trans_unit
 from .parse_xcode import parse_xliff_stringsdict
 
 
-def xliff_parse(source: str | bytes) -> Resource:
+def xliff_parse(source: str | bytes) -> Resource[Message]:
     """
     Parse an XLIFF 1.2 file into a message resource.
 
@@ -66,7 +67,7 @@ def xliff_parse(source: str | bytes) -> Resource:
     if root.text and not root.text.isspace():
         raise ValueError(f"Unexpected text in <xliff>: {root.text}")
 
-    res = Resource(Format.xliff, [])
+    res: Resource[Message] = Resource(Format.xliff, [])
     root_comments = [
         c.text for c in root.itersiblings(etree.Comment, preceding=True) if c.text
     ]
@@ -88,7 +89,7 @@ def xliff_parse(source: str | bytes) -> Resource:
             if file_name is None:
                 raise ValueError(f'Missing "original" attribute for <file>: {file}')
             meta = attrib_as_metadata(file, None, ("original",))
-            entries: list[Entry | Comment] = []
+            entries: list[Entry[Message] | Comment] = []
             body = None
             for child in file:
                 if isinstance(child, etree._Comment):
@@ -120,7 +121,9 @@ def xliff_parse(source: str | bytes) -> Resource:
             if file_name.endswith(".stringsdict"):
                 plural_entries = parse_xliff_stringsdict(ns, body)
                 if plural_entries is not None:
-                    entries += cast(List[Union[Entry, Comment]], plural_entries)
+                    entries += cast(
+                        List[Union[Entry[Message], Comment]], plural_entries
+                    )
                     continue
 
             for unit in body:
@@ -141,11 +144,13 @@ def xliff_parse(source: str | bytes) -> Resource:
     return res
 
 
-def parse_group(ns: str, parent: list[str], group: etree._Element) -> Iterator[Section]:
+def parse_group(
+    ns: str, parent: list[str], group: etree._Element
+) -> Iterator[Section[Message]]:
     id = group.attrib.get("id", "")
     path = [*parent, id]
     meta = attrib_as_metadata(group, None, ("id",))
-    entries: list[Entry | Comment] = []
+    entries: list[Entry[Message] | Comment] = []
     if group.text and not group.text.isspace():
         raise ValueError(f"Unexpected text in <group>: {group.text}")
 
@@ -173,7 +178,7 @@ def parse_group(ns: str, parent: list[str], group: etree._Element) -> Iterator[S
             raise ValueError(f"Unexpected text in <group>: {unit.tail}")
 
 
-def parse_bin_unit(unit: etree._Element) -> Entry:
+def parse_bin_unit(unit: etree._Element) -> Entry[Message]:
     id = unit.attrib.get("id", None)
     if id is None:
         raise ValueError(f'Missing "id" attribute for <bin-unit>: {unit}')

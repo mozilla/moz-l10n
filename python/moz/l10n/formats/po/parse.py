@@ -32,7 +32,7 @@ from ...model import (
 from .. import Format
 
 
-def po_parse(source: str | bytes) -> Resource:
+def po_parse(source: str | bytes) -> Resource[Message]:
     """
     Parse a .po or .pot file into a message resource
 
@@ -49,7 +49,7 @@ def po_parse(source: str | bytes) -> Resource:
     res_meta: list[Metadata] = [
         Metadata(key, value.strip()) for key, value in pf.metadata.items()
     ]
-    sections: dict[str | None, Section] = OrderedDict()
+    sections: dict[str | None, Section[Message]] = OrderedDict()
     for pe in pf:
         meta: list[Metadata] = []
         if pe.tcomment:

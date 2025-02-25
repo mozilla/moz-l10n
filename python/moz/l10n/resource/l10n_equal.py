@@ -15,17 +15,17 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Dict, List, Set, Tuple, TypeVar
+from typing import Any, Dict, List, Set, Tuple, TypeVar
 
-from ..model import Entry, Message, Resource, Section
+from ..model import Entry, Resource, Section
 
 _T = TypeVar("_T")
 _L10nData = List[
-    Tuple[Tuple[str, ...], str, Dict[str, Set[str]], _T]
+    Tuple[Tuple[str, ...], str, Dict[str, Set[Any]], _T]
 ]  # id, comment, value
 
 
-def l10n_equal(a: Resource, b: Resource) -> bool:
+def l10n_equal(a: Resource[Any], b: Resource[Any]) -> bool:
     """
     Compares the localization-relevant content
     (id, comment, metadata, message values) of two resources.
@@ -41,7 +41,7 @@ def l10n_equal(a: Resource, b: Resource) -> bool:
     )
 
 
-def l10n_sections(resource: Resource) -> _L10nData[_L10nData[Message]]:
+def l10n_sections(resource: Resource[Any]) -> _L10nData[_L10nData[Any]]:
     ls = [
         (section.id, section.comment.strip(), l10n_meta(section), l10n_entries(section))
         for section in resource.sections
@@ -62,7 +62,7 @@ def l10n_sections(resource: Resource) -> _L10nData[_L10nData[Message]]:
     return ls
 
 
-def l10n_entries(section: Section) -> _L10nData[Message]:
+def l10n_entries(section: Section[Any]) -> _L10nData[Any]:
     le = [
         (entry.id, entry.comment.strip(), l10n_meta(entry), entry.value)
         for entry in section.entries
@@ -73,9 +73,9 @@ def l10n_entries(section: Section) -> _L10nData[Message]:
 
 
 def l10n_meta(
-    x: Entry | Section | Resource,
-) -> dict[str, set[str]]:
-    md: dict[str, set[str]] = defaultdict(set)
+    x: Entry[Any] | Section[Any] | Resource[Any],
+) -> dict[str, set[Any]]:
+    md: dict[str, set[Any]] = defaultdict(set)
     for m in x.meta:
         md[m.key].add(m.value)
     return md

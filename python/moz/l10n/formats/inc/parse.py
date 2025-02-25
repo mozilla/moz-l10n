@@ -16,13 +16,13 @@ from __future__ import annotations
 
 from re import compile
 
-from ...model import Comment, Entry, PatternMessage, Resource, Section
+from ...model import Comment, Entry, Message, PatternMessage, Resource, Section
 from .. import Format
 
 re_define = compile(r"#define[ \t]+(\w+)(?:[ \t](.*))?")
 
 
-def inc_parse(source: str | bytes) -> Resource:
+def inc_parse(source: str | bytes) -> Resource[Message]:
     """
     Parse a .inc file into a message resource.
 
@@ -30,7 +30,7 @@ def inc_parse(source: str | bytes) -> Resource:
 
     The parsed resource will not include any metadata.
     """
-    entries: list[Entry | Comment] = []
+    entries: list[Entry[Message] | Comment] = []
     comment: str = ""
     if not isinstance(source, str):
         source = source.decode()

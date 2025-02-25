@@ -22,13 +22,17 @@ from typing import Any
 from ...model import (
     Entry,
     Expression,
+    Message,
     PatternMessage,
     Resource,
     VariableRef,
 )
 
 
-def webext_serialize(resource: Resource, trim_comments: bool = False) -> Iterator[str]:
+def webext_serialize(
+    resource: Resource[str] | Resource[Message],
+    trim_comments: bool = False,
+) -> Iterator[str]:
     """
     Serialize a resource as the contents of a messages.json file.
 
@@ -59,16 +63,23 @@ def webext_serialize(resource: Resource, trim_comments: bool = False) -> Iterato
                 if len(entry.id) != 1:
                     raise ValueError(f"Unsupported entry identifier: {entry.id}")
                 name = entry.id[0]
-                res[name] = webext_message(name, entry, trim_comments)
+                if isinstance(entry.value, str):
+                    res[name] = {"message": sub(r"\$+", r"$\g<0>", entry.value)}
+                    if not trim_comments and entry.comment:
+                        res[name]["description"] = entry.comment
+                elif isinstance(entry.value, PatternMessage):
+                    res[name] = webext_message(name, entry, trim_comments)  # type: ignore[arg-type]
+                else:
+                    raise ValueError(f"Unsupported entry for {name}: {entry.value}")
             else:
                 check(entry.comment, None)
     yield dumps(res, indent=2)
     yield "\n"
 
 
-def webext_message(name: str, entry: Entry, trim_comments: bool) -> dict[str, Any]:
-    if not isinstance(entry.value, PatternMessage):
-        raise ValueError(f"Unsupported entry for {name}: {entry.value}")
+def webext_message(
+    name: str, entry: Entry[PatternMessage], trim_comments: bool
+) -> dict[str, Any]:
     msg = ""
     placeholders: dict[str, Any] = {}
     for part in entry.value.pattern:

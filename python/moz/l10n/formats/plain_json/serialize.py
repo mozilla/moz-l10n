@@ -19,11 +19,12 @@ from collections.abc import Iterator
 from json import dumps
 from typing import Any
 
-from ...model import Entry, PatternMessage, Resource
+from ...model import Entry, Message, PatternMessage, Resource
 
 
 def plain_json_serialize(
-    resource: Resource, trim_comments: bool = False
+    resource: Resource[str] | Resource[Message],
+    trim_comments: bool = False,
 ) -> Iterator[str]:
     """
     Serialize a resource as a nested JSON object.
@@ -57,7 +58,9 @@ def plain_json_serialize(
                 if not entry.id:
                     raise ValueError(f"Unsupported empty identifier in {section.id}")
                 msg = entry.value
-                if isinstance(msg, PatternMessage) and all(
+                if isinstance(msg, str):
+                    value = msg
+                elif isinstance(msg, PatternMessage) and all(
                     isinstance(p, str) for p in msg.pattern
                 ):
                     value = "".join(msg.pattern)  # type: ignore[arg-type]
