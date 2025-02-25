@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from re import fullmatch
-from typing import Any, Iterator
+from typing import Iterator
 
 from fluent.syntax import FluentSerializer
 from fluent.syntax import ast as ftl
@@ -26,7 +26,6 @@ from ...model import (
     Comment,
     Entry,
     Expression,
-    Message,
     Metadata,
     Pattern,
     PatternMessage,
@@ -38,7 +37,7 @@ from ...model import (
 
 
 def fluent_serialize(
-    resource: (Resource[str] | Resource[Message] | Resource[ftl.Pattern]),
+    resource: Resource,
     serialize_metadata: Callable[[Metadata], str | None] | None = None,
     trim_comments: bool = False,
 ) -> Iterator[str]:
@@ -49,7 +48,7 @@ def fluent_serialize(
     Single-part message identifiers are treated as message values,
     while two-part message identifiers are considered message attributes.
 
-    Function names are upper-cased, and annotations with the `message` function
+    Function names are upper-cased, and expressions using the `message` function
     are mapped to message and term references.
 
     Yields each entry and comment separately.
@@ -66,7 +65,7 @@ def fluent_serialize(
 
 
 def fluent_astify(
-    resource: (Resource[str] | Resource[Message] | Resource[ftl.Pattern]),
+    resource: Resource,
     serialize_metadata: Callable[[Metadata], str | None] | None = None,
     trim_comments: bool = False,
 ) -> ftl.Resource:
@@ -86,7 +85,7 @@ def fluent_astify(
     """
 
     def comment(
-        node: (Resource[Any] | Section[Any] | Entry[Any] | Comment),
+        node: (Resource | Section | Entry | Comment),
     ) -> str:
         if trim_comments:
             return ""
@@ -123,22 +122,18 @@ def fluent_astify(
     if res_comment:
         body.append(ftl.ResourceComment(res_comment))
     for idx, section in enumerate(resource.sections):
-        section_comment = comment(section)  # type: ignore[arg-type]
+        section_comment = comment(section)
         if not trim_comments and idx != 0 or section_comment:
             body.append(ftl.GroupComment(section_comment))
         cur: ftl.Message | ftl.Term | None = None
         cur_id = ""
-        for entry in section.entries:  # type: ignore[attr-defined]
+        for entry in section.entries:
             if isinstance(entry, Comment):
                 if not trim_comments:
                     body.append(ftl.Comment(entry.comment))
                 cur = None
             else:
-                value = (
-                    entry.value
-                    if isinstance(entry.value, ftl.Pattern)
-                    else fluent_astify_message(entry.value)
-                )
+                value = fluent_astify_message(entry.value)
                 entry_comment = comment(entry)
                 if len(entry.id) == 1:  # value
                     cur_id = entry.id[0]
@@ -177,18 +172,14 @@ def fluent_astify(
     return ftl.Resource(body)
 
 
-def fluent_astify_message(message: str | Message) -> ftl.Pattern:
+def fluent_astify_message(message: PatternMessage | SelectMessage) -> ftl.Pattern:
     """
     Transform a message into a corresponding Fluent AST pattern.
 
-    Function names are upper-cased, and annotations with the `message` function
+    Function names are upper-cased, and expressions using the `message` function
     are mapped to message and term references.
     """
 
-    if isinstance(message, str):
-        return ftl.Pattern([ftl.TextElement(message)])
-    if not isinstance(message, (PatternMessage, SelectMessage)):
-        raise ValueError(f"Unsupported message: {message}")
     if isinstance(message, PatternMessage):
         return flat_pattern(message.declarations, message.pattern)
 

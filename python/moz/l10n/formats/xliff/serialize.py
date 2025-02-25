@@ -25,7 +25,6 @@ from ...model import (
     Entry,
     Expression,
     Markup,
-    Message,
     Metadata,
     Pattern,
     PatternMessage,
@@ -36,10 +35,7 @@ from ...model import (
 from .common import clark_name
 
 
-def xliff_serialize(
-    resource: Resource[str] | Resource[Message],
-    trim_comments: bool = False,
-) -> Iterator[str]:
+def xliff_serialize(resource: Resource, trim_comments: bool = False) -> Iterator[str]:
     """
     Serialize a resource as an XLIFF 1.2 file.
 
@@ -131,7 +127,7 @@ def xliff_serialize(
 
             if isinstance(entry.value, SelectMessage):
                 if section.id[0].endswith(".stringsdict"):
-                    add_xliff_stringsdict_plural(parent, entry, trim_comments)  # type: ignore [arg-type]
+                    add_xliff_stringsdict_plural(parent, entry, trim_comments)
                     continue
                 else:
                     fn = section.id[0]
@@ -151,9 +147,7 @@ def xliff_serialize(
                         raise ValueError(f"Invalid entry with no source: {entry}")
                     target = etree.Element("target")
                     source.addnext(target)
-                if isinstance(msg, str):
-                    target.text = msg
-                elif isinstance(msg, PatternMessage) and not msg.declarations:
+                if isinstance(msg, PatternMessage) and not msg.declarations:
                     set_pattern(target, msg.pattern)
                 else:
                     raise ValueError(f"Unsupported message: {msg}")
@@ -175,8 +169,9 @@ def xliff_serialize(
 
 
 def add_xliff_stringsdict_plural(
-    parent: etree._Element, entry: Entry[SelectMessage], trim_comments: bool
+    parent: etree._Element, entry: Entry, trim_comments: bool
 ) -> None:
+    assert isinstance(entry.value, SelectMessage)
     if entry.comment:
         raise ValueError(f"Unsupported comment on SelectMessage: {entry.comment}")
     msg = entry.value

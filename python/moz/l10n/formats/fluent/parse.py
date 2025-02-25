@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from itertools import product
 from re import finditer
-from typing import Any, Literal, Tuple, cast, overload
+from typing import Tuple, cast
 
 from fluent.syntax import FluentParser
 from fluent.syntax import ast as ftl
@@ -40,38 +40,14 @@ from ...model import (
 from .. import Format
 
 
-@overload
 def fluent_parse(
-    source: bytes | str | ftl.Resource,
-    *,
-    as_ftl_patterns: Literal[False] = False,
-    with_linepos: bool = True,
-) -> Resource[Message]: ...
-
-
-@overload
-def fluent_parse(
-    source: bytes | str | ftl.Resource,
-    *,
-    as_ftl_patterns: Literal[True],
-    with_linepos: bool = True,
-) -> Resource[ftl.Pattern]: ...
-
-
-def fluent_parse(
-    source: bytes | str | ftl.Resource,
-    *,
-    as_ftl_patterns: bool = False,
-    with_linepos: bool = True,
-) -> Resource[Message] | Resource[ftl.Pattern]:
+    source: bytes | str | ftl.Resource, *, with_linepos: bool = True
+) -> Resource:
     """
     Parse a .ftl file into a message resource.
 
     Message and term references are represented by `message` function annotations,
     with term identifiers prefixed with a `-`.
-
-    By default, messages are parsed as Messages;
-    to keep them as Fluent Patterns, use `as_ftl_patterns=True`.
 
     Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the Resource.
 
@@ -86,7 +62,7 @@ def fluent_parse(
         fluent_res = FluentParser(with_spans=with_linepos).parse(source_str)
         lpm = LinePosMapper(source_str) if with_linepos else None
 
-    entries: list[Entry[Any] | Comment] = []
+    entries: list[Entry | Comment] = []
     section = Section((), entries)
     resource = Resource(Format.fluent, [section])
     fluent_body = fluent_res.body
@@ -95,7 +71,7 @@ def fluent_parse(
         fluent_body = fluent_body[1:]
     for entry in fluent_body:
         if isinstance(entry, ftl.Message) or isinstance(entry, ftl.Term):
-            entries.extend(patterns(entry, as_ftl_patterns, lpm))
+            entries.extend(patterns(entry, lpm))
         elif isinstance(entry, ftl.ResourceComment):
             if entry.content:
                 resource.comment = (
@@ -134,17 +110,15 @@ def fluent_parse(
 
 def patterns(
     ftl_entry: ftl.Message | ftl.Term,
-    as_ftl_patterns: bool,
     lpm: LinePosMapper | None,
-) -> Generator[Entry[Message] | Entry[ftl.Pattern], None, None]:
-    message = (lambda m: m) if as_ftl_patterns else fluent_parse_message
+) -> Generator[Entry, None, None]:
     id = ftl_entry.id.name
     if isinstance(ftl_entry, ftl.Term):
         id = "-" + id
     comment = ftl_entry.comment.content or "" if ftl_entry.comment else ""
     if ftl_entry.value:
-        entry: Entry[Any] = Entry(
-            id=(id,), value=message(ftl_entry.value), comment=comment
+        entry = Entry(
+            id=(id,), value=fluent_parse_message(ftl_entry.value), comment=comment
         )
         if lpm and ftl_entry.span and ftl_entry.value.span:
             v_span = ftl_entry.value.span
@@ -161,7 +135,11 @@ def patterns(
         if comment:
             comment = ""
     for attr in ftl_entry.attributes:
-        entry = Entry(id=(id, attr.id.name), value=message(attr.value), comment=comment)
+        entry = Entry(
+            id=(id, attr.id.name),
+            value=fluent_parse_message(attr.value),
+            comment=comment,
+        )
         if lpm and attr.span:
             span = attr.span
             c_span = (

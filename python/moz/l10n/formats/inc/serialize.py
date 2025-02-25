@@ -17,13 +17,10 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
-from ...model import Entry, Message, PatternMessage, Resource
+from ...model import Entry, PatternMessage, Resource
 
 
-def inc_serialize(
-    resource: Resource[str] | Resource[Message],
-    trim_comments: bool = False,
-) -> Iterator[str]:
+def inc_serialize(resource: Resource, trim_comments: bool = False) -> Iterator[str]:
     """
     Serialize a resource as the contents of a .inc file.
 
@@ -61,9 +58,7 @@ def inc_serialize(
                 if len(entry.id) != 1:
                     raise ValueError(f"Unsupported identifier: {entry.id}")
                 msg = entry.value
-                if isinstance(msg, str):
-                    value = msg
-                elif isinstance(msg, PatternMessage) and all(
+                if isinstance(msg, PatternMessage) and all(
                     isinstance(p, str) for p in msg.pattern
                 ):
                     value = "".join(msg.pattern)  # type: ignore[arg-type]
