@@ -26,7 +26,7 @@ from ...model import (
     SelectMessage,
     VariableRef,
 )
-from .validate import name_re, number_re
+from ._validate import name_re, number_re
 
 esc_chars = {"\\", "{", "|", "}"}
 

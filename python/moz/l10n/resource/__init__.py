@@ -1,7 +1,7 @@
-from .add_entries import add_entries
-from .l10n_equal import l10n_equal
-from .parse_resource import UnsupportedResource, parse_resource
-from .serialize_resource import serialize_resource
+from ._add_entries import add_entries
+from ._equal import l10n_equal
+from ._parse import UnsupportedResource, parse_resource
+from ._serialize import serialize_resource
 
 __all__ = [
     "UnsupportedResource",

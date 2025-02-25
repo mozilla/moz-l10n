@@ -31,7 +31,7 @@ from ...model import (
     SelectMessage,
     VariableRef,
 )
-from .parse import plural_categories, resource_ref, xliff_g, xliff_ns, xml_name
+from ._parse import plural_categories, resource_ref, xliff_g, xliff_ns, xml_name
 
 
 def android_serialize(resource: Resource, trim_comments: bool = False) -> Iterator[str]:

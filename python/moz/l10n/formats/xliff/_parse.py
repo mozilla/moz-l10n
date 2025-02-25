@@ -31,9 +31,9 @@ from ...model import (
     Section,
 )
 from .. import Format
-from .common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
-from .parse_trans_unit import parse_trans_unit
-from .parse_xcode import parse_xliff_stringsdict
+from ._common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
+from ._parse_trans_unit import parse_trans_unit
+from ._parse_xcode import parse_xliff_stringsdict
 
 
 def xliff_parse(source: str | bytes) -> Resource:

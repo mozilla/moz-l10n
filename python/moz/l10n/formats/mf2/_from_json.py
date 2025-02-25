@@ -26,7 +26,7 @@ from ...model import (
     SelectMessage,
     VariableRef,
 )
-from .validate import MF2ValidationError
+from ._validate import MF2ValidationError
 
 
 def mf2_from_json(json: dict[str, Any]) -> Message:

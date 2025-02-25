@@ -27,7 +27,7 @@ from ...model import (
     Section,
     VariableRef,
 )
-from ...util.loads import json_linecomment_loads
+from ...util._loads import json_linecomment_loads
 from .. import Format
 
 placeholder = compile(r"\$([a-zA-Z0-9_@]+)\$|(\$[1-9])|\$(\$+)")

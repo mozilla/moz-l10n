@@ -19,7 +19,7 @@ from re import UNICODE, compile
 from typing import Any
 
 from ...model import Entry, PatternMessage, Resource
-from .parse import name, re_comment
+from ._parse import name, re_comment
 
 re_name = compile(name, UNICODE)
 

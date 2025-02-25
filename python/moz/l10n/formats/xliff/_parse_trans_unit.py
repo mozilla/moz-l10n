@@ -20,7 +20,7 @@ from collections.abc import Iterator
 from lxml import etree
 
 from ...model import Entry, Markup, Metadata, PatternMessage, VariableRef
-from .common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
+from ._common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
 
 
 def parse_trans_unit(unit: etree._Element) -> Entry:

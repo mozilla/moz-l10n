@@ -32,7 +32,7 @@ from ...model import (
     SelectMessage,
     VariableRef,
 )
-from .common import clark_name
+from ._common import clark_name
 
 
 def xliff_serialize(resource: Resource, trim_comments: bool = False) -> Iterator[str]:

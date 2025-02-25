@@ -22,11 +22,11 @@ import pytest
 from jsonschema import validate
 from moz.l10n.formats.mf2 import (
     MF2ParseError,
+    mf2_from_json,
     mf2_parse_message,
     mf2_serialize_message,
     mf2_to_json,
 )
-from moz.l10n.formats.mf2.from_json import mf2_from_json
 from moz.l10n.message import message_from_json, message_to_json
 from moz.l10n.model import (
     CatchallKey,

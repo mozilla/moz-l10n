@@ -20,7 +20,7 @@ from json import JSONDecodeError, loads
 from os.path import splitext
 from typing import Any
 
-from ..util.loads import json_linecomment_loads
+from ..util._loads import json_linecomment_loads
 
 # from moz.l10n.formats.xliff.common import xliff_ns
 xliff_ns = {

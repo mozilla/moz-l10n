@@ -14,24 +14,24 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, overload
 
 from ..formats import Format, detect_format
-from ..formats.dtd.parse import dtd_parse
-from ..formats.fluent.parse import fluent_parse
-from ..formats.inc.parse import inc_parse
-from ..formats.ini.parse import ini_parse
-from ..formats.plain_json.parse import plain_json_parse
-from ..formats.po.parse import po_parse
-from ..formats.properties.parse import properties_parse
-from ..formats.webext.parse import webext_parse
+from ..formats.dtd import dtd_parse
+from ..formats.fluent import fluent_parse
+from ..formats.inc import inc_parse
+from ..formats.ini import ini_parse
+from ..formats.plain_json import plain_json_parse
+from ..formats.po import po_parse
+from ..formats.properties import properties_parse
+from ..formats.webext import webext_parse
 from ..model import Resource
 
 android_parse: Callable[[str | bytes], Resource] | None
 xliff_parse: Callable[[str | bytes], Resource] | None
 try:
-    from ..formats.android.parse import android_parse
-    from ..formats.xliff.parse import xliff_parse
+    from ..formats.android import android_parse
+    from ..formats.xliff import xliff_parse
 except ImportError:
     android_parse = None
     xliff_parse = None
@@ -39,6 +39,20 @@ except ImportError:
 
 class UnsupportedResource(Exception):
     pass
+
+
+@overload
+def parse_resource(input: Format | None, source: str | bytes) -> Resource: ...
+
+
+@overload
+def parse_resource(input: str, source: str | bytes | None = None) -> Resource: ...
+
+
+@overload
+def parse_resource(
+    input: Format | str | None, source: str | bytes | None = None
+) -> Resource: ...
 
 
 def parse_resource(

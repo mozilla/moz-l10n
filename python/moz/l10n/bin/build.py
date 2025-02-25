@@ -24,7 +24,7 @@ from textwrap import dedent
 
 from moz.l10n.formats import Format
 from moz.l10n.model import Comment, Entry, Resource, Section
-from moz.l10n.paths.config import L10nConfigPaths
+from moz.l10n.paths import L10nConfigPaths
 from moz.l10n.resource import UnsupportedResource, parse_resource, serialize_resource
 
 log = logging.getLogger(__name__)

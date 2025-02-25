@@ -28,7 +28,7 @@ from ...model import (
     SelectMessage,
     VariableRef,
 )
-from .validate import name_re, number_re
+from ._validate import name_re, number_re
 
 complex_start_re = compile(r"[\t\n\r \u3000]*\.")
 literal_esc_re = compile(r"[\\|]")

@@ -18,21 +18,21 @@ from collections.abc import Iterator
 from typing import Callable
 
 from ..formats import Format
-from ..formats.dtd.serialize import dtd_serialize
-from ..formats.fluent.serialize import fluent_serialize
-from ..formats.inc.serialize import inc_serialize
-from ..formats.ini.serialize import ini_serialize
-from ..formats.plain_json.serialize import plain_json_serialize
-from ..formats.po.serialize import po_serialize
-from ..formats.properties.serialize import properties_serialize
-from ..formats.webext.serialize import webext_serialize
+from ..formats.dtd import dtd_serialize
+from ..formats.fluent import fluent_serialize
+from ..formats.inc import inc_serialize
+from ..formats.ini import ini_serialize
+from ..formats.plain_json import plain_json_serialize
+from ..formats.po import po_serialize
+from ..formats.properties import properties_serialize
+from ..formats.webext import webext_serialize
 from ..model import Resource
 
 android_serialize: Callable[[Resource, bool], Iterator[str]] | None
 xliff_serialize: Callable[[Resource, bool], Iterator[str]] | None
 try:
-    from ..formats.android.serialize import android_serialize
-    from ..formats.xliff.serialize import xliff_serialize
+    from ..formats.android import android_serialize
+    from ..formats.xliff import xliff_serialize
 except ImportError:
     android_serialize = None
     xliff_serialize = None

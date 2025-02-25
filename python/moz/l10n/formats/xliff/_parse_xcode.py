@@ -29,7 +29,7 @@ from ...model import (
     SelectMessage,
     VariableRef,
 )
-from .common import attrib_as_metadata
+from ._common import attrib_as_metadata
 
 
 @dataclass

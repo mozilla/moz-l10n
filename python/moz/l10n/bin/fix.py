@@ -26,8 +26,7 @@ from os import getcwd
 from os.path import abspath, isdir, relpath
 from textwrap import dedent
 
-from moz.l10n.paths.config import L10nConfigPaths
-from moz.l10n.paths.discover import L10nDiscoverPaths
+from moz.l10n.paths import L10nConfigPaths, L10nDiscoverPaths
 from moz.l10n.resource import UnsupportedResource, parse_resource, serialize_resource
 
 log = logging.getLogger(__name__)
