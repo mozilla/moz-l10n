@@ -133,7 +133,7 @@ class TestDtd(TestCase):
 
     def test_serialize(self):
         res = dtd_parse(source)
-        res.sections[0].entries.insert(0, Entry(("foo",), PatternMessage(['"bar"'])))
+        res.sections[0].entries.insert(0, Entry(("foo",), '"bar"'))
         assert "".join(dtd_serialize(res)) == dedent(
             """\
             <!-- This Source Code Form is subject to the terms of the Mozilla Public

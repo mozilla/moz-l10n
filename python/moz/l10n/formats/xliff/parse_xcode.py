@@ -54,7 +54,9 @@ printf = compile(
 )
 
 
-def parse_xliff_stringsdict(ns: str, body: etree._Element) -> list[Entry] | None:
+def parse_xliff_stringsdict(
+    ns: str, body: etree._Element
+) -> list[Entry[SelectMessage]] | None:
     plurals: dict[str, XcodePlural] = {}
     for unit in body:
         if unit.tag != f"{ns}trans-unit":

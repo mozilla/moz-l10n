@@ -24,6 +24,7 @@ from ...model import (
     CatchallKey,
     Entry,
     Expression,
+    Message,
     Metadata,
     Pattern,
     PatternMessage,
@@ -34,7 +35,10 @@ from ...model import (
 from .parse import plural_categories, resource_ref, xliff_g, xliff_ns, xml_name
 
 
-def android_serialize(resource: Resource, trim_comments: bool = False) -> Iterator[str]:
+def android_serialize(
+    resource: Resource[str] | Resource[Message],
+    trim_comments: bool = False,
+) -> Iterator[str]:
     """
     Serialize a resource as an Android strings XML file.
 
@@ -116,7 +120,7 @@ def android_serialize(resource: Resource, trim_comments: bool = False) -> Iterat
                         if entry.comment and not trim_comments:
                             add_comment(root, entry.comment, False)
                         el = etree.SubElement(root, "string", attrib=attrib)
-                        set_pattern(el, entry.value.pattern)
+                        set_pattern_message(el, entry.value)
                 else:
                     # <string-array>
                     if string_array is None or name != string_array.get("name"):
@@ -186,7 +190,7 @@ def add_comment(el: etree._Element, content: str, standalone: bool) -> None:
     el.append(comment)
 
 
-def entity_definition(entry: Entry) -> str:
+def entity_definition(entry: Entry[str] | Entry[Message]) -> str:
     if len(entry.id) != 1 or not xml_name.fullmatch(entry.id[0]):
         raise ValueError(f"Invalid entity identifier: {entry.id}")
     name = entry.id[0]
@@ -196,7 +200,9 @@ def entity_definition(entry: Entry) -> str:
     # Characters not allowed in XML EntityValue text
     escape = str.maketrans({"&": "&amp;", "%": "&#37;", '"': "&quot;"})
 
-    if isinstance(entry.value, PatternMessage) and not entry.value.declarations:
+    if isinstance(entry.value, str):
+        value = entry.value.translate(escape)
+    elif isinstance(entry.value, PatternMessage) and not entry.value.declarations:
         value = ""
         for part in entry.value.pattern:
             if isinstance(part, str):
@@ -213,7 +219,9 @@ def entity_definition(entry: Entry) -> str:
     return f'<!ENTITY {name} "{value}">'
 
 
-def set_string_array_item(parent: etree._Element, entry: Entry) -> None:
+def set_string_array_item(
+    parent: etree._Element, entry: Entry[str] | Entry[Message]
+) -> None:
     try:
         num = int(entry.id[1])
     except ValueError:
@@ -223,7 +231,7 @@ def set_string_array_item(parent: etree._Element, entry: Entry) -> None:
     if isinstance(entry.value, SelectMessage):
         raise ValueError(f"Unsupported message type for {entry.id}: {entry.value}")
     item = etree.SubElement(parent, "item")
-    set_pattern(item, entry.value.pattern)
+    set_pattern_message(item, entry.value)
 
 
 def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
@@ -240,6 +248,16 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
         set_pattern(item, value)
         item.tail = "\n    "
     item.tail = "\n  "
+
+
+def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
+    if isinstance(msg, str):
+        el.text = escape_backslash(msg)
+        escape_doublequote(el)
+    elif isinstance(msg, PatternMessage) and not msg.declarations:
+        set_pattern(el, msg.pattern)
+    else:
+        raise ValueError(f"Unsupported message: {msg}")
 
 
 def set_pattern(el: etree._Element, pattern: Pattern) -> None:

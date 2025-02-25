@@ -18,11 +18,13 @@ from collections.abc import Iterator
 
 from polib import POEntry, POFile
 
-from ...model import Entry, PatternMessage, Resource, SelectMessage
+from ...model import Entry, Message, PatternMessage, Resource, SelectMessage
 
 
 def po_serialize(
-    resource: Resource, trim_comments: bool = False, wrapwidth: int = 78
+    resource: Resource[str] | Resource[Message],
+    trim_comments: bool = False,
+    wrapwidth: int = 78,
 ) -> Iterator[str]:
     """
     Serialize a resource as the contents of a .po file.
@@ -52,7 +54,9 @@ def po_serialize(
             if isinstance(entry, Entry):
                 pe = POEntry(msgctxt=context, msgid=".".join(entry.id))
                 msg = entry.value
-                if isinstance(msg, PatternMessage) and all(
+                if isinstance(msg, str):
+                    pe.msgstr = msg
+                elif isinstance(msg, PatternMessage) and all(
                     isinstance(p, str) for p in msg.pattern
                 ):
                     pe.msgstr = "".join(msg.pattern)  # type: ignore[arg-type]

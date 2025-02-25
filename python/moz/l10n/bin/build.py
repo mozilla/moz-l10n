@@ -23,7 +23,7 @@ from shutil import copyfile
 from textwrap import dedent
 
 from moz.l10n.formats import Format
-from moz.l10n.model import Comment, Entry, Resource, Section
+from moz.l10n.model import Comment, Entry, Message, Resource, Section
 from moz.l10n.paths.config import L10nConfigPaths
 from moz.l10n.resource import UnsupportedResource, parse_resource, serialize_resource
 
@@ -122,7 +122,7 @@ def cli() -> None:
 
 def write_target_file(
     name: str,
-    source_res: Resource,
+    source_res: Resource[Message],
     l10n_path: str,
     tgt_path: str,
 ) -> int:
@@ -143,8 +143,8 @@ def write_target_file(
     msg_delta = 0
 
     def get_entry(
-        section_id: tuple[str, ...], source_entry: Entry | Comment
-    ) -> Entry | Comment | None:
+        section_id: tuple[str, ...], source_entry: Entry[Message] | Comment
+    ) -> Entry[Message] | Comment | None:
         nonlocal msg_delta
         if isinstance(source_entry, Comment):
             return None
