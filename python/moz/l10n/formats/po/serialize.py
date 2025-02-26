@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from re import match
 
 from polib import POEntry, POFile
 
@@ -24,7 +25,7 @@ from ...model import Entry, Message, PatternMessage, Resource, SelectMessage
 def po_serialize(
     resource: Resource[str] | Resource[Message],
     trim_comments: bool = False,
-    wrapwidth: int = 78,
+    wrapwidth: int = 200,
 ) -> Iterator[str]:
     """
     Serialize a resource as the contents of a .po file.
@@ -39,10 +40,17 @@ def po_serialize(
     """
 
     pf = POFile(wrapwidth=wrapwidth)
-    if not trim_comments:
+    if not trim_comments and resource.comment and not resource.comment.isspace():
         pf.header = resource.comment.rstrip() + "\n"
-    pf.metadata = {m.key: str(m.value) for m in resource.meta}
+    pf.metadata = {m.key: m.value for m in resource.meta}
     yield str(pf)
+
+    nplurals = 1
+    plural_forms = pf.metadata.get("Plural-Forms", None)
+    if isinstance(plural_forms, str):
+        pm = match(r"\s*nplurals=(\d+);", plural_forms)
+        if pm is not None:
+            nplurals = int(pm[1])
 
     for section in resource.sections:
         if section.comment:
@@ -72,14 +80,22 @@ def po_serialize(
                         for keys, pattern in msg.variants.items()
                     )
                 ):
-                    values = [
-                        "".join(pattern)  # type: ignore[arg-type]
-                        for pattern in msg.variants.values()
-                    ]
-                    if len(values) == 1:
-                        pe.msgstr = values[0]
-                    else:
-                        pe.msgstr_plural = {idx: str for idx, str in enumerate(values)}
+                    pe.msgstr_plural = {
+                        idx: next(
+                            (
+                                "".join(pattern)  # type: ignore[arg-type]
+                                for keys, pattern in msg.variants.items()
+                                if (
+                                    key
+                                    if isinstance(key := keys[0], str)
+                                    else key.value
+                                )
+                                == str(idx)
+                            ),
+                            "",
+                        )
+                        for idx in range(nplurals)
+                    }
                 else:
                     raise ValueError(
                         f"Value for {entry.id} is not supported: {entry.value}"

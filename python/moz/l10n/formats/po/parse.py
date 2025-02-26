@@ -19,6 +19,7 @@ from collections import OrderedDict
 from polib import pofile
 
 from ...model import (
+    CatchallKey,
     Entry,
     Expression,
     Message,
@@ -68,14 +69,15 @@ def po_parse(source: str | bytes) -> Resource[Message]:
             keys = list(pe.msgstr_plural)
             keys.sort()
             sel = Expression(VariableRef("n"), "number")
+            max_idx = keys[-1]
             value: Message = SelectMessage(
                 declarations={"n": sel},
                 selectors=(VariableRef("n"),),
                 variants={
-                    (str(idx),): (
+                    (str(idx) if idx < max_idx else CatchallKey(str(idx)),): (
                         [pe.msgstr_plural[idx]] if idx in pe.msgstr_plural else []
                     )
-                    for idx in range(keys[-1] + 1)
+                    for idx in range(max_idx + 1)
                 },
             )
         else:

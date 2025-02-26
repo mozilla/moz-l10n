@@ -20,6 +20,7 @@ from unittest import TestCase
 from moz.l10n.formats import Format
 from moz.l10n.formats.po import po_parse, po_serialize
 from moz.l10n.model import (
+    CatchallKey,
     Entry,
     Expression,
     Metadata,
@@ -80,7 +81,7 @@ class TestPo(TestCase):
                                     ("0",): ["%d prevedenih sporočil"],
                                     ("1",): ["%d prevedeno sporočilo"],
                                     ("2",): ["%d prevedeni sporočili"],
-                                    ("3",): ["%d prevedena sporočila"],
+                                    (CatchallKey("3"),): ["%d prevedena sporočila"],
                                 },
                             ),
                         ),
