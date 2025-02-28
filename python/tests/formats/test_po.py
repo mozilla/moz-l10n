@@ -86,20 +86,15 @@ class TestPo(TestCase):
                             ),
                         ),
                         Entry(
+                            ("original string", "context"),
+                            PatternMessage(["translated string"]),
+                        ),
+                        Entry(
                             ("obsolete string",),
                             meta=[Metadata("obsolete", "true")],
                             value=PatternMessage(["translated string"]),
                         ),
                         Entry(("other string",), PatternMessage(["translated string"])),
-                    ],
-                ),
-                Section(
-                    id=("context",),
-                    entries=[
-                        Entry(
-                            ("original string",),
-                            PatternMessage(["translated string"]),
-                        )
                     ],
                 ),
             ],
@@ -138,14 +133,14 @@ msgstr[1] "%d prevedeno sporočilo"
 msgstr[2] "%d prevedeni sporočili"
 msgstr[3] "%d prevedena sporočila"
 
+msgctxt "context"
+msgid "original string"
+msgstr "translated string"
+
 #~ msgid "obsolete string"
 #~ msgstr "translated string"
 
 msgid "other string"
-msgstr "translated string"
-
-msgctxt "context"
-msgid "original string"
 msgstr "translated string"
 """
         )
@@ -178,11 +173,11 @@ msgstr[1] "%d prevedeno sporočilo"
 msgstr[2] "%d prevedeni sporočili"
 msgstr[3] "%d prevedena sporočila"
 
-msgid "other string"
-msgstr "translated string"
-
 msgctxt "context"
 msgid "original string"
+msgstr "translated string"
+
+msgid "other string"
 msgstr "translated string"
 """
         )
@@ -190,7 +185,7 @@ msgstr "translated string"
     def test_obsolete(self):
         res = po_parse(source)
         res.sections[0].entries[0].meta.append(Metadata("obsolete", True))
-        res.sections[0].entries[2].meta = []
+        res.sections[0].entries[3].meta = []
         assert (
             "".join(po_serialize(res))
             == r"""# Test translation file.
@@ -222,14 +217,14 @@ msgstr[1] "%d prevedeno sporočilo"
 msgstr[2] "%d prevedeni sporočili"
 msgstr[3] "%d prevedena sporočila"
 
+msgctxt "context"
+msgid "original string"
+msgstr "translated string"
+
 msgid "obsolete string"
 msgstr "translated string"
 
 msgid "other string"
-msgstr "translated string"
-
-msgctxt "context"
-msgid "original string"
 msgstr "translated string"
 """
         )
