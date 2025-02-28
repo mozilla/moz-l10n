@@ -203,7 +203,7 @@ class TestXliff1(TestCase):
                   <trans-unit id="icu_plural" datatype="html">
                     <source>{VAR_PLURAL, plural, =0 {just now} =1 {one minute ago} other {<x id="INTERPOLATION" equiv-text="{{minutes}}"/> minutes ago} }</source>
                     <target>{VAR_PLURAL, plural, =0 {juuri nyt} =1 {minuutti sitten} other {<x id="INTERPOLATION" equiv-text="{{minutes}}"/> minuuttia sitten} }</target>
-                    <note></note>
+                    <note/>
                   </trans-unit>
                 </body>
               </file>
@@ -375,11 +375,9 @@ class TestXliff1(TestCase):
                     <!-- The resources for a fictitious Hello World application. The application displays a single window with a logo and the hello message. -->
                     <trans-unit id="authors" resname="authors" restype="x-icu-alias">
                       <source>root/authors</source>
-                      <target/>
                     </trans-unit>
                     <trans-unit id="hello" resname="hello">
                       <source>Hello, world!</source>
-                      <target/>
                       <note>This is the message that the application displays to the user.</note>
                     </trans-unit>
                     <bin-unit id="logo" resname="logo" mime-type="image" restype="x-icu-binary" translate="no">
@@ -399,16 +397,13 @@ class TestXliff1(TestCase):
                       <group id="menus_help_menu" resname="help_menu" restype="x-icu-table">
                         <trans-unit id="menus_help_menu_name" resname="name">
                           <source>Help</source>
-                          <target/>
                         </trans-unit>
                         <group id="menus_help_menu_items" resname="items" restype="x-icu-array">
                           <trans-unit id="menus_help_menu_items_0">
                             <source>Help Topics</source>
-                            <target/>
                           </trans-unit>
                           <trans-unit id="menus_help_menu_items_1">
                             <source>About Hello World</source>
-                            <target/>
                           </trans-unit>
                         </group>
                       </group>
@@ -435,11 +430,9 @@ class TestXliff1(TestCase):
                   <group id="en" restype="x-icu-table">
                     <trans-unit id="authors" resname="authors" restype="x-icu-alias">
                       <source>root/authors</source>
-                      <target/>
                     </trans-unit>
                     <trans-unit id="hello" resname="hello">
                       <source>Hello, world!</source>
-                      <target/>
                     </trans-unit>
                     <bin-unit id="logo" resname="logo" mime-type="image" restype="x-icu-binary" translate="no">
                       <!--The logo to be displayed in the application window.-->
@@ -457,16 +450,13 @@ class TestXliff1(TestCase):
                       <group id="menus_help_menu" resname="help_menu" restype="x-icu-table">
                         <trans-unit id="menus_help_menu_name" resname="name">
                           <source>Help</source>
-                          <target/>
                         </trans-unit>
                         <group id="menus_help_menu_items" resname="items" restype="x-icu-array">
                           <trans-unit id="menus_help_menu_items_0">
                             <source>Help Topics</source>
-                            <target/>
                           </trans-unit>
                           <trans-unit id="menus_help_menu_items_1">
                             <source>About Hello World</source>
-                            <target/>
                           </trans-unit>
                         </group>
                       </group>

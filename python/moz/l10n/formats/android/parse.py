@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Iterable, Iterator
 from re import compile
 from typing import Literal
@@ -35,6 +36,8 @@ from ...model import (
     VariableRef,
 )
 from .. import Format
+
+log = logging.getLogger(__name__)
 
 plural_categories = ("zero", "one", "two", "few", "many", "other")
 xliff_ns = "urn:oasis:names:tc:xliff:document:1.2"
@@ -93,7 +96,7 @@ def android_parse(source: str | bytes) -> Resource[Message]:
     if root.tag != "resources":
         raise ValueError(f"Unsupported root node: {root}")
     if root.text and not root.text.isspace():
-        raise ValueError(f"Unexpected text in resource: {root.text}")
+        log.warning(f"Unexpected text in resource: {root.text}")
     res: Resource[Message] = Resource(Format.android, [Section((), [])])
     root_comments = [c.text for c in root.itersiblings(etree.Comment, preceding=True)]
     if root_comments:
@@ -118,8 +121,6 @@ def android_parse(source: str | bytes) -> Resource[Message]:
 
     comment: list[str | None] = []  # TODO: should be list[str]
     for el in root:
-        if el.tail and not el.tail.isspace():
-            raise ValueError(f"Unexpected text in resource: {el.tail}")
         if isinstance(el, etree._Comment):
             comment.append(el.text)
             if el.tail and el.tail.count("\n") > 1 and comment:
@@ -137,15 +138,14 @@ def android_parse(source: str | bytes) -> Resource[Message]:
 
             elif el.tag == "plurals":
                 if el.text and not el.text.isspace():
-                    raise ValueError(f"Unexpected text in {name} plurals: {el.text}")
-                value = parse_plurals(name, el, comment.extend)
-                entries.append(Entry((name,), value, comment_str(comment), meta))
+                    log.warning(f"Unexpected text in {name} plurals: {el.text}")
+                else:
+                    value = parse_plurals(name, el, comment.extend)
+                    entries.append(Entry((name,), value, comment_str(comment), meta))
 
             elif el.tag == "string-array":
                 if el.text and not el.text.isspace():
-                    raise ValueError(
-                        f"Unexpected text in {name} string-array: {el.text}"
-                    )
+                    log.warning(f"Unexpected text in {name} string-array: {el.text}")
                 idx = 0
                 for item in el:
                     if isinstance(item, etree._Comment):
@@ -160,7 +160,7 @@ def android_parse(source: str | bytes) -> Resource[Message]:
                         cs = etree.tostring(item, encoding="unicode")
                         raise ValueError(f"Unsupported {name} string-array child: {cs}")
                     if item.tail and not item.tail.isspace():
-                        raise ValueError(
+                        log.warning(
                             f"Unexpected text in {name} string-array: {item.tail}"
                         )
 
@@ -169,6 +169,8 @@ def android_parse(source: str | bytes) -> Resource[Message]:
                 raise ValueError(f"Unsupported entry: {es}")
             if comment:
                 comment.clear()
+        if el.tail and not el.tail.isspace():
+            log.warning(f"Unexpected text in resource: {el.tail}")
     return res
 
 
@@ -236,7 +238,7 @@ def parse_plurals(
             cs = etree.tostring(item, encoding="unicode")
             raise ValueError(f"Unsupported {name} plurals child: {cs}")
         if item.tail and not item.tail.isspace():
-            raise ValueError(f"Unexpected text in {name} plurals: {item.tail}")
+            log.warning(f"Unexpected text in {name} plurals: {item.tail}")
     return msg
 
 

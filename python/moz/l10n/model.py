@@ -23,6 +23,7 @@ __all__ = [
     "Resource",
     "Section",
     "Entry",
+    "Id",
     "Comment",
     "Metadata",
     "Message",
@@ -196,6 +197,11 @@ V = TypeVar("V")
 The Message value type.
 """
 
+Id = Tuple[str, ...]
+"""
+An entry or section identifier.
+"""
+
 
 @dataclass
 class Entry(Generic[V]):
@@ -206,11 +212,11 @@ class Entry(Generic[V]):
     and the second one defines the metadata value type.
     """
 
-    id: tuple[str, ...]
+    id: Id
     """
     The entry identifier.
 
-    This MUST be a non-empty array of non-empty `string` values.
+    This MUST be a non-empty tuple of non-empty `string` values.
 
     The entry identifiers are not normalized,
     i.e. they do not include this identifier.
@@ -258,7 +264,7 @@ class Section(Generic[V]):
     and the second one defines the metadata value type.
     """
 
-    id: tuple[str, ...]
+    id: Id
     """
     The section identifier.
 

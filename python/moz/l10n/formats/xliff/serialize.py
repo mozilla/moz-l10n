@@ -143,7 +143,11 @@ def xliff_serialize(
             msg = entry.value
             target = None
             source = None
-            if tag == "trans-unit" and msg:
+            if (
+                tag == "trans-unit"
+                and msg
+                and (not isinstance(msg, PatternMessage) or msg.pattern)
+            ):
                 target = unit.find("target")
                 if target is None:
                     source = unit.find("source")
@@ -158,7 +162,7 @@ def xliff_serialize(
                 else:
                     raise ValueError(f"Unsupported message: {msg}")
 
-            if entry.comment and not trim_comments:
+            if entry.comment and not entry.comment.isspace() and not trim_comments:
                 note = unit.find("note")
                 if note is None:
                     if target is None:
@@ -258,11 +262,12 @@ def assign_metadata(
     for m in meta:
         key = m.key[key_start:] if key_start else m.key
         if key == "":
-            if len(el) == 0:
-                el.text = (el.text or "") + m.value
-            else:
-                last = el[-1]
-                last.tail = (last.tail or "") + m.value
+            if m.value:
+                if len(el) == 0:
+                    el.text = (el.text or "") + m.value
+                else:
+                    last = el[-1]
+                    last.tail = (last.tail or "") + m.value
         elif key == "comment()":
             el.append(etree.Comment(m.value))
         elif key.startswith("@"):

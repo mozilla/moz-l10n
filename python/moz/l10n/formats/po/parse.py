@@ -14,11 +14,11 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
-
 from polib import pofile
 
 from ...model import (
+    CatchallKey,
+    Comment,
     Entry,
     Expression,
     Message,
@@ -36,6 +36,9 @@ def po_parse(source: str | bytes) -> Resource[Message]:
     """
     Parse a .po or .pot file into a message resource
 
+    Message identifiers may have one or two parts,
+    with the second one holding the optional message context.
+
     Messages may include the following metadata:
     - `translator-comments`
     - `extracted-comments`
@@ -49,7 +52,7 @@ def po_parse(source: str | bytes) -> Resource[Message]:
     res_meta: list[Metadata] = [
         Metadata(key, value.strip()) for key, value in pf.metadata.items()
     ]
-    sections: dict[str | None, Section[Message]] = OrderedDict()
+    entries: list[Entry[Message] | Comment] = []
     for pe in pf:
         meta: list[Metadata] = []
         if pe.tcomment:
@@ -68,21 +71,19 @@ def po_parse(source: str | bytes) -> Resource[Message]:
             keys = list(pe.msgstr_plural)
             keys.sort()
             sel = Expression(VariableRef("n"), "number")
+            max_idx = keys[-1]
             value: Message = SelectMessage(
                 declarations={"n": sel},
                 selectors=(VariableRef("n"),),
                 variants={
-                    (str(idx),): (
+                    (str(idx) if idx < max_idx else CatchallKey(str(idx)),): (
                         [pe.msgstr_plural[idx]] if idx in pe.msgstr_plural else []
                     )
-                    for idx in range(keys[-1] + 1)
+                    for idx in range(max_idx + 1)
                 },
             )
         else:
             value = PatternMessage([pe.msgstr])
-        entry = Entry((pe.msgid,), value, meta=meta)
-        if pe.msgctxt in sections:
-            sections[pe.msgctxt].entries.append(entry)
-        else:
-            sections[pe.msgctxt] = Section((pe.msgctxt,) if pe.msgctxt else (), [entry])
-    return Resource(Format.po, list(sections.values()), res_comment, res_meta)
+        id = (pe.msgid, pe.msgctxt) if pe.msgctxt else (pe.msgid,)
+        entries.append(Entry(id, value, meta=meta))
+    return Resource(Format.po, [Section((), entries)], res_comment, res_meta)

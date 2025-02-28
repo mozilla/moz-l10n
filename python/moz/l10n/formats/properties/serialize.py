@@ -97,9 +97,11 @@ def properties_serialize(
                 key = key.translate(special_key_trans)
 
                 value: str
+                is_raw = False
                 msg = entry.value
                 if isinstance(msg, str):
                     value = msg
+                    is_raw = True
                 elif serialize_message:
                     value = serialize_message(msg)
                 elif isinstance(msg, PatternMessage) and all(
@@ -109,11 +111,12 @@ def properties_serialize(
                 else:
                     raise ValueError(f"Unsupported message for {key}: {msg}")
 
-                value = (
-                    control_chars.sub(encode_char, value)
-                    if encoding in {"utf-8", "utf-16"}
-                    else not_ascii_printable_chars.sub(encode_char, value)
-                )
+                if not is_raw:
+                    value = (
+                        control_chars.sub(encode_char, value)
+                        if encoding in {"utf-8", "utf-16"}
+                        else not_ascii_printable_chars.sub(encode_char, value)
+                    )
 
                 if value[0:1].isspace():
                     value = "\\" + value
