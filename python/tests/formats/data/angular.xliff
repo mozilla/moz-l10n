@@ -19,7 +19,7 @@
       <trans-unit id="icu_plural" datatype="html">
         <source>{VAR_PLURAL, plural, =0 {just now} =1 {one minute ago} other {<x id="INTERPOLATION" equiv-text="{{minutes}}"/> minutes ago} }</source>
         <target>{VAR_PLURAL, plural, =0 {juuri nyt} =1 {minuutti sitten} other {<x id="INTERPOLATION" equiv-text="{{minutes}}"/> minuuttia sitten} }</target>
-        <note></note>
+        <note/>
       </trans-unit>
     </body>
   </file>
