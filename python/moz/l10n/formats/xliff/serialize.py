@@ -235,8 +235,6 @@ def add_xliff_stringsdict_plural(
                 part_source = part.attributes.get("source", None)
                 if isinstance(part_source, str):
                     text += part_source
-                elif isinstance(part, Expression) and part.arg is not None:
-                    text += part.arg if isinstance(part.arg, str) else part.arg.name
                 else:
                     raise ValueError(f"Unsupported pattern part for {id}: {part}")
         xcode_id = f"{id_base}/{var_name}:dict/{key}:dict/:string"
@@ -309,12 +307,16 @@ def comment_body(content: str, indent: int) -> str:
 def set_pattern(el: etree._Element, pattern: Pattern) -> None:
     parent = el
     prev = None
+
+    def add_text(text: str) -> None:
+        if prev is None:
+            parent.text = (parent.text or "") + text
+        else:
+            prev.tail = (prev.tail or "") + text
+
     for part in pattern:
         if isinstance(part, str):
-            if prev is None:
-                parent.text = (parent.text or "") + part
-            else:
-                prev.tail = (prev.tail or "") + part
+            add_text(part)
         elif isinstance(part, Markup):
             name = clark_name(el.nsmap, part.name)
             if part.kind == "close":
@@ -340,5 +342,10 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
                 else:  # 'open'
                     parent = node
                     prev = None
-        elif isinstance(part, Expression):
-            raise ValueError(f"Unsupported expression: {part}")
+        else:
+            assert isinstance(part, Expression)
+            part_source = part.attributes.get("source", None)
+            if isinstance(part_source, str):
+                add_text(part_source)
+            else:
+                raise ValueError(f"Unsupported expression: {part}")

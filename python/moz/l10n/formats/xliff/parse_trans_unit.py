@@ -19,11 +19,20 @@ from collections.abc import Iterator
 
 from lxml import etree
 
-from ...model import Entry, Markup, Message, Metadata, PatternMessage, VariableRef
+from ...model import (
+    Entry,
+    Expression,
+    Markup,
+    Message,
+    Metadata,
+    PatternMessage,
+    VariableRef,
+)
 from .common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
+from .parse_xcode import parse_xcode_pattern
 
 
-def parse_trans_unit(unit: etree._Element) -> Entry[Message]:
+def parse_trans_unit(unit: etree._Element, is_xcode: bool) -> Entry[Message]:
     id = unit.attrib.get("id", None)
     if id is None:
         raise ValueError(f'Missing "id" attribute for <trans-unit>: {unit}')
@@ -63,13 +72,20 @@ def parse_trans_unit(unit: etree._Element) -> Entry[Message]:
             raise ValueError(f"Unexpected text in <trans-unit>: {el.tail}")
 
     comment = "" if note is None else note.text or ""
-    msg = PatternMessage([] if target is None else list(parse_pattern(target)))
+    msg = PatternMessage(
+        [] if target is None else list(parse_pattern(target, is_xcode))
+    )
     return Entry((id,), msg, comment, meta)
 
 
-def parse_pattern(el: etree._Element) -> Iterator[str | Markup]:
+def parse_pattern(
+    el: etree._Element, is_xcode: bool
+) -> Iterator[str | Expression | Markup]:
     if el.text:
-        yield el.text
+        if is_xcode:
+            yield from parse_xcode_pattern(el.text)
+        else:
+            yield el.text
     for child in el:
         q = etree.QName(child.tag)
         ns = q.namespace
@@ -79,7 +95,7 @@ def parse_pattern(el: etree._Element) -> Iterator[str | Markup]:
             yield Markup("standalone", name, options)
         elif isinstance(child.tag, str):
             yield Markup("open", name, options)
-            yield from parse_pattern(child)
+            yield from parse_pattern(child, is_xcode)
             yield Markup("close", name)
         if child.tail:
             yield child.tail
