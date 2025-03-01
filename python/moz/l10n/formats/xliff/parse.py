@@ -39,7 +39,7 @@ from .common import (
     xcode_tool_id,
     xliff_ns,
 )
-from .parse_trans_unit import parse_trans_unit
+from .parse_trans_unit import parse_pattern, parse_trans_unit
 from .parse_xcode import parse_xliff_stringsdict
 
 
@@ -149,6 +149,17 @@ def xliff_parse(source: str | bytes) -> Resource[Message]:
                 if unit.tail and not unit.tail.isspace():
                     raise ValueError(f"Unexpected text in <body>: {unit.tail}")
     return res
+
+
+def xliff_parse_message(source: str, *, is_xcode: bool = False) -> PatternMessage:
+    """
+    Parse an XLIFF 1.2 <target> into a message.
+
+    Set `is_xcode=True` to parse XCode-style printf strings as variable references.
+    """
+    parser = etree.XMLParser(resolve_entities=False)
+    el = etree.fromstring(f"<target>{source}</target>", parser)
+    return PatternMessage(list(parse_pattern(el, is_xcode)))
 
 
 def parse_group(
