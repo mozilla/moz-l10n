@@ -34,7 +34,7 @@ from moz.l10n.model import (
 )
 
 try:
-    from moz.l10n.formats.xliff import xliff_parse, xliff_serialize
+    from moz.l10n.formats.xliff import xliff_parse, xliff_parse_message, xliff_serialize
 except ImportError:
     raise SkipTest("Requires [xml] extra")
 
@@ -76,6 +76,30 @@ class TestXliff1(TestCase):
                 )
             ],
         )
+
+    def test_parse_message(self):
+        msg = xliff_parse_message("Hello, <b>%s</b>")
+        assert msg == PatternMessage(
+            [
+                "Hello, ",
+                Markup(kind="open", name="b"),
+                "%s",
+                Markup(kind="close", name="b"),
+            ]
+        )
+
+        msg = xliff_parse_message("Hello, <b>%s</b>", is_xcode=True)
+        assert msg == PatternMessage(
+            [
+                "Hello, ",
+                Markup(kind="open", name="b"),
+                Expression(VariableRef("str"), "string", attributes={"source": "%s"}),
+                Markup(kind="close", name="b"),
+            ]
+        )
+
+        with self.assertRaises(Exception):
+            xliff_parse_message("Hello, <b>%s")
 
     def test_serialize_hello(self):
         res = xliff_parse(hello)
