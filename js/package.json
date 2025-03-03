@@ -1,6 +1,6 @@
 {
   "name": "@mozilla/l10n",
-  "version": "0.0.1",
+  "version": "0.6.0",
   "license": "Apache-2.0",
   "author": "Eemeli Aro <eemeli@mozilla.com>",
   "description": "Mozilla tools for localization",
@@ -26,7 +26,7 @@
   },
   "files": [
     "dist/*",
-    "!dist/*.test.js"
+    "!dist/*.test.*"
   ],
   "scripts": {
     "prepublishOnly": "tsc"
