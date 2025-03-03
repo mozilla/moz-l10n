@@ -64,7 +64,7 @@ def webext_serialize(
                     raise ValueError(f"Unsupported entry identifier: {entry.id}")
                 name = entry.id[0]
                 if isinstance(entry.value, str):
-                    res[name] = {"message": sub(r"\$+", r"$\g<0>", entry.value)}
+                    res[name] = {"message": entry.value}
                     if not trim_comments and entry.comment:
                         res[name]["description"] = entry.comment
                 elif isinstance(entry.value, PatternMessage):
