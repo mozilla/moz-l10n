@@ -328,7 +328,7 @@ class TestL10nConfigPaths(TestCase):
             android_locale="b+abc"
         )
         assert paths.format_target_path("foo/{android_locale}-xx/bar", "abc") == join(
-            root, "foo", "b+abc-xx", "bar"
+            "foo", "b+abc-xx", "bar"
         )
         assert paths.find_reference("res/values-xx/strings.xml") == (
             source_strings,
