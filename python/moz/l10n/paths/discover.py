@@ -240,7 +240,7 @@ class L10nDiscoverPaths:
 
     def format_target_path(self, target: str, locale: str) -> str:
         base = self._base()
-        return target.format(locale=locale_dirname(base, locale))
+        return normpath(target.format(locale=locale_dirname(base, locale)))
 
     def find_reference(self, target: str) -> tuple[str, dict[str, str]] | None:
         """
