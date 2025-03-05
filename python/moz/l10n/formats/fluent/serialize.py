@@ -38,7 +38,7 @@ from ...model import (
 
 
 def fluent_serialize(
-    resource: (Resource[str] | Resource[Message] | Resource[ftl.Pattern]),
+    resource: (Resource[str] | Resource[Message]),
     serialize_metadata: Callable[[Metadata], str | None] | None = None,
     trim_comments: bool = False,
 ) -> Iterator[str]:
@@ -49,7 +49,7 @@ def fluent_serialize(
     Single-part message identifiers are treated as message values,
     while two-part message identifiers are considered message attributes.
 
-    Function names are upper-cased, and annotations with the `message` function
+    Function names are upper-cased, and expressions using the `message` function
     are mapped to message and term references.
 
     Yields each entry and comment separately.
@@ -66,7 +66,7 @@ def fluent_serialize(
 
 
 def fluent_astify(
-    resource: (Resource[str] | Resource[Message] | Resource[ftl.Pattern]),
+    resource: (Resource[str] | Resource[Message]),
     serialize_metadata: Callable[[Metadata], str | None] | None = None,
     trim_comments: bool = False,
 ) -> ftl.Resource:
@@ -134,11 +134,7 @@ def fluent_astify(
                     body.append(ftl.Comment(entry.comment))
                 cur = None
             else:
-                value = (
-                    entry.value
-                    if isinstance(entry.value, ftl.Pattern)
-                    else fluent_astify_message(entry.value)
-                )
+                value = fluent_astify_message(entry.value)
                 entry_comment = comment(entry)
                 if len(entry.id) == 1:  # value
                     cur_id = entry.id[0]
@@ -181,7 +177,7 @@ def fluent_astify_message(message: str | Message) -> ftl.Pattern:
     """
     Transform a message into a corresponding Fluent AST pattern.
 
-    Function names are upper-cased, and annotations with the `message` function
+    Function names are upper-cased, and expressions using the `message` function
     are mapped to message and term references.
     """
 

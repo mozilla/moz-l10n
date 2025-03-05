@@ -12,6 +12,15 @@
 Assicurati di avere una copia.</target>
         <note>Message to confirm deletion of a key file.</note>
       </trans-unit>
+      <trans-unit id="FirefoxHomepage.Common.PagesCount.v112" xml:space="preserve">
+        <source>Pages: %d</source>
+        <target>Pagine: %d</target>
+      </trans-unit>
+      <trans-unit id="Downloads.Toast.Progress.DescriptionText" xml:space="preserve">
+        <source>%1$@/%2$@</source>
+        <target>%1$@/%2$@</target>
+        <note>The description text in the Download progress toast for showing the downloaded file size (1$) out of the total expected file size (2$).</note>
+      </trans-unit>
     </body>
   </file>
   <file original="xcode1/en.lproj/Localizable.stringsdict" source-language="en" target-language="it" datatype="plaintext">
@@ -38,6 +47,9 @@ Assicurati di avere una copia.</target>
     </body>
   </file>
   <file original="xcode2/en.lproj/Localizable.stringsdict" source-language="en" target-language="en" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode"/>
+    </header>
     <body>
       <trans-unit id="/followed_by_three_and_others:dict/NSStringLocalizedFormatKey:dict/:string">
         <source>%#@OTHERS@</source>

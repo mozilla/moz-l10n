@@ -34,7 +34,11 @@ from moz.l10n.model import (
 )
 
 try:
-    from moz.l10n.formats.android import android_parse, android_serialize
+    from moz.l10n.formats.android import (
+        android_parse,
+        android_parse_message,
+        android_serialize,
+    )
 except ImportError:
     raise SkipTest("Requires [xml] extra")
 
@@ -380,6 +384,34 @@ class TestAndroid(TestCase):
                     ],
                 ),
             ],
+        )
+
+    def test_parse_message(self):
+        message = android_parse_message("Hello, %1$s! You have %2$d new messages.")
+        assert message == PatternMessage(
+            [
+                "Hello, ",
+                Expression(
+                    VariableRef("arg1"), "string", attributes={"source": "%1$s"}
+                ),
+                "! You have ",
+                Expression(
+                    VariableRef("arg2"), "integer", attributes={"source": "%2$d"}
+                ),
+                " new messages.",
+            ]
+        )
+
+        message = android_parse_message("Welcome to <b>&foo;</b>&bar;!")
+        assert message == PatternMessage(
+            [
+                "Welcome to ",
+                Markup("open", "b"),
+                Expression(VariableRef("foo"), "entity"),
+                Markup("close", "b"),
+                Expression(VariableRef("bar"), "entity"),
+                "!",
+            ]
         )
 
     def test_serialize(self):

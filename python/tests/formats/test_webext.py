@@ -19,7 +19,7 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.formats import Format
-from moz.l10n.formats.webext import webext_parse, webext_serialize
+from moz.l10n.formats.webext import webext_parse, webext_parse_message, webext_serialize
 from moz.l10n.model import (
     Entry,
     Expression,
@@ -33,6 +33,28 @@ source = files("tests.formats.data").joinpath("messages.json").read_bytes()
 
 
 class TestWebext(TestCase):
+    def test_parse_pattern(self):
+        msg = webext_parse_message("Hello $1", None)
+        assert msg == PatternMessage(
+            [
+                "Hello ",
+                Expression(VariableRef("arg1"), attributes={"source": "$1"}),
+            ]
+        )
+
+        msg = webext_parse_message("$foo$ and $Foo$", {"FOO": {"content": "BAR"}})
+        assert msg == PatternMessage(
+            declarations={"foo": Expression("BAR")},
+            pattern=[
+                Expression(VariableRef("foo"), attributes={"source": "$foo$"}),
+                " and ",
+                Expression(VariableRef("foo"), attributes={"source": "$Foo$"}),
+            ],
+        )
+
+        with self.assertRaises(ValueError):
+            webext_parse_message("$foo$ and $Foo$", None)
+
     def test_parse(self):
         res = webext_parse(source)
         assert res == Resource(
@@ -108,6 +130,28 @@ class TestWebext(TestCase):
                 )
             ],
         )
+
+    def test_literal_placeholder_content(self):
+        res = webext_parse(
+            '{ "key": { "message": "Hello $var$", "placeholders": { "var": { "content": "x" } } } }'
+        )
+        exp_msg = PatternMessage(
+            declarations={"var": Expression("x")},
+            pattern=[
+                "Hello ",
+                Expression(VariableRef("var"), attributes={"source": "$var$"}),
+            ],
+        )
+        assert res == Resource(Format.webext, [Section((), [Entry(("key",), exp_msg)])])
+
+    def test_missing_placeholder(self):
+        with self.assertRaises(ValueError):
+            webext_parse('{ "key": { "message": "Hello $var$" } }')
+
+        with self.assertRaises(ValueError):
+            webext_parse(
+                '{ "key": { "message": "Hello $var$", "placeholders": { "foo": { "content": "x" } } } }'
+            )
 
     def test_serialize(self):
         res = webext_parse(source)
