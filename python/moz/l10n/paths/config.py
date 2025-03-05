@@ -323,7 +323,7 @@ class L10nConfigPaths:
         lc_map = {"locale": locale}
         for key, fn in self._locale_map.items():
             lc_map[key] = fn(locale)
-        return normpath(join(self._base, target.format_map(lc_map)))
+        return normpath(target.format_map(lc_map))
 
     def find_reference(self, target: str) -> tuple[str, dict[str, str]] | None:
         """
