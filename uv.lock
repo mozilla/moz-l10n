@@ -304,7 +304,7 @@ dev = [
 
 [[package]]
 name = "moz-l10n"
-version = "0.6.0"
+version = "0.6.1"
 source = { editable = "python" }
 dependencies = [
     { name = "fluent-syntax" },
