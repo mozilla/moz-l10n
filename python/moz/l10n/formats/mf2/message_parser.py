@@ -64,7 +64,7 @@ def mf2_parse_message(source: bytes | str) -> Message:
 class MF2ParseError(ValueError):
     def __init__(self, parser: MF2Parser, message: str):
         src = parser.source.replace("\n", "¶")
-        message += f"\n{src}\n{' '*parser.pos}^"
+        message += f"\n{src}\n{' ' * parser.pos}^"
         super().__init__(message)
         self.pos = parser.pos
 
