@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from unittest import TestCase
 
-from moz.l10n.model import Entry, Resource, Section
+from moz.l10n.model import Entry, LinePos, Resource, Section
 from moz.l10n.resource import add_entries
 
 
@@ -24,6 +24,16 @@ class TestAddEntries(TestCase):
     def test_no_changes(self):
         target = Resource(None, [Section((), [Entry(("id",), "msg")])])
         source = Resource(None, [Section((), [Entry(("id",), "msg")])])
+        assert add_entries(target, source) == 0
+        assert target == Resource(None, [Section((), [Entry(("id",), "msg")])])
+
+    def test_no_changes_new_position(self):
+        target = Resource(
+            None, [Section((), [Entry(("id",), "msg", linepos=LinePos(1, 1, 1, 2))])]
+        )
+        source = Resource(
+            None, [Section((), [Entry(("id",), "msg", linepos=LinePos(2, 2, 2, 3))])]
+        )
         assert add_entries(target, source) == 0
         assert target == Resource(None, [Section((), [Entry(("id",), "msg")])])
 
