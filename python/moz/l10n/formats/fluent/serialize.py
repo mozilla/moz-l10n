@@ -124,7 +124,7 @@ def fluent_astify(
         body.append(ftl.ResourceComment(res_comment))
     for idx, section in enumerate(resource.sections):
         section_comment = comment(section)  # type: ignore[arg-type]
-        if not trim_comments and idx != 0 or section_comment:
+        if (not trim_comments and idx != 0) or section_comment:
             body.append(ftl.GroupComment(section_comment))
         cur: ftl.Message | ftl.Term | None = None
         cur_id = ""

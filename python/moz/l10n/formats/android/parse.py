@@ -270,8 +270,10 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
             if child.tag == xliff_g:
                 body = list(flatten(child))
                 if any(
-                    isinstance(gc, Expression)
-                    and gc.attributes.get("translate", None) == "no"
+                    (
+                        isinstance(gc, Expression)
+                        and gc.attributes.get("translate", None) == "no"
+                    )
                     or isinstance(gc, Markup)
                     for gc in body
                 ):

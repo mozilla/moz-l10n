@@ -39,7 +39,7 @@ dev-dependencies = [
   "jsonschema>=4.23.0",
   "mypy>=1.11.2",
   "pytest>=8.3.3",
-  "ruff>=0.6.8",
+  "ruff>=0.9.10",
   "types-lxml>=2024.9.16",
   "types-polib>=1.2.0.20240811",
 ]
