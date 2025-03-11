@@ -20,19 +20,19 @@ from typing import Dict, Generic, List, Literal, Tuple, TypeVar, Union
 from .formats import Format
 
 __all__ = [
+    "CatchallKey",
+    "Comment",
+    "Entry",
+    "Expression",
+    "Id",
+    "Markup",
+    "Message",
+    "Metadata",
+    "Pattern",
+    "PatternMessage",
     "Resource",
     "Section",
-    "Entry",
-    "Id",
-    "Comment",
-    "Metadata",
-    "Message",
-    "PatternMessage",
     "SelectMessage",
-    "CatchallKey",
-    "Pattern",
-    "Expression",
-    "Markup",
     "VariableRef",
 ]
 
