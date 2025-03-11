@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from unittest import TestCase
 
-from moz.l10n.model import Entry, Resource, Section
+from moz.l10n.model import Entry, LinePos, Resource, Section
 from moz.l10n.resource import add_entries
 
 
@@ -24,6 +24,16 @@ class TestAddEntries(TestCase):
     def test_no_changes(self):
         target = Resource(None, [Section((), [Entry(("id",), "msg")])])
         source = Resource(None, [Section((), [Entry(("id",), "msg")])])
+        assert add_entries(target, source) == 0
+        assert target == Resource(None, [Section((), [Entry(("id",), "msg")])])
+
+    def test_no_changes_new_position(self):
+        target = Resource(
+            None, [Section((), [Entry(("id",), "msg", linepos=LinePos(1, 1, 1, 2))])]
+        )
+        source = Resource(
+            None, [Section((), [Entry(("id",), "msg", linepos=LinePos(2, 2, 2, 3))])]
+        )
         assert add_entries(target, source) == 0
         assert target == Resource(None, [Section((), [Entry(("id",), "msg")])])
 
@@ -156,6 +166,29 @@ class TestAddEntries(TestCase):
                 Section(("2",), [Entry(("id-x",), "msg Y")]),
             ],
         )
+
+    def test_moved_sections(self):
+        target = Resource(
+            None,
+            [
+                Section(
+                    ("1",),
+                    [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")],
+                    linepos=LinePos(1, 1, 1, 3),
+                ),
+            ],
+        )
+        source = Resource(
+            None,
+            [
+                Section(
+                    ("1",),
+                    [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")],
+                    linepos=LinePos(5, 5, 5, 7),
+                ),
+            ],
+        )
+        assert add_entries(target, source) == 0
 
     def test_anon_sections(self):
         target = Resource(
