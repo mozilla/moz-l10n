@@ -167,6 +167,29 @@ class TestAddEntries(TestCase):
             ],
         )
 
+    def test_moved_sections(self):
+        target = Resource(
+            None,
+            [
+                Section(
+                    ("1",),
+                    [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")],
+                    linepos=LinePos(1, 1, 1, 3),
+                ),
+            ],
+        )
+        source = Resource(
+            None,
+            [
+                Section(
+                    ("1",),
+                    [Entry(("id-1",), "msg 1A"), Entry(("id-2",), "msg 2A")],
+                    linepos=LinePos(5, 5, 5, 7),
+                ),
+            ],
+        )
+        assert add_entries(target, source) == 0
+
     def test_anon_sections(self):
         target = Resource(
             None,

@@ -304,7 +304,7 @@ class Section(Generic[V]):
     Metadata attached to this section.
     """
 
-    linepos: LinePos | None = None
+    linepos: LinePos | None = field(default=None, compare=False)
     """
     The parsed position of the section,
     available for some formats.
