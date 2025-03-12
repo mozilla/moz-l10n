@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Iterable, Iterator
-from re import compile
+from re import compile, match
 from typing import Literal
 
 from lxml import etree
@@ -172,6 +172,38 @@ def android_parse(source: str | bytes) -> Resource[Message]:
         if el.tail and not el.tail.isspace():
             log.warning(f"Unexpected text in resource: {el.tail}")
     return res
+
+
+def android_parse_message(source: str) -> PatternMessage:
+    """
+    Parse an Android strings XML message.
+
+    All XML, Android, and printf escapes are unescaped
+    except for %n, which has a platform-dependent meaning.
+
+    Spans of text and entities wrapped in an <xliff:g>
+    will be parsed as expressions with a "translate": "no" attribute.
+    Spans including elements will be wrapped with open/close markup
+    with a similar attribute.
+
+    Entity references are supported, but are not validated.
+    """
+    parser = etree.XMLParser(resolve_entities=False)
+    doctype = ""
+    entities: list[str] = []
+    while True:
+        try:
+            el = etree.fromstring(f"{doctype}<string>{source}</string>", parser)
+            break
+        except etree.XMLSyntaxError as err:
+            if err.code == etree.ErrorTypes.ERR_UNDECLARED_ENTITY:  # type: ignore[attr-defined]
+                m = match(r"Entity '([^'\s]+)' not defined", err.args[0])
+                if m is not None:
+                    entities.append(f'<!ENTITY {m[1]} "">')
+                    doctype = f"<!DOCTYPE string [{' '.join(entities)}]>"
+                    continue
+            raise err
+    return PatternMessage(list(parse_pattern(el)))
 
 
 dash_indent = compile(r" .+(\n   - .*)+ ")
