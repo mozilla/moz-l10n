@@ -45,72 +45,88 @@ def webext_parse(source: str | bytes) -> Resource[Message]:
     The parsed resource will not include any metadata.
     """
     json: dict[str, dict[str, Any]] = json_linecomment_loads(source)
-    entries: list[Entry[Message] | Comment] = []
-    for key, msg in json.items():
-        src: str = msg["message"]
-        comment: str = msg.get("description", "")
-        ph_data: dict[str, dict[str, str]] = (
-            {k.lower(): v for k, v in msg["placeholders"].items()}
-            if "placeholders" in msg
-            else {}
+    entries: list[Entry[Message] | Comment] = [
+        Entry(
+            (key,),
+            webext_parse_message(msg["message"], msg.get("placeholders", None)),
+            comment=msg.get("description", ""),
         )
-        declarations = {}
-        pattern: Pattern = []
-        pos = 0
-        for m in placeholder.finditer(src):
-            text = src[pos : m.start()]
-            if text:
-                if pattern and isinstance(pattern[-1], str):
-                    pattern[-1] += text
-                else:
-                    pattern.append(text)
-            if m[1]:
-                # Named placeholder, with content & optional example in placeholders object
-                ph = ph_data[m[1].lower()]
-                if "_name" in ph:
-                    ph_name = ph["_name"]
-                else:
-                    decl_src = ph["content"]
-                    decl_arg_match = pos_arg.fullmatch(decl_src)
-                    decl_value = (
-                        Expression(
-                            VariableRef(f"arg{decl_arg_match[1]}"),
-                            attributes={"source": decl_src},
-                        )
-                        if decl_arg_match
-                        else Expression(decl_src)
-                    )
-                    if "example" in ph:
-                        decl_value.attributes["example"] = ph["example"]
-                    ph_name = m[1].replace("@", "_")
-                    if ph_name[0].isdigit():
-                        ph_name = f"_{ph_name}"
-                    declarations[ph_name] = decl_value
-                    ph["_name"] = ph_name
-                exp = Expression(VariableRef(ph_name), attributes={"source": m[0]})
-                pattern.append(exp)
-            elif m[2]:
-                # Indexed placeholder
-                ph_src = m[2]
-                pattern.append(
-                    Expression(
-                        VariableRef(f"arg{ph_src[1]}"), attributes={"source": ph_src}
-                    )
-                )
-            else:
-                # Escaped literal dollar sign
-                if pattern and isinstance(pattern[-1], str):
-                    pattern[-1] += m[3]
-                else:
-                    pattern.append(m[3])
-            pos = m.end()
-        if pos < len(src):
-            rest = src[pos:]
-            if pattern and isinstance(pattern[-1], str):
-                pattern[-1] += rest
-            else:
-                pattern.append(rest)
-        entries.append(
-            Entry((key,), PatternMessage(pattern, declarations), comment=comment)
-        )
+        for key, msg in json.items()
+    ]
     return Resource(Format.webext, [Section((), entries)])
+
+
+def webext_parse_message(
+    source: str, placeholders: dict[str, dict[str, str]] | None
+) -> PatternMessage:
+    """
+    Parse a single messages.json message.
+
+    Named placeholders are represented as declarations,
+    with an attribute used for an example, if it's available.
+    """
+    ph_data = (
+        {k.lower(): v for k, v in placeholders.items()}
+        if placeholders is not None
+        else {}
+    )
+    pattern: Pattern = []
+    declarations: dict[str, Expression] = {}
+    pos = 0
+    for m in placeholder.finditer(source):
+        text = source[pos : m.start()]
+        if text:
+            if pattern and isinstance(pattern[-1], str):
+                pattern[-1] += text
+            else:
+                pattern.append(text)
+        if m[1]:
+            # Named placeholder, with content & optional example in placeholders object
+            ph_key = m[1].lower()
+            ph = ph_data.get(ph_key, None)
+            if ph is None:
+                raise ValueError(f"Missing placeholders entry for {ph_key}")
+            elif "_name" in ph:
+                ph_name = ph["_name"]
+            else:
+                decl_src = ph["content"]
+                decl_arg_match = pos_arg.fullmatch(decl_src)
+                decl_value = (
+                    Expression(
+                        VariableRef(f"arg{decl_arg_match[1]}"),
+                        attributes={"source": decl_src},
+                    )
+                    if decl_arg_match
+                    else Expression(decl_src)
+                )
+                if "example" in ph:
+                    decl_value.attributes["example"] = ph["example"]
+                ph_name = m[1].replace("@", "_")
+                if ph_name[0].isdigit():
+                    ph_name = f"_{ph_name}"
+                declarations[ph_name] = decl_value
+                ph["_name"] = ph_name
+            exp = Expression(VariableRef(ph_name), attributes={"source": m[0]})
+            pattern.append(exp)
+        elif m[2]:
+            # Indexed placeholder
+            ph_src = m[2]
+            pattern.append(
+                Expression(
+                    VariableRef(f"arg{ph_src[1]}"), attributes={"source": ph_src}
+                )
+            )
+        else:
+            # Escaped literal dollar sign
+            if pattern and isinstance(pattern[-1], str):
+                pattern[-1] += m[3]
+            else:
+                pattern.append(m[3])
+        pos = m.end()
+    if pos < len(source):
+        rest = source[pos:]
+        if pattern and isinstance(pattern[-1], str):
+            pattern[-1] += rest
+        else:
+            pattern.append(rest)
+    return PatternMessage(pattern, declarations)

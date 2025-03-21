@@ -27,6 +27,7 @@ xliff_ns = {
     "urn:oasis:names:tc:xliff:document:1.2",
 }
 xml_ns = "http://www.w3.org/XML/1998/namespace"
+xcode_tool_id = Metadata("header/tool/@tool-id", "com.apple.dt.xcode")
 
 
 def element_as_metadata(
