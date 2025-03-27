@@ -60,19 +60,20 @@ def cli() -> None:
     try:
         try:
             source_res = parse_resource(args.source)
-        except UnsupportedResource as error:
-            if args.l10n is None:
-                raise error
-            else:
-                source_res = None
+        except UnsupportedResource:
+            source_res = None
         makedirs(dirname(args.target), exist_ok=True)
-        if args.l10n is None:
+        if source_res is None:
+            from_path = (
+                args.l10n
+                if args.l10n is not None and exists(args.l10n)
+                else args.source
+            )
+            copyfile(from_path, args.target)
+        elif args.l10n is None:
             with open(args.target, "w", encoding="utf-8") as file:
                 for line in serialize_resource(source_res, trim_comments=True):
                     file.write(line)
-        elif source_res is None:
-            from_path = args.l10n if exists(args.l10n) else args.source
-            copyfile(from_path, args.target)
         else:
             write_target_file(args.source, source_res, args.l10n, args.target)
     except (OSError, UnsupportedResource) as error:
