@@ -43,7 +43,7 @@ Adds empty files for any missing from the target locale.
 
 Build one localization file for release.
 
-Uses the `--source` file as a baseline, applying `--l10n` localizations to build `--target`.
+Uses the `--source` file as a baseline, applying `--l10n` localizations (if set) to build `--target`.
 Trims out all comments and messages not in the source file.
 
 ### `l10n-compare`
