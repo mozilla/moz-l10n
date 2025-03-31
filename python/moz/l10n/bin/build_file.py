@@ -22,7 +22,7 @@ from shutil import copyfile
 from textwrap import dedent
 
 from moz.l10n.bin.build import write_target_file
-from moz.l10n.resource import UnsupportedResource, parse_resource
+from moz.l10n.resource import UnsupportedResource, parse_resource, serialize_resource
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ def cli() -> None:
             """
             Build one localization file for release.
 
-            Uses the --source file as a baseline, applying --l10n localizations to build --target.
+            Uses the --source file as a baseline, applying --l10n localizations (if set) to build --target.
 
             Trims out all comments and messages not in the source file.
             """
@@ -44,9 +44,7 @@ def cli() -> None:
         "-v", "--verbose", action="count", default=0, help="increase logging verbosity"
     )
     parser.add_argument("--source", metavar="PATH", required=True, help="source file")
-    parser.add_argument(
-        "--l10n", metavar="PATH", required=True, help="localization file"
-    )
+    parser.add_argument("--l10n", metavar="PATH", help="localization file")
     parser.add_argument("--target", metavar="PATH", required=True, help="output target")
     args = parser.parse_args()
 
@@ -66,8 +64,16 @@ def cli() -> None:
             source_res = None
         makedirs(dirname(args.target), exist_ok=True)
         if source_res is None:
-            from_path = args.l10n if exists(args.l10n) else args.source
+            from_path = (
+                args.l10n
+                if args.l10n is not None and exists(args.l10n)
+                else args.source
+            )
             copyfile(from_path, args.target)
+        elif args.l10n is None:
+            with open(args.target, "w", encoding="utf-8") as file:
+                for line in serialize_resource(source_res, trim_comments=True):
+                    file.write(line)
         else:
             write_target_file(args.source, source_res, args.l10n, args.target)
     except (OSError, UnsupportedResource) as error:
