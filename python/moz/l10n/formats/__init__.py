@@ -37,6 +37,7 @@ Format = Enum(
         "fluent",
         "inc",
         "ini",
+        "mf2",
         "plain_json",
         "po",
         "properties",

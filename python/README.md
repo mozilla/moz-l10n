@@ -116,6 +116,34 @@ def message_to_json(msg: Message) -> list[Any] | dict[str, Any]: ...
 Converters to and from a JSON-serializable representation of a `Message`.
 The format of the output is defined by the [`schema.json`](./moz/l10n/message/schema.json) JSON Schema.
 
+### moz.l10n.message.parse_message
+
+```python
+from moz.l10n.message import parse_message
+def parse_message(
+    format: Format,
+    source: str,
+    *,
+    printf_placeholders: bool = False,
+    webext_placeholders: dict[str, dict[str, str]] | None = None,
+    xliff_is_xcode: bool = False,
+) -> Message:
+    ...
+```
+
+Parse a `Message` from its string representation.
+
+Custom parsers are used for `android`, `mf2`, `webext`, and `xliff` formats.
+Other formats may include printf specifiers if `printf_placeholders` is enabled.
+
+Parsing a `webext` message that contains named placeholders requires
+providing the message's `webext_placeholders` dict.
+
+To parse an `xliff` message with XCode customizations, enable `xliff_is_xcode`.
+
+Formatting `fluent` messages is not supported,
+as their parsing may result in multiple `Entry` values.
+
 ### moz.l10n.model
 
 ```python
