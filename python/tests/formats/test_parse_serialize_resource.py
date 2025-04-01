@@ -18,10 +18,9 @@ from importlib.util import find_spec
 from importlib_resources import files
 from unittest import TestCase, skipIf
 
-from moz.l10n.formats import Format
+from moz.l10n.formats import Format, UnsupportedFormat
 from moz.l10n.model import Resource
 from moz.l10n.resource import (
-    UnsupportedResource,
     parse_resource,
     serialize_resource,
 )
@@ -89,7 +88,7 @@ class TesteParseResource(TestCase):
 
     def test_parse_unknown_format(self):
         source = get_source("accounts.dtd")
-        with self.assertRaises(UnsupportedResource):
+        with self.assertRaises(UnsupportedFormat):
             parse_resource(None, source)
 
     def test_serialize_unsupported_format(self):

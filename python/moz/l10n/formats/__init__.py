@@ -75,6 +75,10 @@ both the reference and target languages in the same file.
 """
 
 
+class UnsupportedFormat(Exception):
+    pass
+
+
 def detect_format(name: str | None, source: bytes | str) -> Format | None:
     """
     Detect the format of the input based on its file extension
