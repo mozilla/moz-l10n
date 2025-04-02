@@ -80,12 +80,14 @@ class UnsupportedFormat(Exception):
     pass
 
 
-def detect_format(name: str | None, source: bytes | str) -> Format | None:
+def detect_format(name: str | None, source: bytes | str | None = None) -> Format | None:
     """
     Detect the format of the input based on its file extension
     and/or contents.
 
     Returns a `Format` enum value, or `None` if the input is not recognized.
+    Without `source`, JSON and XML based formats are
+    only recognized if they have a distinctive file extension.
     """
     if not name:
         ext = None
@@ -105,6 +107,9 @@ def detect_format(name: str | None, source: bytes | str) -> Format | None:
             return Format.po
         elif ext in {".xlf", ".xliff"}:
             return Format.xliff
+
+    if source is None:
+        return None
 
     # Try parsing as JSON first, unless we're pretty sure it's XML
     if ext != ".xml":
