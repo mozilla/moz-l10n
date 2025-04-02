@@ -22,7 +22,8 @@ from shutil import copyfile
 from textwrap import dedent
 
 from moz.l10n.bin.build import write_target_file
-from moz.l10n.resource import UnsupportedResource, parse_resource, serialize_resource
+from moz.l10n.formats import UnsupportedFormat
+from moz.l10n.resource import parse_resource, serialize_resource
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ def cli() -> None:
     try:
         try:
             source_res = parse_resource(args.source)
-        except UnsupportedResource:
+        except UnsupportedFormat:
             source_res = None
         makedirs(dirname(args.target), exist_ok=True)
         if source_res is None:
@@ -76,7 +77,7 @@ def cli() -> None:
                     file.write(line)
         else:
             write_target_file(args.source, source_res, args.l10n, args.target)
-    except (OSError, UnsupportedResource) as error:
+    except (OSError, UnsupportedFormat) as error:
         raise SystemExit(error)
 
 

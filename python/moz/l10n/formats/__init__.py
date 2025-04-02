@@ -37,6 +37,7 @@ Format = Enum(
         "fluent",
         "inc",
         "ini",
+        "mf2",
         "plain_json",
         "po",
         "properties",
@@ -73,6 +74,10 @@ bilingual_extensions = {
 Extensions used by file formats (XLIFF & gettext) that contain
 both the reference and target languages in the same file.
 """
+
+
+class UnsupportedFormat(Exception):
+    pass
 
 
 def detect_format(name: str | None, source: bytes | str) -> Format | None:

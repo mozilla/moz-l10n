@@ -99,7 +99,7 @@ def parse_xliff_stringsdict(
                 meta += attrib_as_metadata(variant.target, f"{key}/target")
                 pattern_src = variant.target.text
             msg.variants[(CatchallKey("other") if key == "other" else key,)] = list(
-                parse_pattern(pattern_src)
+                parse_xcode_pattern(pattern_src)
             )
         entries.append(Entry((msg_id,), msg, meta=meta))
     return entries
@@ -178,7 +178,7 @@ def parse_xliff_stringsdict_unit(
             )
 
 
-def parse_pattern(src: str | None) -> Iterator[str | Expression]:
+def parse_xcode_pattern(src: str | None) -> Iterator[str | Expression]:
     if not src:
         return
     pos = 0

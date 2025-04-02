@@ -21,9 +21,10 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from os.path import abspath, basename, dirname, isdir, join, normpath, relpath
 from textwrap import dedent
 
+from moz.l10n.formats import UnsupportedFormat
 from moz.l10n.model import Entry
 from moz.l10n.paths import L10nConfigPaths, L10nDiscoverPaths
-from moz.l10n.resource import UnsupportedResource, parse_resource
+from moz.l10n.resource import parse_resource
 
 
 def cli() -> None:
@@ -93,7 +94,7 @@ def cli() -> None:
                 try:
                     path = relpath(tgt_path.format(locale=locale0), path0)
                     source_data[path] = msg_ids(ref_path)
-                except UnsupportedResource:
+                except UnsupportedFormat:
                     continue
     source_total = sum(len(sd) for sd in source_data.values())
     if source_total == 0:

@@ -22,10 +22,10 @@ from os.path import dirname, exists, join, relpath
 from shutil import copyfile
 from textwrap import dedent
 
-from moz.l10n.formats import Format
+from moz.l10n.formats import Format, UnsupportedFormat
 from moz.l10n.model import Comment, Entry, Message, Resource, Section
 from moz.l10n.paths.config import L10nConfigPaths
-from moz.l10n.resource import UnsupportedResource, parse_resource, serialize_resource
+from moz.l10n.resource import parse_resource, serialize_resource
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ def cli() -> None:
         log.debug(f"source {source_path}")
         try:
             source = parse_resource(source_path)
-        except UnsupportedResource:
+        except UnsupportedFormat:
             source = None
         for locale in locales.intersection(path_locales) if path_locales else locales:
             l10n_path = l10n_path_template.format(locale=locale)

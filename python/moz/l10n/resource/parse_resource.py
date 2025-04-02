@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from ..formats import Format, detect_format
+from ..formats import Format, UnsupportedFormat, detect_format
 from ..formats.dtd.parse import dtd_parse
 from ..formats.fluent.parse import fluent_parse
 from ..formats.inc.parse import inc_parse
@@ -35,10 +35,6 @@ try:
 except ImportError:
     android_parse = None
     xliff_parse = None
-
-
-class UnsupportedResource(Exception):
-    pass
 
 
 def parse_resource(
@@ -84,4 +80,4 @@ def parse_resource(
     elif format == Format.xliff and xliff_parse is not None:
         return xliff_parse(source)
     else:
-        raise UnsupportedResource(f"Unsupported resource format: {input}")
+        raise UnsupportedFormat(f"Unsupported resource format: {input}")

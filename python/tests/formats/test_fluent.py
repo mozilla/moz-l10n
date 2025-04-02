@@ -18,9 +18,12 @@ from importlib_resources import files
 from textwrap import dedent
 from unittest import TestCase
 
-from fluent.syntax import ast as ftl
 from moz.l10n.formats import Format
-from moz.l10n.formats.fluent import fluent_parse, fluent_serialize
+from moz.l10n.formats.fluent import (
+    fluent_parse,
+    fluent_parse_messages,
+    fluent_serialize,
+)
 from moz.l10n.model import (
     CatchallKey,
     Comment,
@@ -39,29 +42,6 @@ from . import get_linepos
 
 
 class TestFluent(TestCase):
-    def test_fluent_value(self):
-        source = dedent(
-            """\
-            key =
-                pre { $a ->
-                    [1] One
-                   *[2] Two
-                } mid { $b ->
-                   *[bb] BB
-                    [cc] CC
-                } post
-                .attr = foo
-            """
-        )
-        res = fluent_parse(source, as_ftl_patterns=True)
-        assert len(res.sections) == 1
-        assert len(res.sections[0].entries) == 2
-        assert res.sections[0].entries[0].id == ("key",)
-        assert isinstance(res.sections[0].entries[0].value, ftl.Pattern)
-        assert res.sections[0].entries[1].id == ("key", "attr")
-        assert isinstance(res.sections[0].entries[1].value, ftl.Pattern)
-        assert "".join(fluent_serialize(res)) == source
-
     def test_equality_same(self):
         source = 'progress = Progress: { NUMBER($num, style: "percent") }.'
         res1 = fluent_parse(source)
@@ -120,6 +100,21 @@ class TestFluent(TestCase):
         ]
         assert res == Resource(Format.fluent, [Section((), entries)])
         assert "".join(fluent_serialize(res)) == src
+
+    def test_parse_messages(self):
+        source = "msg = body\n"
+        entries = fluent_parse_messages(source, with_linepos=False)
+        assert entries == [Entry(("msg",), PatternMessage(["body"]))]
+
+        source = "-term = body\n  .attr = value\n"
+        entries = fluent_parse_messages(source)
+        assert entries == [
+            Entry(("-term",), PatternMessage(["body"]), linepos=get_linepos(1)),
+            Entry(("-term", "attr"), PatternMessage(["value"]), linepos=get_linepos(2)),
+        ]
+
+        with self.assertRaises(ValueError):
+            fluent_parse_messages("# comment\n")
 
     def test_resource(self):
         res = fluent_parse(
@@ -515,7 +510,7 @@ class TestFluent(TestCase):
 
     def test_junk(self):
         with self.assertRaisesRegex(Exception, 'Expected token: "="'):
-            fluent_parse("msg = value\n# Comment\nLine of junk", as_ftl_patterns=True)
+            fluent_parse("msg = value\n# Comment\nLine of junk")
 
     def test_file(self):
         bytes = files("tests.formats.data").joinpath("demo.ftl").read_bytes()

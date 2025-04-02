@@ -34,7 +34,7 @@ from moz.l10n.model import (
 )
 
 try:
-    from moz.l10n.formats.xliff import xliff_parse, xliff_serialize
+    from moz.l10n.formats.xliff import xliff_parse, xliff_parse_message, xliff_serialize
 except ImportError:
     raise SkipTest("Requires [xml] extra")
 
@@ -76,6 +76,30 @@ class TestXliff1(TestCase):
                 )
             ],
         )
+
+    def test_parse_message(self):
+        msg = xliff_parse_message("Hello, <b>%s</b>")
+        assert msg == PatternMessage(
+            [
+                "Hello, ",
+                Markup(kind="open", name="b"),
+                "%s",
+                Markup(kind="close", name="b"),
+            ]
+        )
+
+        msg = xliff_parse_message("Hello, <b>%s</b>", is_xcode=True)
+        assert msg == PatternMessage(
+            [
+                "Hello, ",
+                Markup(kind="open", name="b"),
+                Expression(VariableRef("str"), "string", attributes={"source": "%s"}),
+                Markup(kind="close", name="b"),
+            ]
+        )
+
+        with self.assertRaises(Exception):
+            xliff_parse_message("Hello, <b>%s")
 
     def test_serialize_hello(self):
         res = xliff_parse(hello)
@@ -512,7 +536,48 @@ class TestXliff1(TestCase):
                                 ),
                                 Metadata("target/@state", "translated"),
                             ],
-                        )
+                        ),
+                        Entry(
+                            id=("FirefoxHomepage.Common.PagesCount.v112",),
+                            value=PatternMessage(
+                                [
+                                    "Pagine: ",
+                                    Expression(
+                                        VariableRef("int"),
+                                        "integer",
+                                        attributes={"source": "%d"},
+                                    ),
+                                ]
+                            ),
+                            comment="",
+                            meta=[
+                                Metadata(key="@xml:space", value="preserve"),
+                                Metadata(key="source", value="Pages: %d"),
+                            ],
+                        ),
+                        Entry(
+                            id=("Downloads.Toast.Progress.DescriptionText",),
+                            value=PatternMessage(
+                                [
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        attributes={"source": "%1$@"},
+                                    ),
+                                    "/",
+                                    Expression(
+                                        VariableRef("arg2"),
+                                        attributes={"source": "%2$@"},
+                                    ),
+                                ]
+                            ),
+                            comment="The description text in the Download progress "
+                            "toast for showing the downloaded file size "
+                            "(1$) out of the total expected file size (2$).",
+                            meta=[
+                                Metadata(key="@xml:space", value="preserve"),
+                                Metadata(key="source", value="%1$@/%2$@"),
+                            ],
+                        ),
                     ],
                 ),
                 Section(
@@ -606,6 +671,8 @@ class TestXliff1(TestCase):
                         Metadata("@source-language", "en"),
                         Metadata("@target-language", "en"),
                         Metadata("@datatype", "plaintext"),
+                        Metadata("header/tool/@tool-id", "com.apple.dt.xcode"),
+                        Metadata("header/tool/@tool-name", "Xcode"),
                     ],
                     entries=[
                         Entry(
@@ -707,6 +774,15 @@ class TestXliff1(TestCase):
             Assicurati di avere una copia.</target>
                     <note>Message to confirm deletion of a key file.</note>
                   </trans-unit>
+                  <trans-unit id="FirefoxHomepage.Common.PagesCount.v112" xml:space="preserve">
+                    <source>Pages: %d</source>
+                    <target>Pagine: %d</target>
+                  </trans-unit>
+                  <trans-unit id="Downloads.Toast.Progress.DescriptionText" xml:space="preserve">
+                    <source>%1$@/%2$@</source>
+                    <target>%1$@/%2$@</target>
+                    <note>The description text in the Download progress toast for showing the downloaded file size (1$) out of the total expected file size (2$).</note>
+                  </trans-unit>
                 </body>
               </file>
               <file original="xcode1/en.lproj/Localizable.stringsdict" source-language="en" target-language="it" datatype="plaintext">
@@ -733,6 +809,9 @@ class TestXliff1(TestCase):
                 </body>
               </file>
               <file original="xcode2/en.lproj/Localizable.stringsdict" source-language="en" target-language="en" datatype="plaintext">
+                <header>
+                  <tool tool-id="com.apple.dt.xcode" tool-name="Xcode"/>
+                </header>
                 <body>
                   <trans-unit id="/followed_by_three_and_others:dict/NSStringLocalizedFormatKey:dict/:string">
                     <source>%#@OTHERS@</source>

@@ -32,8 +32,14 @@ from ...model import (
     Section,
 )
 from .. import Format
-from .common import attrib_as_metadata, element_as_metadata, pretty_name, xliff_ns
-from .parse_trans_unit import parse_trans_unit
+from .common import (
+    attrib_as_metadata,
+    element_as_metadata,
+    pretty_name,
+    xcode_tool_id,
+    xliff_ns,
+)
+from .parse_trans_unit import parse_pattern, parse_trans_unit
 from .parse_xcode import parse_xliff_stringsdict
 
 
@@ -118,7 +124,8 @@ def xliff_parse(source: str | bytes) -> Resource[Message]:
             elif body.text and not body.text.isspace():
                 raise ValueError(f"Unexpected text in <body>: {body.text}")
 
-            if file_name.endswith(".stringsdict"):
+            is_xcode = xcode_tool_id in meta
+            if is_xcode and file_name.endswith(".stringsdict"):
                 plural_entries = parse_xliff_stringsdict(ns, body)
                 if plural_entries is not None:
                     entries += cast(
@@ -130,11 +137,11 @@ def xliff_parse(source: str | bytes) -> Resource[Message]:
                 if isinstance(unit, etree._Comment):
                     entries.append(Comment(comment_str(unit.text)))
                 elif unit.tag == f"{ns}trans-unit":
-                    entries.append(parse_trans_unit(unit))
+                    entries.append(parse_trans_unit(unit, is_xcode))
                 elif unit.tag == f"{ns}bin-unit":
                     entries.append(parse_bin_unit(unit))
                 elif unit.tag == f"{ns}group":
-                    res.sections += parse_group(ns, [file_name], unit)
+                    res.sections += parse_group(ns, [file_name], unit, is_xcode)
                 else:
                     raise ValueError(
                         f"Unsupported <{unit.tag}> element in <body>: {body}"
@@ -144,8 +151,19 @@ def xliff_parse(source: str | bytes) -> Resource[Message]:
     return res
 
 
+def xliff_parse_message(source: str, *, is_xcode: bool = False) -> PatternMessage:
+    """
+    Parse an XLIFF 1.2 <target> into a message.
+
+    Set `is_xcode=True` to parse XCode-style printf strings as variable references.
+    """
+    parser = etree.XMLParser(resolve_entities=False)
+    el = etree.fromstring(f"<target>{source}</target>", parser)
+    return PatternMessage(list(parse_pattern(el, is_xcode)))
+
+
 def parse_group(
-    ns: str, parent: list[str], group: etree._Element
+    ns: str, parent: list[str], group: etree._Element, is_xcode: bool
 ) -> Iterator[Section[Message]]:
     id = group.attrib.get("id", "")
     path = [*parent, id]
@@ -163,11 +181,11 @@ def parse_group(
         if isinstance(unit, etree._Comment):
             entries.append(Comment(comment_str(unit.text)))
         elif unit.tag == f"{ns}trans-unit":
-            entries.append(parse_trans_unit(unit))
+            entries.append(parse_trans_unit(unit, is_xcode))
         elif unit.tag == f"{ns}bin-unit":
             entries.append(parse_bin_unit(unit))
         elif unit.tag == f"{ns}group":
-            yield from parse_group(ns, path, unit)
+            yield from parse_group(ns, path, unit, is_xcode)
         else:
             name = pretty_name(unit, unit.tag)
             idx = seen[name] + 1
