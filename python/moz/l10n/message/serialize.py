@@ -30,7 +30,7 @@ except ImportError:
     pass
 
 
-def serialize_message(format: Format, msg: Message) -> str:
+def serialize_message(format: Format | None, msg: Message) -> str:
     """
     Serialize a `Message` to its string representation.
 
