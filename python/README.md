@@ -109,8 +109,9 @@ Returns a `Format` enum value, or `None` if the input is not recognized.
 ```python
 from moz.l10n.message import from_json, to_json
 
-def message_from_json(json: list[Any] | dict[str, Any]) -> Message: ...
-def message_to_json(msg: Message) -> list[Any] | dict[str, Any]: ...
+def message_from_json(json: list[Any] | dict[str, Any]) -> Message
+
+def message_to_json(msg: Message) -> list[Any] | dict[str, Any]
 ```
 
 Converters to and from a JSON-serializable representation of a `Message`.
@@ -120,6 +121,7 @@ The format of the output is defined by the [`schema.json`](./moz/l10n/message/sc
 
 ```python
 from moz.l10n.message import parse_message
+
 def parse_message(
     format: Format,
     source: str,
@@ -127,8 +129,7 @@ def parse_message(
     printf_placeholders: bool = False,
     webext_placeholders: dict[str, dict[str, str]] | None = None,
     xliff_is_xcode: bool = False,
-) -> Message:
-    ...
+) -> Message
 ```
 
 Parse a `Message` from its string representation.
@@ -141,8 +142,25 @@ providing the message's `webext_placeholders` dict.
 
 To parse an `xliff` message with XCode customizations, enable `xliff_is_xcode`.
 
-Formatting `fluent` messages is not supported,
+Parsing `fluent` messages is not supported,
 as their parsing may result in multiple `Entry` values.
+
+### moz.l10n.message.serialize_message
+
+```python
+from moz.l10n.message import serialize_message
+
+def serialize_message(format: Format, msg: Message) -> str
+```
+
+Serialize a `Message` to its string representation.
+
+Custom serialisers are used for `android`, `mf2`, `webext`, and `xliff` formats.
+Many formats rely on non-string message parts including an appropriate `source` attribute.
+
+SelectMessage serialization is only supported for `mf2`.
+
+Serializing `fluent` messages is not supported.
 
 ### moz.l10n.model
 

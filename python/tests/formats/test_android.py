@@ -38,6 +38,7 @@ try:
         android_parse,
         android_parse_message,
         android_serialize,
+        android_serialize_message,
     )
 except ImportError:
     raise SkipTest("Requires [xml] extra")
@@ -386,9 +387,10 @@ class TestAndroid(TestCase):
             ],
         )
 
-    def test_parse_message(self):
-        message = android_parse_message("Hello, %1$s! You have %2$d new messages.")
-        assert message == PatternMessage(
+    def test_message_expressions(self):
+        src = "Hello, %1$s! You have %2$d new messages."
+        msg = android_parse_message(src)
+        assert msg == PatternMessage(
             [
                 "Hello, ",
                 Expression(
@@ -401,9 +403,13 @@ class TestAndroid(TestCase):
                 " new messages.",
             ]
         )
+        res = android_serialize_message(msg)
+        assert res == src
 
-        message = android_parse_message("Welcome to <b>&foo;</b>&bar;!")
-        assert message == PatternMessage(
+    def test_message_markup(self):
+        src = "Welcome to <b>&foo;</b>&bar;!"
+        msg = android_parse_message(src)
+        assert msg == PatternMessage(
             [
                 "Welcome to ",
                 Markup("open", "b"),
@@ -413,6 +419,8 @@ class TestAndroid(TestCase):
                 "!",
             ]
         )
+        res = android_serialize_message(msg)
+        assert res == src
 
     def test_serialize(self):
         res = android_parse(source)

@@ -68,7 +68,18 @@ def webext_serialize(
                     if not trim_comments and entry.comment:
                         res[name]["description"] = entry.comment
                 elif isinstance(entry.value, PatternMessage):
-                    res[name] = webext_message(name, entry, trim_comments)  # type: ignore[arg-type]
+                    try:
+                        msgstr, placeholders = webext_serialize_message(
+                            entry.value, trim_comments=trim_comments
+                        )
+                    except ValueError as err:
+                        raise ValueError(f"Error serializing {name}") from err
+                    msg: dict[str, Any] = {"message": msgstr}
+                    if not trim_comments and entry.comment:
+                        msg["description"] = entry.comment
+                    if placeholders:
+                        msg["placeholders"] = placeholders
+                    res[name] = msg
                 else:
                     raise ValueError(f"Unsupported entry for {name}: {entry.value}")
             else:
@@ -77,14 +88,23 @@ def webext_serialize(
     yield "\n"
 
 
-def webext_message(
-    name: str, entry: Entry[PatternMessage], trim_comments: bool
-) -> dict[str, Any]:
-    msg = ""
+def webext_serialize_message(
+    msg: Message, *, trim_comments: bool = False
+) -> tuple[str, dict[str, Any]]:
+    """
+    Serialize a message in its messages.json representation.
+
+    Returns a tuple consisting of the `"message"` string
+    and a `"placeholders"` object.
+    """
+
+    if not isinstance(msg, PatternMessage):
+        raise ValueError(f"Unsupported message: {msg}")
+    msgstr = ""
     placeholders: dict[str, Any] = {}
-    for part in entry.value.pattern:
+    for part in msg.pattern:
         if isinstance(part, str):
-            msg += sub(r"\$+", r"$\g<0>", part)
+            msgstr += sub(r"\$+", r"$\g<0>", part)
         elif (
             isinstance(part, Expression)
             and isinstance(part.arg, VariableRef)
@@ -92,7 +112,7 @@ def webext_message(
         ):
             ph_name = part.arg.name
             source = part.attributes.get("source", None)
-            local = entry.value.declarations.get(ph_name, None)
+            local = msg.declarations.get(ph_name, None)
             if local:
                 local_source = local.attributes.get("source", None)
                 if isinstance(local_source, str):
@@ -104,13 +124,9 @@ def webext_message(
                 elif isinstance(local.arg, str):
                     content = local.arg
                 else:
-                    raise ValueError(
-                        f"Unsupported placeholder for {ph_name} in {name}: {local}"
-                    )
+                    raise ValueError(f"Unsupported placeholder for {ph_name}: {local}")
                 if local.function:
-                    raise ValueError(
-                        f"Unsupported annotation for {ph_name} in {name}: {local}"
-                    )
+                    raise ValueError(f"Unsupported annotation for {ph_name}: {local}")
                 if (
                     isinstance(source, str)
                     and len(source) >= 3
@@ -129,17 +145,12 @@ def webext_message(
                         placeholders[ph_name]["example"] = example
                     elif example:
                         raise ValueError(
-                            f"Unsupported placeholder example for {ph_name} in {name}: {example}"
+                            f"Unsupported placeholder example for {ph_name}: {example}"
                         )
-                msg += source or f"${ph_name}$"
+                msgstr += source or f"${ph_name}$"
             else:
                 arg_name = source if isinstance(source, str) else ph_name
-                msg += arg_name if arg_name.startswith("$") else f"${arg_name}"
+                msgstr += arg_name if arg_name.startswith("$") else f"${arg_name}"
         else:
-            raise ValueError(f"Unsupported message part for {name}: {part}")
-    res: dict[str, Any] = {"message": msg}
-    if not trim_comments and entry.comment:
-        res["description"] = entry.comment
-    if placeholders:
-        res["placeholders"] = placeholders
-    return res
+            raise ValueError(f"Unsupported message part: {part}")
+    return msgstr, placeholders
