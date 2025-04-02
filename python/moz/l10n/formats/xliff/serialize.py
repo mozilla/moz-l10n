@@ -178,6 +178,20 @@ def xliff_serialize(
     yield etree.tostring(root, encoding="unicode", pretty_print=True)
 
 
+def xliff_serialize_message(msg: Message) -> str:
+    if not isinstance(msg, PatternMessage) or msg.declarations:
+        raise ValueError(f"Unsupported message: {msg}")
+    target = etree.Element("target")
+    set_pattern(target, msg.pattern)
+    str = etree.tostring(target, encoding="unicode", pretty_print=True).strip()
+    if str == "<target/>":
+        return ""
+    if not str.startswith("<target>"):
+        raise ValueError(f"Invalid serialization: {str}")
+    # trim <target>...</target> wrapper
+    return str[8:-9]
+
+
 def add_xliff_stringsdict_plural(
     parent: etree._Element, entry: Entry[SelectMessage], trim_comments: bool
 ) -> None:

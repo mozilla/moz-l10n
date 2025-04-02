@@ -34,7 +34,12 @@ from moz.l10n.model import (
 )
 
 try:
-    from moz.l10n.formats.xliff import xliff_parse, xliff_parse_message, xliff_serialize
+    from moz.l10n.formats.xliff import (
+        xliff_parse,
+        xliff_parse_message,
+        xliff_serialize,
+        xliff_serialize_message,
+    )
 except ImportError:
     raise SkipTest("Requires [xml] extra")
 
@@ -77,8 +82,9 @@ class TestXliff1(TestCase):
             ],
         )
 
-    def test_parse_message(self):
-        msg = xliff_parse_message("Hello, <b>%s</b>")
+    def test_message_simple(self):
+        src = "Hello, <b>%s</b>"
+        msg = xliff_parse_message(src)
         assert msg == PatternMessage(
             [
                 "Hello, ",
@@ -87,8 +93,18 @@ class TestXliff1(TestCase):
                 Markup(kind="close", name="b"),
             ]
         )
+        res = xliff_serialize_message(msg)
+        assert res == src
 
-        msg = xliff_parse_message("Hello, <b>%s</b>", is_xcode=True)
+    def test_message_empty(self):
+        msg = xliff_parse_message("")
+        assert msg == PatternMessage([])
+        res = xliff_serialize_message(msg)
+        assert res == ""
+
+    def test_message_xcode(self):
+        src = "Hello, <b>%s</b>"
+        msg = xliff_parse_message(src, is_xcode=True)
         assert msg == PatternMessage(
             [
                 "Hello, ",
@@ -97,7 +113,10 @@ class TestXliff1(TestCase):
                 Markup(kind="close", name="b"),
             ]
         )
+        res = xliff_serialize_message(msg)
+        assert res == src
 
+    def test_message_error(self):
         with self.assertRaises(Exception):
             xliff_parse_message("Hello, <b>%s")
 

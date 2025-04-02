@@ -163,6 +163,20 @@ def android_serialize(
     yield "\n"
 
 
+def android_serialize_message(msg: Message) -> str:
+    if not isinstance(msg, PatternMessage) or msg.declarations:
+        raise ValueError(f"Unsupported message: {msg}")
+    target = etree.Element("string")
+    set_pattern(target, msg.pattern)
+    str = etree.tostring(target, encoding="unicode", pretty_print=True).strip()
+    if str == "<string/>":
+        return ""
+    if not str.startswith("<string>"):
+        raise ValueError(f"Invalid serialization: {str}")
+    # trim <string>...</string> wrapper
+    return str[8:-9]
+
+
 def get_attrib(name: str, meta: list[Metadata]) -> dict[str, str]:
     res = {"name": name}
     for m in meta:

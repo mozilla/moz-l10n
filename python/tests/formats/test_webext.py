@@ -19,7 +19,12 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.formats import Format
-from moz.l10n.formats.webext import webext_parse, webext_parse_message, webext_serialize
+from moz.l10n.formats.webext import (
+    webext_parse,
+    webext_parse_message,
+    webext_serialize,
+    webext_serialize_message,
+)
 from moz.l10n.model import (
     Entry,
     Expression,
@@ -33,16 +38,27 @@ source = files("tests.formats.data").joinpath("messages.json").read_bytes()
 
 
 class TestWebext(TestCase):
-    def test_parse_pattern(self):
-        msg = webext_parse_message("Hello $1", None)
+    def test_pattern_empty(self):
+        msg = webext_parse_message("", None)
+        assert msg == PatternMessage([])
+        res, ph = webext_serialize_message(msg)
+        assert (res, ph) == ("", {})
+
+    def test_pattern_numeric_placeholder(self):
+        src = "Hello $1"
+        msg = webext_parse_message(src, None)
         assert msg == PatternMessage(
             [
                 "Hello ",
                 Expression(VariableRef("arg1"), attributes={"source": "$1"}),
             ]
         )
+        res, ph = webext_serialize_message(msg)
+        assert (res, ph) == (src, {})
 
-        msg = webext_parse_message("$foo$ and $Foo$", {"FOO": {"content": "BAR"}})
+    def test_pattern_named_placeholder(self):
+        src = "$foo$ and $Foo$"
+        msg = webext_parse_message(src, {"FOO": {"content": "BAR"}})
         assert msg == PatternMessage(
             declarations={"foo": Expression("BAR")},
             pattern=[
@@ -51,7 +67,10 @@ class TestWebext(TestCase):
                 Expression(VariableRef("foo"), attributes={"source": "$Foo$"}),
             ],
         )
+        res, ph = webext_serialize_message(msg)
+        assert (res, ph) == (src, {"foo": {"content": "BAR"}})
 
+    def test_pattern_missing_named_placeholder(self):
         with self.assertRaises(ValueError):
             webext_parse_message("$foo$ and $Foo$", None)
 

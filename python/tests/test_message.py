@@ -17,36 +17,44 @@ from __future__ import annotations
 from unittest import SkipTest, TestCase
 
 from moz.l10n.formats import Format, UnsupportedFormat
-from moz.l10n.message import parse_message
+from moz.l10n.message import parse_message, serialize_message
 from moz.l10n.model import Expression, Markup, PatternMessage, VariableRef
 
 
-class TestParseMessage(TestCase):
+class TestMessage(TestCase):
     def test_plain(self):
-        msg = parse_message(Format.plain_json, "hello %% world")
-        assert msg == PatternMessage(["hello %% world"])
+        src = "hello %% world"
+        msg = parse_message(Format.plain_json, src)
+        assert msg == PatternMessage([src])
+        res = serialize_message(Format.plain_json, msg)
+        assert res == src
 
     def test_printf(self):
-        msg = parse_message(
-            Format.plain_json, "hello %% world", printf_placeholders=True
-        )
+        src = "hello %% world"
+        msg = parse_message(Format.plain_json, src, printf_placeholders=True)
         assert msg == PatternMessage(
             ["hello ", Expression("%", attributes={"source": "%%"}), " world"]
         )
+        res = serialize_message(Format.plain_json, msg)
+        assert res == src
 
     def test_webext_numeric(self):
-        msg = parse_message(Format.webext, "ph $1")
+        src = "ph $1"
+        msg = parse_message(Format.webext, src)
         assert msg == PatternMessage(
             ["ph ", Expression(VariableRef("arg1"), attributes={"source": "$1"})]
         )
+        res = serialize_message(Format.webext, msg)
+        assert res == src
 
     def test_webext_named_no_placeholders(self):
         with self.assertRaises(ValueError):
             parse_message(Format.webext, "ph $x$")
 
     def test_webext_named_with_placeholders(self):
+        src = "ph $x$"
         msg = parse_message(
-            Format.webext, "ph $x$", webext_placeholders={"x": {"content": "$2"}}
+            Format.webext, src, webext_placeholders={"x": {"content": "$2"}}
         )
         assert msg == PatternMessage(
             declarations={
@@ -54,13 +62,17 @@ class TestParseMessage(TestCase):
             },
             pattern=["ph ", Expression(VariableRef("x"), attributes={"source": "$x$"})],
         )
+        res = serialize_message(Format.webext, msg)
+        assert res == src
 
     def test_fluent(self):
         with self.assertRaises(UnsupportedFormat):
             parse_message(Format.fluent, "key = hello\n")
+        with self.assertRaises(UnsupportedFormat):
+            serialize_message(Format.fluent, PatternMessage([]))
 
 
-class TestParseXliffMessage(TestCase):
+class TestXliffMessage(TestCase):
     @classmethod
     def setUpClass(cls):
         try:
@@ -69,7 +81,8 @@ class TestParseXliffMessage(TestCase):
             raise SkipTest("Requires [xml] extra")
 
     def test_simple(self):
-        msg = parse_message(Format.xliff, "Hello, <b>%s</b>")
+        src = "Hello, <b>%s</b>"
+        msg = parse_message(Format.xliff, src)
         assert msg == PatternMessage(
             [
                 "Hello, ",
@@ -78,9 +91,12 @@ class TestParseXliffMessage(TestCase):
                 Markup(kind="close", name="b"),
             ]
         )
+        res = serialize_message(Format.xliff, msg)
+        assert res == src
 
     def test_xcode(self):
-        msg = parse_message(Format.xliff, "Hello, <b>%s</b>", xliff_is_xcode=True)
+        src = "Hello, <b>%s</b>"
+        msg = parse_message(Format.xliff, src, xliff_is_xcode=True)
         assert msg == PatternMessage(
             [
                 "Hello, ",
@@ -89,13 +105,15 @@ class TestParseXliffMessage(TestCase):
                 Markup(kind="close", name="b"),
             ]
         )
+        res = serialize_message(Format.xliff, msg)
+        assert res == src
 
     def test_parse_error(self):
         with self.assertRaises(Exception):
             parse_message(Format.xliff, "Hello, <b>%s")
 
 
-class TestParseAndroidMessage(TestCase):
+class TestAndroidMessage(TestCase):
     @classmethod
     def setUpClass(cls):
         try:
@@ -104,7 +122,8 @@ class TestParseAndroidMessage(TestCase):
             raise SkipTest("Requires [xml] extra")
 
     def test_placeholders(self):
-        msg = parse_message(Format.android, "Hello, %1$s! You have %2$d new messages.")
+        src = "Hello, %1$s! You have %2$d new messages."
+        msg = parse_message(Format.android, src)
         assert msg == PatternMessage(
             [
                 "Hello, ",
@@ -118,9 +137,12 @@ class TestParseAndroidMessage(TestCase):
                 " new messages.",
             ]
         )
+        res = serialize_message(Format.android, msg)
+        assert res == src
 
     def test_markup(self):
-        msg = parse_message(Format.android, "Welcome to <b>&foo;</b>&bar;!")
+        src = "Welcome to <b>&foo;</b>&bar;!"
+        msg = parse_message(Format.android, src)
         assert msg == PatternMessage(
             [
                 "Welcome to ",
@@ -131,3 +153,5 @@ class TestParseAndroidMessage(TestCase):
                 "!",
             ]
         )
+        res = serialize_message(Format.android, msg)
+        assert res == src
