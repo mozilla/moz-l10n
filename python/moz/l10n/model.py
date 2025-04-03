@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Dict, Generic, List, Literal, Tuple, TypeVar, Union
 
@@ -254,6 +255,12 @@ class Entry(Generic[V]):
     available for some formats.
     """
 
+    def get_meta(self, key: str) -> str | None:
+        """
+        First metadata entry with a matching `key`, if any.
+        """
+        return next((m.value for m in self.meta if m.key == key), None)
+
 
 @dataclass
 class Section(Generic[V]):
@@ -310,6 +317,12 @@ class Section(Generic[V]):
     available for some formats.
     """
 
+    def get_meta(self, key: str) -> str | None:
+        """
+        First metadata entry with a matching `key`, if any.
+        """
+        return next((m.value for m in self.meta if m.key == key), None)
+
 
 @dataclass
 class Resource(Generic[V]):
@@ -347,3 +360,20 @@ class Resource(Generic[V]):
     """
     Metadata attached to the whole resource.
     """
+
+    def all_entries(self) -> Iterable[Entry[V]]:
+        """
+        All entries in all resource sections.
+        """
+        return (
+            entry
+            for section in self.sections
+            for entry in section.entries
+            if isinstance(entry, Entry)
+        )
+
+    def get_meta(self, key: str) -> str | None:
+        """
+        First metadata entry with a matching `key`, if any.
+        """
+        return next((m.value for m in self.meta if m.key == key), None)

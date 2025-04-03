@@ -48,7 +48,9 @@ def inc_parse(source: str | bytes) -> Resource[Message]:
             match = re_define.fullmatch(line)
             if match:
                 name, value = match.groups()
-                entries.append(Entry((name,), PatternMessage([value]), comment))
+                entries.append(
+                    Entry((name,), PatternMessage([value] if value else []), comment)
+                )
                 comment = ""
             elif line.startswith("#"):
                 if comment:
