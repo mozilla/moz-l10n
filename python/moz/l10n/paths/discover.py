@@ -218,14 +218,14 @@ class L10nDiscoverPaths:
         return paths
 
     def target(
-        self, ref_path: str, *, ref_required: bool = True
+        self, ref_path: str, *, ref_required: bool = True, locale: str | None = None
     ) -> tuple[str | None, Iterable[str]]:
         """
         If `ref_path` is a valid reference path,
         returns its corresponding target path.
         Otherwise, returns `None` for the path.
 
-        Target path will include a `{locale}` variable.
+        If `locale` is not set, target path will include a `{locale}` variable.
         """
         ref_path = normpath(join(self._ref_root, ref_path))
         if ref_path.endswith(".po"):
@@ -236,7 +236,11 @@ class L10nDiscoverPaths:
         target = ref_path.replace(self._ref_root, locale_root, 1)
         if target.endswith(".pot"):
             target = target[:-1]
-        return target, self.locales or ()
+        if locale is None:
+            return target, self.locales or ()
+        if self.locales is None or locale in self.locales:
+            return self.format_target_path(target, locale), {locale}
+        return None, ()
 
     def format_target_path(self, target: str, locale: str) -> str:
         base = self._base()

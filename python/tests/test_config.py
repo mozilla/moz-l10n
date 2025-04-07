@@ -493,3 +493,86 @@ class TestL10nConfigPaths(TestCase):
             join(root, "foo", "{locale}", "toolkit", config),
             join(root, "foo", "{locale}", "calendar", calendar),
         }
+
+    def test_path_per_locale(self):
+        cfg_toml = dedent(
+            """
+            basepath = "."
+            locales = ["en", "es", "de"]
+
+            [[paths]]
+            reference = "translations/wordpress.pot"
+            l10n = "translations/wordpress/wordpress-es_ES.po"
+            locales = ["es"]
+
+            [[paths]]
+            reference = "translations/wordpress.pot"
+            l10n = "translations/wordpress/wordpress-de_DE.po"
+            locales = ["de"]
+
+            [[paths]]
+            reference = "translations/wordpress-react.pot"
+            l10n = "translations/wordpress-react/wordpress-react-{locale}.po"
+            """
+        )
+        with TemporaryDirectory() as root:
+            build_file_tree(root, {"l10n.toml": cfg_toml})
+            paths = L10nConfigPaths(join(root, "l10n.toml"))
+
+        assert paths.all_locales == {"en", "es", "de"}
+        assert paths.all() == {
+            (
+                join(root, normpath("translations/wordpress.pot")),
+                join(root, normpath("translations/wordpress/wordpress-es_ES.po")),
+            ): ["es"],
+            (
+                join(root, normpath("translations/wordpress.pot")),
+                join(root, normpath("translations/wordpress/wordpress-de_DE.po")),
+            ): ["de"],
+            (
+                join(root, normpath("translations/wordpress-react.pot")),
+                join(
+                    root,
+                    normpath(
+                        "translations/wordpress-react/wordpress-react-{locale}.po"
+                    ),
+                ),
+            ): ["en", "es", "de"],
+        }
+
+        assert list(paths.ref_paths) == [
+            join(root, normpath("translations/wordpress.pot")),
+            join(root, normpath("translations/wordpress.pot")),
+            join(root, normpath("translations/wordpress-react.pot")),
+        ]
+
+        none_path, none_locales = paths.target("translations/wordpress.pot")
+        assert none_path == join(
+            paths.base, normpath("translations/wordpress/wordpress-es_ES.po")
+        )
+        assert none_locales == {"es"}
+        es_path, es_locales = paths.target("translations/wordpress.pot", locale="es")
+        assert es_path == join(
+            paths.base, normpath("translations/wordpress/wordpress-es_ES.po")
+        )
+        assert es_locales == {"es"}
+        de_path, de_locales = paths.target("translations/wordpress.pot", locale="de")
+        assert de_path == join(
+            paths.base, normpath("translations/wordpress/wordpress-de_DE.po")
+        )
+        assert de_locales == {"de"}
+
+        paths.locales = ["en", "de"]
+        lim_path, lim_locales = paths.target("translations/wordpress.pot")
+        assert lim_path == join(
+            paths.base, normpath("translations/wordpress/wordpress-es_ES.po")
+        )
+        assert lim_locales == ()
+
+        set_path, set_locales = paths.target(
+            "translations/wordpress-react.pot", locale="de"
+        )
+        assert set_path == join(
+            paths.base, normpath("translations/wordpress-react/wordpress-react-de.po")
+        )
+        assert set_locales == {"de"}

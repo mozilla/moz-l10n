@@ -159,6 +159,11 @@ class TestL10nDiscover(TestCase):
                 join(paths.base, "{locale}", "c.po"),
                 paths.locales,
             )
+            assert paths.target("c.pot", locale="xx") == (None, ())
+            assert paths.target("c.pot", locale="zz") == (
+                join(paths.base, "zz", "c.po"),
+                {"zz"},
+            )
             assert paths.target(join(root, "source", "en-US", "a.ftl")) == (None, ())
             # This relies on the `yy_Latn` directory being actually present.
             assert paths.format_target_path("{locale}/c.pot", "yy-Latn") == join(
