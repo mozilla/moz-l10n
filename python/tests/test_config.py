@@ -522,23 +522,28 @@ class TestL10nConfigPaths(TestCase):
         assert paths.all_locales == {"en", "es", "de"}
         assert paths.all() == {
             (
-                join(root, "translations/wordpress.pot"),
-                join(root, "translations/wordpress/wordpress-es_ES.po"),
+                join(root, normpath("translations/wordpress.pot")),
+                join(root, normpath("translations/wordpress/wordpress-es_ES.po")),
             ): ["es"],
             (
-                join(root, "translations/wordpress.pot"),
-                join(root, "translations/wordpress/wordpress-de_DE.po"),
+                join(root, normpath("translations/wordpress.pot")),
+                join(root, normpath("translations/wordpress/wordpress-de_DE.po")),
             ): ["de"],
             (
-                join(root, "translations/wordpress-react.pot"),
-                join(root, "translations/wordpress-react/wordpress-react-{locale}.po"),
+                join(root, normpath("translations/wordpress-react.pot")),
+                join(
+                    root,
+                    normpath(
+                        "translations/wordpress-react/wordpress-react-{locale}.po"
+                    ),
+                ),
             ): ["en", "es", "de"],
         }
 
         assert list(paths.ref_paths) == [
-            join(root, "translations/wordpress.pot"),
-            join(root, "translations/wordpress.pot"),
-            join(root, "translations/wordpress-react.pot"),
+            join(root, normpath("translations/wordpress.pot")),
+            join(root, normpath("translations/wordpress.pot")),
+            join(root, normpath("translations/wordpress-react.pot")),
         ]
 
         none_path, none_locales = paths.target("translations/wordpress.pot")
