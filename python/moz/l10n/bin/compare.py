@@ -126,7 +126,7 @@ def cli() -> None:
                             print(f"    {msg}")
 
     if args.json:
-        print(json.dumps(json_res))
+        print(json.dumps(json_res, ensure_ascii=False))
 
 
 def compare(

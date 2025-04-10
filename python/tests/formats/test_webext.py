@@ -84,7 +84,7 @@ class TestWebext(TestCase):
                     [
                         Entry(
                             ("SourceString",),
-                            PatternMessage(["Translated String"]),
+                            PatternMessage(["Translated Strîņg"]),
                             comment="Sample comment",
                         ),
                         Entry(
@@ -179,7 +179,7 @@ class TestWebext(TestCase):
             """\
             {
               "SourceString": {
-                "message": "Translated String",
+                "message": "Translated Strîņg",
                 "description": "Sample comment"
               },
               "MultipleComments": {
@@ -218,7 +218,7 @@ class TestWebext(TestCase):
             """\
             {
               "SourceString": {
-                "message": "Translated String"
+                "message": "Translated Strîņg"
               },
               "MultipleComments": {
                 "message": "Translated Multiple Comments"
