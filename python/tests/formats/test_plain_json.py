@@ -36,7 +36,7 @@ class TestPlain(TestCase):
                     [
                         Entry(
                             ("SourceString",),
-                            PatternMessage(["Translated String"]),
+                            PatternMessage(["Translated Strîņg"]),
                         ),
                         Entry(
                             ("NoCommentsorSources", "message"),
@@ -78,7 +78,7 @@ class TestPlain(TestCase):
         assert "".join(plain_json_serialize(res)) == dedent(
             """\
             {
-              "SourceString": "Translated String",
+              "SourceString": "Translated Strîņg",
               "NoCommentsorSources": {
                 "message": "Translated No Comments or Sources"
               },

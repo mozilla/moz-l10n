@@ -84,7 +84,7 @@ def webext_serialize(
                     raise ValueError(f"Unsupported entry for {name}: {entry.value}")
             else:
                 check(entry.comment, None)
-    yield dumps(res, indent=2)
+    yield dumps(res, indent=2, ensure_ascii=False)
     yield "\n"
 
 

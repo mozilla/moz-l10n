@@ -74,5 +74,5 @@ def plain_json_serialize(
                 parent[entry.id[-1]] = value
             else:
                 check(entry.comment, None)
-    yield dumps(root, indent=2)
+    yield dumps(root, indent=2, ensure_ascii=False)
     yield "\n"
