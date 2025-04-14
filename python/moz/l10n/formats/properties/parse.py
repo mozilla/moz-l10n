@@ -19,6 +19,7 @@ from re import Match, compile
 from typing import Callable
 
 from ...model import Comment, Entry, LinePos, Message, PatternMessage, Resource, Section
+from ...util.printf import parse_printf_pattern
 from .. import Format
 
 
@@ -115,6 +116,25 @@ def properties_parse(
                 comment = ""
                 start_line = 0
     return resource
+
+
+def properties_parse_message(
+    source: str, *, printf_placeholders: bool = False
+) -> PatternMessage:
+    """
+    Parse a .properties message value.
+
+    If `printf_placeholders` is enabled,
+    printf specifiers are parsed as variables.
+    """
+    parser = PropertiesParser(source)
+    parser.at_value = True
+    (kind, _, value), *rest = parser
+    if kind != LineKind.VALUE or not all(kind == LineKind.EMPTY for kind, _, _ in rest):
+        raise ValueError("Source is not a .properties value")
+    if printf_placeholders:
+        return PatternMessage(list(parse_printf_pattern(source)))
+    return PatternMessage([value])
 
 
 class PropertiesParser:

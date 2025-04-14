@@ -39,6 +39,22 @@ def encode_char(m: Match[str]) -> str:
     return f"\\u{ord(ch):04x}"
 
 
+def escape_chars(value: str, ensure_ascii: bool) -> str:
+    return (
+        control_chars.sub(encode_char, value)
+        if not ensure_ascii
+        else not_ascii_printable_chars.sub(encode_char, value)
+    )
+
+
+def fix_outer_spaces(value: str) -> str:
+    if value[0:1].isspace():
+        value = "\\" + value
+    if value.endswith(" ") and not value.endswith("\\ "):
+        value = value[:-1] + "\\u0020"
+    return value
+
+
 def properties_serialize(
     resource: Resource[str] | Resource[Message],
     encoding: Literal["iso-8859-1", "utf-8", "utf-16"] = "utf-8",
@@ -60,6 +76,7 @@ def properties_serialize(
     as the serialization may lose information about message sections and metadata.
     """
 
+    ensure_ascii = encoding == "iso-8859-1"
     at_empty_line = True
 
     def comment(comment: str, meta: Any, standalone: bool) -> Iterator[str]:
@@ -89,40 +106,47 @@ def properties_serialize(
             if isinstance(entry, Entry):
                 yield from comment(entry.comment, entry.meta, False)
                 key = id_prefix + ".".join(entry.id)
-                key = (
-                    control_chars.sub(encode_char, key)
-                    if encoding in {"utf-8", "utf-16"}
-                    else not_ascii_printable_chars.sub(encode_char, key)
-                )
+                key = escape_chars(key, ensure_ascii)
                 key = key.translate(special_key_trans)
 
                 value: str
-                is_raw = False
                 msg = entry.value
-                if isinstance(msg, str):
-                    value = msg
-                    is_raw = True
-                elif serialize_message:
-                    value = serialize_message(msg)
-                elif isinstance(msg, PatternMessage) and all(
-                    isinstance(p, str) for p in msg.pattern
-                ):
-                    value = "".join(msg.pattern)  # type: ignore[arg-type]
-                else:
-                    raise ValueError(f"Unsupported message for {key}: {msg}")
+                try:
+                    if isinstance(msg, str):
+                        value = msg
+                    elif serialize_message:
+                        value = serialize_message(msg)
+                        value = escape_chars(value, ensure_ascii)
+                    else:
+                        value = properties_serialize_message(
+                            msg, ensure_ascii=ensure_ascii
+                        )
+                except Exception as err:
+                    raise ValueError(f"Error serializing {key}") from err
 
-                if not is_raw:
-                    value = (
-                        control_chars.sub(encode_char, value)
-                        if encoding in {"utf-8", "utf-16"}
-                        else not_ascii_printable_chars.sub(encode_char, value)
-                    )
-
-                if value[0:1].isspace():
-                    value = "\\" + value
-                if value.endswith(" ") and not value.endswith("\\ "):
-                    value = value[:-1] + "\\u0020"
-                yield f"{key} = {value}\n" if value else f"{key} =\n"
+                yield f"{key} = {fix_outer_spaces(value)}\n" if value else f"{key} =\n"
                 at_empty_line = False
             else:
                 yield from comment(entry.comment, None, True)
+
+
+def properties_serialize_message(msg: Message, *, ensure_ascii: bool = False) -> str:
+    """
+    Serialize a message value in its .properties representation.
+
+    If `ensure_ascii` is set, all non-ASCII characters will be escaped.
+
+    Non-string pattern parts must have a string `source` attribute.
+    """
+    if not isinstance(msg, PatternMessage):
+        raise ValueError(f"Unsupported message: {msg}")
+    msgstr = ""
+    for part in msg.pattern:
+        if isinstance(part, str):
+            msgstr += part
+        else:
+            partsrc = part.attributes.get("source", None)
+            if not isinstance(partsrc, str):
+                raise ValueError(f"Unsupported message part: {part}")
+            msgstr += partsrc
+    return fix_outer_spaces(escape_chars(msgstr, ensure_ascii))
