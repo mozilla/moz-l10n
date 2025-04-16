@@ -192,6 +192,12 @@ class Comment:
     An empty or whitespace-only comment will be represented by an empty string.
     """
 
+    linepos: LinePos | None = field(default=None, compare=False)
+    """
+    The parsed position of the comment,
+    available for some formats.
+    """
+
 
 V = TypeVar("V")
 """

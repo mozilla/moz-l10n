@@ -97,7 +97,13 @@ def fluent_parse(
                     )
         elif isinstance(entry, ftl.Comment):
             if entry.content:
-                entries.append(Comment(entry.content))
+                comment = Comment(entry.content)
+                if lpm and entry.span:
+                    span = entry.span
+                    comment.linepos = lpm.get_linepos(
+                        span.start, span.start, span.start, span.end
+                    )
+                entries.append(comment)
         else:  # Junk
             try:
                 message = entry.annotations[0].message

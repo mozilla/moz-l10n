@@ -71,6 +71,7 @@ def properties_parse(
 
     start_line = 0
     comment = ""
+    comment_linepos: LinePos | None = None
     prev_linepos: LinePos | None = None
     entry: Entry[Message] | None = None
     for kind, line, value in parser:
@@ -100,20 +101,25 @@ def properties_parse(
                 prev_linepos = entry.linepos
                 entries.append(entry)
                 comment = ""
+                comment_linepos = None
                 start_line = 0
             elif kind == LineKind.COMMENT:
                 if comment:
                     comment += "\n" + value
+                    assert comment_linepos
+                    comment_linepos.end = line + 1
                 else:
                     comment = value
                     start_line = line
+                    comment_linepos = LinePos(line, line, line, line + 1)
             elif comment:
                 # empty line or EOF after a comment
                 if entries or resource.comment:
-                    entries.append(Comment(comment))
+                    entries.append(Comment(comment=comment, linepos=comment_linepos))
                 else:
                     resource.comment = comment
                 comment = ""
+                comment_linepos = None
                 start_line = 0
     return resource
 

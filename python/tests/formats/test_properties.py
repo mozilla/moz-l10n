@@ -25,7 +25,7 @@ from moz.l10n.formats.properties import (
     properties_serialize,
     properties_serialize_message,
 )
-from moz.l10n.model import Entry, PatternMessage, Resource, Section
+from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
 from . import get_linepos
 
@@ -410,6 +410,8 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
             # Any copyright is dedicated to the Public Domain.
             # http://creativecommons.org/publicdomain/zero/1.0/
 
+            # This is a standalone comment
+
             foo = value
             """
         )
@@ -420,11 +422,8 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                 Section(
                     (),
                     [
-                        Entry(
-                            ("foo",),
-                            PatternMessage(["value"]),
-                            linepos=get_linepos(4),
-                        )
+                        Comment("This is a standalone comment"),
+                        Entry(("foo",), PatternMessage(["value"])),
                     ],
                 )
             ],
@@ -434,5 +433,8 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                     http://creativecommons.org/publicdomain/zero/1.0/"""
             ),
         )
+        comment, entry = res.sections[0].entries
+        assert comment.linepos == get_linepos(4)
+        assert entry.linepos == get_linepos(6)
         assert "".join(properties_serialize(res)) == src
         assert "".join(properties_serialize(res, trim_comments=True)) == "foo = value\n"
