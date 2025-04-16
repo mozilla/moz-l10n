@@ -82,6 +82,28 @@ class TestXliff1(TestCase):
             ],
         )
 
+    def test_serialize_hello(self):
+        res = xliff_parse(hello)
+        ser = "".join(xliff_serialize(res))
+        assert ser == dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+              <file original="hello.txt" source-language="en" target-language="fr" datatype="plaintext">
+                <body>
+                  <trans-unit id="hi">
+                    <source>Hello world</source>
+                    <target>Bonjour le monde</target>
+                    <alt-trans>
+                      <target xml:lang="es">Hola mundo</target>
+                    </alt-trans>
+                  </trans-unit>
+                </body>
+              </file>
+            </xliff>
+            """
+        )
+
     def test_message_simple(self):
         src = "Hello, <b>%s</b>"
         msg = xliff_parse_message(src)
@@ -120,21 +142,38 @@ class TestXliff1(TestCase):
         with self.assertRaises(Exception):
             xliff_parse_message("Hello, <b>%s")
 
-    def test_serialize_hello(self):
-        res = xliff_parse(hello)
-        ser = "".join(xliff_serialize(res))
+    def test_string_value(self):
+        res = Resource(
+            Format.xliff,
+            meta=[Metadata("@version", "1.2")],
+            sections=[
+                Section(
+                    id=("hello.txt",),
+                    meta=[
+                        Metadata("@source-language", "en"),
+                        Metadata("@target-language", "fr"),
+                    ],
+                    entries=[
+                        Entry(
+                            id=("x",),
+                            meta=[Metadata("source", "This & <b>that</b>")],
+                            value="This & <b>that</b>",
+                        )
+                    ],
+                )
+            ],
+        )
+
+        ser = "".join(xliff_serialize(res, trim_comments=True))
         assert ser == dedent(
             """\
             <?xml version="1.0" encoding="utf-8"?>
-            <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-              <file original="hello.txt" source-language="en" target-language="fr" datatype="plaintext">
+            <xliff version="1.2">
+              <file original="hello.txt" source-language="en" target-language="fr">
                 <body>
-                  <trans-unit id="hi">
-                    <source>Hello world</source>
-                    <target>Bonjour le monde</target>
-                    <alt-trans>
-                      <target xml:lang="es">Hola mundo</target>
-                    </alt-trans>
+                  <trans-unit id="x">
+                    <source>This &amp; &lt;b&gt;that&lt;/b&gt;</source>
+                    <target>This &amp; &lt;b&gt;that&lt;/b&gt;</target>
                   </trans-unit>
                 </body>
               </file>

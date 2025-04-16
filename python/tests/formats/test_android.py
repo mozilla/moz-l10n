@@ -583,6 +583,21 @@ class TestAndroid(TestCase):
             """
         )
 
+    def test_string_value(self):
+        res = Resource(
+            Format.android, [Section((), [Entry(("x",), "This & <b>that</b>")])]
+        )
+
+        ser = "".join(android_serialize(res))
+        assert ser == dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">This &amp; &lt;b&gt;that&lt;/b&gt;</string>
+            </resources>
+            """
+        )
+
     def test_translate_no(self):
         msg = PatternMessage(
             [
