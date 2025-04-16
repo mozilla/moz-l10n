@@ -39,7 +39,8 @@ class TesteParseResource(TestCase):
             "bug121341.properties",
             "defines.inc",
             "demo.ftl",
-            "foo.po",
+            # Skip due to https://github.com/izimobil/polib/issues/170
+            # "foo.po",
             "messages.json",
             "test.properties",
         )
@@ -50,6 +51,15 @@ class TesteParseResource(TestCase):
             assert all(
                 isinstance(s, str) for s in serialize_resource(res, trim_comments=True)
             )
+
+    def test_need_for_polib_workaround(self):
+        """
+        If this fails, the workarounds for
+        https://github.com/izimobil/polib/issues/170
+        are no longer necessary.
+        """
+        with self.assertRaises(OSError):
+            parse_resource("foo.po", get_source("foo.po"))
 
     @skipIf(no_xml, "Requires [xml] extra")
     def test_named_xml_files(self):
@@ -92,9 +102,7 @@ class TesteParseResource(TestCase):
             parse_resource(None, source)
 
     def test_serialize_unsupported_format(self):
-        source = get_source("foo.po")
-        res = parse_resource(Format.po, source)
+        source = get_source("demo.ftl")
+        res = parse_resource(Format.fluent, source)
         with self.assertRaises(ValueError):
-            assert all(
-                isinstance(s, str) for s in serialize_resource(res, Format.fluent)
-            )
+            assert all(isinstance(s, str) for s in serialize_resource(res, Format.po))

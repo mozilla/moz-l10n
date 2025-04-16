@@ -36,3 +36,6 @@ msgstr "translated string"
 
 msgid "other string"
 msgstr "translated string"
+
+msgid "line separator"
+msgstr ""

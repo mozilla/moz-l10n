@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, cast
 
 from ..formats import Format, UnsupportedFormat, detect_format
 from ..formats.dtd.parse import dtd_parse
@@ -52,11 +52,13 @@ def parse_resource(
     the `source` argument is optional,
     as the file will be opened and read.
     """
+    input_is_file = False
     if source is None:
         if not isinstance(input, str):
             raise TypeError("Source is required if type is not a string path")
         with open(input, mode="rb") as file:
             source = file.read()
+            input_is_file = True
     # TODO post-py38: should be a match
     format = input if isinstance(input, Format) else detect_format(input, source)
     if format == Format.dtd:
@@ -70,7 +72,8 @@ def parse_resource(
     elif format == Format.plain_json:
         return plain_json_parse(source)
     elif format == Format.po:
-        return po_parse(source)
+        # Workaround for https://github.com/izimobil/polib/issues/170
+        return po_parse(cast(str, input) if input_is_file else source)
     elif format == Format.properties:
         return properties_parse(source)
     elif format == Format.webext:
