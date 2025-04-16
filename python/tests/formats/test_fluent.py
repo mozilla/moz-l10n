@@ -485,11 +485,9 @@ class TestFluent(TestCase):
     def test_meta(self):
         res = fluent_parse("one = foo\ntwo = bar")
         res.sections[0].entries[1].meta = [Metadata("a", 42), Metadata("b", False)]
-        try:
+        with self.assertRaises(ValueError) as ec:
             "".join(fluent_serialize(res))
-            raise Exception("Expected an error")
-        except Exception as e:
-            assert e.args == ("Metadata requires serialize_metadata parameter",)
+        assert ec.exception.args == ("Metadata requires serialize_metadata parameter",)
         assert (
             "".join(fluent_serialize(res, lambda _: None)) == "one = foo\ntwo = bar\n"
         )
@@ -509,8 +507,9 @@ class TestFluent(TestCase):
         )
 
     def test_junk(self):
-        with self.assertRaisesRegex(Exception, 'Expected token: "="'):
-            fluent_parse("msg = value\n# Comment\nLine of junk")
+        with self.assertRaises(Exception) as ec:
+            fluent_parse("msg = value\n# Comment\n\nLine of junk")
+        assert ec.exception.args == ('Expected token: "=" after message msg at line 3',)
 
     def test_file(self):
         bytes = files("tests.formats.data").joinpath("demo.ftl").read_bytes()
