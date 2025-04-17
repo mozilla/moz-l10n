@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ruff: noqa: RUF001
+
 from __future__ import annotations
 
 from importlib_resources import files
@@ -31,12 +33,12 @@ from moz.l10n.model import (
     VariableRef,
 )
 
-source = files("tests.formats.data").joinpath("foo.po").read_bytes().decode("utf-8")
+res_path = str(files("tests.formats.data").joinpath("foo.po"))
 
 
 class TestPo(TestCase):
     def test_parse(self):
-        res = po_parse(source)
+        res = po_parse(res_path)
         assert res == Resource(
             Format.po,
             comment="Test translation file.\n"
@@ -95,13 +97,14 @@ class TestPo(TestCase):
                             value=PatternMessage(["translated string"]),
                         ),
                         Entry(("other string",), PatternMessage(["translated string"])),
+                        Entry(("line\u2028separator",), PatternMessage([""])),
                     ],
                 ),
             ],
         )
 
     def test_serialize(self):
-        res = po_parse(source)
+        res = po_parse(res_path)
         assert (
             "".join(po_serialize(res))
             == r"""# Test translation file.
@@ -142,11 +145,16 @@ msgstr "translated string"
 
 msgid "other string"
 msgstr "translated string"
+
+msgid ""
+"line "
+"separator"
+msgstr ""
 """
         )
 
     def test_trim_comments(self):
-        res = po_parse(source)
+        res = po_parse(res_path)
         assert (
             "".join(po_serialize(res, trim_comments=True))
             == r"""#
@@ -179,11 +187,16 @@ msgstr "translated string"
 
 msgid "other string"
 msgstr "translated string"
+
+msgid ""
+"line "
+"separator"
+msgstr ""
 """
         )
 
     def test_obsolete(self):
-        res = po_parse(source)
+        res = po_parse(res_path)
         res.sections[0].entries[0].meta.append(Metadata("obsolete", True))
         res.sections[0].entries[3].meta = []
         assert (
@@ -226,5 +239,10 @@ msgstr "translated string"
 
 msgid "other string"
 msgstr "translated string"
+
+msgid ""
+"line "
+"separator"
+msgstr ""
 """
         )
