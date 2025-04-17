@@ -218,7 +218,8 @@ class TestAndroid(TestCase):
                         ),
                         Entry(("ws_trimmed",), PatternMessage([" "])),
                         Entry(
-                            ("ws_quoted",), PatternMessage([" \u0020 \u2008 \u2003"])
+                            ("ws_quoted",),
+                            PatternMessage([" \u0020 \u2008\n    \u2003"]),
                         ),
                         Entry(
                             ("ws_escaped",),
@@ -460,7 +461,7 @@ class TestAndroid(TestCase):
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
               <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
               <string name="ws_trimmed">" "</string>
-              <string name="ws_quoted">"   \\u8200 \\u8195"</string>
+              <string name="ws_quoted">"   \\u8200\\n    \\u8195"</string>
               <string name="ws_escaped">"   \\u8200 \\u8195"</string>
               <string name="ws_with_entities">" one "<xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g>" three "</string>
               <string name="ws_with_html">" one"<b> two </b>"three "</string>
@@ -520,7 +521,7 @@ class TestAndroid(TestCase):
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
               <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
               <string name="ws_trimmed">" "</string>
-              <string name="ws_quoted">"   \\u8200 \\u8195"</string>
+              <string name="ws_quoted">"   \\u8200\\n    \\u8195"</string>
               <string name="ws_escaped">"   \\u8200 \\u8195"</string>
               <string name="ws_with_entities">" one "<xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g>" three "</string>
               <string name="ws_with_html">" one"<b> two </b>"three "</string>
