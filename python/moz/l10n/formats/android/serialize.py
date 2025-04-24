@@ -266,7 +266,7 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
 
 def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
     if isinstance(msg, str):
-        el.text = msg.replace("'", "\\'")
+        el.text = msg
     elif isinstance(msg, PatternMessage) and not msg.declarations:
         set_pattern(el, msg.pattern)
     else:
