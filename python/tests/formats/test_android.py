@@ -599,6 +599,52 @@ class TestAndroid(TestCase):
             """
         )
 
+    def test_cdata_value(self):
+        src = dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x"><![CDATA[Click <a href="%1$s">here</a>]]></string>
+            </resources>
+            """
+        )
+        res = android_parse(src)
+        assert res == Resource(
+            Format.android,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("x",),
+                            PatternMessage(
+                                [
+                                    'Click <a href="',
+                                    Expression(
+                                        arg=VariableRef(name="arg1"),
+                                        function="string",
+                                        attributes={"source": "%1$s"},
+                                    ),
+                                    '">here',
+                                    Expression(arg="</a>", function="html"),
+                                ],
+                            ),
+                        )
+                    ],
+                )
+            ],
+        )
+
+        ser = "".join(android_serialize(res))
+        assert ser == dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">Click &lt;a href=\\"%1$s\\"&gt;here&lt;/a&gt;</string>
+            </resources>
+            """
+        )
+
     def test_translate_no(self):
         msg = PatternMessage(
             [

@@ -345,6 +345,7 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
 
 
 double_quote = compile(r'(?<!\\)"')
+tag_like = compile(r"<.+>")
 spaces = compile(r"\s+")
 
 
@@ -363,6 +364,12 @@ def parse_quotes(
             pos = 0
             quoted = bool(stack)
             for m in double_quote.finditer(part):
+                if pos == 0 and tag_like.search(part) is not None:
+                    # Double quotes don't need escaping in CDATA sections,
+                    # but lxml doesn't tell us about them.
+                    # (see https://bugs.launchpad.net/lxml/+bug/2108853)
+                    # Let's presume that's the case if we see tag-like contents nearby.
+                    break
                 prev = part[pos : m.start()]
                 if quoted:
                     if stack:
