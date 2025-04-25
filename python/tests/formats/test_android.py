@@ -726,3 +726,28 @@ class TestAndroid(TestCase):
             Format.android,
             [Section((), [Entry(("x",), PatternMessage(['"hello"']))])],
         )
+
+    def test_escapes(self):
+        src = dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">1\\t2\\,3\\'</string>
+            </resources>
+            """
+        )
+
+        res = android_parse(src)
+        assert res == Resource(
+            Format.android,
+            [Section((), [Entry(("x",), PatternMessage(["1\t2,3'"]))])],
+        )
+        ser = "".join(android_serialize(res))
+        assert ser == dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">1\\t2,3\\'</string>
+            </resources>
+            """
+        )

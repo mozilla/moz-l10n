@@ -438,8 +438,8 @@ def parse_quotes(
 
 
 inline_re = compile(
-    r"""\\([@?nt'"\\])|"""
     r"\\u([0-9]{4})|"
+    r"\\(.)|"
     r"(<[^%>]+>)|"
     r"(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%]|[tT][a-zA-Z]))"
 )
@@ -462,12 +462,12 @@ def parse_inline(
                 if start > pos:
                     acc += part[pos:start]
                 if m[1]:
-                    # Special character
-                    c = m[1]
-                    acc += "\n" if c == "n" else "\t" if c == "t" else c
-                elif m[2]:
                     # Unicode escape
-                    acc += chr(int(m[2]))
+                    acc += chr(int(m[1]))
+                elif m[2]:
+                    # Escaped character
+                    c = m[2]
+                    acc += "\n" if c == "n" else "\t" if c == "t" else c
                 elif m[3]:
                     # Escaped HTML element, e.g. &lt;b>
                     # HTML elements containing internal % formatting are not wrapped as literals
