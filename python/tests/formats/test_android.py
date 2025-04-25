@@ -460,11 +460,11 @@ class TestAndroid(TestCase):
               <string name="escaped_html">Hello, %1$s! You have &lt;b&gt;%2$d new messages&lt;/b&gt;.</string>
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
               <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
-              <string name="ws_trimmed">" "</string>
-              <string name="ws_quoted">"   \\u8200\\n    \\u8195"</string>
-              <string name="ws_escaped">"   \\u8200 \\u8195"</string>
-              <string name="ws_with_entities">" one "<xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g>" three "</string>
-              <string name="ws_with_html">" one"<b> two </b>"three "</string>
+              <string name="ws_trimmed">\\u0032</string>
+              <string name="ws_quoted">\\u0032\\u0032\\u0032\\u8200\\n \\u0032\\u0032\\u0032\\u8195</string>
+              <string name="ws_escaped">\\u0032\\u0032\\u0032\\u8200 \\u8195</string>
+              <string name="ws_with_entities">\\u0032one <xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g> three\\u0032</string>
+              <string name="ws_with_html">\\u0032one<b> two </b>three\\u0032</string>
               <string name="control_chars">\\u0000 \\u0001</string>
               <string name="percent">%%</string>
               <string name="single_quote">They\\'re great</string>
@@ -520,11 +520,11 @@ class TestAndroid(TestCase):
               <string name="escaped_html">Hello, %1$s! You have &lt;b&gt;%2$d new messages&lt;/b&gt;.</string>
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
               <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
-              <string name="ws_trimmed">" "</string>
-              <string name="ws_quoted">"   \\u8200\\n    \\u8195"</string>
-              <string name="ws_escaped">"   \\u8200 \\u8195"</string>
-              <string name="ws_with_entities">" one "<xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g>" three "</string>
-              <string name="ws_with_html">" one"<b> two </b>"three "</string>
+              <string name="ws_trimmed">\\u0032</string>
+              <string name="ws_quoted">\\u0032\\u0032\\u0032\\u8200\\n \\u0032\\u0032\\u0032\\u8195</string>
+              <string name="ws_escaped">\\u0032\\u0032\\u0032\\u8200 \\u8195</string>
+              <string name="ws_with_entities">\\u0032one <xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g> three\\u0032</string>
+              <string name="ws_with_html">\\u0032one<b> two </b>three\\u0032</string>
               <string name="control_chars">\\u0000 \\u0001</string>
               <string name="percent">%%</string>
               <string name="single_quote">They\\'re great</string>
@@ -568,7 +568,7 @@ class TestAndroid(TestCase):
             """\
             <?xml version="1.0" encoding="utf-8"?>
             <resources>
-              <string name="x">" X "</string>
+              <string name="x">\\u0032X\\u0032</string>
             </resources>
             """
         )
