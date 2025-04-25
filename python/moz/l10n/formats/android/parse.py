@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Iterable, Iterator
-from re import compile, match
+from re import ASCII, compile, match
 from typing import Literal
 
 from lxml import etree
@@ -72,7 +72,9 @@ xml_name = compile(f"[{xml_name_start}][{xml_name_start}{xml_name_rest}]*")
 # https://developer.android.com/guide/topics/resources/localization#mark-message-parts
 
 
-def android_parse(source: str | bytes) -> Resource[Message]:
+def android_parse(
+    source: str | bytes, *, ascii_spaces: bool = False, literal_quotes: bool = False
+) -> Resource[Message]:
     """
     Parse an Android strings XML file into a message resource.
 
@@ -83,6 +85,14 @@ def android_parse(source: str | bytes) -> Resource[Message]:
 
     All XML, Android, and printf escapes are unescaped
     except for %n, which has a platform-dependent meaning.
+
+    Whitespace in messages is normalized.
+    If `ascii_spaces` is set,
+    this only applies to ASCII/Latin-1 space characters.
+
+    With `literal_quotes`, all " double-quote characters within strings
+    are treated as literal characters,
+    rather than as delimiters for whitespace preservation.
 
     Spans of text and entities wrapped in an <xliff:g>
     will be parsed as expressions with a "translate": "no" attribute.
@@ -133,14 +143,18 @@ def android_parse(source: str | bytes) -> Resource[Message]:
             meta = [Metadata(k, v) for k, v in el.attrib.items() if k != "name"]
 
             if el.tag == "string":
-                value = PatternMessage(list(parse_pattern(el)))
+                value = PatternMessage(
+                    list(parse_pattern(el, ascii_spaces, literal_quotes))
+                )
                 entries.append(Entry((name,), value, comment_str(comment), meta))
 
             elif el.tag == "plurals":
                 if el.text and not el.text.isspace():
                     log.warning(f"Unexpected text in {name} plurals: {el.text}")
                 else:
-                    value = parse_plurals(name, el, comment.extend)
+                    value = parse_plurals(
+                        name, el, ascii_spaces, literal_quotes, comment.extend
+                    )
                     entries.append(Entry((name,), value, comment_str(comment), meta))
 
             elif el.tag == "string-array":
@@ -151,7 +165,9 @@ def android_parse(source: str | bytes) -> Resource[Message]:
                     if isinstance(item, etree._Comment):
                         comment.append(item.text)
                     elif item.tag == "item":
-                        value = PatternMessage(list(parse_pattern(item)))
+                        value = PatternMessage(
+                            list(parse_pattern(item, ascii_spaces, literal_quotes))
+                        )
                         ic = comment_str(comment)
                         entries.append(Entry((name, str(idx)), value, ic, meta[:]))
                         comment.clear()
@@ -174,12 +190,22 @@ def android_parse(source: str | bytes) -> Resource[Message]:
     return res
 
 
-def android_parse_message(source: str) -> PatternMessage:
+def android_parse_message(
+    source: str, *, ascii_spaces: bool = False, literal_quotes: bool = False
+) -> PatternMessage:
     """
     Parse an Android strings XML message.
 
     All XML, Android, and printf escapes are unescaped
     except for %n, which has a platform-dependent meaning.
+
+    Whitespace in messages is normalized.
+    If `ascii_spaces` is set,
+    this only applies to ASCII/Latin-1 space characters.
+
+    With `literal_quotes`, all " double-quote characters within strings
+    are treated as literal characters,
+    rather than as delimiters for whitespace preservation.
 
     Spans of text and entities wrapped in an <xliff:g>
     will be parsed as expressions with a "translate": "no" attribute.
@@ -203,7 +229,7 @@ def android_parse_message(source: str) -> PatternMessage:
                     doctype = f"<!DOCTYPE string [{' '.join(entities)}]>"
                     continue
             raise err
-    return PatternMessage(list(parse_pattern(el)))
+    return PatternMessage(list(parse_pattern(el, ascii_spaces, literal_quotes)))
 
 
 dash_indent = compile(r" .+(\n   - .*)+ ")
@@ -241,7 +267,11 @@ def parse_entity_value(src: str | None) -> Iterator[str | Expression]:
 
 
 def parse_plurals(
-    name: str, el: etree._Element, add_comment: Callable[[Iterable[str | None]], None]
+    name: str,
+    el: etree._Element,
+    ascii_spaces: bool,
+    literal_quotes: bool,
+    add_comment: Callable[[Iterable[str | None]], None],
 ) -> SelectMessage:
     msg = SelectMessage(
         declarations={"quantity": Expression(VariableRef("quantity"), "number")},
@@ -264,7 +294,7 @@ def parse_plurals(
                 )
                 var_comment.clear()
             msg.variants[(CatchallKey(key) if key == "other" else key,)] = list(
-                parse_pattern(item)
+                parse_pattern(item, ascii_spaces, literal_quotes)
             )
         else:
             cs = etree.tostring(item, encoding="unicode")
@@ -277,13 +307,15 @@ def parse_plurals(
 resource_ref = compile(r"@(?:\w+:)?\w+/\w+|\?(?:\w+:)?(\w+/)?\w+")
 
 
-def parse_pattern(el: etree._Element) -> Iterator[str | Expression | Markup]:
+def parse_pattern(
+    el: etree._Element, ascii_spaces: bool, literal_quotes: bool
+) -> Iterator[str | Expression | Markup]:
     if len(el) == 0 and el.text and resource_ref.fullmatch(el.text):
         # https://developer.android.com/guide/topics/resources/providing-resources#ResourcesFromXml
         yield Expression(el.text, "reference")
     else:
         flat = flatten(el)
-        spaced = parse_quotes(flat)
+        spaced = parse_quotes(flat, ascii_spaces, literal_quotes)
         yield from parse_inline(spaced)
 
 
@@ -346,12 +378,14 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
 
 double_quote = compile(r'(?<!\\)"')
 tag_like = compile(r"<.+>")
-spaces = compile(r"\s+")
 
 
 def parse_quotes(
     iter: Iterator[str | Expression | Markup],
+    ascii_spaces: bool,
+    literal_quotes: bool,
 ) -> Iterator[str | Expression | Markup]:
+    spaces = compile(r"\s+", ASCII if ascii_spaces else 0)
     stack: list[str | Expression] = []
 
     def collapse_stack() -> Iterator[str | Expression | Markup]:
@@ -363,24 +397,25 @@ def parse_quotes(
         if isinstance(part, str):
             pos = 0
             quoted = bool(stack)
-            for m in double_quote.finditer(part):
-                if pos == 0 and tag_like.search(part) is not None:
-                    # Double quotes don't need escaping in CDATA sections,
-                    # but lxml doesn't tell us about them.
-                    # (see https://bugs.launchpad.net/lxml/+bug/2108853)
-                    # Let's presume that's the case if we see tag-like contents nearby.
-                    break
-                prev = part[pos : m.start()]
-                if quoted:
-                    if stack:
-                        yield from stack
-                        stack.clear()
-                    if prev:
-                        yield prev
-                elif prev:
-                    yield spaces.sub(" ", prev)
-                quoted = not quoted
-                pos = m.end()
+            if not literal_quotes:
+                for m in double_quote.finditer(part):
+                    if pos == 0 and tag_like.search(part) is not None:
+                        # Double quotes don't need escaping in CDATA sections,
+                        # but lxml doesn't tell us about them.
+                        # (see https://bugs.launchpad.net/lxml/+bug/2108853)
+                        # Let's presume that's the case if we see tag-like contents nearby.
+                        break
+                    prev = part[pos : m.start()]
+                    if quoted:
+                        if stack:
+                            yield from stack
+                            stack.clear()
+                        if prev:
+                            yield prev
+                    elif prev:
+                        yield spaces.sub(" ", prev)
+                    quoted = not quoted
+                    pos = m.end()
             last = part[pos:]
             if quoted:
                 stack.append(last)

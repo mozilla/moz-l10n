@@ -664,3 +664,65 @@ class TestAndroid(TestCase):
             </resources>
             """
         )
+
+    def test_spaces(self):
+        src = dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">One\ttwo\xa0three</string>
+            </resources>
+            """
+        )
+
+        res = android_parse(src)
+        assert res == Resource(
+            Format.android,
+            [Section((), [Entry(("x",), PatternMessage(["One two three"]))])],
+        )
+        ser = "".join(android_serialize(res))
+        assert ser == dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">One two three</string>
+            </resources>
+            """
+        )
+
+        res = android_parse(src, ascii_spaces=True)
+        assert res == Resource(
+            Format.android,
+            [Section((), [Entry(("x",), PatternMessage(["One two\xa0three"]))])],
+        )
+        ser = "".join(android_serialize(res))
+        assert ser == dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">One two\\u0160three</string>
+            </resources>
+            """
+        )
+
+    def test_quotes(self):
+        src = dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">"hello"</string>
+            </resources>
+            """
+        )
+
+        res = android_parse(src)
+        assert res == Resource(
+            Format.android,
+            [Section((), [Entry(("x",), PatternMessage(["hello"]))])],
+        )
+
+        res = android_parse(src, literal_quotes=True)
+        assert res == Resource(
+            Format.android,
+            [Section((), [Entry(("x",), PatternMessage(['"hello"']))])],
+        )

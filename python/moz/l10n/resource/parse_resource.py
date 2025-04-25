@@ -27,7 +27,7 @@ from ..formats.properties.parse import properties_parse
 from ..formats.webext.parse import webext_parse
 from ..model import Message, Resource
 
-android_parse: Callable[[str | bytes], Resource[Message]] | None
+android_parse: Callable[..., Resource[Message]] | None
 xliff_parse: Callable[[str | bytes], Resource[Message]] | None
 try:
     from ..formats.android.parse import android_parse
@@ -38,7 +38,11 @@ except ImportError:
 
 
 def parse_resource(
-    input: Format | str | None, source: str | bytes | None = None
+    input: Format | str | None,
+    source: str | bytes | None = None,
+    *,
+    android_ascii_spaces: bool = False,
+    android_literal_quotes: bool = False,
 ) -> Resource[Message]:
     """
     Parse a Resource from its string representation.
@@ -79,7 +83,11 @@ def parse_resource(
     elif format == Format.webext:
         return webext_parse(source)
     elif format == Format.android and android_parse is not None:
-        return android_parse(source)
+        return android_parse(
+            source,
+            ascii_spaces=android_ascii_spaces,
+            literal_quotes=android_literal_quotes,
+        )
     elif format == Format.xliff and xliff_parse is not None:
         return xliff_parse(source)
     else:
