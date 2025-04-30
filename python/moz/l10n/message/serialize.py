@@ -57,7 +57,7 @@ def serialize_message(format: Format | None, msg: Message) -> str:
             raise UnsupportedFormat("Serializing XLIFF messages requires [xml] extra")
         return xliff_serialize_message(msg)
     elif format == Format.mf2:
-        return "".join(mf2_serialize_message(msg))
+        return mf2_serialize_message(msg)
     elif format == Format.fluent:
         raise UnsupportedFormat("Serializing Fluent message patterns is not supported")
     elif not isinstance(msg, PatternMessage) or msg.declarations:

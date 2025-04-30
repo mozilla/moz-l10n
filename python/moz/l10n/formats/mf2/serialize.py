@@ -35,7 +35,7 @@ literal_esc_re = compile(r"[\\|]")
 text_esc_re = compile(r"[\\{}]")
 
 
-def mf2_serialize_message(message: Message) -> Iterator[str]:
+def mf2_serialize_message(message: Message) -> str:
     """
     Serialize a message using MessageFormat 2 syntax.
 
@@ -52,30 +52,34 @@ def mf2_serialize_message(message: Message) -> Iterator[str]:
         )
     ):
         # simple message
-        yield from mf2_serialize_pattern(message.pattern)
-        return
+        return "".join(mf2_serialize_pattern(message.pattern))
 
+    res = ""
     for name, expr in message.declarations.items():
         # TODO: Fix order by dependencies
         if isinstance(expr.arg, VariableRef) and expr.arg.name == name:
-            yield ".input "
+            res += ".input "
         else:
-            yield f".local ${name} = "
-        yield from _expression(expr)
-        yield "\n"
+            res += f".local ${name} = "
+        for s in _expression(expr):
+            res += s
+        res += "\n"
 
     if isinstance(message, PatternMessage):
-        yield from _quoted_pattern(message.pattern)
+        for s in _quoted_pattern(message.pattern):
+            res += s
     else:
         assert isinstance(message, SelectMessage)
-        yield ".match"
+        res += ".match"
         for sel in message.selectors:
-            yield f" ${sel.name}"
+            res += f" ${sel.name}"
         for keys, pattern in message.variants.items():
-            yield "\n"
+            res += "\n"
             for key in keys:
-                yield ("* " if isinstance(key, CatchallKey) else f"{_literal(key)} ")
-            yield from _quoted_pattern(pattern)
+                res += "* " if isinstance(key, CatchallKey) else f"{_literal(key)} "
+            for s in _quoted_pattern(pattern):
+                res += s
+    return res
 
 
 def mf2_serialize_pattern(pattern: Pattern) -> Iterator[str]:
