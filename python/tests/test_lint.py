@@ -27,28 +27,56 @@ from .test_walk_files import test_data_files
 root = Path(__file__).parent.parent
 test_data_dir = join(root, "tests", "formats", "data")
 
+try:
+    from moz.l10n.formats.xliff import xliff_parse
+
+    assert xliff_parse
+    has_xml = True
+except ImportError:
+    has_xml = False
+
 
 class TestLintCommand(TestCase):
     def test_directory(self):
         with self.assertLogs("moz.l10n.bin.lint", level="INFO") as logs:
             assert lint([test_data_dir]) == 1
         logs.output.sort()
-        assert logs.output == [
-            "INFO:moz.l10n.bin.lint:ok accounts.dtd",
-            "INFO:moz.l10n.bin.lint:ok angular.xliff",
-            "INFO:moz.l10n.bin.lint:ok bug121341.properties",
-            "INFO:moz.l10n.bin.lint:ok defines.inc",
-            "INFO:moz.l10n.bin.lint:ok demo.ftl",
-            "INFO:moz.l10n.bin.lint:ok foo.po",
-            "INFO:moz.l10n.bin.lint:ok hello.xliff",
-            "INFO:moz.l10n.bin.lint:ok icu-docs.xliff",
-            "INFO:moz.l10n.bin.lint:ok messages.json",
-            "INFO:moz.l10n.bin.lint:ok plain.json",
-            "INFO:moz.l10n.bin.lint:ok strings.xml",
-            "INFO:moz.l10n.bin.lint:ok test.properties",
-            "INFO:moz.l10n.bin.lint:ok xcode.xliff",
-            "WARNING:moz.l10n.bin.lint:unsupported mf2-message-schema.json",
-        ]
+        assert (
+            logs.output
+            == [
+                "INFO:moz.l10n.bin.lint:ok accounts.dtd",
+                "INFO:moz.l10n.bin.lint:ok angular.xliff",
+                "INFO:moz.l10n.bin.lint:ok bug121341.properties",
+                "INFO:moz.l10n.bin.lint:ok defines.inc",
+                "INFO:moz.l10n.bin.lint:ok demo.ftl",
+                "INFO:moz.l10n.bin.lint:ok foo.po",
+                "INFO:moz.l10n.bin.lint:ok hello.xliff",
+                "INFO:moz.l10n.bin.lint:ok icu-docs.xliff",
+                "INFO:moz.l10n.bin.lint:ok messages.json",
+                "INFO:moz.l10n.bin.lint:ok plain.json",
+                "INFO:moz.l10n.bin.lint:ok strings.xml",
+                "INFO:moz.l10n.bin.lint:ok test.properties",
+                "INFO:moz.l10n.bin.lint:ok xcode.xliff",
+                "WARNING:moz.l10n.bin.lint:unsupported mf2-message-schema.json",
+            ]
+            if has_xml
+            else [
+                "INFO:moz.l10n.bin.lint:ok accounts.dtd",
+                "INFO:moz.l10n.bin.lint:ok bug121341.properties",
+                "INFO:moz.l10n.bin.lint:ok defines.inc",
+                "INFO:moz.l10n.bin.lint:ok demo.ftl",
+                "INFO:moz.l10n.bin.lint:ok foo.po",
+                "INFO:moz.l10n.bin.lint:ok messages.json",
+                "INFO:moz.l10n.bin.lint:ok plain.json",
+                "INFO:moz.l10n.bin.lint:ok test.properties",
+                "WARNING:moz.l10n.bin.lint:unsupported angular.xliff",
+                "WARNING:moz.l10n.bin.lint:unsupported hello.xliff",
+                "WARNING:moz.l10n.bin.lint:unsupported icu-docs.xliff",
+                "WARNING:moz.l10n.bin.lint:unsupported mf2-message-schema.json",
+                "WARNING:moz.l10n.bin.lint:unsupported strings.xml",
+                "WARNING:moz.l10n.bin.lint:unsupported xcode.xliff",
+            ]
+        )
 
     def test_files(self):
         for file in test_data_files:

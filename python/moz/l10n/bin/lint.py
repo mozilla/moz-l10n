@@ -121,7 +121,7 @@ def lint(file_paths: list[str], config_path: str | None = None) -> int:
             failed += 1
         else:
             ok += 1
-    if not ok and not failed:
+    if not ok and not unsupported and not failed:
         log.warning("Found no localization resources")
     return 1 if failed or unsupported else 0
 
