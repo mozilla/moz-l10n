@@ -107,6 +107,6 @@ class TestLintCommand(TestCase):
             with self.assertLogs("moz.l10n.bin.lint", level="INFO") as logs:
                 assert lint([json_path, ftl_path]) == 1
                 assert logs.output == [
-                    f"WARNING:moz.l10n.bin.lint:FAIL {root}/one.json - Missing placeholders entry for var",
-                    f'WARNING:moz.l10n.bin.lint:FAIL {root}/two.ftl - Expected token: "{"}"}"',
+                    f"WARNING:moz.l10n.bin.lint:FAIL {join(root, 'one.json')} - Missing placeholders entry for var",
+                    f'WARNING:moz.l10n.bin.lint:FAIL {join(root, "two.ftl")} - Expected token: "{"}"}"',
                 ]
