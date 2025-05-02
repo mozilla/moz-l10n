@@ -127,8 +127,11 @@ def lint(file_paths: list[str], config_path: str | None = None) -> int:
 
 
 def lint_file(root: str, path: str) -> Result:
-    log_path = relpath(path, root)
-    if log_path.startswith(".."):
+    try:
+        log_path = relpath(path, root)
+        if log_path.startswith(".."):
+            log_path = path
+    except ValueError:
         log_path = path
     try:
         parse_resource(path)
