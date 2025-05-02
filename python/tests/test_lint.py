@@ -79,9 +79,21 @@ class TestLintCommand(TestCase):
         )
 
     def test_files(self):
+        unsupported_files = (
+            {"mf2-message-schema.json"}
+            if has_xml
+            else {
+                "angular.xliff",
+                "hello.xliff",
+                "icu-docs.xliff",
+                "mf2-message-schema.json",
+                "strings.xml",
+                "xcode.xliff",
+            }
+        )
         for file in test_data_files:
             path = join(test_data_dir, file)
-            exp = 1 if file == "mf2-message-schema.json" else 0
+            exp = 1 if file in unsupported_files else 0
             assert lint([path]) == exp
 
     def test_parse_error(self):
