@@ -50,7 +50,7 @@ moz_schema: dict[str, dict[str, Any]] = loads(moz_schema_src)
 def ok(src: str, exp_msg: Message, exp_str: str | None = None):
     msg = mf2_parse_message(src)
     assert msg == exp_msg
-    assert msg_str(msg) == exp_str or src
+    assert mf2_serialize_message(msg) == exp_str or src
 
     mf2_json = mf2_to_json(msg)
     validate(mf2_json, mf2_schema)
@@ -69,10 +69,6 @@ def fail(src: str) -> str:
     with pytest.raises(MF2ParseError) as err_info:
         mf2_parse_message(src)
     return err_info.value.args[0]
-
-
-def msg_str(msg: Message):
-    return "".join(mf2_serialize_message(msg))
 
 
 def test_pattern():

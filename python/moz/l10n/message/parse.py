@@ -18,9 +18,10 @@ from typing import Callable
 
 from ..formats import Format, UnsupportedFormat
 from ..formats.mf2.message_parser import mf2_parse_message
+from ..formats.properties.parse import properties_parse_message
 from ..formats.webext.parse import webext_parse_message
 from ..model import Message, PatternMessage
-from .printf import parse_printf_pattern
+from ..util.printf import parse_printf_pattern
 
 android_parse_message: Callable[[str], PatternMessage] | None = None
 xliff_parse_message: Callable[[str], PatternMessage] | None = None
@@ -42,8 +43,8 @@ def parse_message(
     """
     Parse a `Message` from its string representation.
 
-    Custom parsers are used for `android`, `mf2`, `webext`, and `xliff` formats.
-    Other formats may include printf specifiers if `printf_placeholders` is enabled.
+    Custom parsers are used for `android`, `mf2`, `properties`, `webext`, and `xliff` formats.
+    `properties` and other formats not listed may include printf specifiers if `printf_placeholders` is enabled.
 
     Parsing a `webext` message that contains named placeholders requires
     providing the message's `webext_placeholders` dict.
@@ -54,7 +55,9 @@ def parse_message(
     as their parsing may result in multiple `Entry` values.
     """
     # TODO post-py38: should be a match
-    if format == Format.webext:
+    if format == Format.properties:
+        return properties_parse_message(source, printf_placeholders=printf_placeholders)
+    elif format == Format.webext:
         return webext_parse_message(source, webext_placeholders)
     elif format == Format.android:
         if android_parse_message is None:

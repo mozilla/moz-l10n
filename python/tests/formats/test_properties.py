@@ -19,8 +19,13 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.formats import Format
-from moz.l10n.formats.properties import properties_parse, properties_serialize
-from moz.l10n.model import Entry, PatternMessage, Resource, Section
+from moz.l10n.formats.properties import (
+    properties_parse,
+    properties_parse_message,
+    properties_serialize,
+    properties_serialize_message,
+)
+from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
 from . import get_linepos
 
@@ -144,6 +149,32 @@ two_line = This is the first of two lines
 one_line_trailing = This line has a \\ and ends in \\
 two_lines_triple = This line is one of two and ends in \\and still has another line coming
 """
+        )
+
+    def test_message_backslashes(self):
+        msg = properties_parse_message("This is the first \\\nof two lines")
+        assert msg == PatternMessage(["This is the first of two lines"])
+        res = properties_serialize_message(msg)
+        assert res == "This is the first of two lines"
+
+        src = r"This line has a \\ and ends in \\"
+        msg = properties_parse_message(src)
+        assert msg == PatternMessage(["This line has a \\ and ends in \\"])
+        res = properties_serialize_message(msg)
+        assert res == src
+
+        msg = properties_parse_message(
+            r"This line is one of two and ends in \\"
+            + "\\\n"
+            + "and still has another line coming\n"
+        )
+        assert msg == PatternMessage(
+            ["This line is one of two and ends in \\and still has another line coming"]
+        )
+        res = properties_serialize_message(msg)
+        assert (
+            res
+            == r"This line is one of two and ends in \\and still has another line coming"
         )
 
     def test_whitespace(self):
@@ -335,6 +366,23 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
             + "11 = \uabcd\n"
         )
 
+    def test_multiline_value(self):
+        msgsrc = "value with\\n\\\n  multiple\\n\\\n  lines"
+        msg = properties_parse_message(msgsrc)
+        exp = PatternMessage(["value with\nmultiple\nlines"])
+        assert msg == exp
+        assert properties_serialize_message(msg) == "value with\\nmultiple\\nlines"
+
+        res = properties_parse(f"key = {msgsrc}\n")
+        assert res == Resource(
+            Format.properties,
+            [Section((), [Entry(("key",), exp, linepos=get_linepos(1, end=4))])],
+        )
+        assert (
+            "".join(properties_serialize(res))
+            == "key = value with\\nmultiple\\nlines\n"
+        )
+
     def test_comment_in_multi(self):
         src = dedent(
             """\
@@ -362,6 +410,8 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
             # Any copyright is dedicated to the Public Domain.
             # http://creativecommons.org/publicdomain/zero/1.0/
 
+            # This is a standalone comment
+
             foo = value
             """
         )
@@ -372,11 +422,8 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                 Section(
                     (),
                     [
-                        Entry(
-                            ("foo",),
-                            PatternMessage(["value"]),
-                            linepos=get_linepos(4),
-                        )
+                        Comment("This is a standalone comment"),
+                        Entry(("foo",), PatternMessage(["value"])),
                     ],
                 )
             ],
@@ -386,5 +433,8 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
                     http://creativecommons.org/publicdomain/zero/1.0/"""
             ),
         )
+        comment, entry = res.sections[0].entries
+        assert comment.linepos == get_linepos(4)
+        assert entry.linepos == get_linepos(6)
         assert "".join(properties_serialize(res)) == src
         assert "".join(properties_serialize(res, trim_comments=True)) == "foo = value\n"

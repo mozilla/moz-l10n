@@ -70,7 +70,10 @@ def fluent_parse(
         fluent_body = fluent_body[1:]
     for entry in fluent_body:
         if isinstance(entry, (ftl.Message, ftl.Term)):
-            entries.extend(entries_iter(entry, lpm))
+            try:
+                entries.extend(entries_iter(entry, lpm))
+            except Exception as err:
+                raise ValueError(f"Error parsing message {entry.id.name}") from err
         elif isinstance(entry, ftl.ResourceComment):
             if entry.content:
                 resource.comment = (
@@ -97,13 +100,31 @@ def fluent_parse(
                     )
         elif isinstance(entry, ftl.Comment):
             if entry.content:
-                entries.append(Comment(entry.content))
+                comment = Comment(entry.content)
+                if lpm and entry.span:
+                    span = entry.span
+                    comment.linepos = lpm.get_linepos(
+                        span.start, span.start, span.start, span.end
+                    )
+                entries.append(comment)
         else:  # Junk
             try:
                 message = entry.annotations[0].message
             except Exception:
                 message = ""
-            raise ValueError(message or "Fluent parser error")
+            if not message:
+                message = "Fluent parser error"
+            if entries:
+                prev_entry = next(
+                    (entry for entry in reversed(entries) if isinstance(entry, Entry)),
+                    None,
+                )
+                if prev_entry:
+                    message += f" after message {'.'.join(prev_entry.id)}"
+                prev_lp = entries[-1].linepos
+                if prev_lp:
+                    message += f" at line {prev_lp.end}"
+            raise ValueError(message)
     return resource
 
 

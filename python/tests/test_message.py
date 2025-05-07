@@ -38,6 +38,15 @@ class TestMessage(TestCase):
         res = serialize_message(Format.plain_json, msg)
         assert res == src
 
+    def test_properties_printf(self):
+        src = "hello %% world"
+        msg = parse_message(Format.properties, src, printf_placeholders=True)
+        assert msg == PatternMessage(
+            ["hello ", Expression("%", attributes={"source": "%%"}), " world"]
+        )
+        res = serialize_message(Format.properties, msg)
+        assert res == src
+
     def test_webext_numeric(self):
         src = "ph $1"
         msg = parse_message(Format.webext, src)
