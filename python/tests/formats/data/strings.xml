@@ -22,8 +22,10 @@
   <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
   <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
 
-  <string name="ws_trimmed"> &#32; &#8200; &#8195;</string>
-  <string name="ws_quoted">" &#32; &#8200; &#8195;&quot;</string>
+  <string name="ws_trimmed"> &#32;  &#8200;
+    &#8195;</string>
+  <string name="ws_quoted">" &#32; &#8200;
+    &#8195;&quot;</string>
   <string name="ws_escaped"> \u0032 \u8200 \u8195</string>
   <string name="ws_with_entities"> one <xliff:g>&foo; two &bar;</xliff:g> three </string>
   <string name="ws_with_html"> one<b> two </b>three </string>

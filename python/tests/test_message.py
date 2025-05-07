@@ -164,3 +164,16 @@ class TestAndroidMessage(TestCase):
         )
         res = serialize_message(Format.android, msg)
         assert res == src
+
+    def test_spaces(self):
+        src = "One\ttwo\xa0three\\u0160four"
+
+        msg = parse_message(Format.android, src)
+        assert msg == PatternMessage(["One two three\xa0four"])
+        res = serialize_message(Format.android, msg)
+        assert res == "One two three\\u0160four"
+
+        msg = parse_message(Format.android, src, android_ascii_spaces=True)
+        assert msg == PatternMessage(["One two\xa0three\xa0four"])
+        res = serialize_message(Format.android, msg)
+        assert res == "One two\\u0160three\\u0160four"

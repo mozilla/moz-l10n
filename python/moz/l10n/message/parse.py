@@ -23,8 +23,8 @@ from ..formats.webext.parse import webext_parse_message
 from ..model import Message, PatternMessage
 from ..util.printf import parse_printf_pattern
 
-android_parse_message: Callable[[str], PatternMessage] | None = None
-xliff_parse_message: Callable[[str], PatternMessage] | None = None
+android_parse_message: Callable[..., PatternMessage] | None = None
+xliff_parse_message: Callable[..., PatternMessage] | None = None
 try:
     from ..formats.android.parse import android_parse_message
     from ..formats.xliff.parse import xliff_parse_message
@@ -36,6 +36,7 @@ def parse_message(
     format: Format,
     source: str,
     *,
+    android_ascii_spaces: bool = False,
     printf_placeholders: bool = False,
     webext_placeholders: dict[str, dict[str, str]] | None = None,
     xliff_is_xcode: bool = False,
@@ -62,11 +63,11 @@ def parse_message(
     elif format == Format.android:
         if android_parse_message is None:
             raise UnsupportedFormat("Parsing Android messages requires [xml] extra")
-        return android_parse_message(source)
+        return android_parse_message(source, ascii_spaces=android_ascii_spaces)
     elif format == Format.xliff:
         if xliff_parse_message is None:
             raise UnsupportedFormat("Parsing XLIFF messages requires [xml] extra")
-        return xliff_parse_message(source, is_xcode=xliff_is_xcode)  # type:ignore[call-arg]
+        return xliff_parse_message(source, is_xcode=xliff_is_xcode)
     elif format == Format.mf2:
         return mf2_parse_message(source)
     elif format == Format.fluent:

@@ -266,7 +266,8 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
 
 def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
     if isinstance(msg, str):
-        el.text = msg.replace("'", "\\'")
+        el.text = escape_part(msg)
+        escape_pattern(el)
     elif isinstance(msg, PatternMessage) and not msg.declarations:
         set_pattern(el, msg.pattern)
     else:
@@ -290,7 +291,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
     node = None
     for part in pattern:
         if isinstance(part, str):
-            esc = escape_backslash(part)
+            esc = escape_part(part)
             if node is None:
                 parent.text = parent.text + esc if parent.text else esc
             else:
@@ -310,7 +311,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
                         node.text = str(source)
                 else:
                     if isinstance(part.arg, str):
-                        node.text = escape_backslash(part.arg)
+                        node.text = escape_part(part.arg)
                     elif isinstance(part.arg, VariableRef):
                         node.text = part.arg.name
             elif ent_name:
@@ -327,7 +328,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
             else:
                 source = None
                 if isinstance(part.arg, str):
-                    source = escape_backslash(part.arg)
+                    source = escape_part(part.arg)
                 elif isinstance(part.arg, VariableRef):
                     source = part.arg.name
                 if source is not None:
@@ -359,7 +360,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
                 parent = cast(etree._Element, parent.getparent())
             else:
                 raise ValueError(f"Improper element nesting for {part} in {parent}")
-    escape_doublequote(el)
+    escape_pattern(el)
 
 
 def entity_name(part: Expression) -> str | None:
@@ -377,28 +378,25 @@ android_escape = str.maketrans(
     {"\\": r"\\", "\n": r"\n", "\t": r"\t", "'": r"\'", '"': r"\""}
 )
 
-# Control codes are not valid in XML, and nonstandard whitespace is hard to see.
-control_chars = compile(r"[\x00-\x19\x7F-\x9F]|[^\S ]")
+# Control codes are not valid in XML, and nonstandard whitespace needs escaping
+control_chars = compile(r"[\x00-\x19\x7F-\x9F]|[^\S ]|(?<= ) ")
 
 
-def escape_backslash(src: str) -> str:
+def escape_char(ch: str) -> str:
+    return f"\\u{ord(ch):04d}"
+
+
+def escape_part(src: str) -> str:
     res = src.translate(android_escape)
-    return control_chars.sub(lambda m: f"\\u{ord(m.group()):04d}", res)
+    return control_chars.sub(lambda m: escape_char(m.group()), res)
 
 
-def escape_doublequote(el: etree._Element, root: bool = True) -> None:
-    if el.text and ("  " in el.text):
-        el.text = f'"{el.text}"'
-    for child in el:
-        escape_doublequote(child, False)
-        if child.tail and "  " in child.tail:
-            child.tail = f'"{child.tail}"'
-    if root:
-        if el.text and el.text.startswith((" ", "@", "?")):
-            el.text = f'"{el.text}"'
-        if len(el) > 0:
-            last = el[-1]
-            if last.tail and last.tail.endswith(" "):
-                last.tail = f'"{last.tail}"'
-        elif el.text and el.text.endswith(" "):
-            el.text = f'"{el.text}"'
+def escape_pattern(el: etree._Element) -> None:
+    if el.text and el.text.startswith((" ", "@", "?")):
+        el.text = escape_char(el.text[0]) + el.text[1:]
+    if len(el) > 0:
+        last = el[-1]
+        if last.tail and last.tail.endswith(" "):
+            last.tail = last.tail[:-1] + escape_char(" ")
+    elif el.text and el.text.endswith(" "):
+        el.text = el.text[:-1] + escape_char(" ")
