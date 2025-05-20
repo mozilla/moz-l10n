@@ -9,7 +9,7 @@
         <source>Delete key file?
  Make sure you have a backup.</source>
         <target state="translated">Eliminare il file chiave?
-Assicurati di avere una copia.</target>
+  Assicurati di avere una copia.</target>
         <note>Message to confirm deletion of a key file.</note>
       </trans-unit>
       <trans-unit id="FirefoxHomepage.Common.PagesCount.v112" xml:space="preserve">

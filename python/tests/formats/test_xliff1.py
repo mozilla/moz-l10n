@@ -582,7 +582,7 @@ class TestXliff1(TestCase):
                             ),
                             value=PatternMessage(
                                 [
-                                    "Eliminare il file chiave?\nAssicurati di avere una copia."
+                                    "Eliminare il file chiave?\n  Assicurati di avere una copia."
                                 ]
                             ),
                             comment="Message to confirm deletion of a key file.",
@@ -829,7 +829,7 @@ class TestXliff1(TestCase):
                     <source>Delete key file?
              Make sure you have a backup.</source>
                     <target state="translated">Eliminare il file chiave?
-            Assicurati di avere una copia.</target>
+              Assicurati di avere una copia.</target>
                     <note>Message to confirm deletion of a key file.</note>
                   </trans-unit>
                   <trans-unit id="FirefoxHomepage.Common.PagesCount.v112" xml:space="preserve">
