@@ -23,17 +23,17 @@ from collections.abc import Iterable
 from enum import Enum
 from glob import glob
 from os import getcwd
-from os.path import abspath, isdir, relpath
+from os.path import abspath, isdir, relpath, splitext
 from textwrap import dedent
 
-from moz.l10n.formats import UnsupportedFormat
+from moz.l10n.formats import UnsupportedFormat, l10n_extensions
 from moz.l10n.paths.config import L10nConfigPaths
 from moz.l10n.paths.discover import L10nDiscoverPaths
 from moz.l10n.resource import parse_resource
 
 log = logging.getLogger(__name__)
 
-Result = Enum("Result", ("OK", "UNSUPPORTED", "FAIL"))
+Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 
 
 def cli() -> None:
@@ -60,6 +60,12 @@ def cli() -> None:
     parser.add_argument(
         "--config", metavar="PATH", type=str, help="path to l10n.toml config file"
     )
+    parser.add_argument(
+        "-u",
+        "--skip-unknown",
+        action="store_true",
+        help="skip files without a known L10n extension",
+    )
     parser.add_argument("paths", nargs="*", type=str, help="directory or files to fix")
     args = parser.parse_args()
 
@@ -76,11 +82,20 @@ def cli() -> None:
     )
     logging.basicConfig(format="%(message)s", level=log_level)
 
-    res = lint(args.paths, args.config)
+    res = lint(
+        args.paths,
+        config_path=args.config,
+        skip_unknown=args.skip_unknown,
+    )
     sys.exit(res)
 
 
-def lint(file_paths: list[str], config_path: str | None = None) -> int:
+def lint(
+    file_paths: list[str],
+    *,
+    config_path: str | None = None,
+    skip_unknown: bool = False,
+) -> int:
     """
     Lint/validate `file_paths` localization resources.
 
@@ -114,8 +129,10 @@ def lint(file_paths: list[str], config_path: str | None = None) -> int:
     unsupported = 0
     failed = 0
     for path in path_iter:
-        res = lint_file(root_dir, path)
-        if res == Result.UNSUPPORTED:
+        res = lint_file(root_dir, path, skip_unknown)
+        if res == Result.SKIP:
+            pass
+        elif res == Result.UNSUPPORTED:
             unsupported += 1
         elif res == Result.FAIL:
             failed += 1
@@ -126,13 +143,16 @@ def lint(file_paths: list[str], config_path: str | None = None) -> int:
     return 1 if failed or unsupported else 0
 
 
-def lint_file(root: str, path: str) -> Result:
+def lint_file(root: str, path: str, skip_unknown: bool) -> Result:
     try:
         log_path = relpath(path, root)
         if log_path.startswith(".."):
             log_path = path
     except ValueError:
         log_path = path
+    if skip_unknown and splitext(path)[1] not in l10n_extensions:
+        log.info(f"skip {log_path}")
+        return Result.SKIP
     try:
         parse_resource(path)
         log.info(f"ok {log_path}")
