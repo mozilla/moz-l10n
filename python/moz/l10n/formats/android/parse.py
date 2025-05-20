@@ -139,7 +139,7 @@ def android_parse(
         else:
             name = el.attrib.get("name", None)
             if not name:
-                raise ValueError(f"Unnamed {el.tag} entry: {el}")
+                raise ValueError(f"Unnamed {el.tag!s} entry: {el}")
             meta = [Metadata(k, v) for k, v in el.attrib.items() if k != "name"]
 
             if el.tag == "string":
@@ -222,7 +222,7 @@ def android_parse_message(
             el = etree.fromstring(f"{doctype}<string>{source}</string>", parser)
             break
         except etree.XMLSyntaxError as err:
-            if err.code == etree.ErrorTypes.ERR_UNDECLARED_ENTITY:  # type: ignore[attr-defined]
+            if err.code == etree.ErrorTypes.ERR_UNDECLARED_ENTITY:
                 m = match(r"Entity '([^'\s]+)' not defined", err.args[0])
                 if m is not None:
                     entities.append(f'<!ENTITY {m[1]} "">')
@@ -329,7 +329,7 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
             name = (
                 f"{child.prefix}:{etree.QName(child.tag).localname}"
                 if child.prefix
-                else child.tag
+                else str(child.tag)
             )
             if child.tag == xliff_g:
                 body = list(flatten(child))

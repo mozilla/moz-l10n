@@ -47,7 +47,7 @@ def parse_trans_unit(unit: etree._Element, is_xcode: bool) -> Entry[Message]:
         if isinstance(el, etree._Comment):
             meta.append(Metadata("comment()", el.text))
         else:
-            name = pretty_name(el, el.tag)
+            name = pretty_name(el, str(el.tag))
             if name == "target":
                 if target:
                     raise ValueError(f"Duplicate <target> in <trans-unit> {id}: {unit}")

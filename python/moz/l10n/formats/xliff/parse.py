@@ -108,7 +108,7 @@ def xliff_parse(source: str | bytes) -> Resource[Message]:
                     body = child
                 else:
                     raise ValueError(
-                        f"Unsupported <{child.tag}> element in <file>: {file}"
+                        f"Unsupported <{child.tag!s}> element in <file>: {file}"
                     )
                 if child.tail and not child.tail.isspace():
                     raise ValueError(f"Unexpected text in <file>: {child.tail}")
@@ -144,7 +144,7 @@ def xliff_parse(source: str | bytes) -> Resource[Message]:
                     res.sections += parse_group(ns, [file_name], unit, is_xcode)
                 else:
                     raise ValueError(
-                        f"Unsupported <{unit.tag}> element in <body>: {body}"
+                        f"Unsupported <{unit.tag!s}> element in <body>: {body}"
                     )
                 if unit.tail and not unit.tail.isspace():
                     raise ValueError(f"Unexpected text in <body>: {unit.tail}")
@@ -187,7 +187,7 @@ def parse_group(
         elif unit.tag == f"{ns}group":
             yield from parse_group(ns, path, unit, is_xcode)
         else:
-            name = pretty_name(unit, unit.tag)
+            name = pretty_name(unit, str(unit.tag))
             idx = seen[name] + 1
             unit_base = f"{name}[{idx}]" if idx > 1 else name
             meta += element_as_metadata(unit, unit_base, True)

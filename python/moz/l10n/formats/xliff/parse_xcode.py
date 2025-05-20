@@ -118,7 +118,7 @@ def parse_xliff_stringsdict_unit(
     target = None
     for el in unit:
         if len(el) > 0:
-            error(f"Unexpected child elements of <{el.tag}>")
+            error(f"Unexpected child elements of <{el.tag!s}>")
         if el.tag == f"{ns}source":
             if el.attrib:
                 error("Unexpected attributes of <source>")
@@ -135,7 +135,7 @@ def parse_xliff_stringsdict_unit(
             if el.attrib or el.text:
                 error("Unexpected not-empty <note>")
         else:
-            error(f"Unexpected <{el.tag}>")
+            error(f"Unexpected <{el.tag!s}>")
         if el.tail and not el.tail.isspace():
             raise ValueError(f"Unexpected text in <trans-unit>: {el.tail}")
     if source is None:
