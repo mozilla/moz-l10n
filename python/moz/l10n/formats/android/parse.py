@@ -438,7 +438,7 @@ def parse_quotes(
 
 
 inline_re = compile(
-    r"\\u([0-9]{4})|"
+    r"\\u([0-9a-fA-F]{4})|"
     r"\\(.)|"
     r"(<[^%>]+>)|"
     r"(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%]|[tT][a-zA-Z]))"
@@ -463,7 +463,7 @@ def parse_inline(
                     acc += part[pos:start]
                 if m[1]:
                     # Unicode escape
-                    acc += chr(int(m[1]))
+                    acc += chr(int(m[1], base=16))
                 elif m[2]:
                     # Escaped character
                     c = m[2]

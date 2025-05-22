@@ -26,7 +26,7 @@
     &#8195;</string>
   <string name="ws_quoted">" &#32; &#8200;
     &#8195;&quot;</string>
-  <string name="ws_escaped"> \u0032 \u8200 \u8195</string>
+  <string name="ws_escaped"> \u0020 \u2008 \u2003</string>
   <string name="ws_with_entities"> one <xliff:g>&foo; two &bar;</xliff:g> three </string>
   <string name="ws_with_html"> one<b> two </b>three </string>
 
