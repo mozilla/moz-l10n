@@ -314,8 +314,16 @@ def parse_pattern(
         # https://developer.android.com/guide/topics/resources/providing-resources#ResourcesFromXml
         yield Expression(el.text, "reference")
     else:
-        flat = flatten(el)
-        spaced = parse_quotes(flat, ascii_spaces, literal_quotes)
+        parts = list(flatten(el))
+        if parts:
+            if isinstance(parts[0], str):
+                parts[0] = parts[0].lstrip()
+            if isinstance(parts[-1], str):
+                # Unlike Android, this will trim trailing spaces
+                # at the end of a text segment with an unpaired ".
+                # We're presuming that this never happens intentionally.
+                parts[-1] = parts[-1].rstrip()
+        spaced = parse_quotes(parts, ascii_spaces, literal_quotes)
         yield from parse_inline(spaced)
 
 
@@ -381,60 +389,36 @@ tag_like = compile(r"<.+>")
 
 
 def parse_quotes(
-    iter: Iterator[str | Expression | Markup],
+    iter: Iterable[str | Expression | Markup],
     ascii_spaces: bool,
     literal_quotes: bool,
 ) -> Iterator[str | Expression | Markup]:
     spaces = compile(r"\s+", ASCII if ascii_spaces else 0)
-    stack: list[str | Expression] = []
-
-    def collapse_stack() -> Iterator[str | Expression | Markup]:
-        yield '"'
-        for part in stack:
-            yield spaces.sub(" ", part) if isinstance(part, str) else part
-
+    quoted = False
     for part in iter:
         if isinstance(part, str):
             pos = 0
-            quoted = bool(stack)
             if not literal_quotes:
                 for m in double_quote.finditer(part):
                     if pos == 0 and tag_like.search(part) is not None:
-                        # Double quotes don't need escaping in CDATA sections,
-                        # but lxml doesn't tell us about them.
-                        # (see https://bugs.launchpad.net/lxml/+bug/2108853)
-                        # Let's presume that's the case if we see tag-like contents nearby.
+                        # Let's presume that double quotes near html-ish contents are intentional.
                         break
+                    # All unescaped double quotes are consumed, even unpaired ones.
                     prev = part[pos : m.start()]
-                    if quoted:
-                        if stack:
-                            yield from stack
-                            stack.clear()
-                        if prev:
-                            yield prev
-                    elif prev:
-                        yield spaces.sub(" ", prev)
+                    if prev:
+                        yield prev if quoted else spaces.sub(" ", prev)
                     quoted = not quoted
                     pos = m.end()
-            last = part[pos:]
-            if quoted:
-                stack.append(last)
-            elif last:
-                yield spaces.sub(" ", last)
-        elif stack:
+            last = part[pos:] if pos else part
+            if last:
+                yield last if quoted else spaces.sub(" ", last)
+        else:
             if (
                 isinstance(part, Markup)
                 or part.attributes.get("translate", None) == "no"
             ):
-                yield from collapse_stack()
-                stack.clear()
-                yield part
-            else:  # Expression
-                stack.append(part)
-        else:
+                quoted = False
             yield part
-    if stack:
-        yield from collapse_stack()
 
 
 inline_re = compile(
@@ -446,7 +430,7 @@ inline_re = compile(
 
 
 def parse_inline(
-    iter: Iterator[str | Expression | Markup],
+    iter: Iterable[str | Expression | Markup],
 ) -> Iterator[str | Expression | Markup]:
     acc = ""
     for part in iter:

@@ -276,6 +276,9 @@ def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
         raise ValueError(f"Unsupported message: {msg}")
 
 
+tag_like = compile(r"<.+>")
+
+
 def set_pattern(el: etree._Element, pattern: Pattern) -> None:
     node: etree._Element | None
     if len(pattern) == 1 and isinstance(part0 := pattern[0], Expression):
@@ -363,6 +366,10 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
             else:
                 raise ValueError(f"Improper element nesting for {part} in {parent}")
     escape_pattern(el)
+    if len(el) == 0 and el.text and tag_like.search(el.text) is not None:
+        # The manual wrapper is a workaround for
+        # https://bugs.launchpad.net/lxml/+bug/2111509
+        el.text = etree.CDATA(f"<![CDATA[{el.text}]]>")  # type: ignore[assignment]
 
 
 def entity_name(part: Expression) -> str | None:

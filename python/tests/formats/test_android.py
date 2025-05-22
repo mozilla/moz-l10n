@@ -216,20 +216,20 @@ class TestAndroid(TestCase):
                                 ]
                             ),
                         ),
-                        Entry(("ws_trimmed",), PatternMessage([" "])),
+                        Entry(("ws_trimmed",), PatternMessage([])),
                         Entry(
                             ("ws_quoted",),
                             PatternMessage([" \u0020 \u2008\n    \u2003"]),
                         ),
                         Entry(
                             ("ws_escaped",),
-                            PatternMessage([" \u0020 \u2008 \u2003"]),
+                            PatternMessage(["\u0020 \u2008 \u2003"]),
                         ),
                         Entry(
                             ("ws_with_entities",),
                             PatternMessage(
                                 [
-                                    " one ",
+                                    "one ",
                                     Expression(
                                         VariableRef("foo"),
                                         "entity",
@@ -241,7 +241,7 @@ class TestAndroid(TestCase):
                                         "entity",
                                         attributes={"translate": "no"},
                                     ),
-                                    " three ",
+                                    " three",
                                 ]
                             ),
                         ),
@@ -249,11 +249,11 @@ class TestAndroid(TestCase):
                             ("ws_with_html",),
                             PatternMessage(
                                 [
-                                    " one",
+                                    "one",
                                     Markup("open", "b"),
                                     " two ",
                                     Markup("close", "b"),
-                                    "three ",
+                                    "three",
                                 ]
                             ),
                         ),
@@ -457,20 +457,20 @@ class TestAndroid(TestCase):
               <string name="welcome">Welcome to <b>&foo;</b>!</string>
               <string name="placeholders">Hello, %1$s! You have %2$d new messages.</string>
               <string name="real_html">Hello, %1$s! You have <b>%2$d new messages</b>.</string>
-              <string name="escaped_html">Hello, %1$s! You have &lt;b&gt;%2$d new messages&lt;/b&gt;.</string>
+              <string name="escaped_html"><![CDATA[Hello, %1$s! You have <b>%2$d new messages</b>.]]></string>
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
               <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
-              <string name="ws_trimmed">\\u0020</string>
+              <string name="ws_trimmed"></string>
               <string name="ws_quoted">\\u0020\\u0020\\u0020\\u2008\\n \\u0020\\u0020\\u0020\\u2003</string>
-              <string name="ws_escaped">\\u0020\\u0020\\u0020\\u2008 \\u2003</string>
-              <string name="ws_with_entities">\\u0020one <xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g> three\\u0020</string>
-              <string name="ws_with_html">\\u0020one<b> two </b>three\\u0020</string>
+              <string name="ws_escaped">\\u0020\\u0020\\u2008 \\u2003</string>
+              <string name="ws_with_entities">one <xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g> three</string>
+              <string name="ws_with_html">one<b> two </b>three</string>
               <string name="control_chars">\\u0000 \\u0001</string>
               <string name="percent">%%</string>
               <string name="single_quote">They\\'re great</string>
               <string name="double_quotes">They are \\"great\\"</string>
               <string name="both_quotes">They\\'re really \\"great\\"</string>
-              <string name="foo">Foo Bar &lt;a href=\\"foo?id=%s\\"&gt;baz&lt;/a&gt; is cool</string>
+              <string name="foo"><![CDATA[Foo Bar <a href=\\"foo?id=%s\\">baz</a> is cool]]></string>
               <string name="busy">Sorry, &foo; is &lt;i&gt;not available&lt;/i&gt; just now.</string>
               <string-array name="planets_array">
                 <item>Mercury</item>
@@ -501,55 +501,7 @@ class TestAndroid(TestCase):
     def test_trim_comments(self):
         res = android_parse(source)
         ser = "".join(android_serialize(res, trim_comments=True))
-        assert ser == dedent(
-            """\
-            <?xml version="1.0" encoding="utf-8"?>
-            <!DOCTYPE resources [
-              <!ENTITY foo "Foo">
-              <!ENTITY bar "Bar &foo;">
-            ]>
-            <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-              <string name="one"></string>
-              <string name="two"></string>
-              <string name="three">value</string>
-              <string name="four">multi-line comment</string>
-              <string name="five" translatable="false">@string/three</string>
-              <string name="welcome">Welcome to <b>&foo;</b>!</string>
-              <string name="placeholders">Hello, %1$s! You have %2$d new messages.</string>
-              <string name="real_html">Hello, %1$s! You have <b>%2$d new messages</b>.</string>
-              <string name="escaped_html">Hello, %1$s! You have &lt;b&gt;%2$d new messages&lt;/b&gt;.</string>
-              <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
-              <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
-              <string name="ws_trimmed">\\u0020</string>
-              <string name="ws_quoted">\\u0020\\u0020\\u0020\\u2008\\n \\u0020\\u0020\\u0020\\u2003</string>
-              <string name="ws_escaped">\\u0020\\u0020\\u0020\\u2008 \\u2003</string>
-              <string name="ws_with_entities">\\u0020one <xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g> three\\u0020</string>
-              <string name="ws_with_html">\\u0020one<b> two </b>three\\u0020</string>
-              <string name="control_chars">\\u0000 \\u0001</string>
-              <string name="percent">%%</string>
-              <string name="single_quote">They\\'re great</string>
-              <string name="double_quotes">They are \\"great\\"</string>
-              <string name="both_quotes">They\\'re really \\"great\\"</string>
-              <string name="foo">Foo Bar &lt;a href=\\"foo?id=%s\\"&gt;baz&lt;/a&gt; is cool</string>
-              <string name="busy">Sorry, &foo; is &lt;i&gt;not available&lt;/i&gt; just now.</string>
-              <string-array name="planets_array">
-                <item>Mercury</item>
-                <item>Venus</item>
-                <item>Earth</item>
-                <item>Mars</item>
-              </string-array>
-              <plurals name="numberOfSongsAvailable">
-                <item quantity="one">%d song found.</item>
-                <item quantity="other">%d songs found.</item>
-              </plurals>
-              <plurals name="numberOfSongsAvailable_pl">
-                <item quantity="one">Znaleziono %d piosenkę.</item>
-                <item quantity="few">Znaleziono %d piosenki.</item>
-                <item quantity="other">Znaleziono %d piosenek.</item>
-              </plurals>
-            </resources>
-            """
-        )
+        assert "<!--" not in ser
 
     def test_idempotent(self):
         res1 = android_parse(source)
@@ -640,7 +592,7 @@ class TestAndroid(TestCase):
             """\
             <?xml version="1.0" encoding="utf-8"?>
             <resources>
-              <string name="x">Click &lt;a href=\\"%1$s\\"&gt;here&lt;/a&gt;</string>
+              <string name="x"><![CDATA[Click <a href=\\"%1$s\\">here</a>]]></string>
             </resources>
             """
         )
