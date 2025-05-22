@@ -252,6 +252,7 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
     sel = msg.selector_expressions()[0] if len(msg.selectors) == 1 else None
     if len(msg.declarations) != 1 or not sel or sel.function != "number":
         raise ValueError(f"Unsupported message: {msg}")
+    item: etree._Element | None = None
     for keys, value in msg.variants.items():
         key = keys[0] if len(keys) == 1 else None
         if isinstance(key, CatchallKey):
@@ -261,7 +262,8 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
         item = etree.SubElement(plurals, "item", attrib={"quantity": key})
         set_pattern(item, value)
         item.tail = "\n    "
-    item.tail = "\n  "
+    if item is not None:
+        item.tail = "\n  "
 
 
 def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
@@ -383,7 +385,7 @@ control_chars = compile(r"[\x00-\x19\x7F-\x9F]|[^\S ]|(?<= ) ")
 
 
 def escape_char(ch: str) -> str:
-    return f"\\u{ord(ch):04d}"
+    return f"\\u{ord(ch):04x}"
 
 
 def escape_part(src: str) -> str:
