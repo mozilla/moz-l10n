@@ -163,12 +163,22 @@ def android_serialize(
     yield "\n"
 
 
-def android_serialize_message(msg: Message) -> str:
+def android_serialize_message(msg: Message, *, allow_cdata: bool = False) -> str:
+    """
+    Serialize a message as an Android strings XML string.
+
+    With `allow_cdata`, the resulting string may include a <![CDATA[...]]> wrapper
+    if the message contains tag-like contents.
+    This is `False` by default.
+    """
+
     if not isinstance(msg, PatternMessage) or msg.declarations:
         raise ValueError(f"Unsupported message: {msg}")
     target = etree.Element("string")
-    set_pattern(target, msg.pattern)
-    str = etree.tostring(target, encoding="unicode", pretty_print=True).strip()
+    set_pattern(target, msg.pattern, allow_cdata=allow_cdata)
+    str = etree.tostring(
+        target, encoding="unicode", method="html", pretty_print=True
+    ).strip()
     if str == "<string/>":
         return ""
     if not str.startswith("<string>"):
@@ -279,7 +289,9 @@ def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
 tag_like = compile(r"<.+>")
 
 
-def set_pattern(el: etree._Element, pattern: Pattern) -> None:
+def set_pattern(
+    el: etree._Element, pattern: Pattern, *, allow_cdata: bool = True
+) -> None:
     node: etree._Element | None
     if len(pattern) == 1 and isinstance(part0 := pattern[0], Expression):
         if part0.function == "reference":
@@ -366,7 +378,12 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
             else:
                 raise ValueError(f"Improper element nesting for {part} in {parent}")
     escape_pattern(el)
-    if len(el) == 0 and el.text and tag_like.search(el.text) is not None:
+    if (
+        allow_cdata
+        and len(el) == 0
+        and el.text
+        and tag_like.search(el.text) is not None
+    ):
         # The manual wrapper is a workaround for
         # https://bugs.launchpad.net/lxml/+bug/2111509
         el.text = etree.CDATA(f"<![CDATA[{el.text}]]>")  # type: ignore[assignment]
