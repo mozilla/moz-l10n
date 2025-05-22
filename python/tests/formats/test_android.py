@@ -216,20 +216,20 @@ class TestAndroid(TestCase):
                                 ]
                             ),
                         ),
-                        Entry(("ws_trimmed",), PatternMessage([" "])),
+                        Entry(("ws_trimmed",), PatternMessage([])),
                         Entry(
                             ("ws_quoted",),
                             PatternMessage([" \u0020 \u2008\n    \u2003"]),
                         ),
                         Entry(
                             ("ws_escaped",),
-                            PatternMessage([" \u0020 \u2008 \u2003"]),
+                            PatternMessage(["\u0020 \u2008 \u2003"]),
                         ),
                         Entry(
                             ("ws_with_entities",),
                             PatternMessage(
                                 [
-                                    " one ",
+                                    "one ",
                                     Expression(
                                         VariableRef("foo"),
                                         "entity",
@@ -241,7 +241,7 @@ class TestAndroid(TestCase):
                                         "entity",
                                         attributes={"translate": "no"},
                                     ),
-                                    " three ",
+                                    " three",
                                 ]
                             ),
                         ),
@@ -249,11 +249,11 @@ class TestAndroid(TestCase):
                             ("ws_with_html",),
                             PatternMessage(
                                 [
-                                    " one",
+                                    "one",
                                     Markup("open", "b"),
                                     " two ",
                                     Markup("close", "b"),
-                                    "three ",
+                                    "three",
                                 ]
                             ),
                         ),
@@ -460,11 +460,11 @@ class TestAndroid(TestCase):
               <string name="escaped_html">Hello, %1$s! You have &lt;b&gt;%2$d new messages&lt;/b&gt;.</string>
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
               <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
-              <string name="ws_trimmed">\\u0020</string>
+              <string name="ws_trimmed"></string>
               <string name="ws_quoted">\\u0020\\u0020\\u0020\\u2008\\n \\u0020\\u0020\\u0020\\u2003</string>
-              <string name="ws_escaped">\\u0020\\u0020\\u0020\\u2008 \\u2003</string>
-              <string name="ws_with_entities">\\u0020one <xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g> three\\u0020</string>
-              <string name="ws_with_html">\\u0020one<b> two </b>three\\u0020</string>
+              <string name="ws_escaped">\\u0020\\u0020\\u2008 \\u2003</string>
+              <string name="ws_with_entities">one <xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g> three</string>
+              <string name="ws_with_html">one<b> two </b>three</string>
               <string name="control_chars">\\u0000 \\u0001</string>
               <string name="percent">%%</string>
               <string name="single_quote">They\\'re great</string>
@@ -520,11 +520,11 @@ class TestAndroid(TestCase):
               <string name="escaped_html">Hello, %1$s! You have &lt;b&gt;%2$d new messages&lt;/b&gt;.</string>
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
               <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
-              <string name="ws_trimmed">\\u0020</string>
+              <string name="ws_trimmed"></string>
               <string name="ws_quoted">\\u0020\\u0020\\u0020\\u2008\\n \\u0020\\u0020\\u0020\\u2003</string>
-              <string name="ws_escaped">\\u0020\\u0020\\u0020\\u2008 \\u2003</string>
-              <string name="ws_with_entities">\\u0020one <xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g> three\\u0020</string>
-              <string name="ws_with_html">\\u0020one<b> two </b>three\\u0020</string>
+              <string name="ws_escaped">\\u0020\\u0020\\u2008 \\u2003</string>
+              <string name="ws_with_entities">one <xliff:g>&foo;</xliff:g><xliff:g> two </xliff:g><xliff:g>&bar;</xliff:g> three</string>
+              <string name="ws_with_html">one<b> two </b>three</string>
               <string name="control_chars">\\u0000 \\u0001</string>
               <string name="percent">%%</string>
               <string name="single_quote">They\\'re great</string>
