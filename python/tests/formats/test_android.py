@@ -536,7 +536,7 @@ class TestAndroid(TestCase):
             """
         )
 
-    def test_string_value(self):
+    def test_string_cdata_value(self):
         res = Resource(
             Format.android, [Section((), [Entry(("x",), "This & <b>that</b>")])]
         )
@@ -546,7 +546,7 @@ class TestAndroid(TestCase):
             """\
             <?xml version="1.0" encoding="utf-8"?>
             <resources>
-              <string name="x">This &amp; &lt;b&gt;that&lt;/b&gt;</string>
+              <string name="x"><![CDATA[This & <b>that</b>]]></string>
             </resources>
             """
         )

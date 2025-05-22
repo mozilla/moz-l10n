@@ -276,17 +276,21 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
         item.tail = "\n  "
 
 
+tag_like = compile(r"<.+>")
+
+
 def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
     if isinstance(msg, str):
         el.text = escape_part(msg)
         escape_pattern(el)
+        if tag_like.search(el.text) is not None:
+            # The manual wrapper is a workaround for
+            # https://bugs.launchpad.net/lxml/+bug/2111509
+            el.text = etree.CDATA(f"<![CDATA[{el.text}]]>")  # type: ignore[assignment]
     elif isinstance(msg, PatternMessage) and not msg.declarations:
         set_pattern(el, msg.pattern)
     else:
         raise ValueError(f"Unsupported message: {msg}")
-
-
-tag_like = compile(r"<.+>")
 
 
 def set_pattern(
