@@ -561,31 +561,19 @@ class TestAndroid(TestCase):
             """
         )
         res = android_parse(src)
-        assert res == Resource(
-            Format.android,
+        msg = PatternMessage(
             [
-                Section(
-                    (),
-                    [
-                        Entry(
-                            ("x",),
-                            PatternMessage(
-                                [
-                                    'Click <a href="',
-                                    Expression(
-                                        arg=VariableRef(name="arg1"),
-                                        function="string",
-                                        attributes={"source": "%1$s"},
-                                    ),
-                                    '">here',
-                                    Expression(arg="</a>", function="html"),
-                                ],
-                            ),
-                        )
-                    ],
-                )
+                'Click <a href="',
+                Expression(
+                    arg=VariableRef(name="arg1"),
+                    function="string",
+                    attributes={"source": "%1$s"},
+                ),
+                '">here',
+                Expression(arg="</a>", function="html"),
             ],
         )
+        assert res == Resource(Format.android, [Section((), [Entry(("x",), msg)])])
 
         ser = "".join(android_serialize(res))
         assert ser == dedent(
@@ -596,6 +584,12 @@ class TestAndroid(TestCase):
             </resources>
             """
         )
+
+        msg_ser = android_serialize_message(msg)
+        assert msg_ser == dedent('Click &lt;a href=\\"%1$s\\"&gt;here&lt;/a&gt;')
+
+        msg_ser = android_serialize_message(msg, allow_cdata=True)
+        assert msg_ser == dedent('<![CDATA[Click <a href=\\"%1$s\\">here</a>]]>')
 
     def test_translate_no(self):
         msg = PatternMessage(
