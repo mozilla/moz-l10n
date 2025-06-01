@@ -83,9 +83,6 @@ class PatternMessage:
     pattern: Pattern
     declarations: dict[str, Expression] = field(default_factory=dict)
 
-    def placeholders(self) -> set[Expression | Markup]:
-        return {part for part in self.pattern if not isinstance(part, str)}
-
 
 @dataclass
 class CatchallKey:
@@ -110,14 +107,6 @@ class SelectMessage:
     declarations: dict[str, Expression]
     selectors: tuple[VariableRef, ...]
     variants: Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
-
-    def placeholders(self) -> set[Expression | Markup]:
-        return {
-            part
-            for pattern in self.variants.values()
-            for part in pattern
-            if not isinstance(part, str)
-        }
 
     def selector_expressions(self) -> tuple[Expression, ...]:
         return tuple(self.declarations[var.name] for var in self.selectors)
