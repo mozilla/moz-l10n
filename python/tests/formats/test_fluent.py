@@ -21,7 +21,7 @@ from unittest import TestCase
 from moz.l10n.formats import Format
 from moz.l10n.formats.fluent import (
     fluent_parse,
-    fluent_parse_messages,
+    fluent_parse_message,
     fluent_serialize,
 )
 from moz.l10n.model import (
@@ -72,7 +72,7 @@ class TestFluent(TestCase):
         )
         res = fluent_parse(src)
         other = CatchallKey("other")
-        entries = [
+        entries: list[Entry[SelectMessage] | Comment] = [
             Entry(
                 ("no-placeholder",),
                 SelectMessage(
@@ -103,18 +103,20 @@ class TestFluent(TestCase):
 
     def test_parse_messages(self):
         source = "msg = body\n"
-        entries = fluent_parse_messages(source, with_linepos=False)
-        assert entries == [Entry(("msg",), PatternMessage(["body"]))]
+        entry = fluent_parse_message(source, with_linepos=False)
+        assert entry == Entry(("msg",), PatternMessage(["body"]))
 
         source = "-term = body\n  .attr = value\n"
-        entries = fluent_parse_messages(source)
-        assert entries == [
-            Entry(("-term",), PatternMessage(["body"]), linepos=get_linepos(1)),
-            Entry(("-term", "attr"), PatternMessage(["value"]), linepos=get_linepos(2)),
-        ]
+        entry = fluent_parse_message(source)
+        assert entry == Entry(
+            ("-term",),
+            PatternMessage(["body"]),
+            properties={"attr": PatternMessage(["value"])},
+            linepos=get_linepos(1),
+        )
 
         with self.assertRaises(ValueError):
-            fluent_parse_messages("# comment\n")
+            fluent_parse_message("# comment\n")
 
     def test_resource(self):
         res = fluent_parse(
@@ -209,15 +211,16 @@ class TestFluent(TestCase):
                 ),
                 linepos=get_linepos(14),
             ),
-            Entry(("has-attr",), PatternMessage(["ABC"]), linepos=get_linepos(15)),
             Entry(
-                ("has-attr", "attr"),
-                PatternMessage(["Attr"]),
-                linepos=get_linepos(16),
+                ("has-attr",),
+                PatternMessage(["ABC"]),
+                properties={"attr": PatternMessage(["Attr"])},
+                linepos=get_linepos(15),
             ),
             Entry(
-                ("has-only-attr", "attr"),
-                PatternMessage(["Attr"]),
+                ("has-only-attr",),
+                PatternMessage([]),
+                properties={"attr": PatternMessage(["Attr"])},
                 comment="Attr Comment",
                 linepos=get_linepos(17, 19),
             ),
@@ -270,8 +273,12 @@ class TestFluent(TestCase):
                 ),
                 linepos=LinePos(34, 34, 35, 53),
             ),
-            Entry(("-term",), PatternMessage(["Term"]), linepos=get_linepos(53)),
-            Entry(("-term", "attr"), PatternMessage(["foo"]), linepos=get_linepos(54)),
+            Entry(
+                ("-term",),
+                PatternMessage(["Term"]),
+                properties={"attr": PatternMessage(["foo"])},
+                linepos=get_linepos(53),
+            ),
             Entry(
                 ("term-sel",),
                 SelectMessage(
@@ -449,29 +456,12 @@ class TestFluent(TestCase):
             == 'key = { "" } { "\\u0009" } { "\\u000A" }\n'
         )
 
-    def test_attr_comment(self):
+    def test_comment(self):
         res = fluent_parse("msg = body\n  .attr = value")
 
-        res.sections[0].entries[1].comment = "comment1"
+        res.sections[0].entries[0].comment = "comment1"
         assert "".join(fluent_serialize(res)) == dedent(
             """\
-            # attr:
-            # comment1
-            msg = body
-                .attr = value
-            """
-        )
-        assert (
-            "".join(fluent_serialize(res, trim_comments=True))
-            == "msg = body\n    .attr = value\n"
-        )
-
-        res.sections[0].entries[0].comment = "comment0"
-        assert "".join(fluent_serialize(res)) == dedent(
-            """\
-            # comment0
-            #
-            # attr:
             # comment1
             msg = body
                 .attr = value
@@ -484,7 +474,7 @@ class TestFluent(TestCase):
 
     def test_meta(self):
         res = fluent_parse("one = foo\ntwo = bar")
-        res.sections[0].entries[1].meta = [Metadata("a", 42), Metadata("b", False)]
+        res.sections[0].entries[1].meta = [Metadata("a", "42"), Metadata("b", "False")]
         with self.assertRaises(ValueError) as ec:
             "".join(fluent_serialize(res))
         assert ec.exception.args == ("Metadata requires serialize_metadata parameter",)
@@ -531,35 +521,37 @@ class TestFluent(TestCase):
                 comment="Multiline string: press Shift + Enter to insert new line",
             ),
             Entry(
-                id=("emailOptInInput", "placeholder"),
-                value=PatternMessage(["email goes here :)"]),
+                id=("emailOptInInput",),
+                value=PatternMessage([]),
+                properties={"placeholder": PatternMessage(["email goes here :)"])},
                 comment="Attributes: in original string",
             ),
             Entry(
-                id=("file-menu", "label"),
-                value=PatternMessage(["File"]),
+                id=("file-menu",),
+                value=PatternMessage([]),
+                properties={
+                    "label": PatternMessage(["File"]),
+                    "accesskey": PatternMessage(["F"]),
+                },
                 comment="Attributes: access keys",
             ),
             Entry(
-                id=("file-menu", "accesskey"),
-                value=PatternMessage(["F"]),
-            ),
-            Entry(
-                id=("other-file-menu", "aria-label"),
-                value=PatternMessage([Expression("file-menu.label", "message")]),
-            ),
-            Entry(
-                id=("other-file-menu", "accesskey"),
-                value=PatternMessage([Expression("file-menu.accesskey", "message")]),
+                id=("other-file-menu",),
+                value=PatternMessage([]),
+                properties={
+                    "aria-label": PatternMessage(
+                        [Expression("file-menu.label", "message")]
+                    ),
+                    "accesskey": PatternMessage(
+                        [Expression("file-menu.accesskey", "message")]
+                    ),
+                },
             ),
             Entry(
                 id=("shotIndexNoExpirationSymbol",),
                 value=PatternMessage(["∞"]),
+                properties={"title": PatternMessage(["This shot does not expire"])},
                 comment="Value and an attribute",
-            ),
-            Entry(
-                id=("shotIndexNoExpirationSymbol", "title"),
-                value=PatternMessage(["This shot does not expire"]),
             ),
             Entry(
                 id=("delete-all-message",),
@@ -610,8 +602,13 @@ class TestFluent(TestCase):
                 comment="DATETIME Built-in function",
             ),
             Entry(
-                id=("default-content-process-count", "label"),
-                value=PatternMessage([Expression(VariableRef("num")), " (default)"]),
+                id=("default-content-process-count",),
+                value=PatternMessage([]),
+                properties={
+                    "label": PatternMessage(
+                        [Expression(VariableRef("num")), " (default)"]
+                    )
+                },
                 comment="Soft Launch",
             ),
             Entry(
@@ -644,36 +641,39 @@ class TestFluent(TestCase):
                 comment="NUMBER() selector",
             ),
             Entry(
-                id=("platform-attribute", "title"),
-                value=SelectMessage(
-                    declarations={"_1": Expression(None, "platform")},
-                    selectors=(VariableRef("_1"),),
-                    variants={
-                        ("win",): ["Options"],
-                        (CatchallKey("other"),): ["Preferences"],
-                    },
-                ),
+                id=("platform-attribute",),
+                value=PatternMessage([]),
+                properties={
+                    "title": SelectMessage(
+                        declarations={"_1": Expression(None, "platform")},
+                        selectors=(VariableRef("_1"),),
+                        variants={
+                            ("win",): ["Options"],
+                            (CatchallKey("other"),): ["Preferences"],
+                        },
+                    )
+                },
                 comment="PLATFORM() selector in attribute",
             ),
             Entry(
-                id=("download-choose-folder", "label"),
-                value=SelectMessage(
-                    declarations={"_1": Expression(None, "platform")},
-                    selectors=(VariableRef("_1"),),
-                    variants={
-                        ("macos",): ["Choose…"],
-                        (CatchallKey("other"),): ["Browse…"],
-                    },
-                ),
+                id=("download-choose-folder",),
+                value=PatternMessage([]),
+                properties={
+                    "label": SelectMessage(
+                        declarations={"_1": Expression(None, "platform")},
+                        selectors=(VariableRef("_1"),),
+                        variants={
+                            ("macos",): ["Choose…"],
+                            (CatchallKey("other"),): ["Browse…"],
+                        },
+                    ),
+                    "accesskey": SelectMessage(
+                        declarations={"_1": Expression(None, "platform")},
+                        selectors=(VariableRef("_1"),),
+                        variants={("macos",): ["e"], (CatchallKey("other"),): ["o"]},
+                    ),
+                },
                 comment="Double selector in attributes",
-            ),
-            Entry(
-                id=("download-choose-folder", "accesskey"),
-                value=SelectMessage(
-                    declarations={"_1": Expression(None, "platform")},
-                    selectors=(VariableRef("_1"),),
-                    variants={("macos",): ["e"], (CatchallKey("other"),): ["o"]},
-                ),
             ),
             Entry(
                 id=("selector-multi",),

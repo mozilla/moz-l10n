@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from itertools import product
 from re import finditer
-from typing import Iterable, Tuple, cast
+from typing import Tuple, cast
 
 from fluent.syntax import FluentParser
 from fluent.syntax import ast as ftl
@@ -48,6 +48,9 @@ def fluent_parse(
     Message and term references are represented by `message` function annotations,
     with term identifiers prefixed with a `-`.
 
+    Attribute values are assigned to the Entry.properties.
+    Messages with no value will have an empty pattern assigned as their Entry.value.
+
     Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the Resource.
 
     The parsed resource will not include any metadata.
@@ -71,7 +74,7 @@ def fluent_parse(
     for entry in fluent_body:
         if isinstance(entry, (ftl.Message, ftl.Term)):
             try:
-                entries.extend(entries_iter(entry, lpm))
+                entries.append(fluent_entry(entry, lpm))
             except Exception as err:
                 raise ValueError(f"Error parsing message {entry.id.name}") from err
         elif isinstance(entry, ftl.ResourceComment):
@@ -128,69 +131,65 @@ def fluent_parse(
     return resource
 
 
-def fluent_parse_messages(
+def fluent_parse_message(
     source: str | ftl.Message | ftl.Term, *, with_linepos: bool = True
-) -> list[Entry[Message]]:
+) -> Entry[Message]:
     """
-    Parse a Fluent message or term into a list of Entries.
+    Parse a Fluent message or term into an Entry.
 
     Message and term references are represented by `message` function annotations,
     with term identifiers prefixed with a `-`.
 
+    Attribute values are assigned to the Entry.properties.
+    Messages with no value will have an empty pattern assigned as their Entry.value.
+
     Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the result.
     """
     if isinstance(source, str):
-        fluent_entry = FluentParser(with_spans=with_linepos).parse_entry(source)
+        ftl_entry = FluentParser(with_spans=with_linepos).parse_entry(source)
         lpm = LinePosMapper(source) if with_linepos else None
     else:
-        fluent_entry = source
+        ftl_entry = source
         lpm = None  # Source is required for line positions
-    if not isinstance(fluent_entry, (ftl.Message, ftl.Term)):
+    if not isinstance(ftl_entry, (ftl.Message, ftl.Term)):
         raise ValueError("Source is not a Fluent entry")
-    return list(entries_iter(fluent_entry, lpm))
+    return fluent_entry(ftl_entry, lpm)
 
 
-def entries_iter(
+def fluent_entry(
     ftl_entry: ftl.Message | ftl.Term,
     lpm: LinePosMapper | None,
-) -> Iterable[Entry[Message]]:
+) -> Entry[Message]:
     id = ftl_entry.id.name
     if isinstance(ftl_entry, ftl.Term):
         id = "-" + id
+    value = message(ftl_entry.value) if ftl_entry.value else PatternMessage([])
     comment = ftl_entry.comment.content or "" if ftl_entry.comment else ""
-    if ftl_entry.value:
-        entry = Entry(id=(id,), value=message(ftl_entry.value), comment=comment)
-        if lpm and ftl_entry.span and ftl_entry.value.span:
-            v_span = ftl_entry.value.span
-            c_span = (
-                ftl_entry.comment.span
-                if comment and ftl_entry.comment and ftl_entry.comment.span
-                else ftl_entry.span
-            )
-            k_span = ftl_entry.id.span or ftl_entry.span
-            entry.linepos = lpm.get_linepos(
-                c_span.start, k_span.start, v_span.start, v_span.end
-            )
-        yield entry
-        if comment:
-            comment = ""
+    entry = Entry(id=(id,), value=value, comment=comment)
+
+    if lpm and ftl_entry.span:
+        c_span = (
+            ftl_entry.comment.span
+            if comment and ftl_entry.comment and ftl_entry.comment.span
+            else ftl_entry.span
+        )
+        k_span = ftl_entry.id.span or ftl_entry.span
+        v_span = (ftl_entry.value.span if ftl_entry.value else None) or ftl_entry.span
+        entry.linepos = lpm.get_linepos(
+            c_span.start, k_span.start, v_span.start, v_span.end
+        )
+
     for attr in ftl_entry.attributes:
-        entry = Entry(id=(id, attr.id.name), value=message(attr.value), comment=comment)
-        if lpm and attr.span:
-            span = attr.span
-            c_span = (
-                ftl_entry.comment.span
-                if comment and ftl_entry.comment and ftl_entry.comment.span
-                else span
-            )
-            k_span = attr.id.span or span
-            v_span = attr.value.span or span
-            entry.linepos = lpm.get_linepos(
-                c_span.start, k_span.start, v_span.start, span.end
-            )
-        yield entry
-        if comment:
-            comment = ""
+        prop_msg = message(attr.value)
+        if entry.properties is None:
+            entry.properties = {attr.id.name: prop_msg}
+        else:
+            entry.properties[attr.id.name] = prop_msg
+        if lpm and entry.linepos and attr.span:
+            span = attr.value.span or attr.span
+            entry.linepos.end = span.end
+
+    return entry
 
 
 def message(ftl_pattern: ftl.Pattern) -> Message:
