@@ -57,7 +57,7 @@ def fluent_parse(
         fluent_res = source
         lpm = None  # Source is required for line positions
     else:
-        source_str = source if isinstance(source, str) else source.decode("utf-8")
+        source_str = source if isinstance(source, str) else str(source, "utf-8")
         fluent_res = FluentParser(with_spans=with_linepos).parse(source_str)
         lpm = LinePosMapper(source_str) if with_linepos else None
 

@@ -47,7 +47,7 @@ def po_parse(source: str | bytes) -> Resource[Message]:
     - `flag`: separately for each flag
     - `plural`
     """
-    pf = pofile(source if isinstance(source, str) else source.decode())
+    pf = pofile(source if isinstance(source, str) else str(source, "utf8"))
     res_comment = pf.header.lstrip("\n").rstrip()
     res_meta: list[Metadata] = [
         Metadata(key, value.strip()) for key, value in pf.metadata.items()

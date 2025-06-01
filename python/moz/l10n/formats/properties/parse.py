@@ -64,7 +64,7 @@ def properties_parse(
     The parsed resource will not include any metadata.
     """
     if not isinstance(source, str):
-        source = source.decode(encoding)
+        source = str(source, encoding)
     parser = PropertiesParser(source)
     entries: list[Entry[Message] | Comment] = []
     resource = Resource(Format.properties, [Section((), entries)])

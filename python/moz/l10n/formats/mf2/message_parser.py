@@ -56,7 +56,7 @@ def mf2_parse_message(source: bytes | str) -> Message:
     May raise `MF2ParseError`.
     """
     if not isinstance(source, str):
-        source = source.decode()
+        source = str(source, "utf8")
     parser = MF2Parser(source)
     return parser.parse()
 
@@ -71,7 +71,7 @@ class MF2ParseError(ValueError):
 
 class MF2Parser:
     def __init__(self, source: bytes | str):
-        self.source = source if isinstance(source, str) else source.decode()
+        self.source = source if isinstance(source, str) else str(source, "utf8")
         self.pos = 0
 
     def parse(self) -> Message:
