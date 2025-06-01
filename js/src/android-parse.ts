@@ -55,8 +55,16 @@ export function androidParsePattern(
     return [{ _: root.textContent!, fn: 'reference' }]
   }
 
-  const flat = flattenElements(root)
-  const spaced = parseQuotes(flat)
+  const pattern = Array.from(flattenElements(root))
+  if (pattern.length > 0) {
+    const part0 = pattern[0]
+    if (typeof part0 === 'string') pattern[0] = part0.trimStart()
+    const part1 = pattern.at(-1)
+    // This will trim trailing spaces at the end of a text segment with an unpaired ".
+    // We're presuming that this never happens intentionally.
+    if (typeof part1 === 'string') pattern[pattern.length - 1] = part1.trimEnd()
+  }
+  const spaced = parseQuotes(pattern)
   return Array.from(parseInline(spaced, entities))
 }
 
@@ -136,57 +144,35 @@ const noTranslateAttr = (attr?: Record<string, string | true>) =>
 function* parseQuotes(
   pattern: Iterable<string | Expression | Markup>
 ): Iterable<string | Expression | Markup> {
-  const stack: (string | Expression)[] = []
+  let quoted = false
   for (const part of pattern) {
     if (typeof part === 'string') {
       let pos = 0
-      let quoted = stack.length > 0
       for (const m of part.matchAll(/(?<!\\)"/g)) {
-        const prev = part.substring(pos, m.index)
-        if (quoted) {
-          if (stack.length) {
-            yield* stack
-            stack.length = 0
-          }
-          if (prev) yield prev
-        } else if (prev) {
-          yield prev.replace(/\s+/g, ' ')
+        if (pos === 0 && /<.+>/.test(part)) {
+          // Let's presume that double quotes near html-ish contents are intentional.
+          break
         }
+        const prev = part.substring(pos, m.index)
+        if (prev) yield quoted ? prev : prev.replace(/\s+/g, ' ')
         pos = m.index + m[0].length
         quoted = !quoted
       }
       const last = part.substring(pos)
-      if (quoted) stack.push(last)
-      else if (last) yield last.replace(/\s+/g, ' ')
-    } else if (stack.length) {
-      if (
-        isMarkup(part) ||
-        (typeof part !== 'string' && part.attr?.translate === 'no')
-      ) {
-        yield '"'
-        for (const part of stack) {
-          yield typeof part === 'string' ? part.replace(/\s+/g, ' ') : part
-        }
-        stack.length = 0
-        yield part
-      } else {
-        stack.push(part)
-      }
+      if (last) yield quoted ? last : last.replace(/\s+/g, ' ')
     } else {
+      if (isMarkup(part) || part.attr?.translate === 'no') {
+        quoted = false
+      }
       yield part
-    }
-  }
-  if (stack.length) {
-    yield '"'
-    for (const part of stack) {
-      yield typeof part === 'string' ? part.replace(/\s+/g, ' ') : part
     }
   }
 }
 
 const _inline =
-  // 1:esc-char   2:esc-unicode 3:esc-elem 4:printf                       5:printf-conversion             6:xml-entity
-  /\\([@?nt'"\\])|\\u([0-9]{4})|(<[^%>]+>)|(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%]|[tT][a-zA-Z]))|(_entity_\d+_)/g
+  // 1:esc-unicode     2:esc-char       4:printf
+  //                         3:esc-elem                                5:printf-conversion             6:xml-entity
+  /\\u([0-9A-Fa-f]{4})|\\(.)|(<[^%>]+>)|(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%]|[tT][a-zA-Z]))|(_entity_\d+_)/g
 
 function* parseInline(
   pattern: Iterable<string | Expression | Markup>,
@@ -200,10 +186,10 @@ function* parseInline(
         if (m.index > pos) buffer += part.substring(pos, m.index)
         pos = m.index + m[0].length
         if (m[1]) {
-          const ch = m[1]
-          buffer += ch === 'n' ? '\n' : ch === 't' ? '\t' : ch
+          buffer += String.fromCharCode(parseInt(m[1], 16))
         } else if (m[2]) {
-          buffer += String.fromCharCode(Number(m[2]))
+          const ch = m[2]
+          buffer += ch === 'n' ? '\n' : ch === 't' ? '\t' : ch
         } else {
           if (buffer) {
             yield buffer
