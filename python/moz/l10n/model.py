@@ -228,6 +228,14 @@ class Entry(Generic[V_co]):
     String values have all their character escapes processed.
     """
 
+    properties: dict[str, V_co] = field(default_factory=dict)
+    """
+    Additional values for an entry,
+    such as the attributes of a Fluent term or message.
+
+    String values have all their character escapes processed.
+    """
+
     comment: str = ""
     """
     A comment on this entry.

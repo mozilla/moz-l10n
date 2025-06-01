@@ -17,14 +17,42 @@ from __future__ import annotations
 from unittest import TestCase
 
 from moz.l10n.formats import Format
-from moz.l10n.model import Comment, Entry, Metadata, Resource, Section
+from moz.l10n.model import Comment, Entry, Metadata, PatternMessage, Resource, Section
 from moz.l10n.resource import l10n_equal
 
 
 class TestL10nEqual(TestCase):
     def test_equal(self):
-        a = Resource(Format.po, [Section((), [Entry(("foo",), "Foo")])])
-        b = Resource(Format.po, [Section((), [Entry(("foo",), "Foo")])])
+        a = Resource(
+            Format.fluent,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("foo",),
+                            PatternMessage(["Foo"]),
+                            properties={"p": PatternMessage(["Prop"])},
+                        )
+                    ],
+                )
+            ],
+        )
+        b = Resource(
+            Format.fluent,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("foo",),
+                            PatternMessage(["Foo"]),
+                            properties={"p": PatternMessage(["Prop"])},
+                        )
+                    ],
+                )
+            ],
+        )
         assert l10n_equal(a, b)
 
     def test_not_equal_formats(self):
@@ -38,13 +66,13 @@ class TestL10nEqual(TestCase):
         assert not l10n_equal(a, b)
 
     def test_not_equal_entry_comments(self):
-        a = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 1")])])
-        b = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 2")])])
+        a = Resource(None, [Section((), [Entry(("foo",), "Foo", comment="Bar 1")])])
+        b = Resource(None, [Section((), [Entry(("foo",), "Foo", comment="Bar 2")])])
         assert not l10n_equal(a, b)
 
     def test_equal_stripped_entry_comments(self):
-        a = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 1")])])
-        b = Resource(None, [Section((), [Entry(("foo",), "Foo", "Bar 1   ")])])
+        a = Resource(None, [Section((), [Entry(("foo",), "Foo", comment="Bar 1")])])
+        b = Resource(None, [Section((), [Entry(("foo",), "Foo", comment="Bar 1   ")])])
         assert l10n_equal(a, b)
 
     def test_not_equal_entry_meta(self):
@@ -57,6 +85,23 @@ class TestL10nEqual(TestCase):
             [Section((), [Entry(("foo",), "Foo", meta=[Metadata("key", "Bar 2")])])],
         )
         assert not l10n_equal(a, b)
+
+    def test_not_equal_entry_properties(self):
+        a = Resource(
+            None,
+            [Section((), [Entry(("foo",), "Foo")])],
+        )
+        b = Resource(
+            None,
+            [Section((), [Entry(("foo",), "Foo", properties={"p": "Prop"})])],
+        )
+        c = Resource(
+            None,
+            [Section((), [Entry(("foo",), "Foo", properties={"p": "Prop 2"})])],
+        )
+        assert l10n_equal(b, b)
+        assert not l10n_equal(a, b)
+        assert not l10n_equal(b, c)
 
     def test_not_equal_section_ids(self):
         a = Resource(None, [Section(("a",), [Entry(("foo",), "Foo")])])
