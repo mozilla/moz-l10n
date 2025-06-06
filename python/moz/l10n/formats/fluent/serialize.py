@@ -126,27 +126,41 @@ def fluent_astify(
             if isinstance(entry, Comment):
                 if not trim_comments:
                     body.append(ftl.Comment(entry.comment))
-            elif len(entry.id) == 1:
-                id = entry.id[0]
-                value = fluent_astify_message(entry.value)
-                attributes = list(
-                    ftl.Attribute(ftl.Identifier(key), fluent_astify_message(val))
-                    for key, val in entry.properties.items()
-                )
-                c_str = comment_str(entry)
-                comment = ftl.Comment(c_str) if c_str else None
-                if id.startswith("-"):
-                    body.append(
-                        ftl.Term(ftl.Identifier(id[1:]), value, attributes, comment)
-                    )
-                else:
-                    value_ = None if attributes and not value.elements else value
-                    body.append(
-                        ftl.Message(ftl.Identifier(id), value_, attributes, comment)
-                    )
             else:
-                raise ValueError(f"Unsupported message id: {entry.id}")
+                body.append(fluent_astify_entry(entry, comment_str))
     return ftl.Resource(body)
+
+
+def fluent_astify_entry(
+    entry: Entry[str | Message], comment_str: Callable[[Entry[Any]], str] | None = None
+) -> ftl.Message | ftl.Term:
+    """
+    Transform an Entry into a corresponding Fluent AST message or term.
+
+    Function names are upper-cased, and expressions using the `message` function
+    are mapped to message and term references.
+    """
+
+    if len(entry.id) != 1:
+        raise ValueError(f"Unsupported message id: {entry.id}")
+    id = entry.id[0]
+    value = fluent_astify_message(entry.value)
+    attributes = list(
+        ftl.Attribute(ftl.Identifier(key), fluent_astify_message(val))
+        for key, val in entry.properties.items()
+    )
+    if comment_str is None:
+        if entry.meta:
+            raise ValueError("Metadata requires custom serializer")
+        c_str = entry.comment.rstrip()
+    else:
+        c_str = comment_str(entry)
+    comment = ftl.Comment(c_str) if c_str else None
+    if id.startswith("-"):
+        return ftl.Term(ftl.Identifier(id[1:]), value, attributes, comment)
+    else:
+        value_ = None if attributes and not value.elements else value
+        return ftl.Message(ftl.Identifier(id), value_, attributes, comment)
 
 
 def fluent_astify_message(message: str | Message) -> ftl.Pattern:
