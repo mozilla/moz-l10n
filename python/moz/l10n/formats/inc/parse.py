@@ -33,7 +33,7 @@ def inc_parse(source: str | bytes) -> Resource[Message]:
     entries: list[Entry[Message] | Comment] = []
     comment: str = ""
     if not isinstance(source, str):
-        source = source.decode()
+        source = str(source, "utf8")
     for line in source.splitlines():
         if not line or line.isspace():
             if comment:

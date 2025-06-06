@@ -91,7 +91,7 @@ export function androidSerializePattern(
     const error = `android: Missing closing markup for ${node.tagName}`
     onError(new SerializeError(error))
   }
-  quoteAndroidSpaces(root, true)
+  quoteAndroidSpaces(root)
   let str: string
   try {
     str = serialize(root)
@@ -105,6 +105,9 @@ export function androidSerializePattern(
   return str
 }
 
+const escapeChar = (ch: string) =>
+  `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`
+
 const escape = (src: string) =>
   src
     // Special Android characters
@@ -114,11 +117,8 @@ const escape = (src: string) =>
     .replaceAll("'", "\\'")
     .replaceAll('"', '\\"')
     // Control codes that are not valid in XML, and nonstandard whitespace
-    .replace(
-      // eslint-disable-next-line no-control-regex
-      /[\x00-\x19\x7F-\x9F]|[^\S ]/g,
-      (m) => `\\u${String(m.charCodeAt(0)).padStart(4, '0')}`
-    )
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x19\x7F-\x9F]|[^\S ]|(?<= ) /g, escapeChar)
 
 function asTextContent(
   part: Expression,
@@ -145,23 +145,14 @@ function asTextContent(
   return part.$ ?? escape(part._ ?? '')
 }
 
-function quoteAndroidSpaces(el: Element, isRoot: boolean) {
-  // @ts-expect-error No, TS, it _is_ iterable.
-  for (const node of el.childNodes as Iterable<ChildNode>) {
-    if (node instanceof Element) {
-      quoteAndroidSpaces(node, false)
-    } else if (node instanceof Text && node.data.includes('  ')) {
-      node.data = `"${node.data}"`
-    }
+function quoteAndroidSpaces(el: Element) {
+  const first = el.firstChild
+  if (first instanceof Text && /^[ @?]/.test(first.data)) {
+    first.data = escapeChar(first.data) + first.data.slice(1)
   }
-  if (isRoot) {
-    const first = el.firstChild
-    const last = el.lastChild
-    if (first instanceof Text) {
-      if (/^[ @?]/.test(first.data)) first.data = `"${first.data}"`
-    }
-    if (last instanceof Text && last !== first) {
-      if (last.data.endsWith(' ')) last.data = `"${last.data}"`
-    }
+
+  const last = el.lastChild
+  if (last instanceof Text && last.data.endsWith(' ')) {
+    last.data = last.data.slice(0, -1) + escapeChar(' ')
   }
 }

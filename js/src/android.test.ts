@@ -39,7 +39,11 @@ describe('success', () => {
     [{ _: '@foo:bar/baz', fn: 'reference' }],
     '@foo:bar/baz'
   )
-  ok('whitespace', ['Hello\nthe\n\n  \tworld'], '"Hello\\nthe\\n\\n  \\tworld"')
+  ok(
+    'whitespace',
+    ['Hello\nthe\n\n  \tworld'],
+    'Hello\\nthe\\n\\n \\u0020\\tworld'
+  )
   ok(
     'inline variable',
     ['Hello, ', { $: 'arg1', fn: 'string', attr: { source: '%1$s' } }, '!'],

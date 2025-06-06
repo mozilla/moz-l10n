@@ -83,9 +83,6 @@ class PatternMessage:
     pattern: Pattern
     declarations: dict[str, Expression] = field(default_factory=dict)
 
-    def placeholders(self) -> set[Expression | Markup]:
-        return {part for part in self.pattern if not isinstance(part, str)}
-
 
 @dataclass
 class CatchallKey:
@@ -110,14 +107,6 @@ class SelectMessage:
     declarations: dict[str, Expression]
     selectors: tuple[VariableRef, ...]
     variants: Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
-
-    def placeholders(self) -> set[Expression | Markup]:
-        return {
-            part
-            for pattern in self.variants.values()
-            for part in pattern
-            if not isinstance(part, str)
-        }
 
     def selector_expressions(self) -> tuple[Expression, ...]:
         return tuple(self.declarations[var.name] for var in self.selectors)
@@ -199,7 +188,7 @@ class Comment:
     """
 
 
-V = TypeVar("V")
+V_co = TypeVar("V_co", bound=Union[Message, str], covariant=True)
 """
 The Message value type.
 """
@@ -211,7 +200,7 @@ An entry or section identifier.
 
 
 @dataclass
-class Entry(Generic[V]):
+class Entry(Generic[V_co]):
     """
     A message entry.
 
@@ -232,11 +221,11 @@ class Entry(Generic[V]):
     i.e. the concatenation of its section header identifier (if any) and its own.
     """
 
-    value: V
+    value: V_co
     """
     The value of an entry, i.e. the message.
 
-    String values have all their character \\escapes processed.
+    String values have all their character escapes processed.
     """
 
     comment: str = ""
@@ -269,7 +258,7 @@ class Entry(Generic[V]):
 
 
 @dataclass
-class Section(Generic[V]):
+class Section(Generic[V_co]):
     """
     A section of a resource.
 
@@ -294,7 +283,7 @@ class Section(Generic[V]):
     i.e. they do not include this identifier.
     """
 
-    entries: list[Entry[V] | Comment]
+    entries: list[Entry[V_co] | Comment]
     """
     Section entries consist of message entries and comments.
 
@@ -331,7 +320,7 @@ class Section(Generic[V]):
 
 
 @dataclass
-class Resource(Generic[V]):
+class Resource(Generic[V_co]):
     """
     A message resource.
 
@@ -344,7 +333,7 @@ class Resource(Generic[V]):
     The serialization format for the resource, if any.
     """
 
-    sections: list[Section[V]]
+    sections: list[Section[V_co]]
     """
     The body of a resource, consisting of an array of sections.
 
@@ -367,7 +356,7 @@ class Resource(Generic[V]):
     Metadata attached to the whole resource.
     """
 
-    def all_entries(self) -> Iterable[Entry[V]]:
+    def all_entries(self) -> Iterable[Entry[V_co]]:
         """
         All entries in all resource sections.
         """

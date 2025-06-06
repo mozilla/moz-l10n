@@ -31,8 +31,8 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[Message]:
     """
     if isinstance(source, str):
         file: TextIO = StringIO(source)
-    elif isinstance(source, bytes):
-        file = StringIO(source.decode())
+    elif isinstance(source, (bytes, bytearray, memoryview)):
+        file = StringIO(str(source, "utf8"))
     else:
         file = source
     cfg = ini.INIConfig(file, optionxformvalue=None)

@@ -51,7 +51,7 @@ def dtd_parse(source: str | bytes) -> Resource[Message]:
     at_newline = True
     comment: str = ""
     if not isinstance(source, str):
-        source = source.decode()
+        source = str(source, "utf8")
     for match in re_comment.finditer(source):
         cstart = match.start(0)
         has_prev_entries = False
