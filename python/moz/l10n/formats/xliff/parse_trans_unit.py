@@ -75,7 +75,7 @@ def parse_trans_unit(unit: etree._Element, is_xcode: bool) -> Entry[Message]:
     msg = PatternMessage(
         [] if target is None else list(parse_pattern(target, is_xcode))
     )
-    return Entry((id,), msg, comment, meta)
+    return Entry((id,), msg, comment=comment, meta=meta)
 
 
 def parse_pattern(

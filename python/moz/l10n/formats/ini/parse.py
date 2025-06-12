@@ -69,7 +69,7 @@ def ini_parse(source: TextIO | str | bytes) -> Resource[Message]:
             add_comment(line.comment)
             pattern = [line.value]
             msg = PatternMessage(pattern)  # type: ignore[arg-type]
-            section.entries.append(Entry((line.name,), msg, comment))
+            section.entries.append(Entry((line.name,), msg, comment=comment))
             comment = ""
         elif isinstance(line, ini.CommentLine):
             add_comment(line.comment)

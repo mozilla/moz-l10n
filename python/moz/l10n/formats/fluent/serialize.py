@@ -45,9 +45,7 @@ def fluent_serialize(
     """
     Serialize a resource as the contents of a Fluent FTL file.
 
-    Section identifiers are not supported.
-    Single-part message identifiers are treated as message values,
-    while two-part message identifiers are considered message attributes.
+    Section identifiers and multi-part message identifiers are not supported.
 
     Function names are upper-cased, and expressions using the `message` function
     are mapped to message and term references.
@@ -73,9 +71,7 @@ def fluent_astify(
     """
     Transform a resource into a corresponding Fluent AST structure.
 
-    Section identifiers are not supported.
-    Single-part message identifiers are treated as message values,
-    while two-part message identifiers are considered message attributes.
+    Section identifiers and multi-part message identifiers are not supported.
 
     Function names are upper-cased, and annotations with the `message` function
     are mapped to message and term references.
@@ -85,7 +81,7 @@ def fluent_astify(
     to map each field into a comment value, or to discard it by returning an empty value.
     """
 
-    def comment(
+    def comment_str(
         node: (Resource[Any] | Section[Any] | Entry[Any] | Comment),
     ) -> str:
         if trim_comments:
@@ -119,58 +115,52 @@ def fluent_astify(
         body.append(ftl.Comment(res_info.value))
         res_comment = resource.comment.rstrip()
     else:
-        res_comment = comment(resource)
+        res_comment = comment_str(resource)
     if res_comment:
         body.append(ftl.ResourceComment(res_comment))
     for idx, section in enumerate(resource.sections):
-        section_comment = comment(section)
+        section_comment = comment_str(section)
         if (not trim_comments and idx != 0) or section_comment:
             body.append(ftl.GroupComment(section_comment))
-        cur: ftl.Message | ftl.Term | None = None
-        cur_id = ""
         for entry in section.entries:
             if isinstance(entry, Comment):
                 if not trim_comments:
                     body.append(ftl.Comment(entry.comment))
-                cur = None
             else:
-                value = fluent_astify_message(entry.value)
-                entry_comment = comment(entry)
-                if len(entry.id) == 1:  # value
-                    cur_id = entry.id[0]
-                    cur = (
-                        ftl.Term(ftl.Identifier(cur_id[1:]), value)
-                        if cur_id.startswith("-")
-                        else ftl.Message(ftl.Identifier(cur_id), value)
-                    )
-                    if entry_comment:
-                        cur.comment = ftl.Comment(entry_comment)
-                    body.append(cur)
-                elif len(entry.id) == 2:  # attribute
-                    if cur is None or entry.id[0] != cur_id:
-                        cur_id = entry.id[0]
-                        if cur_id.startswith("-"):
-                            value = ftl.Pattern([ftl.Placeable(ftl.StringLiteral(""))])
-                            cur = ftl.Term(ftl.Identifier(cur_id[1:]), value)
-                        else:
-                            cur = ftl.Message(ftl.Identifier(cur_id))
-                        if entry_comment:
-                            cur.comment = ftl.Comment(entry_comment)
-                        body.append(cur)
-                    elif entry_comment:
-                        attr_comment = f"{entry.id[1]}:\n{entry_comment}"
-                        if cur.comment:
-                            cur.comment.content = (
-                                str(cur.comment.content) + "\n\n" + attr_comment
-                            )
-                        else:
-                            cur.comment = ftl.Comment(attr_comment)
-                    cur.attributes.append(
-                        ftl.Attribute(ftl.Identifier(entry.id[1]), value)
-                    )
-                else:
-                    raise ValueError(f"Unsupported message id: {entry.id}")
+                body.append(fluent_astify_entry(entry, comment_str))
     return ftl.Resource(body)
+
+
+def fluent_astify_entry(
+    entry: Entry[str | Message], comment_str: Callable[[Entry[Any]], str] | None = None
+) -> ftl.Message | ftl.Term:
+    """
+    Transform an Entry into a corresponding Fluent AST message or term.
+
+    Function names are upper-cased, and expressions using the `message` function
+    are mapped to message and term references.
+    """
+
+    if len(entry.id) != 1:
+        raise ValueError(f"Unsupported message id: {entry.id}")
+    id = entry.id[0]
+    value = fluent_astify_message(entry.value)
+    attributes = list(
+        ftl.Attribute(ftl.Identifier(key), fluent_astify_message(val))
+        for key, val in entry.properties.items()
+    )
+    if comment_str is None:
+        if entry.meta:
+            raise ValueError("Metadata requires custom serializer")
+        c_str = entry.comment.rstrip()
+    else:
+        c_str = comment_str(entry)
+    comment = ftl.Comment(c_str) if c_str else None
+    if id.startswith("-"):
+        return ftl.Term(ftl.Identifier(id[1:]), value, attributes, comment)
+    else:
+        value_ = None if attributes and not value.elements else value
+        return ftl.Message(ftl.Identifier(id), value_, attributes, comment)
 
 
 def fluent_astify_message(message: str | Message) -> ftl.Pattern:

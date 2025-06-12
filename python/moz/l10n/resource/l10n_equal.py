@@ -15,14 +15,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, List, Set, Tuple, TypeVar
+from typing import Any
 
 from ..model import Entry, Resource, Section
-
-_T = TypeVar("_T")
-_L10nData = List[
-    Tuple[Tuple[str, ...], str, Dict[str, Set[Any]], _T]
-]  # id, comment, value
 
 
 def l10n_equal(a: Resource[Any], b: Resource[Any]) -> bool:
@@ -41,13 +36,13 @@ def l10n_equal(a: Resource[Any], b: Resource[Any]) -> bool:
     )
 
 
-def l10n_sections(resource: Resource[Any]) -> _L10nData[_L10nData[Any]]:
+def l10n_sections(resource: Resource[Any]) -> list[tuple[Any, ...]]:
     ls = [
         (section.id, section.comment.strip(), l10n_meta(section), l10n_entries(section))
         for section in resource.sections
         if any(isinstance(entry, Entry) for entry in section.entries)
     ]
-    ls.sort()
+    ls.sort(key=lambda s: s[0])
     nonempty_idx = next(
         (idx for idx, (id, comment, meta, _) in enumerate(ls) if id or comment or meta),
         len(ls),
@@ -57,18 +52,24 @@ def l10n_sections(resource: Resource[Any]) -> _L10nData[_L10nData[Any]]:
         first = ls[0]
         for sd in ls[1:nonempty_idx]:
             first[3].extend(sd[3])
-        first[3].sort()
+        first[3].sort(key=lambda e: e[0])
         del ls[1:nonempty_idx]
     return ls
 
 
-def l10n_entries(section: Section[Any]) -> _L10nData[Any]:
+def l10n_entries(section: Section[Any]) -> list[tuple[Any, ...]]:
     le = [
-        (entry.id, entry.comment.strip(), l10n_meta(entry), entry.value)
+        (
+            entry.id,
+            entry.comment.strip(),
+            l10n_meta(entry),
+            entry.value,
+            entry.properties,
+        )
         for entry in section.entries
         if isinstance(entry, Entry)
     ]
-    le.sort()
+    le.sort(key=lambda e: e[0])
     return le
 
 
