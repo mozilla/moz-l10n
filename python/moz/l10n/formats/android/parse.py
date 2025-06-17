@@ -146,7 +146,9 @@ def android_parse(
                 value = PatternMessage(
                     list(parse_pattern(el, ascii_spaces, literal_quotes))
                 )
-                entries.append(Entry((name,), value, comment_str(comment), meta))
+                entries.append(
+                    Entry((name,), value, comment=comment_str(comment), meta=meta)
+                )
 
             elif el.tag == "plurals":
                 if el.text and not el.text.isspace():
@@ -155,7 +157,9 @@ def android_parse(
                     value = parse_plurals(
                         name, el, ascii_spaces, literal_quotes, comment.extend
                     )
-                    entries.append(Entry((name,), value, comment_str(comment), meta))
+                    entries.append(
+                        Entry((name,), value, comment=comment_str(comment), meta=meta)
+                    )
 
             elif el.tag == "string-array":
                 if el.text and not el.text.isspace():
@@ -169,7 +173,9 @@ def android_parse(
                             list(parse_pattern(item, ascii_spaces, literal_quotes))
                         )
                         ic = comment_str(comment)
-                        entries.append(Entry((name, str(idx)), value, ic, meta[:]))
+                        entries.append(
+                            Entry((name, str(idx)), value, comment=ic, meta=meta[:])
+                        )
                         comment.clear()
                         idx += 1
                     else:
