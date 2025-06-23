@@ -34,7 +34,7 @@ from ...model import (
 from .. import Format
 
 
-def po_parse(
+def gettext_parse(
     source: str | bytes, *, plurals: Sequence[str] | None = None
 ) -> Resource[Message]:
     """
@@ -94,7 +94,7 @@ def po_parse(
             value = PatternMessage([pe.msgstr])
         id = (pe.msgid, pe.msgctxt) if pe.msgctxt else (pe.msgid,)
         entries.append(Entry(id, value, meta=meta))
-    return Resource(Format.po, [Section((), entries)], res_comment, res_meta)
+    return Resource(Format.gettext, [Section((), entries)], res_comment, res_meta)
 
 
 def plural_key(

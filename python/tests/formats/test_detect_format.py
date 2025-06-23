@@ -30,7 +30,7 @@ class TestDetectFormat(TestCase):
             "bug121341.properties": Format.properties,
             "defines.inc": Format.inc,
             "demo.ftl": Format.fluent,
-            "foo.po": Format.po,
+            "foo.po": Format.gettext,
             "messages.json": Format.webext,
             "test.properties": Format.properties,
         }

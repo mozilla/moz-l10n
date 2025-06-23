@@ -105,4 +105,6 @@ class TesteParseResource(TestCase):
         source = get_source("demo.ftl")
         res = parse_resource(Format.fluent, source)
         with self.assertRaises(ValueError):
-            assert all(isinstance(s, str) for s in serialize_resource(res, Format.po))
+            assert all(
+                isinstance(s, str) for s in serialize_resource(res, Format.gettext)
+            )

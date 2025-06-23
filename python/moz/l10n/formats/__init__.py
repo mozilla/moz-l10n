@@ -35,11 +35,11 @@ Format = Enum(
         "android",
         "dtd",
         "fluent",
+        "gettext",
         "inc",
         "ini",
         "mf2",
         "plain_json",
-        "po",
         "properties",
         "webext",
         "xliff",
@@ -97,14 +97,14 @@ def detect_format(name: str | None, source: bytes | str | None = None) -> Format
             return Format.dtd
         elif ext == ".ftl":
             return Format.fluent
+        elif ext in {".po", ".pot"}:
+            return Format.gettext
         elif ext == ".inc":
             return Format.inc
         elif ext == ".ini":
             return Format.ini
         elif ext == ".properties":
             return Format.properties
-        elif ext in {".po", ".pot"}:
-            return Format.po
         elif ext in {".xlf", ".xliff"}:
             return Format.xliff
 

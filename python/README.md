@@ -16,10 +16,10 @@ The library currently supports the following resource formats:
 - `android`†: Android string resources (strings.xml)
 - `dtd`: .dtd
 - `fluent`: Fluent (.ftl)
+- `gettext`: Gettext (.po, .pot)
 - `inc`: .inc
 - `ini`: .ini
 - `plain_json`: Plain JSON (.json)
-- `po`: Gettext (.po, .pot)
 - `properties`: .properties
 - `webext`: WebExtensions (messages.json)
 - `xliff`†: XLIFF 1.2, including XCode customizations (.xlf, .xliff)
