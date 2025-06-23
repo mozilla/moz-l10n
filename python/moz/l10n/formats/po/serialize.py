@@ -40,7 +40,8 @@ def po_serialize(
 
     If `plurals` is set,
     plural keys are mapped to their `plurals` index position.
-    Otherwise, plural key values must match gettext's plural index values.
+    Otherwise, plural key values must match gettext's plural index values,
+    or be the catchall key.
 
     Yields each entry and empty line separately.
     """
@@ -86,9 +87,14 @@ def po_serialize(
                         for keys, pattern in msg.variants.items()
                     )
                 ):
+                    catchall_name = plurals[-1] if plurals else str(nplurals - 1)
                     variants = tuple(
                         (
-                            (key if isinstance(key := keys[0], str) else key.value),
+                            (
+                                key
+                                if isinstance(key := keys[0], str)
+                                else key.value or catchall_name
+                            ),
                             "".join(cast(Sequence[str], pattern)),
                         )
                         for keys, pattern in msg.variants.items()

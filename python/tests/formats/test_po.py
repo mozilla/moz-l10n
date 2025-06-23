@@ -105,9 +105,7 @@ class TestPo(TestCase):
 
     def test_serialize(self):
         res = po_parse(res_path)
-        assert (
-            "".join(po_serialize(res))
-            == r"""# Test translation file.
+        exp = r"""# Test translation file.
 # Any copyright is dedicated to the Public Domain.
 # http://creativecommons.org/publicdomain/zero/1.0/
 #
@@ -151,7 +149,16 @@ msgid ""
 "separator"
 msgstr ""
 """
-        )
+        assert "".join(po_serialize(res)) == exp
+
+        # Remove catchall key label
+        res.sections[0].entries[1].value.variants = {
+            ("0",): ["%d prevedenih sporočil"],
+            ("1",): ["%d prevedeno sporočilo"],
+            ("2",): ["%d prevedeni sporočili"],
+            (CatchallKey(),): ["%d prevedena sporočila"],
+        }
+        assert "".join(po_serialize(res)) == exp
 
     def test_trim_comments(self):
         res = po_parse(res_path)
@@ -282,4 +289,12 @@ msgstr[2] "pl-many"
                 ],
             ),
         ]
+        assert "".join(po_serialize(res, plurals=plurals)) == src
+
+        # Remove catchall key label
+        res.sections[0].entries[0].value.variants = {
+            ("one",): ["pl-one"],
+            ("few",): ["pl-few"],
+            (CatchallKey(),): ["pl-many"],
+        }
         assert "".join(po_serialize(res, plurals=plurals)) == src
