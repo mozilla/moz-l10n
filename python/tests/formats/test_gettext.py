@@ -20,7 +20,7 @@ from importlib_resources import files
 from unittest import TestCase
 
 from moz.l10n.formats import Format
-from moz.l10n.formats.po import po_parse, po_serialize
+from moz.l10n.formats.gettext import gettext_parse, gettext_serialize
 from moz.l10n.model import (
     CatchallKey,
     Entry,
@@ -36,11 +36,11 @@ from moz.l10n.model import (
 res_path = str(files("tests.formats.data").joinpath("foo.po"))
 
 
-class TestPo(TestCase):
+class TestGettext(TestCase):
     def test_parse(self):
-        res = po_parse(res_path)
+        res = gettext_parse(res_path)
         assert res == Resource(
-            Format.po,
+            Format.gettext,
             comment="Test translation file.\n"
             "Any copyright is dedicated to the Public Domain.\n"
             "http://creativecommons.org/publicdomain/zero/1.0/",
@@ -104,7 +104,7 @@ class TestPo(TestCase):
         )
 
     def test_serialize(self):
-        res = po_parse(res_path)
+        res = gettext_parse(res_path)
         exp = r"""# Test translation file.
 # Any copyright is dedicated to the Public Domain.
 # http://creativecommons.org/publicdomain/zero/1.0/
@@ -149,7 +149,7 @@ msgid ""
 "separator"
 msgstr ""
 """
-        assert "".join(po_serialize(res)) == exp
+        assert "".join(gettext_serialize(res)) == exp
 
         # Remove catchall key label
         res.sections[0].entries[1].value.variants = {
@@ -158,12 +158,12 @@ msgstr ""
             ("2",): ["%d prevedeni sporočili"],
             (CatchallKey(),): ["%d prevedena sporočila"],
         }
-        assert "".join(po_serialize(res)) == exp
+        assert "".join(gettext_serialize(res)) == exp
 
     def test_trim_comments(self):
-        res = po_parse(res_path)
+        res = gettext_parse(res_path)
         assert (
-            "".join(po_serialize(res, trim_comments=True))
+            "".join(gettext_serialize(res, trim_comments=True))
             == r"""#
 msgid ""
 msgstr ""
@@ -203,11 +203,11 @@ msgstr ""
         )
 
     def test_obsolete(self):
-        res = po_parse(res_path)
+        res = gettext_parse(res_path)
         res.sections[0].entries[0].meta.append(Metadata("obsolete", "true"))
         res.sections[0].entries[3].meta = []
         assert (
-            "".join(po_serialize(res))
+            "".join(gettext_serialize(res))
             == r"""# Test translation file.
 # Any copyright is dedicated to the Public Domain.
 # http://creativecommons.org/publicdomain/zero/1.0/
@@ -268,7 +268,7 @@ msgstr[1] "pl-few"
 msgstr[2] "pl-many"
 """
         plurals = ["one", "few", "many"]
-        res = po_parse(src, plurals=plurals)
+        res = gettext_parse(src, plurals=plurals)
         assert res.sections == [
             Section(
                 id=(),
@@ -289,7 +289,7 @@ msgstr[2] "pl-many"
                 ],
             ),
         ]
-        assert "".join(po_serialize(res, plurals=plurals)) == src
+        assert "".join(gettext_serialize(res, plurals=plurals)) == src
 
         # Remove catchall key label
         res.sections[0].entries[0].value.variants = {
@@ -297,4 +297,4 @@ msgstr[2] "pl-many"
             ("few",): ["pl-few"],
             (CatchallKey(),): ["pl-many"],
         }
-        assert "".join(po_serialize(res, plurals=plurals)) == src
+        assert "".join(gettext_serialize(res, plurals=plurals)) == src

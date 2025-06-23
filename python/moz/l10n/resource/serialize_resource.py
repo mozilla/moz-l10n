@@ -20,10 +20,10 @@ from typing import Callable, Sequence
 from ..formats import Format
 from ..formats.dtd.serialize import dtd_serialize
 from ..formats.fluent.serialize import fluent_serialize
+from ..formats.gettext.serialize import gettext_serialize
 from ..formats.inc.serialize import inc_serialize
 from ..formats.ini.serialize import ini_serialize
 from ..formats.plain_json.serialize import plain_json_serialize
-from ..formats.po.serialize import po_serialize
 from ..formats.properties.serialize import properties_serialize
 from ..formats.webext.serialize import webext_serialize
 from ..model import Message, Resource
@@ -63,16 +63,16 @@ def serialize_resource(
         return dtd_serialize(resource, trim_comments=trim_comments)
     elif format == Format.fluent:
         return fluent_serialize(resource, trim_comments=trim_comments)
+    elif format == Format.gettext:
+        return gettext_serialize(
+            resource, plurals=gettext_plurals, trim_comments=trim_comments
+        )
     elif format == Format.inc:
         return inc_serialize(resource, trim_comments=trim_comments)
     elif format == Format.ini:
         return ini_serialize(resource, trim_comments=trim_comments)
     elif format == Format.plain_json:
         return plain_json_serialize(resource, trim_comments=trim_comments)
-    elif format == Format.po:
-        return po_serialize(
-            resource, plurals=gettext_plurals, trim_comments=trim_comments
-        )
     elif format == Format.properties:
         return properties_serialize(resource, trim_comments=trim_comments)
     elif format == Format.webext:

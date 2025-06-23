@@ -19,10 +19,10 @@ from typing import Callable, Sequence, cast
 from ..formats import Format, UnsupportedFormat, detect_format
 from ..formats.dtd.parse import dtd_parse
 from ..formats.fluent.parse import fluent_parse
+from ..formats.gettext.parse import gettext_parse
 from ..formats.inc.parse import inc_parse
 from ..formats.ini.parse import ini_parse
 from ..formats.plain_json.parse import plain_json_parse
-from ..formats.po.parse import po_parse
 from ..formats.properties.parse import properties_parse
 from ..formats.webext.parse import webext_parse
 from ..model import Message, Resource
@@ -70,16 +70,16 @@ def parse_resource(
         return dtd_parse(source)
     elif format == Format.fluent:
         return fluent_parse(source)
+    elif format == Format.gettext:
+        # Workaround for https://github.com/izimobil/polib/issues/170
+        source_ = cast(str, input) if input_is_file else source
+        return gettext_parse(source_, plurals=gettext_plurals)
     elif format == Format.inc:
         return inc_parse(source)
     elif format == Format.ini:
         return ini_parse(source)
     elif format == Format.plain_json:
         return plain_json_parse(source)
-    elif format == Format.po:
-        # Workaround for https://github.com/izimobil/polib/issues/170
-        source_ = cast(str, input) if input_is_file else source
-        return po_parse(source_, plurals=gettext_plurals)
     elif format == Format.properties:
         return properties_parse(source)
     elif format == Format.webext:

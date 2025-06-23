@@ -23,7 +23,7 @@ from polib import POEntry, POFile
 from ...model import Entry, Message, PatternMessage, Resource, SelectMessage
 
 
-def po_serialize(
+def gettext_serialize(
     resource: Resource[str] | Resource[Message],
     *,
     plurals: Sequence[str] | None = None,
