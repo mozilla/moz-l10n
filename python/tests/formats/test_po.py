@@ -197,7 +197,7 @@ msgstr ""
 
     def test_obsolete(self):
         res = po_parse(res_path)
-        res.sections[0].entries[0].meta.append(Metadata("obsolete", True))
+        res.sections[0].entries[0].meta.append(Metadata("obsolete", "true"))
         res.sections[0].entries[3].meta = []
         assert (
             "".join(po_serialize(res))
@@ -246,3 +246,40 @@ msgid ""
 msgstr ""
 """
         )
+
+    def test_named_plurals(self):
+        src = r"""#
+msgid ""
+msgstr ""
+"Language: pl\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+
+msgid "src-one"
+msgid_plural "src-other"
+msgstr[0] "pl-one"
+msgstr[1] "pl-few"
+msgstr[2] "pl-many"
+"""
+        plurals = ["one", "few", "many"]
+        res = po_parse(src, plurals=plurals)
+        assert res.sections == [
+            Section(
+                id=(),
+                entries=[
+                    Entry(
+                        ("src-one",),
+                        meta=[Metadata("plural", "src-other")],
+                        value=SelectMessage(
+                            declarations={"n": Expression(VariableRef("n"), "number")},
+                            selectors=(VariableRef("n"),),
+                            variants={
+                                ("one",): ["pl-one"],
+                                ("few",): ["pl-few"],
+                                (CatchallKey("many"),): ["pl-many"],
+                            },
+                        ),
+                    ),
+                ],
+            ),
+        ]
+        assert "".join(po_serialize(res, plurals=plurals)) == src

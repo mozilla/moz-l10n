@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from typing import Sequence
+
 from polib import pofile
 
 from ...model import (
@@ -32,12 +34,18 @@ from ...model import (
 from .. import Format
 
 
-def po_parse(source: str | bytes) -> Resource[Message]:
+def po_parse(
+    source: str | bytes, *, plurals: Sequence[str] | None = None
+) -> Resource[Message]:
     """
     Parse a .po or .pot file into a message resource
 
     Message identifiers may have one or two parts,
     with the second one holding the optional message context.
+
+    If `plurals` is set,
+    its strings are used instead of index values for plural keys.
+    The last plural variant is always considered the catchall variant.
 
     Messages may include the following metadata:
     - `translator-comments`
@@ -76,7 +84,7 @@ def po_parse(source: str | bytes) -> Resource[Message]:
                 declarations={"n": sel},
                 selectors=(VariableRef("n"),),
                 variants={
-                    (str(idx) if idx < max_idx else CatchallKey(str(idx)),): (
+                    plural_key(idx, idx == max_idx, plurals): (
                         [pe.msgstr_plural[idx]] if idx in pe.msgstr_plural else []
                     )
                     for idx in range(max_idx + 1)
@@ -87,3 +95,11 @@ def po_parse(source: str | bytes) -> Resource[Message]:
         id = (pe.msgid, pe.msgctxt) if pe.msgctxt else (pe.msgid,)
         entries.append(Entry(id, value, meta=meta))
     return Resource(Format.po, [Section((), entries)], res_comment, res_meta)
+
+
+def plural_key(
+    idx: int, is_catchall: bool, plurals: Sequence[str] | None
+) -> tuple[str | CatchallKey]:
+    ps = plurals[idx] if plurals else str(idx)
+    key = CatchallKey(ps) if is_catchall else ps
+    return (key,)

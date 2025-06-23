@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Callable
+from typing import Callable, Sequence
 
 from ..formats import Format
 from ..formats.dtd.serialize import dtd_serialize
@@ -45,6 +45,7 @@ except ImportError:
 def serialize_resource(
     resource: Resource[str] | Resource[Message],
     format: Format | None = None,
+    gettext_plurals: Sequence[str] | None = None,
     trim_comments: bool = False,
 ) -> Iterator[str]:
     """
@@ -69,7 +70,9 @@ def serialize_resource(
     elif format == Format.plain_json:
         return plain_json_serialize(resource, trim_comments=trim_comments)
     elif format == Format.po:
-        return po_serialize(resource, trim_comments=trim_comments)
+        return po_serialize(
+            resource, plurals=gettext_plurals, trim_comments=trim_comments
+        )
     elif format == Format.properties:
         return properties_serialize(resource, trim_comments=trim_comments)
     elif format == Format.webext:

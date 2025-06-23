@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+from typing import Callable, Sequence, cast
 
 from ..formats import Format, UnsupportedFormat, detect_format
 from ..formats.dtd.parse import dtd_parse
@@ -43,6 +43,7 @@ def parse_resource(
     *,
     android_ascii_spaces: bool = False,
     android_literal_quotes: bool = False,
+    gettext_plurals: Sequence[str] | None = None,
 ) -> Resource[Message]:
     """
     Parse a Resource from its string representation.
@@ -77,7 +78,8 @@ def parse_resource(
         return plain_json_parse(source)
     elif format == Format.po:
         # Workaround for https://github.com/izimobil/polib/issues/170
-        return po_parse(cast(str, input) if input_is_file else source)
+        source_ = cast(str, input) if input_is_file else source
+        return po_parse(source_, plurals=gettext_plurals)
     elif format == Format.properties:
         return properties_parse(source)
     elif format == Format.webext:
