@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from re import match
+from typing import Sequence, cast
 
 from polib import POEntry, POFile
 
@@ -24,6 +25,8 @@ from ...model import Entry, Message, PatternMessage, Resource, SelectMessage
 
 def po_serialize(
     resource: Resource[str] | Resource[Message],
+    *,
+    plurals: Sequence[str] | None = None,
     trim_comments: bool = False,
     wrapwidth: int = 200,
 ) -> Iterator[str]:
@@ -34,6 +37,11 @@ def po_serialize(
     Message identifiers may have one or two parts,
     with the second one holding the optional message context.
     Comments and metadata on sections is not supported.
+
+    If `plurals` is set,
+    plural keys are mapped to their `plurals` index position.
+    Otherwise, plural key values must match gettext's plural index values,
+    or be the catchall key.
 
     Yields each entry and empty line separately.
     """
@@ -79,17 +87,24 @@ def po_serialize(
                         for keys, pattern in msg.variants.items()
                     )
                 ):
+                    catchall_name = plurals[-1] if plurals else str(nplurals - 1)
+                    variants = tuple(
+                        (
+                            (
+                                key
+                                if isinstance(key := keys[0], str)
+                                else key.value or catchall_name
+                            ),
+                            "".join(cast(Sequence[str], pattern)),
+                        )
+                        for keys, pattern in msg.variants.items()
+                    )
                     pe.msgstr_plural = {
                         idx: next(
                             (
-                                "".join(pattern)  # type: ignore[arg-type]
-                                for keys, pattern in msg.variants.items()
-                                if (
-                                    key
-                                    if isinstance(key := keys[0], str)
-                                    else key.value
-                                )
-                                == str(idx)
+                                pattern
+                                for key, pattern in variants
+                                if key == (plurals[idx] if plurals else str(idx))
                             ),
                             "",
                         )
