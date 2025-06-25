@@ -229,11 +229,7 @@ def fallback_name(message: SelectMessage) -> str:
     """
     i = 0
     key = root = "other"
-    while any(
-        key == (k.value if isinstance(k, CatchallKey) else k)
-        for keys in message.variants
-        for k in keys
-    ):
+    while any(key == str(k) for keys in message.variants for k in keys):
         i += 1
         key = f"{root}{i}"
     return key
@@ -242,7 +238,7 @@ def fallback_name(message: SelectMessage) -> str:
 def variant_key(
     key: str | CatchallKey, other: str
 ) -> ftl.NumberLiteral | ftl.Identifier:
-    kv = key.value or other if isinstance(key, CatchallKey) else key
+    kv = str(key) or other
     try:
         float(kv)
         return ftl.NumberLiteral(kv)
