@@ -19,11 +19,7 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.formats import Format
-from moz.l10n.formats.fluent import (
-    fluent_parse,
-    fluent_parse_message,
-    fluent_serialize,
-)
+from moz.l10n.formats.fluent import fluent_parse, fluent_parse_entry, fluent_serialize
 from moz.l10n.model import (
     CatchallKey,
     Comment,
@@ -103,11 +99,11 @@ class TestFluent(TestCase):
 
     def test_parse_messages(self):
         source = "msg = body\n"
-        entry = fluent_parse_message(source, with_linepos=False)
+        entry = fluent_parse_entry(source, with_linepos=False)
         assert entry == Entry(("msg",), PatternMessage(["body"]))
 
         source = "-term = body\n  .attr = value\n"
-        entry = fluent_parse_message(source)
+        entry = fluent_parse_entry(source)
         assert entry == Entry(
             ("-term",),
             PatternMessage(["body"]),
@@ -116,7 +112,7 @@ class TestFluent(TestCase):
         )
 
         with self.assertRaises(ValueError):
-            fluent_parse_message("# comment\n")
+            fluent_parse_entry("# comment\n")
 
     def test_resource(self):
         res = fluent_parse(

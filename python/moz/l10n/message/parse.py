@@ -53,7 +53,7 @@ def parse_message(
     To parse an `xliff` message with XCode customizations, enable `xliff_is_xcode`.
 
     Formatting `fluent` messages is not supported,
-    as their parsing may result in multiple `Entry` values.
+    as their parsing may result in multiple `Message` values.
     """
     # TODO post-py38: should be a match
     if format == Format.properties:
