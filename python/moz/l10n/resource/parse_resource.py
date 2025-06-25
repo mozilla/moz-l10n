@@ -44,6 +44,7 @@ def parse_resource(
     android_ascii_spaces: bool = False,
     android_literal_quotes: bool = False,
     gettext_plurals: Sequence[str] | None = None,
+    gettext_skip_obsolete: bool = False,
 ) -> Resource[Message]:
     """
     Parse a Resource from its string representation.
@@ -73,7 +74,9 @@ def parse_resource(
     elif format == Format.gettext:
         # Workaround for https://github.com/izimobil/polib/issues/170
         source_ = cast(str, input) if input_is_file else source
-        return gettext_parse(source_, plurals=gettext_plurals)
+        return gettext_parse(
+            source_, plurals=gettext_plurals, skip_obsolete=gettext_skip_obsolete
+        )
     elif format == Format.inc:
         return inc_parse(source)
     elif format == Format.ini:
