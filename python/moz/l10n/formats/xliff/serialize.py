@@ -20,7 +20,6 @@ from typing import cast
 from lxml import etree
 
 from ...model import (
-    CatchallKey,
     Comment,
     Entry,
     Expression,
@@ -238,9 +237,7 @@ def add_xliff_stringsdict_plural(
     for keys, pattern in msg.variants.items():
         if len(keys) != 1:
             raise ValueError(f"Unsupported variants keys for {id}: {keys}")
-        key = keys[0]
-        if isinstance(key, CatchallKey):
-            key = key.value or "other"
+        key = str(keys[0]) or "other"
         text = ""
         for part in pattern:
             if isinstance(part, str):

@@ -35,7 +35,10 @@ from .. import Format
 
 
 def gettext_parse(
-    source: str | bytes, *, plurals: Sequence[str] | None = None
+    source: str | bytes,
+    *,
+    plurals: Sequence[str] | None = None,
+    skip_obsolete: bool = False,
 ) -> Resource[Message]:
     """
     Parse a .po or .pot file into a message resource
@@ -46,6 +49,9 @@ def gettext_parse(
     If `plurals` is set,
     its strings are used instead of index values for plural keys.
     The last plural variant is always considered the catchall variant.
+
+    If `skip_obsolete` is set,
+    obsolete `~` commented entries will be left out of the output.
 
     Messages may include the following metadata:
     - `translator-comments`
@@ -70,6 +76,8 @@ def gettext_parse(
         for file, line in pe.occurrences:
             meta.append(Metadata("reference", f"{file}:{line}"))
         if pe.obsolete:
+            if skip_obsolete:
+                continue
             meta.append(Metadata("obsolete", "true"))
         for flag in pe.flags:
             meta.append(Metadata("flag", flag))

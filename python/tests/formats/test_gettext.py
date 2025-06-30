@@ -206,23 +206,7 @@ msgstr ""
         res = gettext_parse(res_path)
         res.sections[0].entries[0].meta.append(Metadata("obsolete", "true"))
         res.sections[0].entries[3].meta = []
-        assert (
-            "".join(gettext_serialize(res))
-            == r"""# Test translation file.
-# Any copyright is dedicated to the Public Domain.
-# http://creativecommons.org/publicdomain/zero/1.0/
-#
-msgid ""
-msgstr ""
-"Project-Id-Version: foo\n"
-"POT-Creation-Date: 2008-02-06 16:25-0500\n"
-"PO-Revision-Date: 2008-02-09 15:23+0200\n"
-"Last-Translator: Foo Bar <foobar@example.org>\n"
-"Language-Team: Fake <fake@example.org>\n"
-"Language: sl\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
+        assert r"""
 "Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n%100==4 ? 3 : 0);\n"
 
 #~ msgid "original string"
@@ -246,13 +230,16 @@ msgstr "translated string"
 
 msgid "other string"
 msgstr "translated string"
+""" in "".join(gettext_serialize(res))
 
-msgid ""
-"line "
-"separator"
-msgstr ""
-"""
-        )
+        res = gettext_parse(res_path, skip_obsolete=True)
+        assert [entry.id for entry in res.sections[0].entries] == [
+            ("original string",),
+            ("%d translated message",),
+            ("original string", "context"),
+            ("other string",),
+            ("line\u2028separator",),
+        ]
 
     def test_named_plurals(self):
         src = r"""#

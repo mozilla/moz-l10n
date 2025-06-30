@@ -97,6 +97,9 @@ class CatchallKey:
         """
         return 1
 
+    def __str__(self) -> str:
+        return self.value or ""
+
 
 @dataclass
 class SelectMessage:

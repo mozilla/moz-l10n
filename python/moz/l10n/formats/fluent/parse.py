@@ -131,7 +131,7 @@ def fluent_parse(
     return resource
 
 
-def fluent_parse_message(
+def fluent_parse_entry(
     source: str | ftl.Message | ftl.Term, *, with_linepos: bool = True
 ) -> Entry[Message]:
     """
