@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Dict, Generic, List, Literal, Tuple, TypeVar, Union
 
@@ -367,7 +367,7 @@ class Resource(Generic[V_co]):
     Metadata attached to the whole resource.
     """
 
-    def all_entries(self) -> Iterable[Entry[V_co]]:
+    def all_entries(self) -> Iterator[Entry[V_co]]:
         """
         All entries in all resource sections.
         """

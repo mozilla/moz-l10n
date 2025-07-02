@@ -261,6 +261,7 @@ class TestL10nConfigPaths(TestCase):
             build_file_tree(root, {"l10n.toml": cfg_toml})
             paths = L10nConfigPaths(join(root, "l10n.toml"))
         assert paths.base == join(root, "foundation", "translations", "networkapi")
+        assert paths.locales
         assert paths.locales == ["de", "es", "fr", "fy-NL", "nl", "pl", "pt-BR", "sw"]
         assert paths.all_locales == set(paths.locales)
         path_locales = ["de", "es", "fr", "pt-BR"]
@@ -283,6 +284,7 @@ class TestL10nConfigPaths(TestCase):
         )
         tgt_path, tgt_locales = paths.target(res_source)
         assert tgt_path == join(paths.base, normpath(res_target))
+        assert tgt_path
         assert tgt_locales == set(path_locales)
         assert paths.format_target_path(tgt_path, "de") == join(
             paths.base,
