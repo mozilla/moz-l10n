@@ -283,8 +283,8 @@ class TestL10nConfigPaths(TestCase):
             "wagtailpages/templates/about/locale/{locale}/LC_MESSAGES/django.po"
         )
         tgt_path, tgt_locales = paths.target(res_source)
-        assert tgt_path == join(paths.base, normpath(res_target))
         assert tgt_path
+        assert tgt_path == join(paths.base, normpath(res_target))
         assert tgt_locales == set(path_locales)
         assert paths.format_target_path(tgt_path, "de") == join(
             paths.base,
