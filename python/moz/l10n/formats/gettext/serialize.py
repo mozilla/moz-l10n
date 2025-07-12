@@ -114,8 +114,8 @@ def gettext_serialize(
                     raise ValueError(
                         f"Value for {entry.id} is not supported: {entry.value}"
                     )
-                if not trim_comments:
-                    pe.tcomment = entry.comment.rstrip()
+                if not trim_comments and entry.comment:
+                    pe.comment = entry.comment.lstrip("\n").rstrip()
                 for m in entry.meta:
                     if m.key == "obsolete":
                         pe.obsolete = m.value != "false"
@@ -125,8 +125,6 @@ def gettext_serialize(
                         if m.key == "translator-comments":
                             cs = (m.value).lstrip("\n").rstrip()
                             pe.tcomment = f"{pe.tcomment}\n{cs}" if pe.tcomment else cs
-                        elif m.key == "extracted-comments":
-                            pe.comment = (m.value).lstrip("\n").rstrip()
                         elif m.key == "reference":
                             pos = m.value.split(":", 1)
                             pe.occurrences.append(
