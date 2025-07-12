@@ -201,7 +201,7 @@ class TestXliff1(TestCase):
                         Entry(
                             id=("introductionHeader",),
                             value=PatternMessage(["\n  Hei i18n!\n"]),
-                            comment="An introduction header for this sample",
+                            comment="description: An introduction header for this sample\n\nmeaning: User welcome",
                             meta=[
                                 Metadata("@datatype", "html"),
                                 Metadata("source", "\n  Hello i18n!\n"),
@@ -221,6 +221,9 @@ class TestXliff1(TestCase):
                                 Metadata("context-group/context[2]", "3"),
                                 Metadata("note/@priority", "1"),
                                 Metadata("note/@from", "description"),
+                                Metadata(
+                                    "note", "An introduction header for this sample"
+                                ),
                                 Metadata("note[2]/@priority", "1"),
                                 Metadata("note[2]/@from", "meaning"),
                                 Metadata("note[2]", "User welcome"),
@@ -342,6 +345,10 @@ class TestXliff1(TestCase):
                             meta=[
                                 Metadata("@resname", "hello"),
                                 Metadata("source", "Hello, world!"),
+                                Metadata(
+                                    "note",
+                                    "This is the message that the application displays to the user.",
+                                ),
                             ],
                         ),
                         Entry(
@@ -593,6 +600,9 @@ class TestXliff1(TestCase):
                                     "Delete key file?\n Make sure you have a backup.",
                                 ),
                                 Metadata("target/@state", "translated"),
+                                Metadata(
+                                    "note", "Message to confirm deletion of a key file."
+                                ),
                             ],
                         ),
                         Entry(
@@ -634,6 +644,12 @@ class TestXliff1(TestCase):
                             meta=[
                                 Metadata(key="@xml:space", value="preserve"),
                                 Metadata(key="source", value="%1$@/%2$@"),
+                                Metadata(
+                                    "note",
+                                    "The description text in the Download progress "
+                                    "toast for showing the downloaded file size "
+                                    "(1$) out of the total expected file size (2$).",
+                                ),
                             ],
                         ),
                     ],
