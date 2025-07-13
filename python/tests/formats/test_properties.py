@@ -151,6 +151,12 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
 """
         )
 
+    def test_empty_message(self):
+        msg = properties_parse_message("")
+        assert msg == PatternMessage([])
+        with self.assertRaises(ValueError):
+            properties_parse_message(" ")
+
     def test_message_backslashes(self):
         msg = properties_parse_message("This is the first \\\nof two lines")
         assert msg == PatternMessage(["This is the first of two lines"])
