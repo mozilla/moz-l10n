@@ -35,6 +35,7 @@ from moz.l10n.model import (
 
 try:
     from moz.l10n.formats.xliff import (
+        xliff_is_xcode,
         xliff_parse,
         xliff_parse_message,
         xliff_serialize,
@@ -81,6 +82,7 @@ class TestXliff1(TestCase):
                 )
             ],
         )
+        assert not xliff_is_xcode(res)
 
     def test_serialize_hello(self):
         res = xliff_parse(hello)
@@ -261,6 +263,7 @@ class TestXliff1(TestCase):
                 )
             ],
         )
+        assert not xliff_is_xcode(res)
 
     def test_serialize_angular(self):
         res = xliff_parse(angular)
@@ -447,6 +450,7 @@ class TestXliff1(TestCase):
                 ),
             ],
         )
+        assert not xliff_is_xcode(res)
 
     def test_serialize_icu_docs(self):
         res = xliff_parse(icu_docs)
@@ -559,6 +563,7 @@ class TestXliff1(TestCase):
 
     def test_parse_xcode(self):
         res = xliff_parse(xcode)
+        assert xliff_is_xcode(res)
         assert res == Resource(
             Format.xliff,
             meta=[
