@@ -114,6 +114,33 @@ class TestFluent(TestCase):
         with self.assertRaises(ValueError):
             fluent_parse_entry("# comment\n")
 
+    def test_empty_patterns(self):
+        entries: list[Entry[PatternMessage] | Comment] = [
+            Entry(("a",), PatternMessage([])),
+            Entry(("b",), PatternMessage([""])),
+            Entry(("c",), PatternMessage([]), {"x": PatternMessage([])}),
+            Entry(("-d",), PatternMessage([]), {"x": PatternMessage([])}),
+            Entry(("e",), PatternMessage([" "])),
+            Entry(("f",), PatternMessage(["\n \t"])),
+            Entry(("g",), PatternMessage([" x\n"])),
+            Entry(("h",), PatternMessage(["x", " y ", "z"])),
+        ]
+        res = Resource(Format.fluent, [Section((), entries)])
+        assert "".join(fluent_serialize(res)) == dedent(
+            """\
+            a = { "" }
+            b = { "" }
+            c =
+                .x = { "" }
+            -d = { "" }
+                .x = { "" }
+            e = { " " }
+            f = { "\\u000A \\u0009" }
+            g = { " " }x{ "\\u000A" }
+            h = x y z
+            """
+        )
+
     def test_resource(self):
         res = fluent_parse(
             dedent(
