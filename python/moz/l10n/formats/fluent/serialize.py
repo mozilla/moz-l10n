@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from re import fullmatch
+from re import compile, fullmatch
 from typing import Any, Iterator
 
 from fluent.syntax import FluentSerializer
@@ -35,6 +35,9 @@ from ...model import (
     SelectMessage,
     VariableRef,
 )
+
+ws_at_start = compile(r"\s+")
+ws_at_end = compile(r"\s+$")
 
 
 def fluent_serialize(
@@ -144,9 +147,10 @@ def fluent_astify_entry(
     if len(entry.id) != 1:
         raise ValueError(f"Unsupported message id: {entry.id}")
     id = entry.id[0]
-    value = fluent_astify_message(entry.value)
+    is_term = id.startswith("-")
+    value = fluent_astify_message(entry.value, esc_empty=is_term)
     attributes = list(
-        ftl.Attribute(ftl.Identifier(key), fluent_astify_message(val))
+        ftl.Attribute(ftl.Identifier(key), fluent_astify_message(val, esc_empty=True))
         for key, val in entry.properties.items()
     )
     if comment_str is None:
@@ -156,27 +160,41 @@ def fluent_astify_entry(
     else:
         c_str = comment_str(entry)
     comment = ftl.Comment(c_str) if c_str else None
-    if id.startswith("-"):
+    if is_term:
         return ftl.Term(ftl.Identifier(id[1:]), value, attributes, comment)
     else:
-        value_ = None if attributes and not value.elements else value
+        if pattern_is_empty(value):
+            value_ = None if attributes else valid_empty_pattern(value)
+        else:
+            value_ = value
         return ftl.Message(ftl.Identifier(id), value_, attributes, comment)
 
 
-def fluent_astify_message(message: str | Message) -> ftl.Pattern:
+def fluent_astify_message(
+    message: str | Message, *, esc_empty: bool = False
+) -> ftl.Pattern:
     """
     Transform a message into a corresponding Fluent AST pattern.
 
     Function names are upper-cased, and expressions using the `message` function
     are mapped to message and term references.
+
+    If `esc_empty` is True, a Pattern that would serialize as an empty string
+    will instead be escaped as a StringLiteral.
     """
 
-    if isinstance(message, str):
-        return ftl.Pattern([ftl.TextElement(message)])
-    if not isinstance(message, (PatternMessage, SelectMessage)):
+    if isinstance(message, (str, PatternMessage)):
+        pattern = (
+            ftl.Pattern([ftl.TextElement(message)])
+            if isinstance(message, str)
+            else flat_pattern(message.declarations, message.pattern)
+        )
+        if esc_empty and pattern_is_empty(pattern):
+            return valid_empty_pattern(pattern)
+        return pattern
+
+    if not isinstance(message, SelectMessage):
         raise ValueError(f"Unsupported message: {message}")
-    if isinstance(message, PatternMessage):
-        return flat_pattern(message.declarations, message.pattern)
 
     # It gets a bit complicated for SelectMessage. We'll be modifying this list,
     # building select expressions for each selector starting from the last one
@@ -250,14 +268,48 @@ def variant_key(
 
 def flat_pattern(decl: dict[str, Expression], pattern: Pattern) -> ftl.Pattern:
     elements: list[ftl.TextElement | ftl.Placeable] = []
-    for el in pattern:
+    last = len(pattern) - 1
+    for idx, el in enumerate(pattern):
         if isinstance(el, str):
+            if idx == 0:
+                ws = ws_at_start.match(el)
+                if ws is not None:
+                    ws_end = ws.end()
+                    elements.append(ftl.Placeable(value(decl, el[:ws_end])))
+                    if ws_end == len(el):
+                        continue
+                    el = el[ws_end:]
+            if idx == last:
+                ws = ws_at_end.search(el)
+                if ws is not None:
+                    ws_start = ws.start()
+                    if ws_start > 0:
+                        elements.append(ftl.TextElement(el[:ws_start]))
+                    elements.append(ftl.Placeable(value(decl, el[ws_start:])))
+                    continue
             elements.append(ftl.TextElement(el))
         elif isinstance(el, Expression):
             elements.append(ftl.Placeable(expression(decl, el)))
         else:
             raise ValueError(f"Conversion to Fluent not supported: {el}")
     return ftl.Pattern(elements)
+
+
+def pattern_is_empty(pattern: ftl.Pattern) -> bool:
+    return all(
+        isinstance(el, ftl.TextElement) and (el.value == "" or el.value.isspace())
+        for el in pattern.elements
+    )
+
+
+def valid_empty_pattern(pattern: ftl.Pattern) -> ftl.Pattern:
+    """
+    Fluent patterns are not valid if they serialize to an empty string.
+    """
+    text = "".join(
+        el.value for el in pattern.elements if isinstance(el, ftl.TextElement)
+    )
+    return ftl.Pattern([ftl.Placeable(value({}, text))])
 
 
 def expression(
