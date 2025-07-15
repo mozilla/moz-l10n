@@ -71,8 +71,6 @@ def gettext_parse(
         meta: list[Metadata] = []
         if pe.tcomment:
             meta.append(Metadata("translator-comments", pe.tcomment))
-        if pe.comment:
-            meta.append(Metadata("extracted-comments", pe.comment))
         for file, line in pe.occurrences:
             meta.append(Metadata("reference", f"{file}:{line}"))
         if pe.obsolete:
@@ -101,7 +99,7 @@ def gettext_parse(
         else:
             value = PatternMessage([pe.msgstr])
         id = (pe.msgid, pe.msgctxt) if pe.msgctxt else (pe.msgid,)
-        entries.append(Entry(id, value, meta=meta))
+        entries.append(Entry(id, value, comment=pe.comment, meta=meta))
     return Resource(Format.gettext, [Section((), entries)], res_comment, res_meta)
 
 

@@ -120,7 +120,7 @@ def android_serialize(
                         if entry.comment and not trim_comments:
                             add_comment(root, entry.comment, False)
                         el = etree.SubElement(root, "string", attrib=attrib)
-                        set_pattern_message(el, entry.value)
+                        set_pattern_message(el, entry.value, allow_cdata=True)
                 else:
                     # <string-array>
                     if string_array is None or name != string_array.get("name"):
@@ -163,7 +163,7 @@ def android_serialize(
     yield "\n"
 
 
-def android_serialize_message(msg: Message, *, allow_cdata: bool = False) -> str:
+def android_serialize_message(msg: Message | str, *, allow_cdata: bool = False) -> str:
     """
     Serialize a message as an Android strings XML string.
 
@@ -172,19 +172,17 @@ def android_serialize_message(msg: Message, *, allow_cdata: bool = False) -> str
     This is `False` by default.
     """
 
-    if not isinstance(msg, PatternMessage) or msg.declarations:
-        raise ValueError(f"Unsupported message: {msg}")
     target = etree.Element("string")
-    set_pattern(target, msg.pattern, allow_cdata=allow_cdata)
-    str = etree.tostring(
+    set_pattern_message(target, msg, allow_cdata=allow_cdata)
+    string = etree.tostring(
         target, encoding="unicode", method="html", pretty_print=True
     ).strip()
-    if str == "<string/>":
+    if string == "<string/>":
         return ""
-    if not str.startswith("<string>"):
-        raise ValueError(f"Invalid serialization: {str}")
+    if not string.startswith("<string>"):
+        raise ValueError(f"Invalid serialization: {string}")
     # trim <string>...</string> wrapper
-    return str[8:-9]
+    return string[8:-9]
 
 
 def get_attrib(name: str, meta: list[Metadata]) -> dict[str, str]:
@@ -255,7 +253,7 @@ def set_string_array_item(
     if isinstance(entry.value, SelectMessage):
         raise ValueError(f"Unsupported message type for {entry.id}: {entry.value}")
     item = etree.SubElement(parent, "item")
-    set_pattern_message(item, entry.value)
+    set_pattern_message(item, entry.value, allow_cdata=True)
 
 
 def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
@@ -279,16 +277,18 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
 tag_like = compile(r"<.+>")
 
 
-def set_pattern_message(el: etree._Element, msg: PatternMessage | str) -> None:
+def set_pattern_message(
+    el: etree._Element, msg: Message | str, allow_cdata: bool
+) -> None:
     if isinstance(msg, str):
         el.text = escape_part(msg)
         escape_pattern(el)
-        if tag_like.search(el.text) is not None:
+        if allow_cdata and tag_like.search(el.text) is not None:
             # The manual wrapper is a workaround for
             # https://bugs.launchpad.net/lxml/+bug/2111509
             el.text = etree.CDATA(f"<![CDATA[{el.text}]]>")  # type: ignore[assignment]
     elif isinstance(msg, PatternMessage) and not msg.declarations:
-        set_pattern(el, msg.pattern)
+        set_pattern(el, msg.pattern, allow_cdata=allow_cdata)
     else:
         raise ValueError(f"Unsupported message: {msg}")
 

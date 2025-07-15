@@ -41,7 +41,7 @@ def parse_trans_unit(unit: etree._Element, is_xcode: bool) -> Entry[Message]:
         raise ValueError(f"Unexpected text in <trans-unit>: {unit.text}")
 
     target = None
-    note = None
+    notes: list[str] = []
     seen: dict[str, int] = defaultdict(int)
     for el in unit:
         if isinstance(el, etree._Comment):
@@ -53,29 +53,22 @@ def parse_trans_unit(unit: etree._Element, is_xcode: bool) -> Entry[Message]:
                     raise ValueError(f"Duplicate <target> in <trans-unit> {id}: {unit}")
                 target = el
                 meta += attrib_as_metadata(el, "target")
-            elif name == "note" and note is None and el.text:
-                note = el
-                note_attrib = attrib_as_metadata(el, "note")
-                if note_attrib:
-                    meta += note_attrib
-                elif el != unit[-1]:
-                    # If there are elements after this <note>,
-                    # add a marker for its relative position.
-                    meta.append(Metadata("note", ""))
-                seen[name] += 1
             else:
                 idx = seen[name] + 1
                 base = f"{name}[{idx}]" if idx > 1 else name
                 meta += element_as_metadata(el, base, True)
                 seen[name] = idx
+                if name == "note" and el.text:
+                    author = el.attrib.get("from", "")
+                    note = el.text.strip()
+                    notes.append(f"{author}: {note}" if author else note)
         if el.tail and not el.tail.isspace():
             raise ValueError(f"Unexpected text in <trans-unit>: {el.tail}")
 
-    comment = "" if note is None else note.text or ""
     msg = PatternMessage(
         [] if target is None else list(parse_pattern(target, is_xcode))
     )
-    return Entry((id,), msg, comment=comment, meta=meta)
+    return Entry((id,), msg, comment="\n\n".join(notes), meta=meta)
 
 
 def parse_pattern(

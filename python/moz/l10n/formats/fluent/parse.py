@@ -18,8 +18,9 @@ from itertools import product
 from re import finditer
 from typing import Tuple, cast
 
-from fluent.syntax import FluentParser
+from fluent.syntax import FluentParser, ParseError
 from fluent.syntax import ast as ftl
+from fluent.syntax.stream import FluentParserStream
 
 from ...model import (
     CatchallKey,
@@ -154,6 +155,24 @@ def fluent_parse_entry(
     if not isinstance(ftl_entry, (ftl.Message, ftl.Term)):
         raise ValueError("Source is not a Fluent entry")
     return fluent_entry(ftl_entry, lpm)
+
+
+def fluent_parse_message(source: str) -> Message:
+    """
+    Parse a Fluent pattern into a Message.
+
+    Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the result.
+
+    Leading and trailing whitespace is stripped.
+    """
+    source = source.lstrip().replace("\n", "\n ")
+    parser = FluentParser(with_spans=False)
+    ps = FluentParserStream(source)
+    try:
+        ftl_pattern = parser.get_pattern(ps, is_block=False)
+    except ParseError as err:
+        raise ValueError(err.message or "Fluent parser error") from err
+    return message(ftl_pattern)
 
 
 def fluent_entry(

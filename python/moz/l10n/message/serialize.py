@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import Callable
 
 from ..formats import Format, UnsupportedFormat
+from ..formats.fluent.serialize import fluent_serialize_message
 from ..formats.mf2.serialize import mf2_serialize_message
 from ..formats.properties.serialize import properties_serialize_message
 from ..formats.webext.serialize import webext_serialize_message
@@ -35,12 +36,10 @@ def serialize_message(format: Format | None, msg: Message) -> str:
     """
     Serialize a `Message` to its string representation.
 
-    Custom serialisers are used for `android`, `mf2`, `properties`, `webext`, and `xliff` formats.
+    Custom serialisers are used for `android`, `fluent`, `mf2`, `properties`, `webext`, and `xliff` formats.
     Many formats rely on non-string message parts including an appropriate `source` attribute.
 
-    SelectMessage serialization is only supported for `mf2`.
-
-    Serializing `fluent` messages is not supported.
+    SelectMessage serialization is only supported for `fluent` and `mf2`.
     """
     # TODO post-py38: should be a match
     if format == Format.properties:
@@ -59,7 +58,7 @@ def serialize_message(format: Format | None, msg: Message) -> str:
     elif format == Format.mf2:
         return mf2_serialize_message(msg)
     elif format == Format.fluent:
-        raise UnsupportedFormat("Serializing Fluent message patterns is not supported")
+        return fluent_serialize_message(msg)
     elif not isinstance(msg, PatternMessage) or msg.declarations:
         raise ValueError(f"Unsupported message: {msg}")
     else:

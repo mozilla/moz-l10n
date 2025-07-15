@@ -133,6 +133,8 @@ def properties_parse_message(
     If `printf_placeholders` is enabled,
     printf specifiers are parsed as variables.
     """
+    if not source:
+        return PatternMessage([])
     parser = PropertiesParser(source)
     parser.at_value = True
     (kind, _, value), *rest = parser

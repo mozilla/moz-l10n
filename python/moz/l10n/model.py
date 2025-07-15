@@ -83,6 +83,12 @@ class PatternMessage:
     pattern: Pattern
     declarations: dict[str, Expression] = field(default_factory=dict)
 
+    def is_empty(self) -> bool:
+        """
+        Is the message's pattern empty, or consists only of empty strings?
+        """
+        return all(el == "" for el in self.pattern)
+
 
 @dataclass
 class CatchallKey:
@@ -110,6 +116,14 @@ class SelectMessage:
     declarations: dict[str, Expression]
     selectors: tuple[VariableRef, ...]
     variants: Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
+
+    def is_empty(self) -> bool:
+        """
+        Are all the message's patterns empty, or consist only of empty strings?
+        """
+        return all(
+            all(el == "" for el in pattern) for pattern in self.variants.values()
+        )
 
     def selector_expressions(self) -> tuple[Expression, ...]:
         return tuple(self.declarations[var.name] for var in self.selectors)

@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import Callable
 
 from ..formats import Format, UnsupportedFormat
+from ..formats.fluent.parse import fluent_parse_message
 from ..formats.mf2.message_parser import mf2_parse_message
 from ..formats.properties.parse import properties_parse_message
 from ..formats.webext.parse import webext_parse_message
@@ -44,16 +45,13 @@ def parse_message(
     """
     Parse a `Message` from its string representation.
 
-    Custom parsers are used for `android`, `mf2`, `properties`, `webext`, and `xliff` formats.
+    Custom parsers are used for `android`, `fluent`, `mf2`, `properties`, `webext`, and `xliff` formats.
     `properties` and other formats not listed may include printf specifiers if `printf_placeholders` is enabled.
 
     Parsing a `webext` message that contains named placeholders requires
     providing the message's `webext_placeholders` dict.
 
     To parse an `xliff` message with XCode customizations, enable `xliff_is_xcode`.
-
-    Formatting `fluent` messages is not supported,
-    as their parsing may result in multiple `Message` values.
     """
     # TODO post-py38: should be a match
     if format == Format.properties:
@@ -71,7 +69,7 @@ def parse_message(
     elif format == Format.mf2:
         return mf2_parse_message(source)
     elif format == Format.fluent:
-        raise UnsupportedFormat("Parsing Fluent message patterns is not supported")
+        return fluent_parse_message(source)
     elif printf_placeholders:
         return PatternMessage(list(parse_printf_pattern(source)))
     else:

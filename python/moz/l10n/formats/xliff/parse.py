@@ -51,9 +51,10 @@ def xliff_parse(source: str | bytes) -> Resource[Message]:
     with the first identifier part parsed as the <file> "original" attribute,
     and later parts as <group> "id" attributes.
 
-    An entry's value represents the <target> of a <trans-unit>,
-    and its comment the first <note>.
+    An entry's value represents the <target> of a <trans-unit>.
     Other elements and attributes are represented by metadata.
+    Comments are parsed from the <note> elements,
+    as well as being represented by metadata.
 
     Metadata keys encode XML element data, using XPath expressions as keys.
     """

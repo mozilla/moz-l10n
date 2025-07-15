@@ -17,7 +17,45 @@ from __future__ import annotations
 from unittest import TestCase
 
 from moz.l10n.formats import Format
-from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
+from moz.l10n.model import (
+    CatchallKey,
+    Comment,
+    Entry,
+    Expression,
+    PatternMessage,
+    Resource,
+    Section,
+    SelectMessage,
+)
+
+
+class TestMessage(TestCase):
+    def test_is_empty(self):
+        assert PatternMessage([]).is_empty()
+        assert PatternMessage([""]).is_empty()
+        assert PatternMessage(["", ""]).is_empty()
+        assert not PatternMessage(["x"]).is_empty()
+        assert not PatternMessage(["", "x"]).is_empty()
+        assert not PatternMessage([Expression("")]).is_empty()
+
+        assert SelectMessage(
+            declarations={},
+            selectors=(),
+            variants={
+                ("x",): [],
+                ("y",): [""],
+                (CatchallKey(),): ["", ""],
+            },
+        ).is_empty()
+        assert not SelectMessage(
+            declarations={},
+            selectors=(),
+            variants={
+                ("x",): [],
+                ("y",): [""],
+                (CatchallKey(),): ["", Expression("")],
+            },
+        ).is_empty()
 
 
 class TestResource(TestCase):

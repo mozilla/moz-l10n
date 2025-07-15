@@ -19,7 +19,13 @@ from textwrap import dedent
 from unittest import TestCase
 
 from moz.l10n.formats import Format
-from moz.l10n.formats.fluent import fluent_parse, fluent_parse_entry, fluent_serialize
+from moz.l10n.formats.fluent import (
+    fluent_parse,
+    fluent_parse_entry,
+    fluent_parse_message,
+    fluent_serialize,
+    fluent_serialize_message,
+)
 from moz.l10n.model import (
     CatchallKey,
     Comment,
@@ -97,7 +103,7 @@ class TestFluent(TestCase):
         assert res == Resource(Format.fluent, [Section((), entries)])
         assert "".join(fluent_serialize(res)) == src
 
-    def test_parse_messages(self):
+    def test_parse_entries(self):
         source = "msg = body\n"
         entry = fluent_parse_entry(source, with_linepos=False)
         assert entry == Entry(("msg",), PatternMessage(["body"]))
@@ -113,6 +119,50 @@ class TestFluent(TestCase):
 
         with self.assertRaises(ValueError):
             fluent_parse_entry("# comment\n")
+
+    def test_messages(self):
+        msg = fluent_parse_message("body")
+        assert msg == PatternMessage(["body"])
+        assert fluent_serialize_message(msg) == "body"
+
+        msg = fluent_parse_message("hello { $x }")
+        assert msg == PatternMessage(["hello ", Expression(VariableRef("x"))])
+        assert fluent_serialize_message(msg) == "hello { $x }"
+
+        msg = fluent_parse_message("1\n  2  \n3  \n")
+        assert msg == PatternMessage(["1\n  2  \n3"])
+        assert fluent_serialize_message(msg) == "1\n  2  \n3"
+
+        msg = fluent_parse_message("# comment")
+        assert msg == PatternMessage(["# comment"])
+        assert fluent_serialize_message(msg) == "# comment"
+
+        msg = fluent_parse_message(
+            """
+            { $num ->
+                [one] One {$num}
+               *[other] Other
+            }
+            """
+        )
+        assert msg == SelectMessage(
+            declarations={"num_1": Expression(VariableRef("num"), function="number")},
+            selectors=(VariableRef("num_1"),),
+            variants={
+                ("one",): ["One ", Expression(VariableRef("num"))],
+                (CatchallKey("other"),): ["Other"],
+            },
+        )
+        assert fluent_serialize_message(msg) == dedent(
+            """\
+            { $num ->
+                [one] One { $num }
+               *[other] Other
+            }"""
+        )
+
+        with self.assertRaises(ValueError):
+            fluent_parse_message("fail {")
 
     def test_empty_patterns(self):
         entries: list[Entry[PatternMessage] | Comment] = [
