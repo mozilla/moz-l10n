@@ -75,10 +75,27 @@ class TestMessage(TestCase):
         assert res == src
 
     def test_fluent(self):
+        msg = parse_message(Format.fluent, "hello { $world }")
+        assert msg == PatternMessage(["hello ", Expression(VariableRef("world"))])
+        res = serialize_message(Format.fluent, msg)
+        assert res == "hello { $world }"
+
+
+class TestUnsupportedFormat(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            from moz.l10n.formats.xliff import xliff_parse_message  # noqa: F401
+
+            raise SkipTest("Requires not having [xml] extra")
+        except ImportError:
+            pass
+
+    def test_exception(self):
         with self.assertRaises(UnsupportedFormat):
-            parse_message(Format.fluent, "key = hello\n")
+            parse_message(Format.xliff, "")
         with self.assertRaises(UnsupportedFormat):
-            serialize_message(Format.fluent, PatternMessage([]))
+            serialize_message(Format.xliff, PatternMessage([]))
 
 
 class TestXliffMessage(TestCase):

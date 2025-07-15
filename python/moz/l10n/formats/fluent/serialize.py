@@ -20,6 +20,7 @@ from typing import Any, Iterator
 
 from fluent.syntax import FluentSerializer
 from fluent.syntax import ast as ftl
+from fluent.syntax.serializer import serialize_expression
 
 from ...model import (
     CatchallKey,
@@ -239,6 +240,19 @@ def fluent_astify_message(
     if len(variants) != 1:
         raise ValueError(f"Error resolving select message variants (n={len(variants)})")
     return variants[0][1]
+
+
+def fluent_serialize_message(
+    message: str | Message | ftl.Pattern, *, esc_empty: bool = False
+) -> str:
+    if isinstance(message, (str, PatternMessage, SelectMessage)):
+        pattern = fluent_astify_message(message, esc_empty=esc_empty)
+    else:
+        pattern = message
+    return "".join(
+        el.value if isinstance(el, ftl.TextElement) else serialize_expression(el)
+        for el in pattern.elements
+    )
 
 
 def fallback_name(message: SelectMessage) -> str:
