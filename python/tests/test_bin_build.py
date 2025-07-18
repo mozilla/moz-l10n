@@ -29,7 +29,7 @@ class TestBuild(TestCase):
         entries: list[Entry[PatternMessage] | Comment] = [
             Entry(("msg-a",), PatternMessage(["s"])),
             Entry(("msg-b",), PatternMessage(["s"]), {"attr": PatternMessage(["s"])}),
-            Entry(("msg-c",), PatternMessage(["s"])),
+            Entry(("msg-c",), PatternMessage(["s"]), {"attr": PatternMessage(["s"])}),
             Entry(("-term-a",), PatternMessage(["s"])),
             Entry(("-term-b",), PatternMessage(["s"]), {"attr": PatternMessage(["s"])}),
             Entry(("-term-c",), PatternMessage(["s"])),
@@ -39,8 +39,9 @@ class TestBuild(TestCase):
             msg-a = tgt
                 .extra = tgt
             msg-b = tgt
+                .attr = tgt
                 .extra = tgt
-            msg-x = tgt
+            msg-c = tgt
                 .extra = tgt
             -term-a = tgt
                 .extra = tgt
@@ -59,9 +60,8 @@ class TestBuild(TestCase):
                 tgt_src = file.read()
             assert tgt_src == dedent("""\
                 msg-a = tgt
-                    .extra = tgt
                 msg-b = tgt
-                    .extra = tgt
+                    .attr = tgt
                 -term-a = tgt
                     .extra = tgt
                 -term-b = tgt
@@ -73,18 +73,20 @@ class TestBuild(TestCase):
         entries: list[Entry[PatternMessage] | Comment] = [
             Entry(("msg-a",), PatternMessage(["s"])),
             Entry(("msg-b",), PatternMessage(["s"]), {"attr": PatternMessage(["s"])}),
-            Entry(("msg-c",), PatternMessage(["s"])),
+            Entry(("msg-c",), PatternMessage(["s"]), {"attr": PatternMessage(["s"])}),
             Entry(("-term-a",), PatternMessage(["s"])),
             Entry(("-term-b",), PatternMessage(["s"]), {"attr": PatternMessage(["s"])}),
             Entry(("-term-c",), PatternMessage(["s"])),
         ]
+        # A bit hacky, but works for test purposes
         source_res = Resource(Format.plain_json, [Section((), entries)])
         l10n_src = dedent("""\
             msg-a = tgt
                 .extra = tgt
             msg-b = tgt
+                .attr = tgt
                 .extra = tgt
-            msg-x = tgt
+            msg-c = tgt
                 .extra = tgt
             -term-a = tgt
                 .extra = tgt
@@ -105,12 +107,14 @@ class TestBuild(TestCase):
                 msg-a = tgt
                     .extra = tgt
                 msg-b = tgt
+                    .attr = tgt
                     .extra = tgt
-                msg-c = s
+                msg-c = tgt
+                    .extra = tgt
                 -term-a = tgt
                     .extra = tgt
                 -term-b = tgt
                     .extra = tgt
                 -term-c = s
                 """)
-            assert msg_delta == 2
+            assert msg_delta == 1
