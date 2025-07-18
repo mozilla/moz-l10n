@@ -139,7 +139,7 @@ def write_target_file(
         l10n_res = Resource(source_res.format, [])
         l10n_map = {}
     # Fluent uses per-message fallback at runtime, allowing resources to be incomplete.
-    fill_from_source = source_res.format != Format.fluent
+    is_fluent = source_res.format == Format.fluent
     msg_delta = 0
 
     def get_entry(
@@ -150,13 +150,28 @@ def write_target_file(
             return None
         id = section_id + source_entry.id
         if id in l10n_map:
-            return l10n_map[id]
-        elif fill_from_source:
-            msg_delta += 1
-            return source_entry
-        else:
+            l10n_entry = l10n_map[id]
+            if is_fluent and not l10n_entry.id[0].startswith("-"):
+                # If source_res includes Fluent message attributes not in l10n_res, exclude the entry.
+                # If l10n_res includes additional message attributes,
+                # include the entry but leave out the attributes not in source_res.
+                sk = source_entry.properties.keys()
+                lk = l10n_entry.properties.keys()
+                if sk != lk:
+                    if set(sk).issubset(lk):
+                        l10n_entry.properties = {
+                            name: l10n_entry.properties[name] for name in sk
+                        }
+                        return l10n_entry
+                    msg_delta -= 1
+                    return None
+            return l10n_entry
+        elif is_fluent:
             msg_delta -= 1
             return None
+        else:
+            msg_delta += 1
+            return source_entry
 
     for section in source_res.sections:
         tgt_entries = [
