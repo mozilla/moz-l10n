@@ -31,9 +31,7 @@ from ..model import Message, Resource
 android_serialize: (
     Callable[[Resource[str] | Resource[Message], bool], Iterator[str]] | None
 )
-xliff_serialize: (
-    Callable[[Resource[str] | Resource[Message], bool], Iterator[str]] | None
-)
+xliff_serialize: Callable[..., Iterator[str]] | None
 try:
     from ..formats.android.serialize import android_serialize
     from ..formats.xliff.serialize import xliff_serialize
@@ -45,8 +43,10 @@ except ImportError:
 def serialize_resource(
     resource: Resource[str] | Resource[Message],
     format: Format | None = None,
-    gettext_plurals: Sequence[str] | None = None,
     trim_comments: bool = False,
+    *,
+    gettext_plurals: Sequence[str] | None = None,
+    xliff_source_entries: bool = False,
 ) -> Iterator[str]:
     """
     Serialize a Resource as its string representation.
@@ -80,6 +80,8 @@ def serialize_resource(
     elif format == Format.android and android_serialize is not None:
         return android_serialize(resource, trim_comments)
     elif format == Format.xliff and xliff_serialize is not None:
-        return xliff_serialize(resource, trim_comments)
+        return xliff_serialize(
+            resource, trim_comments, source_entries=xliff_source_entries
+        )
     else:
         raise ValueError(f"Unsupported resource format: {format or resource.format}")

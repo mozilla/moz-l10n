@@ -28,7 +28,7 @@ from ..formats.webext.parse import webext_parse
 from ..model import Message, Resource
 
 android_parse: Callable[..., Resource[Message]] | None
-xliff_parse: Callable[[str | bytes], Resource[Message]] | None
+xliff_parse: Callable[..., Resource[Message]] | None
 try:
     from ..formats.android.parse import android_parse
     from ..formats.xliff.parse import xliff_parse
@@ -45,6 +45,7 @@ def parse_resource(
     android_literal_quotes: bool = False,
     gettext_plurals: Sequence[str] | None = None,
     gettext_skip_obsolete: bool = False,
+    xliff_source_entries: bool = False,
 ) -> Resource[Message]:
     """
     Parse a Resource from its string representation.
@@ -94,6 +95,6 @@ def parse_resource(
             literal_quotes=android_literal_quotes,
         )
     elif format == Format.xliff and xliff_parse is not None:
-        return xliff_parse(source)
+        return xliff_parse(source, source_entries=xliff_source_entries)
     else:
         raise UnsupportedFormat(f"Unsupported resource format: {input}")

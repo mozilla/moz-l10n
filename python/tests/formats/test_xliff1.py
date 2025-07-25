@@ -84,10 +84,40 @@ class TestXliff1(TestCase):
         )
         assert not xliff_is_xcode(res)
 
+        res = xliff_parse(hello, source_entries=True)
+        assert res == Resource(
+            Format.xliff,
+            meta=[
+                Metadata("@version", "1.2"),
+                Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
+            ],
+            sections=[
+                Section(
+                    id=("hello.txt",),
+                    meta=[
+                        Metadata("@source-language", "en"),
+                        Metadata("@target-language", "fr"),
+                        Metadata("@datatype", "plaintext"),
+                    ],
+                    entries=[
+                        Entry(
+                            id=("hi",),
+                            meta=[
+                                Metadata("target", "Bonjour le monde"),
+                                Metadata("alt-trans/target/@xml:lang", "es"),
+                                Metadata("alt-trans/target", "Hola mundo"),
+                            ],
+                            value=PatternMessage(["Hello world"]),
+                        )
+                    ],
+                )
+            ],
+        )
+
     def test_serialize_hello(self):
         res = xliff_parse(hello)
         ser = "".join(xliff_serialize(res))
-        assert ser == dedent(
+        exp = dedent(
             """\
             <?xml version="1.0" encoding="utf-8"?>
             <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
@@ -105,6 +135,11 @@ class TestXliff1(TestCase):
             </xliff>
             """
         )
+        assert ser == exp
+
+        res = xliff_parse(hello, source_entries=True)
+        ser = "".join(xliff_serialize(res, source_entries=True))
+        assert ser == exp
 
     def test_message_simple(self):
         src = "Hello, <b>%s</b>"
@@ -268,7 +303,7 @@ class TestXliff1(TestCase):
     def test_serialize_angular(self):
         res = xliff_parse(angular)
         ser = "".join(xliff_serialize(res))
-        assert ser == dedent(
+        exp = dedent(
             """\
             <?xml version="1.0" encoding="utf-8"?>
             <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
@@ -298,9 +333,14 @@ class TestXliff1(TestCase):
             </xliff>
             """
         )
+        assert ser == exp
+
+        res = xliff_parse(angular, source_entries=True)
+        ser = "".join(xliff_serialize(res, source_entries=True))
+        assert ser == exp
 
     def test_parse_icu_docs(self):
-        res = xliff_parse(icu_docs)
+        res = xliff_parse(icu_docs, source_entries=True)
         assert res == Resource(
             Format.xliff,
             meta=[
@@ -334,20 +374,18 @@ class TestXliff1(TestCase):
                         ),
                         Entry(
                             id=("authors",),
-                            value=PatternMessage([]),
+                            value=PatternMessage(["root/authors"]),
                             meta=[
                                 Metadata("@resname", "authors"),
                                 Metadata("@restype", "x-icu-alias"),
-                                Metadata("source", "root/authors"),
                             ],
                         ),
                         Entry(
                             id=("hello",),
-                            value=PatternMessage([]),
+                            value=PatternMessage(["Hello, world!"]),
                             comment="This is the message that the application displays to the user.",
                             meta=[
                                 Metadata("@resname", "hello"),
-                                Metadata("source", "Hello, world!"),
                                 Metadata(
                                     "note",
                                     "This is the message that the application displays to the user.",
@@ -415,11 +453,8 @@ class TestXliff1(TestCase):
                     entries=[
                         Entry(
                             id=("menus_help_menu_name",),
-                            value=PatternMessage([]),
-                            meta=[
-                                Metadata("@resname", "name"),
-                                Metadata("source", "Help"),
-                            ],
+                            value=PatternMessage(["Help"]),
+                            meta=[Metadata("@resname", "name")],
                         )
                     ],
                 ),
@@ -438,13 +473,11 @@ class TestXliff1(TestCase):
                     entries=[
                         Entry(
                             id=("menus_help_menu_items_0",),
-                            value=PatternMessage([]),
-                            meta=[Metadata("source", "Help Topics")],
+                            value=PatternMessage(["Help Topics"]),
                         ),
                         Entry(
                             id=("menus_help_menu_items_1",),
-                            value=PatternMessage([]),
-                            meta=[Metadata("source", "About Hello World")],
+                            value=PatternMessage(["About Hello World"]),
                         ),
                     ],
                 ),
@@ -453,8 +486,8 @@ class TestXliff1(TestCase):
         assert not xliff_is_xcode(res)
 
     def test_serialize_icu_docs(self):
-        res = xliff_parse(icu_docs)
-        ser = "".join(xliff_serialize(res))
+        res = xliff_parse(icu_docs, source_entries=True)
+        ser = "".join(xliff_serialize(res, source_entries=True))
         assert ser == dedent(
             """\
             <?xml version="1.0" encoding="utf-8"?>
