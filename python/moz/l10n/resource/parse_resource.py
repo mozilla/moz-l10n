@@ -96,5 +96,7 @@ def parse_resource(
         )
     elif format == Format.xliff and xliff_parse is not None:
         return xliff_parse(source, source_entries=xliff_source_entries)
+    elif format is None:
+        raise UnsupportedFormat("Resource format detection failed")
     else:
-        raise UnsupportedFormat(f"Unsupported resource format: {input}")
+        raise UnsupportedFormat(f"Unsupported resource format: {format.name}")
