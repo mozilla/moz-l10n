@@ -56,3 +56,8 @@ class TestDetectFormat(TestCase):
         for file in ("angular.xliff", "hello.xliff", "icu-docs.xliff", "xcode.xliff"):
             source = files("tests.formats.data").joinpath(file).read_bytes()
             assert detect_format(None, source) == Format.xliff
+
+    def test_bad_json(self):
+        assert detect_format(None, '{ "comma": "none" }') is Format.plain_json
+        assert detect_format(None, '{ "comma": "trailing", }') is None
+        assert detect_format(None, '["not", "object"]') is None

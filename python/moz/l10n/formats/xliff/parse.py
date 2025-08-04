@@ -43,7 +43,9 @@ from .parse_trans_unit import parse_pattern, parse_trans_unit
 from .parse_xcode import parse_xliff_stringsdict
 
 
-def xliff_parse(source: str | bytes) -> Resource[Message]:
+def xliff_parse(
+    source: str | bytes, *, source_entries: bool = False
+) -> Resource[Message]:
     """
     Parse an XLIFF 1.2 file into a message resource.
 
@@ -51,7 +53,8 @@ def xliff_parse(source: str | bytes) -> Resource[Message]:
     with the first identifier part parsed as the <file> "original" attribute,
     and later parts as <group> "id" attributes.
 
-    An entry's value represents the <target> of a <trans-unit>.
+    An entry's value represents the <target> of a <trans-unit>,
+    or the <source> if `source_entries` is True.
     Other elements and attributes are represented by metadata.
     Comments are parsed from the <note> elements,
     as well as being represented by metadata.
@@ -138,11 +141,13 @@ def xliff_parse(source: str | bytes) -> Resource[Message]:
                 if isinstance(unit, etree._Comment):
                     entries.append(Comment(comment_str(unit.text)))
                 elif unit.tag == f"{ns}trans-unit":
-                    entries.append(parse_trans_unit(unit, is_xcode))
+                    entries.append(parse_trans_unit(unit, is_xcode, source_entries))
                 elif unit.tag == f"{ns}bin-unit":
                     entries.append(parse_bin_unit(unit))
                 elif unit.tag == f"{ns}group":
-                    res.sections += parse_group(ns, [file_name], unit, is_xcode)
+                    res.sections += parse_group(
+                        ns, [file_name], unit, is_xcode, source_entries
+                    )
                 else:
                     raise ValueError(
                         f"Unsupported <{unit.tag!s}> element in <body>: {body}"
@@ -164,7 +169,11 @@ def xliff_parse_message(source: str, *, is_xcode: bool = False) -> PatternMessag
 
 
 def parse_group(
-    ns: str, parent: list[str], group: etree._Element, is_xcode: bool
+    ns: str,
+    parent: list[str],
+    group: etree._Element,
+    is_xcode: bool,
+    source_entries: bool,
 ) -> Iterator[Section[Message]]:
     id = group.attrib.get("id", "")
     path = [*parent, id]
@@ -182,11 +191,11 @@ def parse_group(
         if isinstance(unit, etree._Comment):
             entries.append(Comment(comment_str(unit.text)))
         elif unit.tag == f"{ns}trans-unit":
-            entries.append(parse_trans_unit(unit, is_xcode))
+            entries.append(parse_trans_unit(unit, is_xcode, source_entries))
         elif unit.tag == f"{ns}bin-unit":
             entries.append(parse_bin_unit(unit))
         elif unit.tag == f"{ns}group":
-            yield from parse_group(ns, path, unit, is_xcode)
+            yield from parse_group(ns, path, unit, is_xcode, source_entries)
         else:
             name = pretty_name(unit, str(unit.tag))
             idx = seen[name] + 1
