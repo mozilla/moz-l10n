@@ -130,7 +130,8 @@ class TestFluent(TestCase):
 
         msg = fluent_parse_message("1\n  2  \n3  \n")
         assert msg == PatternMessage(["1\n  2  \n3"])
-        assert fluent_serialize_message(msg) == "1\n  2  \n3"
+        assert fluent_serialize_message(msg) == '1\n{ " " } 2  \n3'
+        assert fluent_serialize_message(msg, escape_syntax=False) == "1\n  2  \n3"
 
         msg = fluent_parse_message("# comment")
         assert msg == PatternMessage(["# comment"])
@@ -509,7 +510,7 @@ class TestFluent(TestCase):
                 """
         )
 
-    def test_escapes(self):
+    def test_char_escapes(self):
         source = 'key = { "" } { "\t" } { "\\u000a" }'
         res = fluent_parse(source)
         exp_msg = PatternMessage(
@@ -527,6 +528,46 @@ class TestFluent(TestCase):
             "".join(fluent_serialize(res))
             == 'key = { "" } { "\\u0009" } { "\\u000A" }\n'
         )
+
+    def test_syntax_escapes(self):
+        source = " {braces}[brackets]\n *\n*"
+        res_str = Resource(
+            Format.fluent,
+            [Section(id=(), entries=[Entry(("key",), source)])],
+        )
+        res_msg = Resource(
+            Format.fluent,
+            [Section(id=(), entries=[Entry(("key",), PatternMessage([source]))])],
+        )
+
+        assert "".join(fluent_serialize(res_msg)) == dedent("""\
+            key =
+                { " " }{ "{" }braces{ "}" }[brackets]
+                { " " }*
+                { "*" }
+            """)
+
+        # Note: the leading space is trimmed when parsing.
+        assert "".join(fluent_serialize(res_str)) == dedent("""\
+            key =
+                 { "{" }braces{ "}" }[brackets]
+                { " " }*
+                { "*" }
+            """)
+
+        # Note: The following serializations are not valid.
+        assert "".join(fluent_serialize(res_msg, escape_syntax=False)) == dedent("""\
+            key =
+                { " " }{braces}[brackets]
+                 *
+                *
+            """)
+        assert "".join(fluent_serialize(res_str, escape_syntax=False)) == dedent("""\
+            key =
+                 {braces}[brackets]
+                 *
+                *
+            """)
 
     def test_comment(self):
         res = fluent_parse("msg = body\n  .attr = value")
@@ -551,10 +592,11 @@ class TestFluent(TestCase):
             "".join(fluent_serialize(res))
         assert ec.exception.args == ("Metadata requires serialize_metadata parameter",)
         assert (
-            "".join(fluent_serialize(res, lambda _: None)) == "one = foo\ntwo = bar\n"
+            "".join(fluent_serialize(res, serialize_metadata=lambda _: None))
+            == "one = foo\ntwo = bar\n"
         )
         assert "".join(
-            fluent_serialize(res, lambda m: f"@{m.key}: {m.value}")
+            fluent_serialize(res, serialize_metadata=lambda m: f"@{m.key}: {m.value}")
         ) == dedent(
             """\
             one = foo
