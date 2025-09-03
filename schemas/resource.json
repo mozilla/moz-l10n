@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://github.com/mozilla/moz-l10n/blob/main/schemas/resource.json",
+
+  "type": "object",
+  "properties": {
+    "fmt": { "type": "string" },
+    "@": { "$ref": "#/$defs/metadata" },
+    "#": { "type": "string" },
+    "*": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/section" }
+    }
+  },
+  "required": ["*"],
+
+  "$defs": {
+    "metadata": {
+      "$ref": "https://github.com/mozilla/moz-l10n/blob/main/schemas/entry.json#/$defs/metadata"
+    },
+    "section": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "array",
+          "items": { "type": "string", "minItems": 1 }
+        },
+        "@": { "$ref": "#/$defs/metadata" },
+        "#": { "type": "string" },
+        "~": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "https://github.com/mozilla/moz-l10n/blob/main/schemas/entry.json"
+          },
+          "minProperties": 1
+        }
+      },
+      "required": ["~"]
+    }
+  }
+}
