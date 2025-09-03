@@ -13,7 +13,26 @@
  * limitations under the License.
  */
 
-/** Matches /schemas/message.json */
+/** Matches /schemas/message.json and /schemas/entry.json */
+
+export type Entry = {
+  /** comment */
+  '#'?: string
+
+  /** metadata */
+  '@'?: Metadata
+
+  /** message */
+  '='?: Message
+
+  /** properties */
+  '+'?: Record<string, Message>
+} & ({ '=': Message } | { '+': Record<string, Message> })
+
+export type Metadata = [
+  [key: string, value: string],
+  ...[key: string, value: string][]
+]
 
 export type Message = Pattern | PatternMessage | SelectMessage
 
