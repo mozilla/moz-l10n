@@ -104,13 +104,26 @@ and/or contents.
 
 Returns a `Format` enum value, or `None` if the input is not recognized.
 
-### moz.l10n.message: from_json() and to_json()
+### moz.l10n.message: entry_from_json() and entry_to_json()
 
 ```python
-from moz.l10n.message import from_json, to_json
+from moz.l10n.message import entry_from_json, entry_to_json
+
+def entry_from_json(key: str, json: dict[str, Any]) -> Entry[Message]
+def entry_to_json(entry: Entry[Message]) -> tuple[str, dict[str, Any]]
+```
+
+Converters to and from a JSON-serializable representation of an `Entry`.
+The format of the output is defined by the [`entry.json`](../schemas/entry.json) JSON Schema.
+Note that the stringified message identifier is handled separately from the other fields,
+as it's meant to be used as a mapping key.
+
+### moz.l10n.message: message_from_json() and message_to_json()
+
+```python
+from moz.l10n.message import message_from_json, message_to_json
 
 def message_from_json(json: list[Any] | dict[str, Any]) -> Message
-
 def message_to_json(msg: Message) -> list[Any] | dict[str, Any]
 ```
 
