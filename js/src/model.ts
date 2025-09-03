@@ -75,6 +75,7 @@ export interface PatternMessage {
 
 export interface SelectMessage {
   decl: Record<string, Expression>
+  msg?: never
   sel: string[]
   alt: {
     keys: (string | { '*': string })[]
