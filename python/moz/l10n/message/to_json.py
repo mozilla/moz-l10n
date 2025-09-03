@@ -31,7 +31,7 @@ def message_to_json(msg: Message) -> list[Any] | dict[str, Any]:
     """
     Represent a Message as a JSON-serializable value.
 
-    The JSON Schema of the output is provided as [schema.json](./schema.json).
+    The JSON Schema of the output is provided as [message.json](../../../../schemas/message.json).
     """
     json_declarations = {
         name: _expression_to_json(expr) for name, expr in msg.declarations.items()

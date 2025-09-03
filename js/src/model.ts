@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-/** Matches /moz/l10n/message/schema.json */
+/** Matches /schemas/message.json */
 
 export type Message = Pattern | PatternMessage | SelectMessage
 

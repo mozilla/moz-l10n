@@ -32,7 +32,7 @@ from ..model import (
 def message_from_json(json: list[Any] | dict[str, Any]) -> Message:
     """
     Marshal the JSON output of `moz.l10n.message.to_json()`
-    back into a parsed `moz.l10n.message.data.Message`.
+    back into a parsed `moz.l10n.model.Message`.
 
     May raise `MF2ValidationError`.
     """

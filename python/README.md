@@ -115,7 +115,7 @@ def message_to_json(msg: Message) -> list[Any] | dict[str, Any]
 ```
 
 Converters to and from a JSON-serializable representation of a `Message`.
-The format of the output is defined by the [`schema.json`](./moz/l10n/message/schema.json) JSON Schema.
+The format of the output is defined by the [`message.json`](../schemas/message.json) JSON Schema.
 
 ### moz.l10n.message.parse_message
 

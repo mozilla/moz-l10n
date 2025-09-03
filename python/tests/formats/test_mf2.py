@@ -15,7 +15,9 @@
 from __future__ import annotations
 
 from importlib_resources import files
-from json import loads
+from json import load, loads
+from os.path import dirname
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -43,8 +45,10 @@ mf2_schema_src = (
 )
 mf2_schema: dict[str, dict[str, Any]] = loads(mf2_schema_src)
 
-moz_schema_src = files("moz.l10n.message").joinpath("schema.json").read_bytes()
-moz_schema: dict[str, dict[str, Any]] = loads(moz_schema_src)
+moz_schema_path = Path(dirname(__file__)).joinpath(
+    Path("../../../schemas/message.json")
+)
+moz_schema: dict[str, dict[str, Any]] = load(moz_schema_path.open())
 
 
 def ok(src: str, exp_msg: Message, exp_str: str | None = None):

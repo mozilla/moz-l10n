@@ -61,7 +61,7 @@ export type FormatKey =
 /**
  * Parse the string representation of a single flat message pattern into a data structure.
  *
- * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/moz/l10n/message/schema.json
+ * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/schemas/message.json
  *
  * @param baseMsg - Required by `webext` for named placeholders.
  * @param onError - If undefined, errors are thrown.
@@ -97,7 +97,7 @@ export function parsePattern(
 /**
  * Serialize the data representation of a single flat message pattern into a string.
  *
- * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/moz/l10n/message/schema.json
+ * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/schemas/message.json
  *
  * @param onError - If undefined, errors are thrown.
  */
