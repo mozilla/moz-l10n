@@ -32,7 +32,6 @@ test_data_files = (
     "hello.xliff",
     "icu-docs.xliff",
     "messages.json",
-    "mf2-message-schema.json",
     "plain.json",
     "strings.xml",
     "test.properties",

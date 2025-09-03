@@ -39,7 +39,7 @@ except ImportError:
 class TestLintCommand(TestCase):
     def test_directory(self):
         with self.assertLogs("moz.l10n.bin.lint", level="INFO") as logs:
-            assert lint([test_data_dir]) == 1
+            assert lint([test_data_dir]) == (0 if has_xml else 1)
         logs.output.sort()
         assert (
             logs.output
@@ -57,7 +57,6 @@ class TestLintCommand(TestCase):
                 "INFO:moz.l10n.bin.lint:ok strings.xml",
                 "INFO:moz.l10n.bin.lint:ok test.properties",
                 "INFO:moz.l10n.bin.lint:ok xcode.xliff",
-                "WARNING:moz.l10n.bin.lint:unsupported mf2-message-schema.json",
             ]
             if has_xml
             else [
@@ -72,7 +71,6 @@ class TestLintCommand(TestCase):
                 "WARNING:moz.l10n.bin.lint:unsupported angular.xliff",
                 "WARNING:moz.l10n.bin.lint:unsupported hello.xliff",
                 "WARNING:moz.l10n.bin.lint:unsupported icu-docs.xliff",
-                "WARNING:moz.l10n.bin.lint:unsupported mf2-message-schema.json",
                 "WARNING:moz.l10n.bin.lint:unsupported strings.xml",
                 "WARNING:moz.l10n.bin.lint:unsupported xcode.xliff",
             ]
@@ -80,13 +78,12 @@ class TestLintCommand(TestCase):
 
     def test_files(self):
         unsupported_files = (
-            {"mf2-message-schema.json"}
+            set()
             if has_xml
             else {
                 "angular.xliff",
                 "hello.xliff",
                 "icu-docs.xliff",
-                "mf2-message-schema.json",
                 "strings.xml",
                 "xcode.xliff",
             }
