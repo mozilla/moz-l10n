@@ -7,7 +7,7 @@ It's being bootstrapped to fulfil the needs of the [Pontoon](https://pontoon.moz
 and to match the behaviour of the Python [moz.l10n](https://pypi.org/project/moz.l10n/) library.
 
 The data structures used by the library are defined by a
-[JSON Schema](https://github.com/mozilla/moz-l10n/blob/main/moz/l10n/message/schema.json).
+[JSON Schema](https://github.com/mozilla/moz-l10n/blob/main/schemas/message.json).
 
 The library currently supports the following message pattern formats:
 
@@ -45,7 +45,7 @@ class ParseError extends Error {
 ```
 
 Parse the string representation of a single flat message pattern into a data structure
-([JSON Schema](https://github.com/mozilla/moz-l10n/blob/main/moz/l10n/message/schema.json)).
+([JSON Schema](https://github.com/mozilla/moz-l10n/blob/main/schemas/message.json)).
 
 The `baseMsg` is required by `webext` for named placeholders.
 

@@ -14,8 +14,9 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
-from json import loads
+from json import load
+from os.path import dirname
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -38,13 +39,9 @@ from moz.l10n.model import (
     VariableRef,
 )
 
-mf2_schema_src = (
-    files("tests.formats.data").joinpath("mf2-message-schema.json").read_bytes()
-)
-mf2_schema: dict[str, dict[str, Any]] = loads(mf2_schema_src)
-
-moz_schema_src = files("moz.l10n.message").joinpath("schema.json").read_bytes()
-moz_schema: dict[str, dict[str, Any]] = loads(moz_schema_src)
+schemas = Path(dirname(__file__)) / "../../../schemas"
+mf2_schema: dict[str, dict[str, Any]] = load((schemas / "mf2-message.json").open())
+moz_schema: dict[str, dict[str, Any]] = load((schemas / "message.json").open())
 
 
 def ok(src: str, exp_msg: Message, exp_str: str | None = None):

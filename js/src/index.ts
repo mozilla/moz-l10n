@@ -59,9 +59,29 @@ export type FormatKey =
   | 'xliff'
 
 /**
+ * Determine if a message would format as an empty string.
+ *
+ * @param anyVariant - If `true`,
+ *   having any of the variants of a `SelectMessage` be empty returns `true`.
+ */
+export function messageIsEmpty(msg: Message, anyVariant = false): boolean {
+  const emptyPattern = (pat: Pattern) => pat.every((el) => el === '')
+  if (Array.isArray(msg)) {
+    return emptyPattern(msg)
+  } else if (msg.msg) {
+    return emptyPattern(msg.msg)
+  } else {
+    const patterns = msg.alt.map((a) => a.pat)
+    return anyVariant
+      ? patterns.some(emptyPattern)
+      : patterns.every(emptyPattern)
+  }
+}
+
+/**
  * Parse the string representation of a single flat message pattern into a data structure.
  *
- * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/moz/l10n/message/schema.json
+ * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/schemas/message.json
  *
  * @param baseMsg - Required by `webext` for named placeholders.
  * @param onError - If undefined, errors are thrown.
@@ -97,7 +117,7 @@ export function parsePattern(
 /**
  * Serialize the data representation of a single flat message pattern into a string.
  *
- * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/moz/l10n/message/schema.json
+ * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/schemas/message.json
  *
  * @param onError - If undefined, errors are thrown.
  */

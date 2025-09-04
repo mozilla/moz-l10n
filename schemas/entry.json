@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://github.com/mozilla/moz-l10n/blob/main/schemas/entry.json",
+
+  "type": "object",
+  "properties": {
+    "#": { "$ref": "#/$defs/comment" },
+    "@": { "$ref": "#/$defs/metadata" },
+    "=": { "$ref": "#/$defs/message" },
+    "+": { "$ref": "#/$defs/properties" }
+  },
+  "anyOf": [{ "required": ["="] }, { "required": ["+"] }],
+
+  "$defs": {
+    "comment": { "type": "string" },
+    "message": {
+      "$ref": "https://github.com/mozilla/moz-l10n/blob/main/schemas/message.json"
+    },
+    "metadata": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [{ "type": "string" }, { "type": "string" }],
+        "additionalItems": false
+      },
+      "minItems": 1
+    },
+    "properties": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/message" },
+      "minProperties": 1
+    }
+  }
+}

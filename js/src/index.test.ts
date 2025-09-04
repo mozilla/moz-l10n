@@ -16,12 +16,46 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
   FormatKey,
+  messageIsEmpty,
   ParseError,
   parsePattern,
   Pattern,
+  SelectMessage,
   SerializeError,
   serializePattern
 } from './index.ts'
+
+describe('messageIsEmpty', () => {
+  test('Pattern', () => {
+    expect(messageIsEmpty([])).toBe(true)
+    expect(messageIsEmpty(['', ''])).toBe(true)
+    expect(messageIsEmpty([' '])).toBe(false)
+  })
+
+  test('PatternMessage', () => {
+    expect(messageIsEmpty({ decl: {}, msg: [] })).toBe(true)
+    expect(messageIsEmpty({ decl: { x: { _: '' } }, msg: ['', ''] })).toBe(true)
+    expect(messageIsEmpty({ decl: {}, msg: [' '] })).toBe(false)
+    expect(messageIsEmpty([' '])).toBe(false)
+  })
+
+  test('SelectMessage', () => {
+    expect(messageIsEmpty({ decl: {}, sel: [], alt: [] })).toBe(true)
+    expect(
+      messageIsEmpty({ decl: {}, sel: [], alt: [{ keys: ['a'], pat: [''] }] })
+    ).toBe(true)
+    const sm: SelectMessage = {
+      decl: {},
+      sel: [],
+      alt: [
+        { keys: ['a'], pat: ['A'] },
+        { keys: ['b'], pat: [''] }
+      ]
+    }
+    expect(messageIsEmpty(sm)).toBe(false)
+    expect(messageIsEmpty(sm, true)).toBe(true)
+  })
+})
 
 describe('parsePattern', () => {
   test('plain', () => {
