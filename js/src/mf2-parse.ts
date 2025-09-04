@@ -13,15 +13,7 @@
  * limitations under the License.
  */
 
-import {
-  Attributes as MF2Attributes,
-  Expression as MF2Expression,
-  Markup as MF2Markup,
-  Message as MF2Message,
-  Options as MF2Options,
-  MessageSyntaxError,
-  parseMessage
-} from 'messageformat'
+import { MessageSyntaxError, Model, parseMessage } from 'messageformat'
 import { ParseError } from './errors.ts'
 import type { Expression, Pattern } from './model.ts'
 
@@ -29,7 +21,7 @@ export function mf2ParsePattern(
   src: string,
   onError: (error: ParseError) => void
 ): Pattern {
-  let msg: MF2Message
+  let msg: Model.Message
   try {
     msg = parseMessage(`{{${src}}}`)
   } catch (error) {
@@ -48,7 +40,7 @@ export function mf2ParsePattern(
   return msg.pattern.map(patternPart)
 }
 
-function patternPart(part: string | MF2Expression | MF2Markup) {
+function patternPart(part: string | Model.Expression | Model.Markup) {
   if (typeof part === 'string') return part
   if (part.type === 'expression') {
     const expr = {} as Expression
@@ -76,19 +68,21 @@ function patternPart(part: string | MF2Expression | MF2Markup) {
   }
 }
 
-function options(opt: MF2Options | undefined) {
-  if (!opt?.size) return undefined
+function options(opt: Model.Options | undefined) {
+  const entries = opt ? Object.entries(opt) : null
+  if (!entries?.length) return undefined
   const res: Record<string, string | { $: string }> = Object.create(null)
-  for (const [name, value] of opt.entries()) {
+  for (const [name, value] of entries) {
     res[name] = value.type === 'literal' ? value.value : { $: value.name }
   }
   return res
 }
 
-function attributes(attr: MF2Attributes | undefined) {
-  if (!attr?.size) return undefined
+function attributes(attr: Model.Attributes | undefined) {
+  const entries = attr ? Object.entries(attr) : null
+  if (!entries?.length) return undefined
   const res: Record<string, string | true> = Object.create(null)
-  for (const [name, value] of attr.entries()) {
+  for (const [name, value] of entries) {
     res[name] = value === true ? true : value.value
   }
   return res
