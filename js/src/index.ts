@@ -29,6 +29,7 @@ import { xliffSerializePattern } from './xliff-serialize.ts'
 export {
   isExpression,
   isMarkup,
+  isSelectMessage,
   type CatchallKey,
   type Entry,
   type Expression,
