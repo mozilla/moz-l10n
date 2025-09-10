@@ -16,7 +16,7 @@
 import { androidParsePattern } from './android-parse.ts'
 import { androidSerializePattern } from './android-serialize.ts'
 import { ParseError, SerializeError } from './errors.js'
-import { fluentParsePattern } from './fluent-parse.ts'
+import { fluentParseEntry, fluentParsePattern } from './fluent-parse.ts'
 import { fluentSerializePattern } from './fluent-serialize.ts'
 import { mf2ParsePattern } from './mf2-parse.ts'
 import { mf2SerializePattern } from './mf2-serialize.ts'
@@ -29,9 +29,12 @@ import { xliffSerializePattern } from './xliff-serialize.ts'
 export {
   isExpression,
   isMarkup,
+  type CatchallKey,
+  type Entry,
   type Expression,
   type Markup,
   type Message,
+  type Metadata,
   type Pattern,
   type PatternMessage,
   type SelectMessage
@@ -40,8 +43,11 @@ export {
 export {
   androidParsePattern,
   androidSerializePattern,
+  fluentParseEntry,
   fluentParsePattern,
   fluentSerializePattern,
+  mf2ParsePattern,
+  mf2SerializePattern,
   ParseError,
   SerializeError,
   webextParsePattern,

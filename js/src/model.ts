@@ -78,10 +78,12 @@ export interface SelectMessage {
   msg?: never
   sel: string[]
   alt: {
-    keys: (string | { '*': string })[]
+    keys: (string | CatchallKey)[]
     pat: Pattern
   }[]
 }
+
+export type CatchallKey = { '*': string }
 
 export const isExpression = (
   x: string | Expression | Markup
