@@ -101,14 +101,14 @@ function message(ftlPattern: FTL.Pattern): Message {
       msgVariants = [[[], []]]
       break
     case 1:
-      msgVariants = uniqueSortedKeys(selData[0]).map((key) => [[key], []])
+      msgVariants = uniqueKeys(selData[0]).map((key) => [[key], []])
       break
     default: {
       // With multiple selectors, for each selector,
       // ensure that a row of keys exists with each of its values in its key column,
       // combined with each value of all other selectors.
       // Effectively this involves a cross product of two vectors.
-      const selKeyValues = selData.map(uniqueSortedKeys)
+      const selKeyValues = selData.map(uniqueKeys)
       // @ts-expect-error TS doesn't support this (valid) reduce variant
       const keyMatrix = selKeyValues.reduce((res: Key[] | Key[][], selKeys) =>
         res.flatMap((prev) => selKeys.map((key) => [prev, key].flat()))
@@ -220,16 +220,11 @@ function findSelectors(
   return result
 }
 
-function uniqueSortedKeys({ keys }: SelectorResultRow): Key[] {
+function uniqueKeys({ keys }: SelectorResultRow): Key[] {
   const res: Key[] = []
   for (const key of keys) {
     if (res.every((prev) => !keysEqual(prev, key))) res.push(key)
   }
-  res.sort((a, b) => {
-    if (a.isDefault !== b.isDefault) return a.isDefault ? 1 : -1
-    if (a.isNumeric !== b.isNumeric) return a.isNumeric ? -1 : 1
-    return 0
-  })
   return res
 }
 

@@ -207,10 +207,10 @@ describe('entry parse', () => {
         },
         sel: ['a', 'b'],
         alt: [
-          { keys: ['1', 'cc'], pat: ['pre One mid CC post'] },
           { keys: ['1', { '*': 'bb' }], pat: ['pre One mid BB post'] },
-          { keys: [{ '*': '2' }, 'cc'], pat: ['pre Two mid CC post'] },
-          { keys: [{ '*': '2' }, { '*': 'bb' }], pat: ['pre Two mid BB post'] }
+          { keys: ['1', 'cc'], pat: ['pre One mid CC post'] },
+          { keys: [{ '*': '2' }, { '*': 'bb' }], pat: ['pre Two mid BB post'] },
+          { keys: [{ '*': '2' }, 'cc'], pat: ['pre Two mid CC post'] }
         ]
       }
     }
@@ -251,9 +251,9 @@ describe('entry parse', () => {
           { keys: ['0', { '*': 'other' }], pat: ['0,x'] },
           { keys: ['one', 'one'], pat: [{ _: '1,1' }] },
           { keys: ['one', { '*': 'other' }], pat: ['1,x'] },
-          { keys: [{ '*': 'other' }, '0'], pat: ['x,0'] },
           { keys: [{ '*': 'other' }, 'one'], pat: ['x,1'] },
-          { keys: [{ '*': 'other' }, { '*': 'other' }], pat: ['x,x'] }
+          { keys: [{ '*': 'other' }, { '*': 'other' }], pat: ['x,x'] },
+          { keys: [{ '*': 'other' }, '0'], pat: ['x,0'] }
         ]
       }
     }
