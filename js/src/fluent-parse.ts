@@ -35,16 +35,15 @@ const pluralCategories = new Set(['zero', 'one', 'two', 'few', 'many', 'other'])
  * Parses a string as a Fluent entry.
  *
  * Comments are discarded.
+ *
+ * May throw a {@link ParseError}.
  */
-export function fluentParseEntry(
-  src: string,
-  onError: (error: ParseError) => void
-): [string, Entry] {
+export function fluentParseEntry(src: string): [string, Entry] {
   let id = ''
   let attrId = ''
-  try {
-    const entry = new FluentParser().parseEntry(src)
-    if (entry instanceof FTL.Message || entry instanceof FTL.Term) {
+  const entry = new FluentParser().parseEntry(src)
+  if (entry instanceof FTL.Message || entry instanceof FTL.Term) {
+    try {
       id = entry.id.name
       if (entry instanceof FTL.Term) id = '-' + id
       const value = entry.value ? message(entry.value) : null
@@ -61,24 +60,22 @@ export function fluentParseEntry(
               : { '=': value }
           ]
         : [id, { '+': attributes }]
-    } else if (entry instanceof FTL.Junk && entry.annotations[0]) {
-      const annot = entry.annotations[0]
-      const msg = `fluent: ${annot.message} (${annot.code})`
-      const span = annot?.span ?? entry.span
-      onError(new ParseError(msg, span?.start ?? 0, span?.end ?? src.length))
-      return ['', { '=': [] }]
-    } else {
-      throw new Error('Parse error')
+    } catch (error) {
+      if (attrId) id += '.' + attrId
+      const pre = id ? `fluent(${id})` : 'fluent'
+      const msg =
+        error instanceof FluentError
+          ? `${error.message} (${error.code})`
+          : String(error)
+      throw new ParseError(`${pre}: ${msg}`, 0, src.length)
     }
-  } catch (error) {
-    if (attrId) id += '.' + attrId
-    const pre = id ? `fluent(${id})` : 'fluent'
-    const msg =
-      error instanceof FluentError
-        ? `${error.message} (${error.code})`
-        : String(error)
-    onError(new ParseError(`${pre}: ${msg}`, 0, src.length))
-    return ['', { '=': [] }]
+  } else if (entry instanceof FTL.Junk && entry.annotations[0]) {
+    const annot = entry.annotations[0]
+    const msg = `fluent: ${annot.message} (${annot.code})`
+    const span = annot?.span ?? entry.span
+    throw new ParseError(msg, span?.start ?? 0, span?.end ?? src.length)
+  } else {
+    throw new ParseError('fluent: Parse error', 0, src.length)
   }
 }
 

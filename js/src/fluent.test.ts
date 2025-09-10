@@ -110,25 +110,25 @@ describe('pattern serialize errors', () => {
 describe('entry parse', () => {
   const ok = (name: string, src: string, exp: Entry) =>
     test(name, () => {
-      const onError = vi.fn()
-      const res = fluentParseEntry(src, onError)
-      expect(onError).not.toHaveBeenCalled()
+      const res = fluentParseEntry(src)
       expect(res).toEqual([name, exp])
     })
 
   const fail = (name: string, src: string, code: string | null) =>
     test(name, () => {
-      const onError = vi.fn()
-      fluentParseEntry(src, onError)
-      expect(onError).toHaveBeenCalledOnce()
-      const error = onError.mock.calls[0][0]
-      expect(error).toBeInstanceOf(ParseError)
-      if (code) {
-        expect(error.message).toMatch(
-          new RegExp(`^fluent(\\(\\w+\\))?: .*\\(${code}\\)$`)
-        )
-      } else {
-        expect(error.message).toMatch(/^fluent/)
+      try {
+        fluentParseEntry(src)
+        throw Error('Expectred an error')
+        // @ts-expect-error yes, we check this.
+      } catch (error: ParseError) {
+        expect(error).toBeInstanceOf(ParseError)
+        if (code) {
+          expect(error.message).toMatch(
+            new RegExp(`^fluent(\\(\\w+\\))?: .*\\(${code}\\)$`)
+          )
+        } else {
+          expect(error.message).toMatch(/^fluent/)
+        }
       }
     })
 
