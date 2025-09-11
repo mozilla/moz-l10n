@@ -87,7 +87,7 @@ describe('pattern serialize errors', () => {
   const fail = (name: string, pattern: Pattern) =>
     test(name, () => {
       const onError = vi.fn()
-      const src = fluentSerializePattern(pattern, onError)
+      const src = fluentSerializePattern(pattern, { onError })
       expect(onError).toHaveBeenCalledOnce()
       const error = onError.mock.calls[0][0]
       expect(error).toBeInstanceOf(SerializeError)
@@ -371,4 +371,29 @@ describe('entry', () => {
   fail('missing key', 'value\n', 'E0003')
   fail('missing expression end', 'key = missing {', 'E0028')
   fail('missing expression body', 'key = missing {}\n', 'E0028')
+})
+
+describe('escapeSyntax option', () => {
+  test('unset', () => {
+    const res = fluentSerializeEntry('key', { '=': ['{ \\foo }'] })
+    expect(res).toBe('key = \\u007b \\\\foo \\u007d\n')
+  })
+
+  test('set true', () => {
+    const res = fluentSerializeEntry(
+      'key',
+      { '=': ['{ \\foo }'] },
+      { escapeSyntax: true }
+    )
+    expect(res).toBe('key = \\u007b \\\\foo \\u007d\n')
+  })
+
+  test('set false', () => {
+    const res = fluentSerializeEntry(
+      'key',
+      { '=': ['{ \\foo }'] },
+      { escapeSyntax: false }
+    )
+    expect(res).toBe('key = { \\foo }\n')
+  })
 })

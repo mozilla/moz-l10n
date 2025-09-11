@@ -24,12 +24,22 @@ import type {
   SelectMessage
 } from './model.ts'
 
-export function fluentSerializeEntry(id: string, entry: Entry): string {
+export type FluentSerializeOptions = {
+  /** If set to `false`, syntax characters such as { and } in text elements are not escaped. */
+  escapeSyntax?: boolean
+  onError?: (error: SerializeError) => void
+}
+
+export function fluentSerializeEntry(
+  id: string,
+  entry: Entry,
+  options?: FluentSerializeOptions
+): string {
   const isTerm = id.startsWith('-')
   if (!isIdentifier(isTerm ? id.substring(1) : id))
     throw new SerializeError(`Unsupported message identifier: ${id}`)
   let str = `${id} =`
-  const msgStr = fluentSerializeMessage(entry['='])
+  const msgStr = fluentSerializeMessage(entry['='], options)
   if (msgStr) {
     str += msgStr.includes('\n')
       ? '\n' + msgStr.replace(/^/gm, '    ')
@@ -41,7 +51,7 @@ export function fluentSerializeEntry(id: string, entry: Entry): string {
   if (entry['+']) {
     for (const [name, value] of Object.entries(entry['+'])) {
       str += `    .${name} =`
-      const attrStr = fluentSerializeMessage(value) || '{ "" }'
+      const attrStr = fluentSerializeMessage(value, options) || '{ "" }'
       str += attrStr.includes('\n')
         ? `\n${attrStr.replace(/^/gm, '        ')}\n`
         : ` ${attrStr}\n`
@@ -50,13 +60,13 @@ export function fluentSerializeEntry(id: string, entry: Entry): string {
   return str
 }
 
-function fluentSerializeMessage(message: Message | undefined): string {
-  const onError = (error: SerializeError) => {
-    throw error
-  }
+export function fluentSerializeMessage(
+  message: Message | undefined,
+  options?: FluentSerializeOptions
+): string {
   if (!message) return ''
-  if (Array.isArray(message)) return fluentSerializePattern(message, onError)
-  if (message.msg) return fluentSerializePattern(message.msg, onError)
+  if (Array.isArray(message)) return fluentSerializePattern(message, options)
+  if (message.msg) return fluentSerializePattern(message.msg, options)
 
   // It gets a bit complicated for SelectMessage. We'll be modifying this list,
   // building select expressions for each selector starting from the last one
@@ -66,7 +76,7 @@ function fluentSerializeMessage(message: Message | undefined): string {
   // will be next to all other variants for which the first N-1 keys are equal.
   const variants = message.alt.map(
     (v) =>
-      [[...v.keys], [fluentSerializePattern(v.pat, onError)]] satisfies [
+      [[...v.keys], [fluentSerializePattern(v.pat, options)]] satisfies [
         unknown[],
         string[]
       ]
@@ -145,18 +155,23 @@ function variant(
 
 export function fluentSerializePattern(
   pattern: Pattern,
-  onError?: (error: SerializeError) => void
+  options?: FluentSerializeOptions
 ): string {
-  onError ??= (error) => {
-    throw error
-  }
+  const escapeSyntax = options?.escapeSyntax ?? true
+  const onError =
+    options?.onError ??
+    ((error) => {
+      throw error
+    })
   let str = ''
   for (const part of pattern) {
     if (typeof part === 'string') {
-      str += part
-        .replaceAll('\\', '\\\\')
-        .replaceAll('{', '\\u007b')
-        .replaceAll('}', '\\u007d')
+      str += escapeSyntax
+        ? part
+            .replaceAll('\\', '\\\\')
+            .replaceAll('{', '\\u007b')
+            .replaceAll('}', '\\u007d')
+        : part
     } else {
       try {
         str += `{ ${expression(part, false)} }`

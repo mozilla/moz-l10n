@@ -19,7 +19,9 @@ import { ParseError, SerializeError } from './errors.js'
 import { fluentParseEntry, fluentParsePattern } from './fluent-parse.ts'
 import {
   fluentSerializeEntry,
-  fluentSerializePattern
+  fluentSerializeMessage,
+  fluentSerializePattern,
+  type FluentSerializeOptions
 } from './fluent-serialize.ts'
 import { mf2ParsePattern } from './mf2-parse.ts'
 import { mf2SerializePattern } from './mf2-serialize.ts'
@@ -50,6 +52,7 @@ export {
   fluentParseEntry,
   fluentParsePattern,
   fluentSerializeEntry,
+  fluentSerializeMessage,
   fluentSerializePattern,
   mf2ParsePattern,
   mf2SerializePattern,
@@ -58,7 +61,8 @@ export {
   webextParsePattern,
   webextSerializePattern,
   xliffParsePattern,
-  xliffSerializePattern
+  xliffSerializePattern,
+  type FluentSerializeOptions
 }
 
 export type FormatKey =
@@ -138,7 +142,7 @@ export function serializePattern(
     case 'android':
       return androidSerializePattern(pattern, onError)
     case 'fluent':
-      return fluentSerializePattern(pattern, onError)
+      return fluentSerializePattern(pattern, { onError })
     case 'mf2':
       return mf2SerializePattern(pattern)
     case 'webext':
