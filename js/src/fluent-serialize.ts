@@ -14,22 +14,167 @@
  */
 
 import { ERROR_RESULT, SerializeError } from './errors.ts'
-import type { Expression, Markup, Pattern } from './model.ts'
+import type {
+  CatchallKey,
+  Entry,
+  Expression,
+  Markup,
+  Message,
+  Pattern,
+  SelectMessage
+} from './model.ts'
+
+export type FluentSerializeOptions = {
+  /** If set to `false`, syntax characters such as { and } in text elements are not escaped. */
+  escapeSyntax?: boolean
+  onError?: (error: SerializeError) => void
+}
+
+export function fluentSerializeEntry(
+  id: string,
+  entry: Entry,
+  options?: FluentSerializeOptions
+): string {
+  const isTerm = id.startsWith('-')
+  if (!isIdentifier(isTerm ? id.substring(1) : id))
+    throw new SerializeError(`Unsupported message identifier: ${id}`)
+  let str = `${id} =`
+  const msgStr = fluentSerializeMessage(entry['='], options)
+  if (msgStr) {
+    str += msgStr.includes('\n')
+      ? '\n' + msgStr.replace(/^/gm, '    ')
+      : ' ' + msgStr
+  } else if (isTerm || !entry['+']) {
+    str += ' { "" }'
+  }
+  str += '\n'
+  if (entry['+']) {
+    for (const [name, value] of Object.entries(entry['+'])) {
+      str += `    .${name} =`
+      const attrStr = fluentSerializeMessage(value, options) || '{ "" }'
+      str += attrStr.includes('\n')
+        ? `\n${attrStr.replace(/^/gm, '        ')}\n`
+        : ` ${attrStr}\n`
+    }
+  }
+  return str
+}
+
+export function fluentSerializeMessage(
+  message: Message | undefined,
+  options?: FluentSerializeOptions
+): string {
+  if (!message) return ''
+  if (Array.isArray(message)) return fluentSerializePattern(message, options)
+  if (message.msg) return fluentSerializePattern(message.msg, options)
+
+  // It gets a bit complicated for SelectMessage. We'll be modifying this list,
+  // building select expressions for each selector starting from the last one
+  // until this list has only one entry `[[], pattern]`.
+  //
+  // We rely on the variants being in order, so that a variant with N keys
+  // will be next to all other variants for which the first N-1 keys are equal.
+  const variants = message.alt.map(
+    (v) =>
+      [[...v.keys], [fluentSerializePattern(v.pat, options)]] satisfies [
+        unknown[],
+        string[]
+      ]
+  )
+
+  const other = fallbackName(message)
+  const keys0 = variants[0][0]
+  while (keys0.length) {
+    const selName = message.sel[keys0.length - 1]
+    const selExpr = message.decl[selName]
+    const selector =
+      isIdentifier(selExpr.$) &&
+      !selExpr.opt &&
+      (selExpr.fn === 'number' || selExpr.fn === 'string')
+        ? '$' + selExpr.$
+        : expression(selExpr, true)
+    let baseKeys = ''
+    let selPattern: string[] | null = null
+    let i = 0
+    while (i < variants.length) {
+      const [keys, pattern] = variants[i]
+      const key = keys.pop()! // Ultimately modifies keys0
+      const jsonKeys = JSON.stringify(keys)
+      const varBody = variant(key, other, pattern)
+      if (selPattern && jsonKeys == baseKeys) {
+        selPattern.push(varBody)
+        variants.splice(i, 1)
+      } else {
+        if (selPattern) selPattern.push('}')
+        baseKeys = jsonKeys
+        selPattern = pattern //ftl.SelectExpression(selector.clone(), [ftl_variant])
+        selPattern.splice(0, selPattern.length, `{ ${selector} ->\n${varBody}`)
+        i += 1
+      }
+    }
+    if (selPattern) selPattern.push('}')
+  }
+  if (variants.length !== 1)
+    throw new SerializeError(
+      `Error resolving select message variants (n=${variants.length})`
+    )
+  return variants[0][1].join('')
+}
+
+function fallbackName(msg: SelectMessage): string {
+  // Try `other`, `other1`, `other2`, ... until a free one is found.
+  const root = 'other'
+  let key = root
+  let i = 0
+  const keys = msg.alt.flatMap((v) =>
+    v.keys.map((k) => (typeof k === 'string' ? k : k['*']))
+  )
+  while (keys.includes(key)) {
+    i += 1
+    key = `${root}${i}`
+  }
+  return key
+}
+
+function variant(
+  key: string | CatchallKey,
+  other: string,
+  pattern: string[]
+): string {
+  const k = typeof key === 'string' ? key : key['*'] || other
+  if (isNaN(Number(k)) && !/^[a-zA-Z][\w-]*$/.test(k)) {
+    throw new SerializeError(`Unsupported variant key: ${k}`)
+  }
+  const d = typeof key === 'string' ? ' ' : '*'
+  const pre = `   ${d}[${k}]`
+  const value = pattern.join('').trimEnd() || '{ "" }'
+  return value.includes('\n')
+    ? `${pre}\n${value.replace(/^/gm, '        ')}\n`
+    : `${pre} ${value}\n`
+}
 
 export function fluentSerializePattern(
   pattern: Pattern,
-  onError: (error: SerializeError) => void
+  options?: FluentSerializeOptions
 ): string {
+  const escapeSyntax = options?.escapeSyntax ?? true
+  const onError =
+    options?.onError ??
+    ((error) => {
+      throw error
+    })
   let str = ''
   for (const part of pattern) {
     if (typeof part === 'string') {
-      str += part
-        .replaceAll('\\', '\\\\')
-        .replaceAll('{', '\\u007b')
-        .replaceAll('}', '\\u007d')
+      str += escapeSyntax
+        ? part
+            .replaceAll('\\', '\\\\')
+            .replaceAll('{', '\\u007b')
+            .replaceAll('}', '\\u007d')
+        : part
     } else {
       try {
-        str += `{ ${expression(part)} }`
+        str += `{ ${expression(part, false)} }`
       } catch (error) {
         if (error instanceof SerializeError) {
           error.pos = str.length
@@ -44,7 +189,7 @@ export function fluentSerializePattern(
   return str
 }
 
-function expression(expr: Expression | Markup) {
+function expression(expr: Expression | Markup, isSelector: boolean): string {
   if ('fn' in expr && isIdentifier(expr.fn)) {
     const options: string[] = []
     if (expr.opt) {
@@ -60,16 +205,29 @@ function expression(expr: Expression | Markup) {
       case 'message': {
         if (expr._ !== undefined) {
           const id = expr._
-          if (id[0] === '-' && isIdentifier(id.substring(1))) {
-            return options.length ? `${id}(${options.join(', ')})` : id
+          const isTerm = id.startsWith('-')
+          const idName = isTerm ? id.substring(1) : id
+          const validId = isIdentifier(idName)
+          const validIdWithAttr = !validId && isIdWithAttr(idName)
+          if (isSelector) {
+            // E0016: Message references cannot be used as selectors
+            // E0017: Terms cannot be used as selectors
+            // E0018: Attributes of messages cannot be used as selectors
+            if (isTerm && validIdWithAttr)
+              return options.length ? `${id}(${options.join(', ')})` : id
+          } else if (isTerm) {
+            // E0019: Attributes of terms cannot be used as placeables
+            if (validId)
+              return options.length ? `${id}(${options.join(', ')})` : id
+          } else {
+            if ((validId || validIdWithAttr) && options.length === 0) return id
           }
-          if (isMsgRef(id) && options.length === 0) return id
         }
         const error = 'fluent: Unsupported message or term reference'
         throw new SerializeError(error)
       }
       case 'number':
-        if (options.length === 0 && isNumber(expr._)) return expr._
+        if (options.length === 0 && isNumber(expr._)) return expr._!
       // fallthrough
       default: {
         if ('_' in expr && expr._ !== undefined) {
@@ -97,8 +255,8 @@ const literal = (value: string | undefined): string =>
 const isIdentifier = (value: string | undefined): value is string =>
   /^[A-Za-z][-0-9A-Z_a-z]*$/.test(value ?? '')
 
-const isMsgRef = (value: string): boolean =>
-  /^[A-Za-z][-0-9A-Z_a-z]*(\.[A-Za-z][-0-9A-Z_a-z]*)?$/.test(value)
+const isIdWithAttr = (value: string): boolean =>
+  /^[A-Za-z][-0-9A-Z_a-z]*\.[A-Za-z][-0-9A-Z_a-z]*$/.test(value)
 
 const isNumber = (value: string | undefined): boolean =>
   /^-?\d+(\.\d*)?$/.test(value ?? '')

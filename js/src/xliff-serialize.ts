@@ -19,8 +19,11 @@ import { appendText, serialize, setAttributes } from './xml-utils.ts'
 
 export function xliffSerializePattern(
   pattern: Pattern,
-  onError: (error: SerializeError) => void
+  onError?: (error: SerializeError) => void
 ): string {
+  onError ??= (error) => {
+    throw error
+  }
   const doc = new DOMParser().parseFromString('<target></target>', 'text/xml')
   const root = doc.querySelector('target')!
   let node = root

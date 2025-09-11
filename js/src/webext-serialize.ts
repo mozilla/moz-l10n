@@ -18,8 +18,11 @@ import type { Pattern } from './model.ts'
 
 export function webextSerializePattern(
   pattern: Pattern,
-  onError: (error: SerializeError) => void
+  onError?: (error: SerializeError) => void
 ): string {
+  onError ??= (error) => {
+    throw error
+  }
   let str = ''
   for (const part of pattern) {
     if (typeof part === 'string') {

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /* Copyright Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,14 +24,10 @@ import { xliffParsePattern } from './xliff-parse.ts'
 describe('success', () => {
   const ok = (name: string, pattern: Pattern, exp: string) =>
     test(name, () => {
-      const onError = vi.fn()
-
-      const src = xliffSerializePattern(pattern, onError)
-      expect(onError).not.toHaveBeenCalled()
+      const src = xliffSerializePattern(pattern)
       expect(src).toBe(exp)
 
-      const res = xliffParsePattern(src, onError)
-      expect(onError).not.toHaveBeenCalled()
+      const res = xliffParsePattern(src)
       expect(res).toEqual(pattern)
     })
 
@@ -59,10 +57,12 @@ describe('success', () => {
 
 describe('parse errors', () => {
   test('invalid xml', () => {
-    const onError = vi.fn()
-    xliffParsePattern('Hello <b>', onError)
-    expect(onError).toHaveBeenCalledOnce()
-    const error = onError.mock.calls[0][0]
+    let error: any
+    try {
+      xliffParsePattern('Hello <b>')
+    } catch (error_) {
+      error = error_
+    }
     expect(error).toBeInstanceOf(ParseError)
     expect(error.message).toMatch(/^xliff: /)
   })

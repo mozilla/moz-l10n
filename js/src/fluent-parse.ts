@@ -270,8 +270,11 @@ function selectExpression(
  */
 export function fluentParsePattern(
   src: string,
-  onError: (error: ParseError) => void
+  onError?: (error: ParseError) => void
 ): Pattern {
+  onError ??= (error) => {
+    throw error
+  }
   const pattern: Pattern = []
   const ps = new FluentParserStream(src)
   let ch

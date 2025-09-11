@@ -16,10 +16,7 @@
 import { ParseError } from './errors.ts'
 import type { Expression, Markup, Pattern } from './model.ts'
 
-export function xliffParsePattern(
-  src: string,
-  onError: (error: ParseError) => void
-): Pattern {
+export function xliffParsePattern(src: string): Pattern {
   const doc = new DOMParser().parseFromString(
     `<target>${src}</target>`,
     'text/xml'
@@ -28,8 +25,7 @@ export function xliffParsePattern(
   const error = doc.querySelector('parsererror')
   if (!root || error) {
     const errMsg = 'xliff: ' + (error?.textContent ?? 'XML parser error')
-    onError(new ParseError(errMsg))
-    return []
+    throw new ParseError(errMsg)
   }
   return Array.from(parseElement(root))
 }

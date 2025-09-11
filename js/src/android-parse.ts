@@ -27,10 +27,7 @@ const _xmlEntities = new Set(['amp', 'lt', 'gt', 'apos', 'quot'])
 let _xmlEntityKey = Math.floor(Math.random() * 1e9)
 
 /** Matches `parse_pattern()` in `moz.l10n.formats.android.parse`. */
-export function androidParsePattern(
-  src: string,
-  onError: (error: ParseError) => void
-): Pattern {
+export function androidParsePattern(src: string): Pattern {
   const entities: Record<string, string> = {}
   const safe = src.replace(/&([a-z][a-z0-9_]*);/gi, (match, name) => {
     if (_xmlEntities.has(name)) return match
@@ -46,8 +43,7 @@ export function androidParsePattern(
   const error = doc.querySelector('parsererror')
   if (!root || error) {
     const errMsg = 'android: ' + (error?.textContent ?? 'XML parser error')
-    onError(new ParseError(errMsg))
-    return []
+    throw new ParseError(errMsg)
   }
 
   if (root.childElementCount === 0 && resoureRef.test(root.textContent ?? '')) {

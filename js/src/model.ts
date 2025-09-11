@@ -22,10 +22,10 @@ export type Entry = {
   /** metadata */
   '@'?: Metadata
 
-  /** message */
+  /** message value */
   '='?: Message
 
-  /** properties */
+  /** message properties */
   '+'?: Record<string, Message>
 } & ({ '=': Message } | { '+': Record<string, Message> })
 
@@ -92,3 +92,7 @@ export const isExpression = (
 
 export const isMarkup = (x: string | Expression | Markup): x is Markup =>
   typeof x !== 'string' && ('open' in x || 'close' in x || 'elem' in x)
+
+export const isSelectMessage = (
+  msg: Message | null | undefined
+): msg is SelectMessage => !!msg && !Array.isArray(msg) && !msg.msg
