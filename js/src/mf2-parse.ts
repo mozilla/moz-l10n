@@ -17,25 +17,20 @@ import { MessageSyntaxError, Model, parseMessage } from 'messageformat'
 import { ParseError } from './errors.ts'
 import type { Expression, Pattern } from './model.ts'
 
-export function mf2ParsePattern(
-  src: string,
-  onError: (error: ParseError) => void
-): Pattern {
+export function mf2ParsePattern(src: string): Pattern {
   let msg: Model.Message
   try {
     msg = parseMessage(`{{${src}}}`)
   } catch (error) {
     if (error instanceof MessageSyntaxError) {
       const err = `mf2: ${error.message}`
-      onError(new ParseError(err, error.start - 2, error.end - 2))
+      throw new ParseError(err, error.start - 2, error.end - 2)
     } else {
-      onError(new ParseError(`mf2: ${error}`, 0, src.length))
+      throw new ParseError(`mf2: ${error}`, 0, src.length)
     }
-    return []
   }
   if (msg.type !== 'message' || msg.declarations.length) {
-    onError(new ParseError(`mf2: Parse error`, 0, src.length))
-    return []
+    throw new ParseError(`mf2: Parse error`, 0, src.length)
   }
   return msg.pattern.map(patternPart)
 }

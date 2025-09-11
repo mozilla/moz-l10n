@@ -27,14 +27,10 @@ import type { Entry, Pattern } from './model.ts'
 describe('pattern success', () => {
   const ok = (name: string, pattern: Pattern, exp: string) =>
     test(name, () => {
-      const onError = vi.fn()
-
-      const src = fluentSerializePattern(pattern, onError)
-      expect(onError).not.toHaveBeenCalled()
+      const src = fluentSerializePattern(pattern)
       expect(src).toBe(exp)
 
-      const res = fluentParsePattern(src, onError)
-      expect(onError).not.toHaveBeenCalled()
+      const res = fluentParsePattern(src)
       expect(res).toEqual(pattern)
     })
 

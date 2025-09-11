@@ -95,33 +95,27 @@ export function messageIsEmpty(msg: Message, anyVariant = false): boolean {
  * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/schemas/message.json
  *
  * @param baseMsg - Required by `webext` for named placeholders.
- * @param onError - If undefined, errors are thrown.
  */
 export function parsePattern(
   format: FormatKey,
   src: string,
-  baseMsg?: Message,
-  onError?: (error: ParseError) => void
+  baseMsg?: Message
 ): Pattern {
-  onError ??= (error) => {
-    throw error
-  }
   switch (format) {
     case 'android':
-      return androidParsePattern(src, onError)
+      return androidParsePattern(src)
     case 'fluent':
-      return fluentParsePattern(src, onError)
+      return fluentParsePattern(src)
     case 'mf2':
-      return mf2ParsePattern(src, onError)
+      return mf2ParsePattern(src)
     case 'webext':
-      return webextParsePattern(baseMsg ?? [], src, onError)
+      return webextParsePattern(baseMsg ?? [], src)
     case 'xliff':
-      return xliffParsePattern(src, onError)
+      return xliffParsePattern(src)
     case 'plain':
       return [src]
     default:
-      onError(new ParseError(`${format}: Unsupported format`))
-      return [src]
+      throw new ParseError(`${format}: Unsupported format`)
   }
 }
 
