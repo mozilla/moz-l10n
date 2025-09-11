@@ -13,32 +13,78 @@
  * limitations under the License.
  */
 
-import { isExpression, type Expression, type Pattern } from './model.ts'
+import {
+  isExpression,
+  type Message,
+  type Expression,
+  type Pattern,
+  Markup
+} from './model.ts'
 
-export function mf2SerializePattern(pattern: Pattern): string {
+export function mf2SerializeMessage(msg: Message) {
+  if (Array.isArray(msg)) return mf2SerializePattern(msg, 'auto')
+
+  let res = ''
+  for (const [name, expr] of Object.entries(msg.decl)) {
+    res += expr.$ === name ? '.input ' : `.local $${name} = `
+    res += expression(expr) + '\n'
+  }
+
+  if (msg.msg) return res + mf2SerializePattern(msg.msg, true)
+
+  res += '.match'
+  for (const sel of msg.sel) res += ' $' + sel
+  for (const { keys, pat } of msg.alt) {
+    res += '\n'
+    for (const key of keys) res += typeof key === 'string' ? key + ' ' : '* '
+    res += mf2SerializePattern(pat, true)
+  }
+  return res
+}
+
+/**
+ * @param quoted - If `true`, the pattern is always {{quoted}}.
+ *   If `'auto'`, the pattern is quoted if it starts with a {{.period}}.
+ *   If `false`, the output pattern is never quoted.
+ */
+export function mf2SerializePattern(
+  pattern: Pattern,
+  quoted: boolean | 'auto'
+): string {
   let str = ''
   for (const part of pattern) {
     if (typeof part === 'string') {
       str += part.replace(/[\\{}]/g, '\\$&')
-    } else if (isExpression(part)) {
-      str += '{'
-      let hasArg = true
-      if (typeof part._ === 'string') str += literal(part._)
-      else if (part.$) str += '$' + part.$
-      else hasArg = false
-      if (part.fn) {
-        if (hasArg) str += ' '
-        str += ':' + part.fn + options(part.opt)
-      }
-      str += attributes(part.attr) + '}'
     } else {
-      if (part.open) str += '{#' + part.open
-      else if (part.elem) str += '{#' + part.elem
-      else str += '{/' + part.close
-      str += options(part.opt) + attributes(part.attr)
-      str += part.elem ? '/}' : '}'
+      str += isExpression(part) ? expression(part) : markup(part)
     }
   }
+  return quoted === true || (quoted === 'auto' && str.startsWith('.'))
+    ? '{{' + str + '}}'
+    : str
+}
+
+function expression(expr: Expression) {
+  let str = '{'
+  let hasArg = true
+  if (typeof expr._ === 'string') str += literal(expr._)
+  else if (expr.$) str += '$' + expr.$
+  else hasArg = false
+  if (expr.fn) {
+    if (hasArg) str += ' '
+    str += ':' + expr.fn + options(expr.opt)
+  }
+  str += attributes(expr.attr) + '}'
+  return str
+}
+
+function markup(markup: Markup) {
+  let str: string
+  if (markup.open) str = '{#' + markup.open
+  else if (markup.elem) str = '{#' + markup.elem
+  else str = '{/' + markup.close
+  str += options(markup.opt) + attributes(markup.attr)
+  str += markup.elem ? '/}' : '}'
   return str
 }
 

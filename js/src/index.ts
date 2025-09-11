@@ -23,8 +23,8 @@ import {
   fluentSerializePattern,
   type FluentSerializeOptions
 } from './fluent-serialize.ts'
-import { mf2ParsePattern } from './mf2-parse.ts'
-import { mf2SerializePattern } from './mf2-serialize.ts'
+import { mf2ParseMessage, mf2ParsePattern } from './mf2-parse.ts'
+import { mf2SerializeMessage, mf2SerializePattern } from './mf2-serialize.ts'
 import type { Message, Pattern } from './model.ts'
 import { webextParsePattern } from './webext-parse.ts'
 import { webextSerializePattern } from './webext-serialize.ts'
@@ -54,7 +54,9 @@ export {
   fluentSerializeEntry,
   fluentSerializeMessage,
   fluentSerializePattern,
+  mf2ParseMessage,
   mf2ParsePattern,
+  mf2SerializeMessage,
   mf2SerializePattern,
   ParseError,
   SerializeError,
@@ -144,7 +146,7 @@ export function serializePattern(
     case 'fluent':
       return fluentSerializePattern(pattern, { onError })
     case 'mf2':
-      return mf2SerializePattern(pattern)
+      return mf2SerializePattern(pattern, false)
     case 'webext':
       return webextSerializePattern(pattern, onError)
     case 'xliff':
