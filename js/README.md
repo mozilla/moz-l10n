@@ -35,8 +35,7 @@ import { ParseError, parsePattern } from '@mozilla/l10n'
 function parsePattern(
   format: 'android' | 'fluent' | 'mf2' | 'plain' | 'webext' | 'xliff',
   src: string,
-  baseMsg?: Message,
-  onError?: (error: ParseError) => void
+  baseMsg?: Message
 ): Pattern
 
 class ParseError extends Error {

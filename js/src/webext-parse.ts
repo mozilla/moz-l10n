@@ -19,8 +19,11 @@ import type { Message, Pattern } from './model.ts'
 export function webextParsePattern(
   msg: Message,
   src: string,
-  onError: (error: ParseError) => void
+  onError?: (error: ParseError) => void
 ): Pattern {
+  onError ??= (error) => {
+    throw error
+  }
   const decl = Array.isArray(msg) ? {} : msg.decl
   const pattern: Pattern = []
   const addText = (text: string) => {

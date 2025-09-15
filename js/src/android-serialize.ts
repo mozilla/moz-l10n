@@ -24,8 +24,11 @@ let xmlEntityKey = Math.floor(Math.random() * 1e9)
 
 export function androidSerializePattern(
   pattern: Pattern,
-  onError: (error: SerializeError) => void
+  onError?: (error: SerializeError) => void
 ): string {
+  onError ??= (error) => {
+    throw error
+  }
   if (
     pattern.length === 1 &&
     isExpression(pattern[0]) &&

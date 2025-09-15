@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /* Copyright Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,23 +65,20 @@ describe('parsePattern', () => {
     expect(pattern).toEqual(['{foo %s}'])
   })
 
-  for (const [format, str, exp] of [
-    ['unsupported' as FormatKey, 'bar', ['bar']],
-    ['android', 'invalid <xml>', []],
-    ['fluent', 'invalid }', ['invalid ', '}']]
-  ] as [FormatKey, string, Pattern][]) {
+  for (const [format, str] of [
+    ['unsupported' as FormatKey, 'bar'],
+    ['android', 'invalid <xml>'],
+    ['fluent', 'invalid }']
+  ] as [FormatKey, string][]) {
     test(`${format} throw`, () => {
-      expect(() => parsePattern(format, str)).toThrow(ParseError)
-    })
-
-    test(`${format} onError`, () => {
-      const onError = vi.fn()
-      const pattern = parsePattern(format, str, undefined, onError)
-      expect(onError).toHaveBeenCalled()
-      const error = onError.mock.calls[0][0]
+      let error: any
+      try {
+        parsePattern(format, str, undefined)
+      } catch (error_) {
+        error = error_
+      }
       expect(error).toBeInstanceOf(ParseError)
       expect(error.message).toMatch(new RegExp(`^${format}: `))
-      expect(pattern).toEqual(exp)
     })
   }
 })

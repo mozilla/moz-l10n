@@ -17,9 +17,14 @@ import { androidParsePattern } from './android-parse.ts'
 import { androidSerializePattern } from './android-serialize.ts'
 import { ParseError, SerializeError } from './errors.js'
 import { fluentParseEntry, fluentParsePattern } from './fluent-parse.ts'
-import { fluentSerializePattern } from './fluent-serialize.ts'
-import { mf2ParsePattern } from './mf2-parse.ts'
-import { mf2SerializePattern } from './mf2-serialize.ts'
+import {
+  fluentSerializeEntry,
+  fluentSerializeMessage,
+  fluentSerializePattern,
+  type FluentSerializeOptions
+} from './fluent-serialize.ts'
+import { mf2ParseMessage, mf2ParsePattern } from './mf2-parse.ts'
+import { mf2SerializeMessage, mf2SerializePattern } from './mf2-serialize.ts'
 import type { Message, Pattern } from './model.ts'
 import { webextParsePattern } from './webext-parse.ts'
 import { webextSerializePattern } from './webext-serialize.ts'
@@ -29,6 +34,7 @@ import { xliffSerializePattern } from './xliff-serialize.ts'
 export {
   isExpression,
   isMarkup,
+  isSelectMessage,
   type CatchallKey,
   type Entry,
   type Expression,
@@ -45,15 +51,20 @@ export {
   androidSerializePattern,
   fluentParseEntry,
   fluentParsePattern,
+  fluentSerializeEntry,
+  fluentSerializeMessage,
   fluentSerializePattern,
+  mf2ParseMessage,
   mf2ParsePattern,
+  mf2SerializeMessage,
   mf2SerializePattern,
   ParseError,
   SerializeError,
   webextParsePattern,
   webextSerializePattern,
   xliffParsePattern,
-  xliffSerializePattern
+  xliffSerializePattern,
+  type FluentSerializeOptions
 }
 
 export type FormatKey =
@@ -90,33 +101,27 @@ export function messageIsEmpty(msg: Message, anyVariant = false): boolean {
  * JSON Schema: https://github.com/mozilla/moz-l10n/blob/main/schemas/message.json
  *
  * @param baseMsg - Required by `webext` for named placeholders.
- * @param onError - If undefined, errors are thrown.
  */
 export function parsePattern(
   format: FormatKey,
   src: string,
-  baseMsg?: Message,
-  onError?: (error: ParseError) => void
+  baseMsg?: Message
 ): Pattern {
-  onError ??= (error) => {
-    throw error
-  }
   switch (format) {
     case 'android':
-      return androidParsePattern(src, onError)
+      return androidParsePattern(src)
     case 'fluent':
-      return fluentParsePattern(src, onError)
+      return fluentParsePattern(src)
     case 'mf2':
-      return mf2ParsePattern(src, onError)
+      return mf2ParsePattern(src)
     case 'webext':
-      return webextParsePattern(baseMsg ?? [], src, onError)
+      return webextParsePattern(baseMsg ?? [], src)
     case 'xliff':
-      return xliffParsePattern(src, onError)
+      return xliffParsePattern(src)
     case 'plain':
       return [src]
     default:
-      onError(new ParseError(`${format}: Unsupported format`))
-      return [src]
+      throw new ParseError(`${format}: Unsupported format`)
   }
 }
 
@@ -139,9 +144,9 @@ export function serializePattern(
     case 'android':
       return androidSerializePattern(pattern, onError)
     case 'fluent':
-      return fluentSerializePattern(pattern, onError)
+      return fluentSerializePattern(pattern, { onError })
     case 'mf2':
-      return mf2SerializePattern(pattern)
+      return mf2SerializePattern(pattern, false)
     case 'webext':
       return webextSerializePattern(pattern, onError)
     case 'xliff':

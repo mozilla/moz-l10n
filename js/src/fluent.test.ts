@@ -18,20 +18,19 @@ import ftl from '@fluent/dedent'
 
 import { ERROR_RESULT, ParseError, SerializeError } from './errors.ts'
 import { fluentParseEntry, fluentParsePattern } from './fluent-parse.ts'
-import { fluentSerializePattern } from './fluent-serialize.ts'
+import {
+  fluentSerializeEntry,
+  fluentSerializePattern
+} from './fluent-serialize.ts'
 import type { Entry, Pattern } from './model.ts'
 
 describe('pattern success', () => {
   const ok = (name: string, pattern: Pattern, exp: string) =>
     test(name, () => {
-      const onError = vi.fn()
-
-      const src = fluentSerializePattern(pattern, onError)
-      expect(onError).not.toHaveBeenCalled()
+      const src = fluentSerializePattern(pattern)
       expect(src).toBe(exp)
 
-      const res = fluentParsePattern(src, onError)
-      expect(onError).not.toHaveBeenCalled()
+      const res = fluentParsePattern(src)
       expect(res).toEqual(pattern)
     })
 
@@ -88,7 +87,7 @@ describe('pattern serialize errors', () => {
   const fail = (name: string, pattern: Pattern) =>
     test(name, () => {
       const onError = vi.fn()
-      const src = fluentSerializePattern(pattern, onError)
+      const src = fluentSerializePattern(pattern, { onError })
       expect(onError).toHaveBeenCalledOnce()
       const error = onError.mock.calls[0][0]
       expect(error).toBeInstanceOf(SerializeError)
@@ -107,11 +106,14 @@ describe('pattern serialize errors', () => {
   fail('invalid term reference', [{ _: '-foo.bar', fn: 'message' }])
 })
 
-describe('entry parse', () => {
-  const ok = (name: string, src: string, exp: Entry) =>
+describe('entry', () => {
+  const ok = (name: string, src: string, exp: Entry, expStr?: string) =>
     test(name, () => {
       const res = fluentParseEntry(src)
       expect(res).toEqual([name, exp])
+
+      const str = fluentSerializeEntry(...res)
+      expect(str).toBe(expStr ?? src)
     })
 
   const fail = (name: string, src: string, code: string | null) =>
@@ -132,7 +134,7 @@ describe('entry parse', () => {
       }
     })
 
-  ok('plain', 'plain = Progress: { NUMBER($num, style: "percent") }.', {
+  ok('plain', 'plain = Progress: { NUMBER($num, style: "percent") }.\n', {
     '=': [
       'Progress: ',
       { $: 'num', fn: 'number', opt: { style: 'percent' } },
@@ -148,6 +150,7 @@ describe('entry parse', () => {
             [one] One
            *[other] Other
         }
+
     `,
     {
       '=': {
@@ -169,6 +172,7 @@ describe('entry parse', () => {
             [one] One { $num }
            *[other] Other
         }
+
     `,
     {
       '=': {
@@ -182,7 +186,7 @@ describe('entry parse', () => {
     }
   )
 
-  ok('-term-with-attr', '-term-with-attr = body\n  .attr = value\n', {
+  ok('-term-with-attr', '-term-with-attr = body\n    .attr = value\n', {
     '=': ['body'],
     '+': { attr: ['value'] }
   })
@@ -213,31 +217,47 @@ describe('entry parse', () => {
           { keys: [{ '*': '2' }, 'cc'], pat: ['pre Two mid CC post'] }
         ]
       }
-    }
+    },
+    ftl`
+    two-sels =
+        { $a ->
+            [1]
+                { $b ->
+                   *[bb] pre One mid BB post
+                    [cc] pre One mid CC post
+                }
+           *[2]
+                { $b ->
+                   *[bb] pre Two mid BB post
+                    [cc] pre Two mid CC post
+                }
+        }
+
+    `
   )
 
   ok(
     'deep-sels',
     ftl`
     deep-sels =
-      { $a ->
-          [0]
-            { $b ->
-                [one] {""}
-               *[other] 0,x
-            }
-          [one]
-            { $b ->
-                [one] {"1,1"}
-               *[other] 1,x
-            }
-         *[other]
-            { $b ->
-                [0] x,0
-                [one] x,1
-               *[other] x,x
-            }
-      }
+        { $a ->
+            [0]
+                { $b ->
+                    [one] { "" }
+                   *[other] 0,x
+                }
+            [one]
+                { $b ->
+                    [one] { "1,1" }
+                   *[other] 1,x
+                }
+           *[other]
+                { $b ->
+                    [0] x,0
+                    [one] x,1
+                   *[other] x,x
+                }
+        }
     `,
     {
       '=': {
@@ -256,17 +276,39 @@ describe('entry parse', () => {
           { keys: [{ '*': 'other' }, '0'], pat: ['x,0'] }
         ]
       }
-    }
+    },
+    ftl`
+    deep-sels =
+        { $a ->
+            [0]
+                { $b ->
+                    [one] { "" }
+                   *[other] 0,x
+                }
+            [one]
+                { $b ->
+                    [one] { "1,1" }
+                   *[other] 1,x
+                }
+           *[other]
+                { $b ->
+                    [one] x,1
+                   *[other] x,x
+                    [0] x,0
+                }
+        }
+
+    `
   )
 
   ok(
     'term-attr-sel',
     ftl`
     term-attr-sel =
-      { -term.attr ->
-         [foo] Foo
-        *[other] Other
-      }
+        { -term.attr() ->
+            [foo] Foo
+           *[other] Other
+        }
     `,
     {
       '=': {
@@ -277,28 +319,81 @@ describe('entry parse', () => {
           { keys: [{ '*': 'other' }], pat: ['Other'] }
         ]
       }
-    }
+    },
+    ftl`
+    term-attr-sel =
+        { -term.attr ->
+            [foo] Foo
+           *[other] Other
+        }
+
+    `
   )
 
   fail(
     'term-sel',
     ftl`
     term-sel =
-      { -term ->
-         [foo] Foo
-        *[other] Other
-      }
+        { -term ->
+            [foo] Foo
+           *[other] Other
+        }
     `,
     'E0017'
   )
 
-  ok('comment', '# comment\ncomment = value', { '=': ['value'] })
-  ok('skip-comment', '# comment\n\n\n\nskip-comment = value', {
-    '=': ['value']
-  })
+  fail(
+    'msg-sel',
+    ftl`
+    msg-sel =
+        { msgref ->
+            [foo] Foo
+           *[other] Other
+        }
+    `,
+    'E0016'
+  )
+
+  ok(
+    'comment',
+    '# comment\ncomment = value',
+    { '=': ['value'] },
+    'comment = value\n'
+  )
+  ok(
+    'skip-comment',
+    '# comment\n\n\n\nskip-comment = value',
+    { '=': ['value'] },
+    'skip-comment = value\n'
+  )
   fail('standalone comment', '# comment\n', 'E0002')
 
   fail('missing key', 'value\n', 'E0003')
   fail('missing expression end', 'key = missing {', 'E0028')
   fail('missing expression body', 'key = missing {}\n', 'E0028')
+})
+
+describe('escapeSyntax option', () => {
+  test('unset', () => {
+    const res = fluentSerializeEntry('key', { '=': ['{ \\foo }'] })
+    expect(res).toBe('key = \\u007b \\\\foo \\u007d\n')
+  })
+
+  test('set true', () => {
+    const res = fluentSerializeEntry(
+      'key',
+      { '=': ['{ \\foo }'] },
+      { escapeSyntax: true }
+    )
+    expect(res).toBe('key = \\u007b \\\\foo \\u007d\n')
+  })
+
+  test('set false', () => {
+    const res = fluentSerializeEntry(
+      'key',
+      { '=': ['{ \\foo }'] },
+      { escapeSyntax: false }
+    )
+    expect(res).toBe('key = { \\foo }\n')
+  })
 })

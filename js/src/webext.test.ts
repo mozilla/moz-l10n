@@ -23,14 +23,11 @@ import { webextSerializePattern } from './webext-serialize.ts'
 const ok = (name: string, msg: Pattern | PatternMessage, exp: string) =>
   test(name, () => {
     const pattern = Array.isArray(msg) ? msg : msg.msg
-    const onError = vi.fn()
 
-    const src = webextSerializePattern(pattern, onError)
-    expect(onError).not.toHaveBeenCalled()
+    const src = webextSerializePattern(pattern)
     expect(src).toBe(exp)
 
-    const res = webextParsePattern(msg, src, onError)
-    expect(onError).not.toHaveBeenCalled()
+    const res = webextParsePattern(msg, src)
     expect(res).toEqual(pattern)
   })
 
