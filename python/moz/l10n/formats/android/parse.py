@@ -481,7 +481,7 @@ def parse_inline(
                         yield acc
                         acc = ""
                     yield Expression(tag, "html")
-                    at_br = break_tag_re.fullmatch(tag)
+                    at_br = bool(break_tag_re.fullmatch(tag))
                 else:
                     if acc:
                         yield acc
