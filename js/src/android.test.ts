@@ -91,6 +91,52 @@ describe('success', () => {
   )
 })
 
+describe('newlines', () => {
+  test('breaks', () => {
+    const res = androidParsePattern(
+      '&lt;p>One&lt;/p> &lt;p>two &lt;br/>&lt;hr/> three&lt;/p>'
+    )
+    expect(res).toEqual([
+      { _: '<p>', fn: 'html' },
+      'One',
+      { _: '</p>', fn: 'html' },
+      '\n',
+      { _: '<p>', fn: 'html' },
+      'two ',
+      { _: '<br/>', fn: 'html' },
+      { _: '<hr/>', fn: 'html' },
+      '\nthree',
+      { _: '</p>', fn: 'html' }
+    ])
+  })
+
+  test('list', () => {
+    const res = androidParsePattern(
+      '&lt;ul> &lt;li> One &lt;/li> &lt;li> two &lt;/li> &lt;/ul>'
+    )
+    expect(res).toEqual([
+      { _: '<ul>', fn: 'html' },
+      '\n',
+      { _: '<li>', fn: 'html' },
+      ' One ',
+      { _: '</li>', fn: 'html' },
+      '\n',
+      { _: '<li>', fn: 'html' },
+      ' two ',
+      { _: '</li>', fn: 'html' },
+      '\n',
+      { _: '</ul>', fn: 'html' }
+    ])
+  })
+})
+
+// This works in browsers, but not in tests.
+// https://github.com/capricorn86/happy-dom/issues/1900
+test.fails('CDATA', () => {
+  const res = androidParsePattern('<![CDATA[foo]]>')
+  expect(res).toEqual(['foo'])
+})
+
 describe('parse errors', () => {
   test('invalid xml', () => {
     let error: any

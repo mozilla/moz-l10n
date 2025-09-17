@@ -169,17 +169,27 @@ const _inline =
   // 1:esc-unicode     2:esc-char       4:printf
   //                         3:esc-elem                                5:printf-conversion             6:xml-entity
   /\\u([0-9A-Fa-f]{4})|\\(.)|(<[^%>]+>)|(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%]|[tT][a-zA-Z]))|(_entity_\d+_)/g
+const _blocktag = /^<(div|h[123456r]|p|d[dt]|li|\/?[dou]l)\b/
+const _breaktag = /^<[bh]r\/?>$/
 
 function* parseInline(
   pattern: Iterable<string | Expression | Markup>,
   entities: Record<string, string>
 ): Iterable<string | Expression | Markup> {
   let buffer = ''
+  let atBreak = false
   for (const part of pattern) {
     if (typeof part === 'string') {
       let pos = 0
       for (const m of part.matchAll(_inline)) {
-        if (m.index > pos) buffer += part.substring(pos, m.index)
+        if (m.index > pos) {
+          if (atBreak && part[pos] === ' ') {
+            buffer += '\n' + part.substring(pos + 1, m.index)
+          } else {
+            buffer += part.substring(pos, m.index)
+          }
+        }
+        atBreak &&= false
         pos = m.index + m[0].length
         if (m[1]) {
           buffer += String.fromCharCode(parseInt(m[1], 16))
@@ -187,12 +197,18 @@ function* parseInline(
           const ch = m[2]
           buffer += ch === 'n' ? '\n' : ch === 't' ? '\t' : ch
         } else {
+          const tag = m[3]
           if (buffer) {
-            yield buffer
+            if (tag && _blocktag.test(tag) && buffer.endsWith(' ')) {
+              yield buffer.slice(0, -1) + '\n'
+            } else {
+              yield buffer
+            }
             buffer = ''
           }
-          if (m[3]) {
-            yield { _: m[3], fn: 'html' }
+          if (tag) {
+            yield { _: tag, fn: 'html' }
+            atBreak = _breaktag.test(tag)
           } else if (m[4]) {
             const attr = Object.create(null)
             attr.source = m[0]
