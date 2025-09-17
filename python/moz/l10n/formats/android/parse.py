@@ -86,7 +86,9 @@ def android_parse(
     All XML, Android, and printf escapes are unescaped
     except for %n, which has a platform-dependent meaning.
 
-    Whitespace in messages is normalized.
+    Whitespace in messages is normalized in general as a space,
+    and as a newline immediately before block HTML tags
+    and after <br> and <hr> tags.
     If `ascii_spaces` is set,
     this only applies to ASCII/Latin-1 space characters.
 
@@ -205,7 +207,9 @@ def android_parse_message(
     All XML, Android, and printf escapes are unescaped
     except for %n, which has a platform-dependent meaning.
 
-    Whitespace in messages is normalized.
+    Whitespace in messages is normalized in general as a space,
+    and as a newline immediately before block HTML tags
+    and after <br> and <hr> tags.
     If `ascii_spaces` is set,
     this only applies to ASCII/Latin-1 space characters.
 
@@ -433,12 +437,15 @@ inline_re = compile(
     r"(<[^%>]+>)|"
     r"(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%]|[tT][a-zA-Z]))"
 )
+block_tag_re = compile(r"<(div|h[123456r]|p|d[dt]|li|/?[dou]l)\b")
+break_tag_re = compile(r"<[bh]r/?>")
 
 
 def parse_inline(
     iter: Iterable[str | Expression | Markup],
 ) -> Iterator[str | Expression | Markup]:
     acc = ""
+    at_br = False
     for part in iter:
         if not isinstance(part, str):
             if acc:
@@ -450,7 +457,12 @@ def parse_inline(
             for m in inline_re.finditer(part):
                 start = m.start()
                 if start > pos:
-                    acc += part[pos:start]
+                    if at_br and part[pos] == " ":
+                        acc += "\n" + part[pos + 1 : start]
+                    else:
+                        acc += part[pos:start]
+                if at_br:
+                    at_br = False
                 if m[1]:
                     # Unicode escape
                     acc += chr(int(m[1], base=16))
@@ -461,10 +473,15 @@ def parse_inline(
                 elif m[3]:
                     # Escaped HTML element, e.g. &lt;b>
                     # HTML elements containing internal % formatting are not wrapped as literals
-                    if acc:
+                    tag = m[3]
+                    if acc.endswith(" ") and block_tag_re.match(tag):
+                        yield acc[:-1] + "\n"
+                        acc = ""
+                    elif acc:
                         yield acc
                         acc = ""
-                    yield Expression(m[3], "html")
+                    yield Expression(tag, "html")
+                    at_br = break_tag_re.fullmatch(tag)
                 else:
                     if acc:
                         yield acc
