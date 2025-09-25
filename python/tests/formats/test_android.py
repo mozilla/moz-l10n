@@ -697,3 +697,71 @@ class TestAndroid(TestCase):
             </resources>
             """
         )
+
+    def test_newlines(self):
+        src = dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">&lt;p>One&lt;/p> &lt;p>two &lt;br/>&lt;hr/> three&lt;/p></string>
+              <string name="y"><![CDATA[<ul> <li> One </li> <li> two </li> </ul>]]></string>
+            </resources>
+            """
+        )
+
+        res = android_parse(src)
+        assert res == Resource(
+            Format.android,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("x",),
+                            PatternMessage(
+                                [
+                                    Expression("<p>", "html"),
+                                    "One",
+                                    Expression("</p>", "html"),
+                                    "\n",
+                                    Expression("<p>", "html"),
+                                    "two ",
+                                    Expression("<br/>", "html"),
+                                    Expression("<hr/>", "html"),
+                                    "\nthree",
+                                    Expression("</p>", "html"),
+                                ]
+                            ),
+                        ),
+                        Entry(
+                            ("y",),
+                            PatternMessage(
+                                [
+                                    Expression("<ul>", "html"),
+                                    "\n",
+                                    Expression("<li>", "html"),
+                                    " One ",
+                                    Expression("</li>", "html"),
+                                    "\n",
+                                    Expression("<li>", "html"),
+                                    " two ",
+                                    Expression("</li>", "html"),
+                                    "\n",
+                                    Expression("</ul>", "html"),
+                                ]
+                            ),
+                        ),
+                    ],
+                )
+            ],
+        )
+        ser = "".join(android_serialize(res))
+        assert ser == dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x"><![CDATA[<p>One</p>\\n<p>two <br/><hr/>\\nthree</p>]]></string>
+              <string name="y"><![CDATA[<ul>\\n<li> One </li>\\n<li> two </li>\\n</ul>]]></string>
+            </resources>
+            """
+        )
