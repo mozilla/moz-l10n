@@ -104,8 +104,8 @@ def parse_resource(
         )
         if xliff_parse is None and (
             (input_is_file and cast(str, input).endswith((".xlf", ".xliff", ".xml")))
-            or (isinstance(source, str) and source.startswith("<?xml"))
-            or (isinstance(source, bytes) and source.startswith(b"<?xml"))
+            or (isinstance(source, str) and source.startswith("<"))
+            or (isinstance(source, bytes) and source.startswith(b"<"))
         ):
             msg += ". For XML support `lxml` is required."
         raise UnsupportedFormat(msg)
