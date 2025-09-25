@@ -25,14 +25,14 @@ from moz.l10n.resource import (
     serialize_resource,
 )
 
-no_xml = find_spec("lxml") is None
+has_lxml = find_spec("lxml") is not None
 
 
 def get_source(filename: str) -> bytes:
     return files("tests.formats.data").joinpath(filename).read_bytes()
 
 
-class TesteParseResource(TestCase):
+class TestResource(TestCase):
     def test_named_common_files(self):
         data = (
             "accounts.dtd",
@@ -61,7 +61,7 @@ class TesteParseResource(TestCase):
         with self.assertRaises(OSError):
             parse_resource("foo.po", get_source("foo.po"))
 
-    @skipIf(no_xml, "Requires [xml] extra")
+    @skipIf(not has_lxml, "Requires [xml] extra")
     def test_named_xml_files(self):
         data = (
             "angular.xliff",
@@ -78,7 +78,7 @@ class TesteParseResource(TestCase):
                 isinstance(s, str) for s in serialize_resource(res, trim_comments=True)
             )
 
-    @skipIf(no_xml, "Requires [xml] extra")
+    @skipIf(not has_lxml, "Requires [xml] extra")
     def test_parse_anon_files(self):
         data = {
             Format.android: ("strings.xml",),
@@ -95,6 +95,19 @@ class TesteParseResource(TestCase):
                 res = parse_resource(None, get_source(file))
                 assert isinstance(res, Resource)
                 assert res.format == format
+
+    @skipIf(has_lxml, "Requires not having [xml] extra")
+    def test_no_lxml(self):
+        files = [
+            "strings.xml",
+            "angular.xliff",
+            "hello.xliff",
+            "icu-docs.xliff",
+            "xcode.xliff",
+        ]
+        for file in files:
+            with self.assertRaisesRegex(UnsupportedFormat, "XML support"):
+                parse_resource(None, get_source(file))
 
     def test_parse_unknown_format(self):
         source = get_source("accounts.dtd")

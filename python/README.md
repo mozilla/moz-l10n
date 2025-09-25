@@ -291,7 +291,7 @@ an attempt is made to detect the appropriate format.
 
 If the first argument is a string path,
 the `source` argument is optional,
-as the file will be opened and read.
+as the file will be opened and read if `source` is not set.
 
 ### moz.l10n.resource.serialize_resource
 

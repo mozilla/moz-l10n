@@ -57,7 +57,7 @@ def parse_resource(
 
     If the first argument is a string path,
     the `source` argument is optional,
-    as the file will be opened and read.
+    as the file will be opened and read if `source` is not set.
     """
     input_is_file = False
     if source is None:
@@ -96,7 +96,16 @@ def parse_resource(
         )
     elif format == Format.xliff and xliff_parse is not None:
         return xliff_parse(source, source_entries=xliff_source_entries)
-    elif format is None:
-        raise UnsupportedFormat("Resource format detection failed")
     else:
-        raise UnsupportedFormat(f"Unsupported resource format: {format.name}")
+        msg = (
+            "Resource format detection failed"
+            if format is None
+            else f"Unsupported resource format: {format.name}"
+        )
+        if xliff_parse is None and (
+            (input_is_file and cast(str, input).endswith((".xlf", ".xliff", ".xml")))
+            or (isinstance(source, str) and source.startswith("<"))
+            or (isinstance(source, bytes) and source.startswith(b"<"))
+        ):
+            msg += ". For XML support `lxml` is required."
+        raise UnsupportedFormat(msg)
