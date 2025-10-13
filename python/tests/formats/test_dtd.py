@@ -20,7 +20,7 @@ from unittest import TestCase
 
 from moz.l10n.formats import Format
 from moz.l10n.formats.dtd import dtd_parse, dtd_serialize
-from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
+from moz.l10n.model import Comment, Entry, Metadata, PatternMessage, Resource, Section
 
 source = (
     files("tests.formats.data").joinpath("accounts.dtd").read_bytes().decode("utf-8")
@@ -32,7 +32,8 @@ class TestDtd(TestCase):
         res = dtd_parse(source)
         assert res == Resource(
             Format.dtd,
-            [
+            meta=[Metadata("brandDTD", "chrome://branding/locale/brand.dtd")],
+            sections=[
                 Section(
                     (),
                     [
@@ -140,6 +141,8 @@ class TestDtd(TestCase):
                - License, v. 2.0. If a copy of the MPL was not distributed with this
                - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
+            <!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd">
+            %brandDTD;
             <!ENTITY foo '"bar"'>
 
             <!-- This file is originally from:
@@ -180,6 +183,8 @@ class TestDtd(TestCase):
         res = dtd_parse(source)
         assert "".join(dtd_serialize(res, trim_comments=True)) == dedent(
             """\
+            <!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd">
+            %brandDTD;
             <!ENTITY accounts.title "Accounts - &brandShortName;">
             <!ENTITY accountsWindow.title "Instant messaging status">
             <!ENTITY accountManager.newAccount.label "New Account">
