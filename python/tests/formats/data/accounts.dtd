@@ -5,6 +5,9 @@
 <!-- This file is originally from: --><!--
 https://searchfox.org/comm-central/rev/1032c05ab3f8f1a7b9b928cc5a79dbf67a9ac48f/chat/locales/en-US/accounts.dtd -->
 
+<!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd">
+%brandDTD;
+
 <!-- Account manager window for Instantbird -->
 <!ENTITY accounts.title "Accounts - &brandShortName;">
 <!-- Instant messaging account status window for Thunderbird -->
