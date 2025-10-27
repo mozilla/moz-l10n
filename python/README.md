@@ -175,6 +175,106 @@ SelectMessage serialization is only supported for `mf2`.
 
 Serializing `fluent` messages is not supported.
 
+### moz.l10n.migrate.apply_migration
+
+```python
+from moz.l10n.migrate import apply_migration
+
+def apply_migration(
+    res: Resource[Message] | str,
+    changes: dict[
+        tuple[str, ...] | str,
+        Callable[
+            [Resource[Message], Ctx | None],
+            Message
+            | Entry[Message]
+            | Tuple[Message | Entry[Message], tuple[tuple[str, ...] | str, ...] | str],
+        ],
+    ],
+    context: Ctx | None = None,
+) -> int
+```
+
+Applies `changes` to a Resource `res`.
+
+If `res` is a string, the resource at that path is parsed is modified.
+
+The `changes` are a mapping of target entry identifiers to functions that define their values;
+the function will be called with two arguments `(res: Resource, context: Ctx)`,
+passing through the unmodified `context` given to this function (`None` by default).
+
+Change functions should return a Message, an Entry, or a tuple consisting of one of those,
+along with one or more identifiers for entries after which the new entry should be inserted.
+
+If an entry already exists with the target identifier,
+it is not modified.
+
+### moz.l10n.migrate.get_pattern
+
+```python
+from moz.l10n.migrate import get_pattern
+
+def get_pattern(
+    res: Resource,
+    *id: str,
+    default: Pattern | None = None,
+    keys: tuple[str | CatchallKey, ...] | None = None,
+) -> Pattern
+```
+
+Get a pattern matching `id` from `res`.
+
+If the entry for `id` is a PatternMessage, its `.value` is returned.
+
+If the entry for `id` is a SelectMessage,
+either the pattern matching `keys` is returned,
+or (if not found) the fallback pattern.
+
+If `default` is a Pattern, it is returned if no matching pattern is found.
+Otherwise, if a StopIteration exception is raised
+
+### moz.l10n.migrate.insert_entry_after
+
+```python
+from moz.l10n.migrate import insert_entry_after
+
+def insert_entry_after(
+    res: Resource, entry: Entry[Any], *ids: tuple[str, ...] | str
+) -> None
+```
+
+Insert `entry` in `res` after the last entry
+with an `.id` matching one of `ids`,
+or if none such are found,
+at the end of the last section matching any of `ids`.
+
+If none such is found, raises StopIteration.
+
+### moz.l10n.migrate.plural_message
+
+```python
+from moz.l10n.migrate import plural_message
+
+def plural_message(
+    var_name: str,
+    *,
+    zero: Pattern | None = None,
+    one: Pattern | None = None,
+    two: Pattern | None = None,
+    few: Pattern | None = None,
+    many: Pattern | None = None,
+    other: Pattern,
+) -> SelectMessage
+```
+
+Construct a SelectMessage using `var_name` to determine the plural category,
+with the given variants.
+
+By convention, use the following as `var_name`:
+
+- `"n"` for Gettext plurals
+- `"quantity"` for Android strings.
+
 ### moz.l10n.model
 
 ```python
