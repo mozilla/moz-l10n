@@ -159,7 +159,7 @@ class TestMigrate(TestCase):
                 },
             )
 
-            for locale in ["fr", "de_test"]:
+            for locale in ["fr", "de_Test"]:
                 with open(join(root, locale, "b.ftl")) as file:
                     assert file.read() == "b1 = A1\n" + "b2 = A2-1\n"
 
