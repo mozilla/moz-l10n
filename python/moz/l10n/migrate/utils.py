@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import dataclasses
-from typing import Callable, Tuple, TypeVar, Union
+from dataclasses import dataclass, field
+from logging import getLogger
+from typing import TypeVar, Union
 
 from moz.l10n.model import (
     CatchallKey,
@@ -15,10 +16,39 @@ from moz.l10n.model import (
     SelectMessage,
     VariableRef,
 )
-from moz.l10n.resource import parse_resource, serialize_resource
+from moz.l10n.paths.config import L10nConfigPaths
+from moz.l10n.paths.discover import L10nDiscoverPaths
+from moz.l10n.resource import parse_resource
 
-Ctx = TypeVar("Ctx")
+log = getLogger(__name__)
 M = TypeVar("M", bound=Union[Message, str])
+
+
+@dataclass
+class MigrationContext:
+    paths: L10nConfigPaths | L10nDiscoverPaths
+    ref_path: str
+    locale: str
+
+    _resources: dict[str, Resource[Message] | None] = field(default_factory=dict)
+
+    def get_resource(self, ref_path: str) -> Resource[Message] | None:
+        if ref_path in self._resources:
+            return self._resources[ref_path]
+        tgt_path, _ = self.paths.target(ref_path, locale=self.locale)
+        try:
+            res = parse_resource(tgt_path)
+        except OSError:
+            log.debug(f"Resource not available: {tgt_path}")
+            res = None
+        except Exception:
+            log.debug(f"Parse error: {tgt_path}", exc_info=True)
+            res = None
+        self._resources[ref_path] = res
+        return res
+
+    def pretty_id(self, id: tuple[str, ...]) -> str:
+        return f"{'.'.join(id)} in {self.ref_path} for locale {self.locale}"
 
 
 def get_entry(res: Resource[M], *id: str) -> Entry[M] | None:
@@ -48,7 +78,7 @@ def get_pattern(
     res: Resource[Message],
     *id: str,
     default: Pattern | None = None,
-    keys: tuple[str | CatchallKey, ...] | None = None,
+    variant: tuple[str | CatchallKey, ...] | str | None = None,
 ) -> Pattern:
     """
     Get a pattern matching `id` from `res`.
@@ -56,7 +86,7 @@ def get_pattern(
     If the entry for `id` is a PatternMessage, its `.value` is returned.
 
     If the entry for `id` is a SelectMessage,
-    either the pattern matching `keys` is returned,
+    either the pattern matching `variant` is returned,
     or (if not found) the fallback pattern.
 
     If `default` is a Pattern, it is returned if no matching pattern is found.
@@ -72,8 +102,10 @@ def get_pattern(
     if isinstance(msg, PatternMessage):
         return msg.pattern
     elif isinstance(msg, SelectMessage):
-        if keys in msg.variants:
-            return msg.variants[keys]
+        if isinstance(variant, str):
+            variant = (variant,)
+        if variant in msg.variants:
+            return msg.variants[variant]
         return next(
             pattern
             for keys, pattern in msg.variants.items()
@@ -84,17 +116,22 @@ def get_pattern(
 
 
 def insert_entry_after(
-    res: Resource[M], entry: Entry[M], *ids: tuple[str, ...] | str
+    res: Resource[M],
+    entry: Entry[M],
+    *src_ids: tuple[str, ...] | str,
 ) -> None:
     """
     Insert `entry` in `res` after the last entry
-    with an `.id` matching one of `ids`,
+    with an `.id` matching one of `src_ids`,
     or if none such are found,
     at the end of the last section matching any of `ids`.
 
-    If none such is found, raises StopIteration.
+    Note that `entry.id` is expected to include its section id,
+    which will be dropped before insertion.
+
+    If no suitable insertion position is found, raises StopIteration.
     """
-    id_set = {id if isinstance(id, tuple) else (id,) for id in ids}
+    id_set = {id if isinstance(id, tuple) else (id,) for id in src_ids}
     last_section: Section[M] | None = None
     for section in reversed(res.sections):
         if section.id:
@@ -103,15 +140,20 @@ def insert_entry_after(
             if not eid_set:
                 continue
         else:
+            sid_len = 0
             eid_set = id_set
         for e_rev_idx, e in enumerate(reversed(section.entries)):
             if isinstance(e, Entry) and e.id in eid_set:
+                if sid_len:
+                    entry.id = entry.id[sid_len:]
                 section.entries.insert(len(section.entries) - e_rev_idx, entry)
                 return
         last_section = section
     if last_section is None:
         raise StopIteration
     else:
+        if last_section.id:
+            entry.id = entry.id[len(last_section.id) :]
         last_section.entries.append(entry)
 
 
@@ -149,75 +191,3 @@ def plural_message(
             (key,): pattern for key, pattern in raw_variants if pattern is not None
         },
     )
-
-
-def apply_migration(
-    res: Resource[Message] | str,
-    changes: dict[
-        tuple[str, ...] | str,
-        Callable[
-            [Resource[Message], Ctx | None],
-            Message
-            | Entry[Message]
-            | Tuple[Message | Entry[Message], tuple[tuple[str, ...] | str, ...] | str],
-        ],
-    ],
-    context: Ctx | None = None,
-) -> int:
-    """
-    Applies `changes` to a Resource `res`.
-
-    If `res` is a string, the resource at that path is parsed is modified.
-
-    The `changes` are a mapping of target entry identifiers to functions that define their values;
-    the function will be called with two arguments `(res: Resource, context: Ctx)`,
-    passing through the unmodified `context` given to this function (`None` by default).
-
-    Change functions should return a Message, an Entry, or a tuple consisting of one of those,
-    along with one or more identifiers for entries after which the new entry should be inserted.
-
-    If an entry already exists with the target identifier,
-    it is not modified.
-    """
-    if isinstance(res, str):
-        res_path = res
-        res = parse_resource(res_path)
-    else:
-        res_path = None
-    changed = 0
-    for id, change in changes.items():
-        if isinstance(id, str):
-            id = (id,)
-
-        if get_entry(res, *id) is not None:
-            continue
-
-        src_entry = change(res, context)
-        if isinstance(src_entry, tuple):
-            src_ids = src_entry[1]
-            src_entry = src_entry[0]
-            if isinstance(src_ids, str):
-                src_ids = (src_ids,)
-        elif isinstance(src_entry, Entry):
-            src_ids = (src_entry.id,)
-        else:
-            src_ids = (id,)
-
-        if isinstance(src_entry, Entry):
-            new_entry = (
-                src_entry
-                if src_entry.id == id
-                else dataclasses.replace(src_entry, id=id)
-            )
-        elif isinstance(src_entry, (PatternMessage, SelectMessage)):
-            new_entry = Entry(id, src_entry)
-        else:
-            raise ValueError(f"Entry for {id} has unsupported type {type(src_entry)}")
-
-        insert_entry_after(res, new_entry, *src_ids)
-        changed += 1
-    if changed and res_path:
-        with open(res_path, "w", encoding="utf-8") as file:
-            for line in serialize_resource(res):
-                file.write(line)
-    return changed

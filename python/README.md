@@ -209,71 +209,49 @@ along with one or more identifiers for entries after which the new entry should 
 If an entry already exists with the target identifier,
 it is not modified.
 
-### moz.l10n.migrate.get_pattern
+### moz.l10n.migrate.copy
 
 ```python
-from moz.l10n.migrate import get_pattern
+from moz.l10n.migrate import copy
 
-def get_pattern(
-    res: Resource,
-    *id: str,
-    default: Pattern | None = None,
-    keys: tuple[str | CatchallKey, ...] | None = None,
-) -> Pattern
+def copy(
+    ref_path: None | str,
+    id: tuple[str, ...] | str,
+    variant: tuple[str | CatchallKey, ...] | str | None = None,
+) -> Callable[
+    [Resource[Message], MigrationContext],
+    tuple[Entry[Message] | Message, set[tuple[str, ...]]] | None,
+]
 ```
 
-Get a pattern matching `id` from `res`.
+Create a copy migration function, from entry `id` in `ref_path`.
 
-If the entry for `id` is a PatternMessage, its `.value` is returned.
+If `ref_path` is None, the entry is copied from the current Resource.
 
-If the entry for `id` is a SelectMessage,
-either the pattern matching `keys` is returned,
-or (if not found) the fallback pattern.
+If `variant` is set and `id` contains a SelectMessage,
+the pattern of the specified variant is copied (or the default one).
 
-If `default` is a Pattern, it is returned if no matching pattern is found.
-Otherwise, if a StopIteration exception is raised
-
-### moz.l10n.migrate.insert_entry_after
+### moz.l10n.migrate.utils
 
 ```python
-from moz.l10n.migrate import insert_entry_after
+from moz.l10n.migrate.utils import (
+    MigrationContext,
+    get_entry,
+    get_pattern,
+    plural_message,
+)
 
-def insert_entry_after(
-    res: Resource, entry: Entry[Any], *ids: tuple[str, ...] | str
-) -> None
+def make_plural_x(res, ctx: MigrationContext):
+    x_other = get_pattern(res, "x-other")
+    x_one = get_pattern(res, "x-one", default=x_other)
+    x_two = get_pattern(res, "x-two", default=x_other)
+    msg = plural_message("quantity", one=x_one, two=x_two, other=x_other)
+    return msg, {"x-one", "x-two", "x-other"}
 ```
 
-Insert `entry` in `res` after the last entry
-with an `.id` matching one of `ids`,
-or if none such are found,
-at the end of the last section matching any of `ids`.
-
-If none such is found, raises StopIteration.
-
-### moz.l10n.migrate.plural_message
-
-```python
-from moz.l10n.migrate import plural_message
-
-def plural_message(
-    var_name: str,
-    *,
-    zero: Pattern | None = None,
-    one: Pattern | None = None,
-    two: Pattern | None = None,
-    few: Pattern | None = None,
-    many: Pattern | None = None,
-    other: Pattern,
-) -> SelectMessage
-```
-
-Construct a SelectMessage using `var_name` to determine the plural category,
-with the given variants.
-
-By convention, use the following as `var_name`:
-
-- `"n"` for Gettext plurals
-- `"quantity"` for Android strings.
+Utilities for putting together more complex message migrations.
+See individual [doc comments](moz/l10n/migrate/utils.py) for more information,
+and [test suite](tests/test_migrate.py) for example usage.
 
 ### moz.l10n.model
 

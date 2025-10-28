@@ -17,67 +17,21 @@ from __future__ import annotations
 from os.path import join
 from tempfile import TemporaryDirectory
 from textwrap import dedent
-from typing import Any
 from unittest import SkipTest, TestCase
 
-from moz.l10n.migrate import (
-    apply_migration,
-    get_entry,
-    get_pattern,
-    plural_message,
-)
-from moz.l10n.paths import L10nConfigPaths, get_android_locale
+from moz.l10n.migrate import apply_migration, copy
+from moz.l10n.migrate.utils import get_pattern, plural_message
 
 from .test_config import Tree, build_file_tree
 
 try:
-    from moz.l10n.formats.android import android_parse, android_serialize
+    import moz.l10n.formats.android  # noqa: F401
 except ImportError:
     raise SkipTest("Requires [xml] extra")
 
 
 class TestMigrate(TestCase):
-    def test_android_plural(self):
-        src = dedent(
-            """\
-            <?xml version="1.0" encoding="utf-8"?>
-            <resources>
-              <string name="x-one">%1$d thing</string>
-              <string name="x-other">%1$d things</string>
-              <string name="y">next</string>
-            </resources>
-            """
-        )
-
-        res = android_parse(src)
-
-        def make_plural_x(res, ctx):
-            x_other = get_pattern(res, "x-other")
-            x_one = get_pattern(res, "x-one", default=x_other)
-            x_two = get_pattern(res, "x-two", default=x_other)
-            msg = plural_message("quantity", one=x_one, two=x_two, other=x_other)
-            return msg, ("x-one", "x-other")
-
-        apply_migration(res, {"x": make_plural_x})
-
-        ser = "".join(android_serialize(res))
-        assert ser == dedent(
-            """\
-            <?xml version="1.0" encoding="utf-8"?>
-            <resources>
-              <string name="x-one">%1$d thing</string>
-              <string name="x-other">%1$d things</string>
-              <plurals name="x">
-                <item quantity="one">%1$d thing</item>
-                <item quantity="two">%1$d things</item>
-                <item quantity="other">%1$d things</item>
-              </plurals>
-              <string name="y">next</string>
-            </resources>
-            """
-        )
-
-    def test_android_paths(self):
+    def test_android(self):
         cfg_toml = dedent(
             """
             locales = ["fr", "de"]
@@ -90,8 +44,10 @@ class TestMigrate(TestCase):
             """\
             <?xml version="1.0" encoding="utf-8"?>
             <resources>
-              <string name="x">X</string>
+              <string name="x-one">%1$d thing</string>
+              <string name="x-other">%1$d things</string>
               <string name="y">Y</string>
+              <string name="w">W</string>
             </resources>
             """
         )
@@ -99,9 +55,18 @@ class TestMigrate(TestCase):
             """\
             <?xml version="1.0" encoding="utf-8"?>
             <resources>
-              <string name="x">X</string>
-              <string name="x2">X2</string>
               <string name="y">Y</string>
+              <string name="y2">Y2</string>
+              <string name="z2">Z2</string>
+              <string name="w">W</string>
+            </resources>
+            """
+        )
+        bar = dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="z">bar Z</string>
             </resources>
             """
         )
@@ -112,35 +77,91 @@ class TestMigrate(TestCase):
                 "values-fr": {"strings.xml": foo_fr},
                 "values-de": {"strings.xml": foo_de},
             },
+            "bar": {
+                "values": {"strings.xml": ""},
+                "values-fr": {"strings.xml": bar},
+                "values-de": {"strings.xml": bar},
+            },
         }
         with TemporaryDirectory() as root:
             build_file_tree(root, tree)
-            paths = L10nConfigPaths(
+
+            def make_plural_x(res, _):
+                x_other = get_pattern(res, "x-other")
+                x_one = get_pattern(res, "x-one", default=x_other)
+                x_two = get_pattern(res, "x-two", default=x_other)
+                msg = plural_message("quantity", one=x_one, two=x_two, other=x_other)
+                return msg, {"x-one", "x-two", "x-other"}
+
+            apply_migration(
                 join(root, "l10n.toml"),
-                locale_map={"android_locale": get_android_locale},
+                {
+                    "foo/values/strings.xml": {
+                        "x": make_plural_x,
+                        "y2": copy(None, "y"),
+                        "z2": copy("bar/values/strings.xml", "z"),
+                    }
+                },
             )
 
-            changes: Any = {
-                "x2": lambda res, _: get_entry(res, "x"),
-            }
-
-            tgt_fmt, locales = paths.target(join("foo", "values", "strings.xml"))
-            assert tgt_fmt
-            for locale in locales:
-                tgt_path = paths.format_target_path(tgt_fmt, locale)
-                apply_migration(tgt_path, changes, {"locale": locale})
-
-            with open(paths.format_target_path(tgt_fmt, "fr"), mode="r") as file:
+            with open(join(root, "foo", "values-fr", "strings.xml"), mode="r") as file:
                 assert file.read() == dedent(
                     """\
                     <?xml version="1.0" encoding="utf-8"?>
                     <resources>
-                      <string name="x">X</string>
-                      <string name="x2">X</string>
+                      <string name="x-one">%1$d thing</string>
+                      <string name="x-other">%1$d things</string>
+                      <plurals name="x">
+                        <item quantity="one">%1$d thing</item>
+                        <item quantity="two">%1$d things</item>
+                        <item quantity="other">%1$d things</item>
+                      </plurals>
                       <string name="y">Y</string>
+                      <string name="y2">Y</string>
+                      <string name="w">W</string>
+                      <string name="z2">bar Z</string>
                     </resources>
                     """
                 )
 
-            with open(paths.format_target_path(tgt_fmt, "de"), mode="r") as file:
+            with open(join(root, "foo", "values-de", "strings.xml"), mode="r") as file:
                 assert file.read() == foo_de
+
+    def test_discover(self):
+        a_ftl = dedent(
+            """\
+            a1 = A1
+            a2 = { $n ->
+                [one] A2-1
+               *[other] A2-*
+              }
+            """
+        )
+        c_ini = "[Strings]\nc1=C\n"
+        tree: Tree = {
+            "en-US": {"a.ftl": a_ftl, "b.ftl": "", "c.ini": "", "d.ini": "[Strings]\n"},
+            "fr": {"a.ftl": a_ftl, "b.ftl": "", "c.ini": c_ini, "d.ini": "[Strings]\n"},
+            "de_Test": {"a.ftl": a_ftl, "c.ini": c_ini},
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+
+            apply_migration(
+                root,
+                {
+                    "b.ftl": {
+                        "b1": copy("a.ftl", "a1"),
+                        "b2": copy("a.ftl", "a2", variant="one"),
+                    },
+                    "d.ini": {
+                        ("Strings", "d1"): copy("c.ini", ("Strings", "c1")),
+                    },
+                },
+            )
+
+            for locale in ["fr", "de_test"]:
+                with open(join(root, locale, "b.ftl")) as file:
+                    assert file.read() == "b1 = A1\n" + "b2 = A2-1\n"
+
+                with open(join(root, locale, "d.ini")) as file:
+                    assert file.read() == "[Strings]\n" + "d1=C\n"
