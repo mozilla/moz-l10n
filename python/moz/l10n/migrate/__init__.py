@@ -26,7 +26,7 @@ log = getLogger(__name__)
 
 def apply_migration(
     paths: str | L10nConfigPaths | L10nDiscoverPaths,
-    edits: dict[
+    add_entries: dict[
         str,
         dict[
             tuple[str, ...] | str,
@@ -41,16 +41,21 @@ def apply_migration(
     ],
 ) -> None:
     """
-    Applies `edits` to resources in `paths`.
+    Adds entries to resources in `paths`.
 
-    The `edits` are a mapping of reference paths to target entry identifiers
+    `add_entries` is a mapping of resource reference paths to target entry identifiers
     to functions that define their values;
-    the function will be called with two arguments `(res, context: MigrationContext)`.
+    the function will be called with two arguments `(resource, context: MigrationContext)`.
 
-    Edit functions should return a Message, an Entry, or a tuple consisting of one of those,
-    along with a set of identifiers for entries after which the new entry should be inserted.
+    Functions defining new entries should return a Message, an Entry,
+    or a tuple consisting of one of those along with a set of identifiers
+    for entries after which the new entry should be inserted.
 
     If an entry already exists with the target identifier, it is not modified.
+
+    If no resource exists for a target locale, one is created.
+    For .ini, JSON, and XML-based resources,
+    the reference resource must exist to create a new resource.
     """
     if isinstance(paths, str):
         if isdir(paths):
@@ -61,7 +66,7 @@ def apply_migration(
             )
         else:
             raise ValueError(f"Not found: {paths}")
-    for ref_path, res_edits in edits.items():
+    for ref_path, res_add_entries in add_entries.items():
         tgt_fmt, locales = paths.target(ref_path)
         if tgt_fmt is None:
             raise ValueError(f"Invalid reference path: {ref_path}")
@@ -81,7 +86,7 @@ def apply_migration(
                 res = dataclasses.replace(src_res)
 
             changed = 0
-            for id, create in res_edits.items():
+            for id, create in res_add_entries.items():
                 if isinstance(id, str):
                     id = (id,)
                 if _create_entry(res, ctx, id, create):

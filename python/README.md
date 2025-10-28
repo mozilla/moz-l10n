@@ -181,33 +181,38 @@ Serializing `fluent` messages is not supported.
 from moz.l10n.migrate import apply_migration
 
 def apply_migration(
-    res: Resource[Message] | str,
-    changes: dict[
-        tuple[str, ...] | str,
-        Callable[
-            [Resource[Message], Ctx | None],
-            Message
-            | Entry[Message]
-            | Tuple[Message | Entry[Message], tuple[tuple[str, ...] | str, ...] | str],
+    paths: str | L10nConfigPaths | L10nDiscoverPaths,
+    add_entries: dict[
+        str,
+        dict[
+            tuple[str, ...] | str,
+            Callable[
+                [Resource[Message], MigrationContext],
+                Message
+                | Entry[Message]
+                | Tuple[Message | Entry[Message], set[str] | set[tuple[str, ...]]]
+                | None,
+            ],
         ],
     ],
-    context: Ctx | None = None,
-) -> int
+) -> None
 ```
 
-Applies `changes` to a Resource `res`.
+Adds entries to resources in `paths`.
 
-If `res` is a string, the resource at that path is parsed is modified.
+`add_entries` is a mapping of resource reference paths to target entry identifiers
+to functions that define their values;
+the function will be called with two arguments `(resource, context: MigrationContext)`.
 
-The `changes` are a mapping of target entry identifiers to functions that define their values;
-the function will be called with two arguments `(res: Resource, context: Ctx)`,
-passing through the unmodified `context` given to this function (`None` by default).
+Functions defining new entries should return a Message, an Entry,
+or a tuple consisting of one of those along with a set of identifiers
+for entries after which the new entry should be inserted.
 
-Change functions should return a Message, an Entry, or a tuple consisting of one of those,
-along with one or more identifiers for entries after which the new entry should be inserted.
+If an entry already exists with the target identifier, it is not modified.
 
-If an entry already exists with the target identifier,
-it is not modified.
+If no resource exists for a target locale, one is created.
+For .ini, JSON, and XML-based resources,
+the reference resource must exist to create a new resource.
 
 ### moz.l10n.migrate.copy
 
