@@ -216,8 +216,47 @@ An entry or section identifier.
 """
 
 
+class _WithMeta:
+    meta: list[Metadata]
+
+    def get_meta(self, key: str) -> str | None:
+        """
+        Get the value of the first metadata entry with a matching `key`, if any.
+        """
+        return next((m.value for m in self.meta if m.key == key), None)
+
+    def has_meta(self, key: str, value: str | None = None) -> bool:
+        """
+        Returns True if any metadata entry has a matching `key`
+        and, if not `None`, a matching `value`.
+        """
+        return any(
+            m.key == key and (value is None or m.value == value) for m in self.meta
+        )
+
+    def set_meta(self, key: str, value: str) -> None:
+        """
+        Set the value of the first metadata entry with a matching `key`,
+        or add a new metadata entry if no matching entry exists.
+        """
+        prev = next((m for m in self.meta if m.key == key), None)
+        if prev is None:
+            self.meta.append(Metadata(key, value))
+        else:
+            prev.value = value
+
+    def del_meta(self, key: str) -> int:
+        """
+        Remove metadata entries with a matching `key`.
+        Returns the number of removed entries.
+        """
+        n = len(self.meta)
+        self.meta = [m for m in self.meta if m.key != key]
+        return n - len(self.meta)
+
+
 @dataclass
-class Entry(Generic[V_co]):
+class Entry(Generic[V_co], _WithMeta):
     """
     A message entry.
 
@@ -275,15 +314,9 @@ class Entry(Generic[V_co]):
     available for some formats.
     """
 
-    def get_meta(self, key: str) -> str | None:
-        """
-        First metadata entry with a matching `key`, if any.
-        """
-        return next((m.value for m in self.meta if m.key == key), None)
-
 
 @dataclass
-class Section(Generic[V_co]):
+class Section(Generic[V_co], _WithMeta):
     """
     A section of a resource.
 
@@ -337,15 +370,9 @@ class Section(Generic[V_co]):
     available for some formats.
     """
 
-    def get_meta(self, key: str) -> str | None:
-        """
-        First metadata entry with a matching `key`, if any.
-        """
-        return next((m.value for m in self.meta if m.key == key), None)
-
 
 @dataclass
-class Resource(Generic[V_co]):
+class Resource(Generic[V_co], _WithMeta):
     """
     A message resource.
 
@@ -391,9 +418,3 @@ class Resource(Generic[V_co]):
             for entry in section.entries
             if isinstance(entry, Entry)
         )
-
-    def get_meta(self, key: str) -> str | None:
-        """
-        First metadata entry with a matching `key`, if any.
-        """
-        return next((m.value for m in self.meta if m.key == key), None)
