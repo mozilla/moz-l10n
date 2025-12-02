@@ -130,7 +130,7 @@ def xliff_parse(
 
             is_xcode = xcode_tool_id in meta
             if is_xcode and file_name.endswith(".stringsdict"):
-                plural_entries = parse_xliff_stringsdict(ns, body)
+                plural_entries = parse_xliff_stringsdict(ns, body, source_entries)
                 if plural_entries is not None:
                     entries += cast(
                         List[Union[Entry[Message], Comment]], plural_entries

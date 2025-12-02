@@ -29,21 +29,21 @@ from ...model import (
     SelectMessage,
     VariableRef,
 )
-from .common import attrib_as_metadata
+from .common import attrib_as_metadata, element_as_metadata
 
 
 @dataclass
-class XcodePluralElements:
+class XcodeUnitData:
     unit: etree._Element
     source: etree._Element
     target: etree._Element | None
 
 
 @dataclass
-class XcodePlural:
+class StringsdictPlural:
     var_name: str
-    format_key: XcodePluralElements | None
-    variants: dict[str, XcodePluralElements]
+    format_key: XcodeUnitData | None
+    variants: dict[str, XcodeUnitData]
 
 
 plural_categories = ("zero", "one", "two", "few", "many", "other")
@@ -55,9 +55,9 @@ printf = compile(
 
 
 def parse_xliff_stringsdict(
-    ns: str, body: etree._Element
+    ns: str, body: etree._Element, from_source: bool
 ) -> list[Entry[SelectMessage]] | None:
-    plurals: dict[str, XcodePlural] = {}
+    plurals: dict[str, StringsdictPlural] = {}
     for unit in body:
         if unit.tag != f"{ns}trans-unit":
             return None
@@ -92,12 +92,18 @@ def parse_xliff_stringsdict(
         )
         for key, variant in plural.variants.items():
             meta += attrib_as_metadata(variant.unit, key, ("id",))
-            meta.append(Metadata(f"{key}/source", variant.source.text or ""))
-            if variant.target is None:
-                pattern_src = None
+            if from_source:
+                meta += attrib_as_metadata(variant.source, f"{key}/source")
+                if variant.target is not None:
+                    meta += element_as_metadata(variant.target, f"{key}/target", True)
+                pattern_src = variant.source.text
             else:
-                meta += attrib_as_metadata(variant.target, f"{key}/target")
-                pattern_src = variant.target.text
+                meta.append(Metadata(f"{key}/source", variant.source.text or ""))
+                if variant.target is None:
+                    pattern_src = None
+                else:
+                    meta += attrib_as_metadata(variant.target, f"{key}/target")
+                    pattern_src = variant.target.text
             msg.variants[(CatchallKey("other") if key == "other" else key,)] = list(
                 parse_xcode_pattern(pattern_src)
             )
@@ -106,13 +112,54 @@ def parse_xliff_stringsdict(
 
 
 def parse_xliff_stringsdict_unit(
-    ns: str, plurals: dict[str, XcodePlural], unit: etree._Element
+    ns: str, plurals: dict[str, StringsdictPlural], unit: etree._Element
 ) -> None:
     id_parts = unit.attrib["id"].split(":dict/")
     msg_id = id_parts[0][1:]
 
     def error(message: str) -> NoReturn:
         raise ValueError(f"{message} in Xcode plural definition {unit.attrib['id']}")
+
+    unit_data = get_xcode_unit_data(ns, unit)
+    if id_parts[1] == "NSStringLocalizedFormatKey":
+        if len(id_parts) != 3:
+            error("Unexpected Xcode plurals id")
+        var_match = variant_key.search(unit_data.source.text or "")
+        if var_match is None:
+            error("Unexpected <source> value")
+        if msg_id in plurals:
+            prev = plurals[msg_id]
+            if prev.format_key is None:
+                prev.format_key = unit_data
+            else:
+                error("Duplicate NSStringLocalizedFormatKey")
+            if var_match[1] != prev.var_name:
+                error("Mismatching key values")
+        else:
+            plurals[msg_id] = StringsdictPlural(var_match[1], unit_data, {})
+    else:
+        if len(id_parts) != 4:
+            error("Unexpected Xcode plurals id")
+        var_name = id_parts[1]
+        plural_cat = id_parts[2]
+        if plural_cat not in plural_categories:
+            error("Invalid plural category")
+        if msg_id in plurals:
+            prev = plurals[msg_id]
+            if var_name != prev.var_name:
+                error("Mismatching key values")
+            if plural_cat in prev.variants:
+                error(f"Duplicate {plural_cat}")
+            prev.variants[plural_cat] = unit_data
+        else:
+            plurals[msg_id] = StringsdictPlural(
+                var_name, None, variants={plural_cat: unit_data}
+            )
+
+
+def get_xcode_unit_data(ns: str, unit: etree._Element) -> XcodeUnitData:
+    def error(message: str) -> NoReturn:
+        raise ValueError(f'{message} in Xcode <trans-unit id="{unit.attrib["id"]}">')
 
     source = None
     target = None
@@ -140,42 +187,7 @@ def parse_xliff_stringsdict_unit(
             raise ValueError(f"Unexpected text in <trans-unit>: {el.tail}")
     if source is None:
         error("Missing <source>")
-    var_data = XcodePluralElements(unit, source, target)
-
-    if id_parts[1] == "NSStringLocalizedFormatKey":
-        if len(id_parts) != 3:
-            error("Unexpected Xcode plurals id")
-        var_match = variant_key.search(source.text or "")
-        if var_match is None:
-            error("Unexpected <source> value")
-        if msg_id in plurals:
-            prev = plurals[msg_id]
-            if prev.format_key is None:
-                prev.format_key = var_data
-            else:
-                error("Duplicate NSStringLocalizedFormatKey")
-            if var_match[1] != prev.var_name:
-                error("Mismatching key values")
-        else:
-            plurals[msg_id] = XcodePlural(var_match[1], var_data, {})
-    else:
-        if len(id_parts) != 4:
-            error("Unexpected Xcode plurals id")
-        var_name = id_parts[1]
-        plural_cat = id_parts[2]
-        if plural_cat not in plural_categories:
-            error("Invalid plural category")
-        if msg_id in plurals:
-            prev = plurals[msg_id]
-            if var_name != prev.var_name:
-                error("Mismatching key values")
-            if plural_cat in prev.variants:
-                error(f"Duplicate {plural_cat}")
-            prev.variants[plural_cat] = var_data
-        else:
-            plurals[msg_id] = XcodePlural(
-                var_name, None, variants={plural_cat: var_data}
-            )
+    return XcodeUnitData(unit, source, target)
 
 
 def parse_xcode_pattern(src: str | None) -> Iterator[str | Expression]:

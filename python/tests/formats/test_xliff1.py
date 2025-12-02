@@ -868,9 +868,7 @@ class TestXliff1(TestCase):
         )
 
     def test_serialize_xcode(self):
-        res = xliff_parse(xcode)
-        ser = "".join(xliff_serialize(res))
-        assert ser == dedent(
+        exp = dedent(
             """\
             <?xml version="1.0" encoding="utf-8"?>
             <xliff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
@@ -942,3 +940,8 @@ class TestXliff1(TestCase):
             </xliff>
             """
         )
+
+        res = xliff_parse(xcode)
+        assert "".join(xliff_serialize(res)) == exp
+        res = xliff_parse(xcode, source_entries=True)
+        assert "".join(xliff_serialize(res, source_entries=True)) == exp

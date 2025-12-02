@@ -136,16 +136,16 @@ def xliff_serialize(
                     tag = "bin-unit"
 
             if isinstance(entry.value, SelectMessage):
-                if section.id[0].endswith(".stringsdict"):
-                    if source_entries:
-                        raise ValueError(
-                            "source_entries not supported together with .stringsdict plurals"
-                        )
-                    add_xliff_stringsdict_plural(parent, entry, trim_comments)  # type: ignore [arg-type]
-                    continue
-                else:
+                if not section.id[0].endswith(".stringsdict"):
                     fn = section.id[0]
                     raise ValueError(f"Unsupported SelectMessage {id} in file: {fn}")
+                add_xliff_stringsdict_plural(
+                    parent,
+                    cast(Entry[SelectMessage], entry),
+                    source_entries,
+                    trim_comments,
+                )
+                continue
 
             unit = etree.SubElement(parent, tag, {"id": id})
             assign_metadata(unit, entry.meta, trim_comments)
@@ -211,7 +211,10 @@ def xliff_serialize_message(msg: Message) -> str:
 
 
 def add_xliff_stringsdict_plural(
-    parent: etree._Element, entry: Entry[SelectMessage], trim_comments: bool
+    parent: etree._Element,
+    entry: Entry[SelectMessage],
+    source_entries: bool,
+    trim_comments: bool,
 ) -> None:
     if entry.comment:
         raise ValueError(f"Unsupported comment on SelectMessage: {entry.comment}")
@@ -236,11 +239,11 @@ def add_xliff_stringsdict_plural(
         source = unit.find("source")
         if source is None:
             first = unit[0] if len(unit) > 0 else None
-            if first:
+            if first is None:
+                source = etree.SubElement(unit, "source")
+            else:
                 source = etree.Element("source")
                 first.addprevious(source)
-            else:
-                source = etree.SubElement(unit, "source")
         source.text = sel_source
         target = unit.find("target")
         if target is None:
@@ -273,13 +276,26 @@ def add_xliff_stringsdict_plural(
         meta = [m for m in entry.meta if m.key.startswith(meta_base)]
         assign_metadata(unit, meta, trim_comments, meta_base)
         source = unit.find("source")
-        if source is None:
-            raise ValueError(f"Missing {key}/source metadata for {id}")
-        target = unit.find("target")
-        if target is None:
-            target = etree.Element("target")
-            source.addnext(target)
-        target.text = text
+        if source_entries:
+            first = unit[0] if len(unit) > 0 else None
+            if source is None:
+                if first is None:
+                    source = etree.SubElement(unit, "source")
+                else:
+                    source = etree.Element("source")
+                    first.addprevious(source)
+            elif source != first:
+                unit.remove(source)
+                unit.insert(0, source)
+            source.text = text
+        else:
+            if source is None:
+                raise ValueError(f"Missing {key}/source metadata for {id}")
+            target = unit.find("target")
+            if target is None:
+                target = etree.Element("target")
+                source.addnext(target)
+            target.text = text
 
 
 def assign_metadata(
