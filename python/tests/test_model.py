@@ -22,6 +22,7 @@ from moz.l10n.model import (
     Comment,
     Entry,
     Expression,
+    Metadata,
     PatternMessage,
     Resource,
     Section,
@@ -84,3 +85,55 @@ class TestResource(TestCase):
             ],
         )
         assert next(res.all_entries(), None) is None
+
+
+class TestMeta(TestCase):
+    def test_entry(self):
+        entry = Entry(
+            ("e0",),
+            PatternMessage(["m0"]),
+            meta=[Metadata("key", "value1"), Metadata("key", "value2")],
+        )
+        assert entry.get_meta("key") == "value1"
+        assert entry.get_meta("foo") is None
+
+        assert entry.has_meta("key")
+        assert entry.has_meta("key", "value2")
+        assert not entry.get_meta("foo")
+        assert not entry.has_meta("key", "set value")
+
+        entry.set_meta("foo", "bar")
+        entry.set_meta("key", "set value")
+
+        assert entry.meta == [
+            Metadata("key", "set value"),
+            Metadata("key", "value2"),
+            Metadata("foo", "bar"),
+        ]
+
+        assert entry.del_meta("key") == 2
+        assert entry.del_meta("bar") == 0
+        assert entry.meta == [Metadata("foo", "bar")]
+
+    def test_resource(self):
+        res = Resource(
+            Format.properties,
+            [Section((), [])],
+            meta=[Metadata("key", "value1"), Metadata("key", "value2")],
+        )
+
+        assert res.get_meta("key") == "value1"
+        assert res.get_meta("foo") is None
+
+        res.set_meta("foo", "bar")
+        res.set_meta("key", "set value")
+
+        assert res.meta == [
+            Metadata("key", "set value"),
+            Metadata("key", "value2"),
+            Metadata("foo", "bar"),
+        ]
+
+        assert res.del_meta("key") == 2
+        assert res.del_meta("bar") == 0
+        assert res.meta == [Metadata("foo", "bar")]

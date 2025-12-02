@@ -147,33 +147,28 @@ def parse_message(
 
 Parse a `Message` from its string representation.
 
-Custom parsers are used for `android`, `mf2`, `webext`, and `xliff` formats.
-Other formats may include printf specifiers if `printf_placeholders` is enabled.
+Custom parsers are used for `android`, `fluent`, `mf2`, `properties`, `webext`, and `xliff` formats.
+`properties` and other formats not listed may include printf specifiers if `printf_placeholders` is enabled.
 
 Parsing a `webext` message that contains named placeholders requires
 providing the message's `webext_placeholders` dict.
 
 To parse an `xliff` message with XCode customizations, enable `xliff_is_xcode`.
 
-Parsing `fluent` messages is not supported,
-as their parsing may result in multiple `Entry` values.
-
 ### moz.l10n.message.serialize_message
 
 ```python
 from moz.l10n.message import serialize_message
 
-def serialize_message(format: Format, msg: Message) -> str
+def serialize_message(format: Format, msg: Message | Pattern) -> str
 ```
 
-Serialize a `Message` to its string representation.
+Serialize a `Message` or `Pattern` to its string representation.
 
-Custom serialisers are used for `android`, `mf2`, `webext`, and `xliff` formats.
+Custom serialisers are used for `android`, `fluent`, `mf2`, `properties`, `webext`, and `xliff` formats.
 Many formats rely on non-string message parts including an appropriate `source` attribute.
 
-SelectMessage serialization is only supported for `mf2`.
-
-Serializing `fluent` messages is not supported.
+SelectMessage serialization is only supported for `fluent` and `mf2`.
 
 ### moz.l10n.model
 
