@@ -947,7 +947,7 @@ class TestXliff1(TestCase):
         res = xliff_parse(xcode, source_entries=True)
         assert "".join(xliff_serialize(res, source_entries=True)) == exp
 
-    def test_parse_xcstrings(self):
+    def test_parse_xcstrings_source(self):
         res = xliff_parse(xcstrings, source_entries=True)
         assert xliff_is_xcode(res)
         assert res == Resource(
@@ -986,14 +986,15 @@ class TestXliff1(TestCase):
                         Entry(
                             id=("interpolation_key",),
                             value=SelectMessage(
-                                declarations={"plural": Expression(None, "number")},
-                                selectors=(VariableRef("plural"),),
+                                declarations={
+                                    "int": Expression(VariableRef("int"), "integer")
+                                },
+                                selectors=(VariableRef("int"),),
                                 variants={
                                     ("one",): [
                                         "There is ",
                                         Expression(
                                             VariableRef("int"),
-                                            "integer",
                                             attributes={"source": "%lld"},
                                         ),
                                         " thing.",
@@ -1001,8 +1002,7 @@ class TestXliff1(TestCase):
                                     (CatchallKey(value="other"),): [
                                         "There are ",
                                         Expression(
-                                            VariableRef(name="int"),
-                                            "integer",
+                                            VariableRef("int"),
                                             attributes={"source": "%lld"},
                                         ),
                                         " things.",
@@ -1039,7 +1039,7 @@ class TestXliff1(TestCase):
                                 variants={
                                     ("ipad",): ["This is the iPad variant"],
                                     ("iphone",): ["This is the iPhone variant."],
-                                    (CatchallKey(value="other"),): [
+                                    (CatchallKey("other"),): [
                                         "This is the string variant for other devices"
                                     ],
                                 },
@@ -1057,3 +1057,112 @@ class TestXliff1(TestCase):
                 ),
             ],
         )
+
+    def test_parse_xcstrings_target(self):
+        res = xliff_parse(xcstrings)
+        assert xliff_is_xcode(res)
+        assert res == Resource(
+            format=Format.xliff,
+            sections=[
+                Section(
+                    id=("catalog1.xcstrings",),
+                    entries=[
+                        Entry(
+                            id=("Hello, world!",),
+                            value=PatternMessage([]),
+                            comment="a plain string",
+                            meta=[
+                                Metadata("@xml:space", "preserve"),
+                                Metadata("note", "a plain string"),
+                                Metadata("source", "Hello, world!"),
+                            ],
+                        ),
+                        Entry(
+                            id=("interpolation_key",),
+                            value=SelectMessage(
+                                declarations={"plural": Expression(None, "number")},
+                                selectors=(VariableRef("plural"),),
+                                variants={("one",): [], (CatchallKey("other"),): []},
+                            ),
+                            comment="mind the pluralization",
+                            meta=[
+                                Metadata("one/@xml:space", "preserve"),
+                                Metadata("one/note", "mind the pluralization"),
+                                Metadata("one/source", "There is %lld thing."),
+                                Metadata("other/@xml:space", "preserve"),
+                                Metadata("other/note", "mind the pluralization"),
+                                Metadata("other/source", "There are %lld things."),
+                            ],
+                        ),
+                    ],
+                    meta=[
+                        Metadata("@source-language", "en"),
+                        Metadata("@target-language", "fi"),
+                        Metadata("@datatype", "plaintext"),
+                        Metadata("header/tool/@tool-id", "com.apple.dt.xcode"),
+                        Metadata("header/tool/@tool-name", "Xcode"),
+                        Metadata("header/tool/@tool-version", "26.1.1"),
+                        Metadata("header/tool/@build-num", "17B100"),
+                    ],
+                ),
+                Section(
+                    id=("catalog2.xcstrings",),
+                    entries=[
+                        Entry(
+                            id=("string_variant_per_device",),
+                            value=SelectMessage(
+                                declarations={"device": Expression(None, "device")},
+                                selectors=(VariableRef("device"),),
+                                variants={
+                                    ("ipad",): [],
+                                    ("iphone",): [],
+                                    (CatchallKey("other"),): [],
+                                },
+                            ),
+                            comment="ipad: iPad-only comment\n\niphone: iPhone-only comment",
+                            meta=[
+                                Metadata("ipad/@xml:space", "preserve"),
+                                Metadata("ipad/note", "iPad-only comment"),
+                                Metadata("ipad/source", "This is the iPad variant"),
+                                Metadata("iphone/@xml:space", "preserve"),
+                                Metadata("iphone/note", "iPhone-only comment"),
+                                Metadata(
+                                    "iphone/source",
+                                    "This is the iPhone variant.",
+                                ),
+                                Metadata("other/@xml:space", "preserve"),
+                                Metadata(
+                                    "other/source",
+                                    "This is the string variant for other devices",
+                                ),
+                            ],
+                        )
+                    ],
+                    meta=[
+                        Metadata("@source-language", "en"),
+                        Metadata("@target-language", "fi"),
+                        Metadata("@datatype", "plaintext"),
+                        Metadata("header/tool/@tool-id", "com.apple.dt.xcode"),
+                        Metadata("header/tool/@tool-name", "Xcode"),
+                        Metadata("header/tool/@tool-version", "26.1.1"),
+                        Metadata("header/tool/@build-num", "17B100"),
+                    ],
+                ),
+            ],
+            meta=[
+                Metadata("@version", "1.2"),
+                Metadata(
+                    "@xsi:schemaLocation",
+                    "urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd",
+                ),
+                Metadata("@xmlns", "urn:oasis:names:tc:xliff:document:1.2"),
+                Metadata("@xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+            ],
+        )
+
+    def test_serialize_xcstrings(self):
+        res = xliff_parse(xcstrings)
+        exp = xcstrings.decode("utf-8")
+        assert "".join(xliff_serialize(res)) == exp
+        res = xliff_parse(xcstrings, source_entries=True)
+        assert "".join(xliff_serialize(res, source_entries=True)) == exp

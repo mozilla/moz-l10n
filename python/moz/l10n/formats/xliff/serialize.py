@@ -123,76 +123,57 @@ def xliff_serialize(
             if len(entry.id) != 1:
                 raise ValueError(f"Unsupported entry id: {entry.id}")
             id = entry.id[0]
-            tag = "trans-unit"
+            msg = entry.value
 
-            # <bin-unit>
-            if isinstance(entry.value, PatternMessage):
-                pattern = entry.value.pattern
+            if isinstance(msg, str):
+                unit = etree.SubElement(parent, "trans-unit", {"id": id})
+                add_unit(
+                    unit,
+                    entry.comment,
+                    entry.meta,
+                    [msg],
+                    source_entries,
+                    trim_comments,
+                )
+            elif isinstance(msg, PatternMessage):
+                if msg.declarations:
+                    raise ValueError(f"Unsupported message: {msg}")
                 if (
-                    len(pattern) == 1
-                    and isinstance(pattern[0], Expression)
-                    and "bin-unit" in pattern[0].attributes
+                    len(msg.pattern) == 1
+                    and isinstance(el := msg.pattern[0], Expression)
+                    and "bin-unit" in el.attributes
                 ):
                     tag = "bin-unit"
-
-            if isinstance(entry.value, SelectMessage):
-                if not section.id[0].endswith(".stringsdict"):
-                    fn = section.id[0]
-                    raise ValueError(f"Unsupported SelectMessage {id} in file: {fn}")
+                    pattern = []
+                else:
+                    tag = "trans-unit"
+                    pattern = msg.pattern
+                unit = etree.SubElement(parent, tag, {"id": id})
+                add_unit(
+                    unit,
+                    entry.comment,
+                    entry.meta,
+                    pattern,
+                    source_entries,
+                    trim_comments,
+                )
+            elif section.id[0].endswith(".stringsdict"):
                 add_xliff_stringsdict_plural(
                     parent,
                     cast(Entry[SelectMessage], entry),
                     source_entries,
                     trim_comments,
                 )
-                continue
-
-            unit = etree.SubElement(parent, tag, {"id": id})
-            assign_metadata(unit, entry.meta, trim_comments)
-
-            msg = entry.value
-            msg_el = None
-            if (
-                tag == "trans-unit"
-                and msg
-                and (not isinstance(msg, PatternMessage) or msg.pattern)
-            ):
-                if source_entries:
-                    msg_el = unit.find("source")
-                    if msg_el is None:
-                        msg_el = etree.Element("source")
-                        unit.insert(0, msg_el)
-                else:
-                    msg_el = unit.find("target")
-                    if msg_el is None:
-                        source = unit.find("source")
-                        if source is None:
-                            raise ValueError(f"Invalid entry with no source: {entry}")
-                        msg_el = etree.Element("target")
-                        source.addnext(msg_el)
-                if isinstance(msg, str):
-                    msg_el.text = msg
-                elif isinstance(msg, PatternMessage) and not msg.declarations:
-                    set_pattern(msg_el, msg.pattern)
-                else:
-                    raise ValueError(f"Unsupported message: {msg}")
-
-            if (
-                entry.comment
-                and not entry.comment.isspace()
-                and not trim_comments
-                and unit.find("note") is None
-            ):
-                if msg_el is None:
-                    prev_el = unit.find("target") or unit.find("source")
-                    if prev_el is None:
-                        raise ValueError(f"Invalid entry with no source: {entry}")
-                else:
-                    prev_el = msg_el
-                note = etree.Element("note")
-                note.text = entry.comment
-                prev_el.addnext(note)
-
+            elif section.id[0].endswith(".xcstrings"):
+                add_xcstrings_selectmessage(
+                    parent,
+                    cast(Entry[SelectMessage], entry),
+                    source_entries,
+                    trim_comments,
+                )
+            else:
+                fn = section.id[0]
+                raise ValueError(f"Unsupported message {id} in file: {fn}")
     yield etree.tostring(root, encoding="unicode", pretty_print=True)
 
 
@@ -208,6 +189,58 @@ def xliff_serialize_message(msg: Message) -> str:
         raise ValueError(f"Invalid serialization: {str}")
     # trim <target>...</target> wrapper
     return str[8:-9]
+
+
+def add_unit(
+    unit: etree._Element,
+    comment: str,
+    meta: list[Metadata],
+    pattern: Pattern,
+    source_entries: bool,
+    trim_comments: bool,
+) -> None:
+    assign_metadata(unit, meta, trim_comments)
+
+    msg_el = None
+    if pattern:  # only non-empty for <trans-unnit>
+        if source_entries:
+            msg_el = unit.find("source")
+            if msg_el is None:
+                msg_el = etree.Element("source")
+                unit.insert(0, msg_el)
+        else:
+            msg_el = unit.find("target")
+            if msg_el is None:
+                source = unit.find("source")
+                if source is None:
+                    raise ValueError(f"Invalid entry with no source: {unit}")
+                msg_el = etree.Element("target")
+                source.addnext(msg_el)
+        set_pattern(msg_el, pattern)
+
+    if (
+        comment
+        and not comment.isspace()
+        and not trim_comments
+        and unit.find("note") is None
+    ):
+        if msg_el is None:
+            prev_el = unit.find("target") or unit.find("source")
+            if prev_el is None:
+                raise ValueError(f"Invalid entry with no source: {unit}")
+        else:
+            prev_el = msg_el
+        note = etree.Element("note")
+        note.text = comment
+        prev_el.addnext(note)
+
+    unit[:] = sorted(unit, key=unit_sort_key)
+
+
+def unit_sort_key(el: etree._Element) -> tuple[int, str]:
+    tag = str(el.tag)
+    n = 0 if tag == "source" else 1 if tag == "target" else 2
+    return (n, tag)
 
 
 def add_xliff_stringsdict_plural(
@@ -296,6 +329,40 @@ def add_xliff_stringsdict_plural(
                 target = etree.Element("target")
                 source.addnext(target)
             target.text = text
+
+
+def add_xcstrings_selectmessage(
+    parent: etree._Element,
+    entry: Entry[SelectMessage],
+    source_entries: bool,
+    trim_comments: bool,
+) -> None:
+    if entry.comment:
+        # TODO
+        pass
+    msg = entry.value
+    if len(msg.selectors) != 1:
+        raise ValueError(f"Exactly one selector is required: {msg.selectors}")
+    (sel,) = msg.selector_expressions()
+
+    var_type = None
+    if sel.function in ("integer", "number"):
+        var_type = "plural"
+    elif sel.function == "device":
+        var_type = "device"
+    else:
+        raise ValueError(f"Unsupported selector: {sel}")
+
+    for keys, pattern in msg.variants.items():
+        key = str(keys[0]) or "other"
+        id = f"{entry.id[0]}|==|{var_type}.{key}"
+        meta: list[Metadata] = []
+        for m in entry.meta:
+            m_key, *parts = m.key.split("/")
+            if m_key == key:
+                meta.append(Metadata("/".join(parts), m.value))
+        unit = etree.SubElement(parent, "trans-unit", {"id": id})
+        add_unit(unit, "", meta, pattern, source_entries, trim_comments)
 
 
 def assign_metadata(

@@ -1,10 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2"
-  xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="catalog1.xcstrings" source-language="en" target-language="fi" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.1.1" build-num="17B100" />
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.1.1" build-num="17B100"/>
     </header>
     <body>
       <trans-unit id="Hello, world!" xml:space="preserve">
@@ -23,7 +21,7 @@
   </file>
   <file original="catalog2.xcstrings" source-language="en" target-language="fi" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.1.1" build-num="17B100" />
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.1.1" build-num="17B100"/>
     </header>
     <body>
       <trans-unit id="string_variant_per_device|==|device.ipad" xml:space="preserve">
@@ -36,7 +34,6 @@
       </trans-unit>
       <trans-unit id="string_variant_per_device|==|device.other" xml:space="preserve">
         <source>This is the string variant for other devices</source>
-        <note/>
       </trans-unit>
     </body>
   </file>

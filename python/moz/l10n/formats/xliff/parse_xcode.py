@@ -16,9 +16,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from re import compile
-from typing import NoReturn
+from typing import NoReturn, cast
 
 from lxml import etree
 
@@ -67,6 +67,7 @@ variant_key = compile(r"%#@([a-zA-Z_]\w*)@")
 printf = compile(
     r"%([1-9]\$)?(?:#@([a-zA-Z_]\w*)@|[-#+ 0,]?[0-9.]*(?:(?:hh?|ll?|qztj)[douxX]|L[aAeEfFgG]|[@%aAcCdDeEfFgGoOspSuUxX]))"
 )
+not_first_placeholder = compile(r"%[2-9]\$")
 
 
 def parse_xliff_xcstrings(
@@ -113,6 +114,7 @@ def parse_xliff_xcstrings(
                 variants={},
             )
             entry = Entry((msg_id,), msg)
+            sel_ph: Expression | None = None
             for id, (meta, comment, pattern) in data.plural.items():
                 if id not in plural_categories:
                     error("Invalid plural category")
@@ -121,8 +123,32 @@ def parse_xliff_xcstrings(
                 for m in meta:
                     m.key = f"{id}/{m.key}"
                 entry.meta += meta
+                ph = next(
+                    (
+                        el
+                        for el in pattern
+                        if isinstance(el, Expression)
+                        and isinstance(el.arg, VariableRef)
+                        and isinstance(src := el.attributes.get("source", None), str)
+                        and not not_first_placeholder.match(src)
+                    ),
+                    None,
+                )
+                if ph is not None:
+                    if sel_ph is None:
+                        sel_ph = replace(ph)
+                    elif sel_ph != ph:
+                        error("Placeholder mismatch")
+                    for el in pattern:
+                        if isinstance(el, Expression) and el == sel_ph:
+                            el.function = None
                 key = id if id != "other" else CatchallKey(id)
                 msg.variants[(key,)] = pattern
+            if sel_ph is not None:
+                sel_ph.attributes = {}
+                name = cast(VariableRef, sel_ph.arg).name
+                msg.declarations = {name: sel_ph}
+                msg.selectors[0].name = name
             if comments:
                 comment_values = set(comments.values())
                 if len(comments) == len(data.plural) and len(comment_values) == 1:
