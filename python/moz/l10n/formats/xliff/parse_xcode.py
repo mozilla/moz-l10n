@@ -14,8 +14,9 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from re import compile
 from typing import NoReturn
 
@@ -25,7 +26,10 @@ from ...model import (
     CatchallKey,
     Entry,
     Expression,
+    Message,
     Metadata,
+    Pattern,
+    PatternMessage,
     SelectMessage,
     VariableRef,
 )
@@ -33,10 +37,21 @@ from .common import attrib_as_metadata, element_as_metadata
 
 
 @dataclass
+class XcstringsMsgData:
+    base: tuple[list[Metadata], str, Pattern] | None = None
+    plural: dict[str, tuple[list[Metadata], str, Pattern]] = field(default_factory=dict)
+    device: dict[str, tuple[list[Metadata], str, Pattern]] = field(default_factory=dict)
+    substitutions: dict[tuple[str, str], tuple[list[Metadata], str, Pattern]] = field(
+        default_factory=dict
+    )
+
+
+@dataclass
 class XcodeUnitData:
     unit: etree._Element
     source: etree._Element
     target: etree._Element | None
+    notes: list[etree._Element]
 
 
 @dataclass
@@ -50,8 +65,164 @@ plural_categories = ("zero", "one", "two", "few", "many", "other")
 variant_key = compile(r"%#@([a-zA-Z_]\w*)@")
 # https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Strings/Articles/formatSpecifiers.html
 printf = compile(
-    r"%([1-9]\$)?[-#+ 0,]?[0-9.]*(?:(?:hh?|ll?|qztj)[douxX]|L[aAeEfFgG]|[@%aAcCdDeEfFgGoOspSuUxX])"
+    r"%([1-9]\$)?(?:#@([a-zA-Z_]\w*)@|[-#+ 0,]?[0-9.]*(?:(?:hh?|ll?|qztj)[douxX]|L[aAeEfFgG]|[@%aAcCdDeEfFgGoOspSuUxX]))"
 )
+
+
+def parse_xliff_xcstrings(
+    ns: str, body: etree._Element, from_source: bool
+) -> Iterator[Entry[Message]]:
+    units: dict[str, XcstringsMsgData] = defaultdict(XcstringsMsgData)
+    for unit in body:
+        if unit.tag != f"{ns}trans-unit":
+            raise ValueError(f"Unsupported <{unit.tag!s}> element in <body>: {body}")
+        if "id" not in unit.attrib:
+            raise ValueError(f'Missing "id" attribute for <trans-unit>: {unit}')
+        if unit.text and not unit.text.isspace():
+            raise ValueError(f"Unexpected text in <trans-unit>: {unit.text}")
+        parse_xliff_xcstrings_unit(ns, units, unit, from_source)
+
+    for msg_id, data in units.items():
+        comments: dict[str, str] = {}
+        meta: list[Metadata]
+        msg: Message
+
+        def error(message: str) -> NoReturn:
+            raise ValueError(f"{message} for Xcode message {msg_id}")
+
+        if data.base:
+            if data.plural or data.device:
+                error("Unsupported variance")
+            meta, comment, pattern = data.base
+            if not data.substitutions:
+                yield Entry(
+                    (msg_id,), PatternMessage(pattern), comment=comment, meta=meta
+                )
+            else:
+                # FIXME
+                error("TODO: Substitution placeholders are not yet supported")
+        elif data.substitutions:
+            error("Unsupported variance")
+
+        elif data.plural:
+            if data.device:
+                error("Unsupported variance")
+            msg = SelectMessage(
+                declarations={"plural": Expression(None, "number")},
+                selectors=(VariableRef("plural"),),
+                variants={},
+            )
+            entry = Entry((msg_id,), msg)
+            for id, (meta, comment, pattern) in data.plural.items():
+                if id not in plural_categories:
+                    error("Invalid plural category")
+                if comment:
+                    comments[id] = comment
+                for m in meta:
+                    m.key = f"{id}/{m.key}"
+                entry.meta += meta
+                key = id if id != "other" else CatchallKey(id)
+                msg.variants[(key,)] = pattern
+            if comments:
+                comment_values = set(comments.values())
+                if len(comments) == len(data.plural) and len(comment_values) == 1:
+                    (entry.comment,) = comment_values
+                else:
+                    entry.comment = "\n\n".join(
+                        f"{k}: {v}" for k, v in comments.items()
+                    )
+            if (CatchallKey(),) not in msg.variants:
+                error('Missing "other" variant')
+            yield entry
+
+        elif data.device:
+            msg = SelectMessage(
+                declarations={"device": Expression(None, "device")},
+                selectors=(VariableRef("device"),),
+                variants={},
+            )
+            entry = Entry((msg_id,), msg)
+            for id, (meta, comment, pattern) in data.device.items():
+                if comment:
+                    comments[id] = comment
+                for m in meta:
+                    m.key = f"{id}/{m.key}"
+                entry.meta += meta
+                key = id if id != "other" else CatchallKey(id)
+                msg.variants[(key,)] = pattern
+            if comments:
+                comment_values = set(comments.values())
+                if len(comments) == len(data.device) and len(comment_values) == 1:
+                    (entry.comment,) = comment_values
+                else:
+                    entry.comment = "\n\n".join(
+                        f"{k}: {v}" for k, v in comments.items()
+                    )
+            if (CatchallKey(),) not in msg.variants:
+                error('Missing "other" variant')
+            yield entry
+
+        else:
+            error("Unsupported variance")
+
+
+def parse_xliff_xcstrings_unit(
+    ns: str,
+    units: dict[str, XcstringsMsgData],
+    unit: etree._Element,
+    from_source: bool,
+) -> None:
+    id_parts = unit.attrib["id"].split("|==|")
+    msg_id = id_parts[0]
+
+    unit_data = get_xcode_unit_data(ns, unit)
+    source = unit_data.source
+    target = unit_data.target
+    meta = attrib_as_metadata(unit_data.unit, None, ("id",))
+    comments: list[str] = []
+    for note in unit_data.notes:
+        meta += element_as_metadata(note, "note", True)
+        if note.text and not note.text.isspace():
+            comments.append(note.text.strip())
+    if from_source:
+        meta += attrib_as_metadata(source, "source")
+        if target is not None:
+            meta += element_as_metadata(target, "target", True)
+        pattern_src = source.text
+    else:
+        meta.append(Metadata("source", source.text or ""))
+        if target is None:
+            pattern_src = None
+        else:
+            meta += attrib_as_metadata(target, "target")
+            pattern_src = target.text
+    entry_data: tuple[list[Metadata], str, Pattern] = (
+        meta,
+        "\n\n".join(comments),
+        list(parse_xcode_pattern(pattern_src)),
+    )
+
+    if len(id_parts) == 1:
+        units[msg_id].base = entry_data
+        return
+    if len(id_parts) == 2:
+        dim, *key = id_parts[1].split(".")
+        if dim == "plural":
+            if len(key) == 1:
+                units[msg_id].plural[key[0]] = entry_data
+                return
+        elif dim == "substitutions":
+            if len(key) == 3 and key[1] == "plural":
+                units[msg_id].substitutions[(key[0], key[2])] = entry_data
+                return
+        elif dim == "device":
+            if len(key) == 1:
+                units[msg_id].device[key[0]] = entry_data
+                return
+
+    raise ValueError(
+        f'Unsupported Xcode id syntax in <trans-unit id="{unit.attrib["id"]}">'
+    )
 
 
 def parse_xliff_stringsdict(
@@ -163,6 +334,7 @@ def get_xcode_unit_data(ns: str, unit: etree._Element) -> XcodeUnitData:
 
     source = None
     target = None
+    notes = []
     for el in unit:
         if len(el) > 0:
             error(f"Unexpected child elements of <{el.tag!s}>")
@@ -180,14 +352,14 @@ def get_xcode_unit_data(ns: str, unit: etree._Element) -> XcodeUnitData:
                 error("Duplicate <target>")
         elif el.tag == f"{ns}note":
             if el.attrib or el.text:
-                error("Unexpected not-empty <note>")
+                notes.append(el)
         else:
             error(f"Unexpected <{el.tag!s}>")
         if el.tail and not el.tail.isspace():
             raise ValueError(f"Unexpected text in <trans-unit>: {el.tail}")
     if source is None:
         error("Missing <source>")
-    return XcodeUnitData(unit, source, target)
+    return XcodeUnitData(unit, source, target, notes)
 
 
 def parse_xcode_pattern(src: str | None) -> Iterator[str | Expression]:
@@ -199,32 +371,33 @@ def parse_xcode_pattern(src: str | None) -> Iterator[str | Expression]:
         if start > pos:
             yield src[pos:start]
         source = m[0]
-        format = source[-1]
-        if format == "%":
-            yield Expression("%", attributes={"source": source})
-        else:
-            name: str
-            func: str | None
-            # TODO post-py38: should be a match
-            if format in {"c", "C", "s", "S"}:
-                name = "str"
-                func = "string"
-            elif format in {"d", "D", "o", "O", "p", "u", "U", "x", "X"}:
-                name = "int"
-                func = "integer"
-            elif format in {"a", "A", "e", "E", "f", "g", "G"}:
-                name = "num"
-                func = "number"
-            else:
-                name = "arg"
-                func = None
-            if m[1]:
-                name += m[1][0]
+        if m[2]:
             yield Expression(
-                VariableRef(name),
-                func,
-                attributes={"source": source},
+                VariableRef(m[2]), "substitution", attributes={"source": source}
             )
+        else:
+            format = source[-1]
+            if format == "%":
+                yield Expression("%", attributes={"source": source})
+            else:
+                name: str
+                func: str | None
+                # TODO post-py38: should be a match
+                if format in {"c", "C", "s", "S"}:
+                    name = "str"
+                    func = "string"
+                elif format in {"d", "D", "o", "O", "p", "u", "U", "x", "X"}:
+                    name = "int"
+                    func = "integer"
+                elif format in {"a", "A", "e", "E", "f", "g", "G"}:
+                    name = "num"
+                    func = "number"
+                else:
+                    name = "arg"
+                    func = None
+                if m[1]:
+                    name += m[1][0]
+                yield Expression(VariableRef(name), func, attributes={"source": source})
         pos = m.end()
     if pos < len(src):
         yield src[pos:]

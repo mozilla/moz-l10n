@@ -17,7 +17,6 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterator
 from re import compile
-from typing import List, Union, cast
 
 from lxml import etree
 
@@ -40,7 +39,7 @@ from .common import (
     xliff_ns,
 )
 from .parse_trans_unit import parse_pattern, parse_trans_unit
-from .parse_xcode import parse_xliff_stringsdict
+from .parse_xcode import parse_xliff_stringsdict, parse_xliff_xcstrings
 
 
 def xliff_parse(
@@ -129,12 +128,14 @@ def xliff_parse(
                 raise ValueError(f"Unexpected text in <body>: {body.text}")
 
             is_xcode = xcode_tool_id in meta
-            if is_xcode and file_name.endswith(".stringsdict"):
-                plural_entries = parse_xliff_stringsdict(ns, body, source_entries)
-                if plural_entries is not None:
-                    entries += cast(
-                        List[Union[Entry[Message], Comment]], plural_entries
-                    )
+            if is_xcode:
+                if file_name.endswith(".stringsdict"):
+                    plural_entries = parse_xliff_stringsdict(ns, body, source_entries)
+                    if plural_entries:
+                        entries += plural_entries
+                        continue
+                elif file_name.endswith(".xcstrings"):
+                    entries += parse_xliff_xcstrings(ns, body, source_entries)
                     continue
 
             for unit in body:
