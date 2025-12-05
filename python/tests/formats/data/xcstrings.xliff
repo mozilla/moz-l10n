@@ -24,16 +24,25 @@
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.1.1" build-num="17B100"/>
     </header>
     <body>
-      <trans-unit id="string_variant_per_device|==|device.ipad" xml:space="preserve">
+      <trans-unit id="string_variant_per_device|==|device.ipad">
         <source>This is the iPad variant</source>
         <note>iPad-only comment</note>
       </trans-unit>
-      <trans-unit id="string_variant_per_device|==|device.iphone" xml:space="preserve">
+      <trans-unit id="string_variant_per_device|==|device.iphone">
         <source>This is the iPhone variant.</source>
         <note>iPhone-only comment</note>
       </trans-unit>
-      <trans-unit id="string_variant_per_device|==|device.other" xml:space="preserve">
+      <trans-unit id="string_variant_per_device|==|device.other">
         <source>This is the string variant for other devices</source>
+      </trans-unit>
+      <trans-unit id="one_substitution">
+        <source>This app has %1$#@strings@.</source>
+      </trans-unit>
+      <trans-unit id="one_substitution|==|substitutions.strings.plural.one">
+        <source>%1$lld string</source>
+      </trans-unit>
+      <trans-unit id="one_substitution|==|substitutions.strings.plural.other">
+        <source>%1$lld strings</source>
       </trans-unit>
     </body>
   </file>

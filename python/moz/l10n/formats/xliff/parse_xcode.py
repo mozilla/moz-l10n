@@ -18,7 +18,7 @@ from collections import defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass, field, replace
 from re import compile
-from typing import NoReturn, cast
+from typing import Literal, NoReturn, cast
 
 from lxml import etree
 
@@ -91,19 +91,124 @@ def parse_xliff_xcstrings(
         def error(message: str) -> NoReturn:
             raise ValueError(f"{message} for Xcode message {msg_id}")
 
-        if data.base:
+        if data.substitutions:
+            if not data.base or data.plural or data.device:
+                error("Unsupported variance")
+            meta, comment, sub_pattern = data.base
+            if comment:
+                comments[""] = comment
+            sub_vars: dict[str, Expression] = {}
+            var_keys: list[tuple[str | CatchallKey, ...]] = []
+            if sub_pattern:
+                sub_vars = {
+                    el.arg.name: el
+                    for el in sub_pattern
+                    if isinstance(el, Expression)
+                    and isinstance(el.arg, VariableRef)
+                    and "substitution" in el.attributes
+                }
+                for name in sub_vars:
+                    keys: list[tuple[str | CatchallKey, ...]] = [
+                        (k if k != "other" else CatchallKey(k),)
+                        for n, k in data.substitutions
+                        if n == name
+                    ]
+                    if not var_keys:
+                        var_keys = keys
+                    else:
+                        var_keys = [k0 + k1 for k0 in var_keys for k1 in keys]
+            else:
+                sub_var_names = {var_name: True for var_name, _ in data.substitutions}
+                if len(sub_var_names) == 1:
+                    # With multiple substitutions, we can't know the source order of the selectors.
+                    (var_name,) = sub_var_names
+                    sub_vars = {
+                        var_name: Expression(
+                            VariableRef(var_name),
+                            "substitution",
+                            attributes={"substitution": True},
+                        )
+                    }
+                    var_keys = [
+                        (k if k != "other" else CatchallKey(k),)
+                        for _, k in data.substitutions
+                    ]
+            msg = SelectMessage(
+                declarations=sub_vars,
+                selectors=tuple(VariableRef(name) for name in sub_vars),
+                variants={keys: sub_pattern[:] for keys in var_keys},
+            )
+            entry = Entry((msg_id,), msg, meta=meta[:])
+
+            for (var_name, id), (
+                meta,
+                comment,
+                var_pattern,
+            ) in data.substitutions.items():
+                if id not in plural_categories:
+                    error(f"Invalid plural category for {var_name} substitution")
+                if comment:
+                    comments[f"{var_name}/{id}"] = comment
+                for m in meta:
+                    m.key = f"{var_name}/{id}/{m.key}"
+                entry.meta += meta
+
+                if not var_pattern:
+                    continue
+
+                sub_decl = sub_vars.get(var_name, None)
+                if sub_decl is None:
+                    error("Unsupported variance")
+                sub_idx = sub_decl.attributes["substitution"]
+                var_ph = {
+                    el.attributes.get("index", True): el
+                    for el in var_pattern
+                    if isinstance(el, Expression) and isinstance(el.arg, VariableRef)
+                }
+                sub_var_ph = var_ph.get(sub_idx, None)
+                if sub_var_ph is not None:
+                    cast(VariableRef, sub_var_ph.arg).name = var_name
+                    if sub_var_ph.function is not None:
+                        sub_decl.function = sub_var_ph.function
+                        sub_var_ph.function = None
+
+                sel_idx = msg.selectors.index(VariableRef(var_name))
+                for keys_, pattern in msg.variants.items():
+                    if str(keys_[sel_idx]) == id:
+                        sub_ph_idx = next(
+                            idx
+                            for idx, el in enumerate(pattern)
+                            if isinstance(el, Expression)
+                            and el.attributes.get("substitution", None) == sub_idx
+                        )
+                        pattern[sub_ph_idx : sub_ph_idx + 1] = var_pattern
+            for pattern in msg.variants.values():
+                pattern_: Pattern = []
+                last = None
+                for el in pattern:
+                    if isinstance(el, str) and isinstance(last, str):
+                        last += el
+                        pattern_[-1] = last
+                    else:
+                        pattern_.append(el)
+                        last = el
+                if len(pattern_) != len(pattern):
+                    pattern[:] = pattern_
+            if comments:
+                comment_values = set(comments.values())
+                if len(comments) > 1 and len(comment_values) == 1:
+                    (entry.comment,) = comment_values
+                else:
+                    entry.comment = "\n\n".join(
+                        f"{k}: {v}" if k else v for k, v in comments.items()
+                    )
+            yield entry
+
+        elif data.base:
             if data.plural or data.device:
                 error("Unsupported variance")
             meta, comment, pattern = data.base
-            if not data.substitutions:
-                yield Entry(
-                    (msg_id,), PatternMessage(pattern), comment=comment, meta=meta
-                )
-            else:
-                # FIXME
-                error("TODO: Substitution placeholders are not yet supported")
-        elif data.substitutions:
-            error("Unsupported variance")
+            yield Entry((msg_id,), PatternMessage(pattern), comment=comment, meta=meta)
 
         elif data.plural:
             if data.device:
@@ -397,14 +502,14 @@ def parse_xcode_pattern(src: str | None) -> Iterator[str | Expression]:
         if start > pos:
             yield src[pos:start]
         source = m[0]
+        attributes: dict[str, str | Literal[True]] = {"source": source}
         if m[2]:
-            yield Expression(
-                VariableRef(m[2]), "substitution", attributes={"source": source}
-            )
+            attributes["substitution"] = m[1][0] if m[1] else True
+            yield Expression(VariableRef(m[2]), "substitution", attributes=attributes)
         else:
             format = source[-1]
             if format == "%":
-                yield Expression("%", attributes={"source": source})
+                yield Expression("%", attributes=attributes)
             else:
                 name: str
                 func: str | None
@@ -422,8 +527,9 @@ def parse_xcode_pattern(src: str | None) -> Iterator[str | Expression]:
                     name = "arg"
                     func = None
                 if m[1]:
-                    name += m[1][0]
-                yield Expression(VariableRef(name), func, attributes={"source": source})
+                    attributes["index"] = index = m[1][0]
+                    name += index
+                yield Expression(VariableRef(name), func, attributes=attributes)
         pos = m.end()
     if pos < len(src):
         yield src[pos:]

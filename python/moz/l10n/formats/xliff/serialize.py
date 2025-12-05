@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Iterator
 from typing import cast
 
@@ -341,9 +342,34 @@ def add_xcstrings_selectmessage(
         # TODO
         pass
     msg = entry.value
+    msg_id = entry.id[0]
+
     if len(msg.selectors) != 1:
-        raise ValueError(f"Exactly one selector is required: {msg.selectors}")
+        raise ValueError(
+            f"Serialization is only supported for messages with one selector: {msg.selectors}"
+        )
     (sel,) = msg.selector_expressions()
+
+    # Also catches empty sel_exp
+    if "substitution" in sel.attributes:
+        sub_name = cast(VariableRef, sel.arg).name
+        base_meta: list[Metadata] = []
+        sub_meta: dict[str, list[Metadata]] = defaultdict(list)
+        for m in entry.meta:
+            kp = m.key.split("/")
+            if len(kp) >= 3 and kp[0] == sub_name:
+                sub_meta[kp[1]].append(Metadata("/".join(kp[2:]), m.value))
+            else:
+                base_meta.append(m)
+        unit = etree.SubElement(parent, "trans-unit", {"id": msg_id})
+        pattern: Pattern = [sel] if "source" in sel.attributes else []
+        add_unit(unit, "", base_meta, pattern, source_entries, trim_comments)
+        for keys, pattern in msg.variants.items():
+            key = str(keys[0]) or "other"
+            id = f"{msg_id}|==|substitutions.{sub_name}.plural.{key}"
+            unit = etree.SubElement(parent, "trans-unit", {"id": id})
+            add_unit(unit, "", sub_meta[key], pattern, source_entries, trim_comments)
+        return
 
     var_type = None
     if sel.function in ("integer", "number"):
@@ -355,7 +381,7 @@ def add_xcstrings_selectmessage(
 
     for keys, pattern in msg.variants.items():
         key = str(keys[0]) or "other"
-        id = f"{entry.id[0]}|==|{var_type}.{key}"
+        id = f"{msg_id}|==|{var_type}.{key}"
         meta: list[Metadata] = []
         for m in entry.meta:
             m_key, *parts = m.key.split("/")
