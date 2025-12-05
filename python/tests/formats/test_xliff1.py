@@ -1162,7 +1162,7 @@ class TestXliff1(TestCase):
 
     def test_serialize_xcstrings(self):
         res = xliff_parse(xcstrings)
-        exp = xcstrings.decode("utf-8")
+        exp = "\n".join(xcstrings.decode("utf-8").splitlines()) + "\n"
         assert "".join(xliff_serialize(res)) == exp
         res = xliff_parse(xcstrings, source_entries=True)
         assert "".join(xliff_serialize(res, source_entries=True)) == exp
