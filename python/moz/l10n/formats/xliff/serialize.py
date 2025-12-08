@@ -202,7 +202,7 @@ def add_unit(
     assign_metadata(unit, meta, trim_comments)
 
     msg_el = None
-    if pattern:  # only non-empty for <trans-unnit>
+    if pattern:  # only non-empty for <trans-unit>
         if source_entries:
             msg_el = unit.find("source")
             if msg_el is None:
