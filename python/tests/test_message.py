@@ -28,14 +28,17 @@ class TestMessage(TestCase):
         assert msg == PatternMessage([src])
         res = serialize_message(Format.plain_json, msg)
         assert res == src
+        res = serialize_message(Format.plain_json, [src])
+        assert res == src
 
     def test_printf(self):
         src = "hello %% world"
         msg = parse_message(Format.plain_json, src, printf_placeholders=True)
-        assert msg == PatternMessage(
-            ["hello ", Expression("%", attributes={"source": "%%"}), " world"]
-        )
+        pattern = ["hello ", Expression("%", attributes={"source": "%%"}), " world"]
+        assert msg == PatternMessage(pattern)
         res = serialize_message(Format.plain_json, msg)
+        assert res == src
+        res = serialize_message(Format.plain_json, pattern)
         assert res == src
 
     def test_properties_printf(self):
