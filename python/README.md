@@ -170,14 +170,13 @@ Many formats rely on non-string message parts including an appropriate `source` 
 
 SelectMessage serialization is only supported for `fluent` and `mf2`.
 
-### moz.l10n.migrate.apply_migration
+### moz.l10n.migrate.Migrate
 
 ```python
-from moz.l10n.migrate import apply_migration
+from moz.l10n.migrate import Migrate
 
-def apply_migration(
-    paths: str | L10nConfigPaths | L10nDiscoverPaths,
-    add_entries: dict[
+def Migrate(
+    map: dict[
         str,
         dict[
             tuple[str, ...] | str,
@@ -185,17 +184,21 @@ def apply_migration(
                 [Resource[Message], MigrationContext],
                 Message
                 | Entry[Message]
-                | Tuple[Message | Entry[Message], set[str] | set[tuple[str, ...]]]
+                | tuple[Message | Entry[Message], set[str] | set[tuple[str, ...]]]
                 | None,
             ],
         ],
     ],
-) -> None
+    paths: str | L10nConfigPaths | L10nDiscoverPaths | None = None,
+)
 ```
 
-Adds entries to resources in `paths`.
+Define a migration that adds entries according to `map` to resources in `paths`.
 
-`add_entries` is a mapping of resource reference paths to target entry identifiers
+This is primarily intended to be called from a migration script,
+which is then processed with the `l10n-migrate` CLI command.
+
+`map` is a mapping of resource reference paths to target entry identifiers
 to functions that define their values;
 the function will be called with two arguments `(resource, context: MigrationContext)`.
 
@@ -251,7 +254,7 @@ def make_plural_x(res, ctx: MigrationContext):
 
 Utilities for putting together more complex message migrations.
 See individual [doc comments](moz/l10n/migrate/utils.py) for more information,
-and [test suite](tests/test_migrate.py) for example usage.
+and the [test suite](tests/test_migrate.py) for example usage.
 
 ### moz.l10n.model
 

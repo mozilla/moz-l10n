@@ -14,12 +14,13 @@
 
 from __future__ import annotations
 
-from os.path import join
+from os.path import isfile, join
 from tempfile import TemporaryDirectory
 from textwrap import dedent
 from unittest import SkipTest, TestCase
 
-from moz.l10n.migrate import apply_migration, copy
+from moz.l10n.bin.migrate import cli
+from moz.l10n.migrate import Migrate, copy
 from moz.l10n.migrate.utils import get_pattern, plural_message
 
 from .test_config import Tree, build_file_tree
@@ -93,8 +94,7 @@ class TestMigrate(TestCase):
                 msg = plural_message("quantity", one=x_one, two=x_two, other=x_other)
                 return msg, {"x-one", "x-two", "x-other"}
 
-            apply_migration(
-                join(root, "l10n.toml"),
+            Migrate(
                 {
                     "foo/values/strings.xml": {
                         "x": make_plural_x,
@@ -102,7 +102,8 @@ class TestMigrate(TestCase):
                         "z2": copy("bar/values/strings.xml", "z"),
                     }
                 },
-            )
+                join(root, "l10n.toml"),
+            ).apply()
 
             with open(join(root, "foo", "values-fr", "strings.xml"), mode="r") as file:
                 assert file.read() == dedent(
@@ -146,8 +147,7 @@ class TestMigrate(TestCase):
         with TemporaryDirectory() as root:
             build_file_tree(root, tree)
 
-            apply_migration(
-                root,
+            migrate = Migrate(
                 {
                     "b.ftl": {
                         "b1": copy("a.ftl", "a1"),
@@ -156,9 +156,91 @@ class TestMigrate(TestCase):
                     "d.ini": {
                         ("Strings", "d1"): copy("c.ini", ("Strings", "c1")),
                     },
-                },
+                }
             )
+            migrate.set_paths(root)
+            migrate.apply()
 
+            for locale in ["fr", "de_Test"]:
+                with open(join(root, locale, "b.ftl")) as file:
+                    assert file.read() == "b1 = A1\n" + "b2 = A2-1\n"
+
+                with open(join(root, locale, "d.ini")) as file:
+                    assert file.read() == "[Strings]\n" + "d1=C\n"
+
+    def test_cli(self):
+        bad_migration = "Migrate({})"
+        migration = dedent(
+            """\
+            from moz.l10n.migrate import Migrate, copy
+
+            Migrate({
+                "b.ftl": {
+                    "b1": copy("a.ftl", "a1"),
+                    "b2": copy("a.ftl", "a2", variant="one"),
+                },
+            })
+
+            Migrate({
+                "d.ini": {
+                    ("Strings", "d1"): copy("c.ini", ("Strings", "c1")),
+                },
+            })
+            """
+        )
+        a_ftl = dedent(
+            """\
+            a1 = A1
+            a2 = { $n ->
+                [one] A2-1
+               *[other] A2-*
+              }
+            """
+        )
+        c_ini = "[Strings]\nc1=C\n"
+        tree: Tree = {
+            "en-US": {"a.ftl": a_ftl, "b.ftl": "", "c.ini": "", "d.ini": "[Strings]\n"},
+            "fr": {"a.ftl": a_ftl, "b.ftl": "", "c.ini": c_ini, "d.ini": "[Strings]\n"},
+            "de_Test": {"a.ftl": a_ftl, "c.ini": c_ini},
+            "bad_migration.py": bad_migration,
+            "migration.py": migration,
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+
+            with self.assertRaises(SystemExit) as exit:
+                cli([join(root, "migration.py")])
+            assert exit.exception.code == 2
+
+            with self.assertRaises(SystemExit) as exit:
+                cli(
+                    [
+                        "--config",
+                        join(root, "l10n.toml"),
+                        "--root",
+                        root,
+                        join(root, "migration.py"),
+                    ]
+                )
+            assert exit.exception.code == 2
+
+            with self.assertRaises(SystemExit) as exit:
+                cli(["--root", root, join(root, "does-not-exist.py")])
+            assert exit.exception.code == 2
+
+            with self.assertRaises(SystemExit) as exit:
+                cli(["--root", root, join(root, "bad_migration.py")])
+            assert exit.exception.code == 2
+
+            cli(["--root", root, "--dry-run", join(root, "migration.py")])
+            with open(join(root, "fr", "b.ftl")) as file:
+                assert file.read() == ""
+            with open(join(root, "fr", "d.ini")) as file:
+                assert file.read() == "[Strings]\n"
+            assert not isfile(join(root, "de_Test", "b.ftl"))
+            assert not isfile(join(root, "de_Test", "d.ini"))
+
+            cli(["--root", root, join(root, "migration.py")])
             for locale in ["fr", "de_Test"]:
                 with open(join(root, locale, "b.ftl")) as file:
                     assert file.read() == "b1 = A1\n" + "b2 = A2-1\n"
