@@ -57,6 +57,7 @@ class TestLintCommand(TestCase):
                 "INFO:moz.l10n.bin.lint:ok strings.xml",
                 "INFO:moz.l10n.bin.lint:ok test.properties",
                 "INFO:moz.l10n.bin.lint:ok xcode.xliff",
+                "INFO:moz.l10n.bin.lint:ok xcstrings.xliff",
             ]
             if has_xml
             else [
@@ -73,6 +74,7 @@ class TestLintCommand(TestCase):
                 "WARNING:moz.l10n.bin.lint:unsupported icu-docs.xliff",
                 "WARNING:moz.l10n.bin.lint:unsupported strings.xml",
                 "WARNING:moz.l10n.bin.lint:unsupported xcode.xliff",
+                "WARNING:moz.l10n.bin.lint:unsupported xcstrings.xliff",
             ]
         )
 
@@ -86,6 +88,7 @@ class TestLintCommand(TestCase):
                 "icu-docs.xliff",
                 "strings.xml",
                 "xcode.xliff",
+                "xcstrings.xliff",
             }
         )
         for file in test_data_files:
