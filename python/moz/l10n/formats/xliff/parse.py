@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterator
 from re import compile
-from typing import List, Union, cast
+from typing import Union, cast
 
 from lxml import etree
 
@@ -133,7 +133,7 @@ def xliff_parse(
                 plural_entries = parse_xliff_stringsdict(ns, body)
                 if plural_entries is not None:
                     entries += cast(
-                        List[Union[Entry[Message], Comment]], plural_entries
+                        list[Union[Entry[Message], Comment]], plural_entries
                     )
                     continue
 
