@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Dict, Generic, List, Literal, Tuple, TypeVar, Union
+from typing import Generic, Literal, TypeVar, Union
 
 from .formats import Format
 
@@ -65,7 +65,7 @@ class Markup:
     attributes: dict[str, str | Literal[True]] = field(default_factory=dict)
 
 
-Pattern = List[Union[str, Expression, Markup]]
+Pattern = list[Union[str, Expression, Markup]]
 """
 A linear sequence of text and placeholders corresponding to potential output of a message.
 
@@ -115,7 +115,7 @@ class SelectMessage:
 
     declarations: dict[str, Expression]
     selectors: tuple[VariableRef, ...]
-    variants: Dict[Tuple[Union[str, CatchallKey], ...], Pattern]
+    variants: dict[tuple[str | CatchallKey, ...], Pattern]
 
     def is_empty(self) -> bool:
         """
@@ -210,7 +210,7 @@ V_co = TypeVar("V_co", bound=Union[Message, str], covariant=True)
 The Message value type.
 """
 
-Id = Tuple[str, ...]
+Id = tuple[str, ...]
 """
 An entry or section identifier.
 """
