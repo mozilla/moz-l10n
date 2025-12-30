@@ -20,6 +20,7 @@ ignore_missing_imports = true
 extra-standard-library = ["importlib_resources"]
 
 [tool.ruff.lint]
+allowed-confusables = [" "]
 select = [
   "E",   # pycodestyle errors
   "W",   # pycodestyle warnings

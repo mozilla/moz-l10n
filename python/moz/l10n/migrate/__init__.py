@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import dataclasses
+from copy import deepcopy
 from logging import getLogger
 from os.path import isdir, isfile, join
 from typing import Callable
@@ -131,7 +132,7 @@ class Migrate:
                                 f"Failed to parse source resource for {ref_path} (required for {locale})"
                             )
                             continue
-                    res = dataclasses.replace(src_res)
+                    res = deepcopy(src_res)
 
                 changed = 0
                 for id, create in res_add_entries.items():
