@@ -105,7 +105,7 @@ class TestMigrate(TestCase):
                 join(root, "l10n.toml"),
             ).apply()
 
-            with open(join(root, "foo", "values-fr", "strings.xml"), mode="r") as file:
+            with open(join(root, "foo", "values-fr", "strings.xml")) as file:
                 assert file.read() == dedent(
                     """\
                     <?xml version="1.0" encoding="utf-8"?>
@@ -125,7 +125,7 @@ class TestMigrate(TestCase):
                     """
                 )
 
-            with open(join(root, "foo", "values-de", "strings.xml"), mode="r") as file:
+            with open(join(root, "foo", "values-de", "strings.xml")) as file:
                 assert file.read() == foo_de
 
     def test_discover(self):

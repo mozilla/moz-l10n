@@ -15,33 +15,20 @@
 from __future__ import annotations
 
 import sys
-from os import mkdir
 from os.path import join, normpath
 from tempfile import TemporaryDirectory
 from textwrap import dedent
-from typing import Any, Dict, Union
+from typing import Any
 from unittest import TestCase
 
 from moz.l10n.paths import L10nConfigPaths, get_android_locale
+
+from .utils import Tree, build_file_tree
 
 if sys.version_info >= (3, 11):
     from tomllib import load
 else:
     from tomli import load
-
-Tree = Dict[str, Union[str, "Tree"]]
-
-
-def build_file_tree(root: str, tree: Tree) -> None:
-    for name, value in tree.items():
-        path = join(root, name)
-        if isinstance(value, str):
-            with open(path, "x") as file:
-                if value:
-                    file.write(value)
-        else:
-            mkdir(path)
-            build_file_tree(path, value)
 
 
 class TestL10nConfigPaths(TestCase):
@@ -292,7 +279,7 @@ class TestL10nConfigPaths(TestCase):
         )
 
         paths.locales = ["es", "fr", "nl"]
-        assert paths.target(res_source)[1] == set(("es", "fr"))
+        assert paths.target(res_source)[1] == {"es", "fr"}
         assert paths.all_locales == {"es", "fr", "nl", "de", "pt-BR"}
         paths.locales = []
         assert paths.target(res_source)[1] == path_locales
@@ -490,7 +477,7 @@ class TestL10nConfigPaths(TestCase):
             ),
         }
         paths.base = join(root, "foo")
-        assert set(tgt for _, tgt in paths.all()) == {
+        assert {tgt for _, tgt in paths.all()} == {
             join(root, "foo", "{locale}", "mail", override),
             join(root, "foo", "{locale}", "toolkit", config),
             join(root, "foo", "{locale}", "calendar", calendar),
