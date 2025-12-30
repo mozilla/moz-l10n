@@ -14,27 +14,13 @@
 
 from __future__ import annotations
 
-from os import mkdir
 from os.path import join, normpath
 from tempfile import TemporaryDirectory
-from typing import Dict, Union
 from unittest import TestCase
 
 from moz.l10n.paths import L10nDiscoverPaths, MissingSourceDirectoryError
 
-Tree = Dict[str, Union[str, "Tree"]]
-
-
-def build_file_tree(root: str, tree: Tree) -> None:
-    for name, value in tree.items():
-        path = join(root, name)
-        if isinstance(value, str):
-            with open(path, "x") as file:
-                if value:
-                    file.write(value)
-        else:
-            mkdir(path)
-            build_file_tree(path, value)
+from .utils import Tree, build_file_tree
 
 
 class TestL10nDiscover(TestCase):
@@ -232,9 +218,9 @@ class TestL10nDiscover(TestCase):
             paths = L10nDiscoverPaths(root)
             assert paths.ref_root == join(root, "en")
             assert paths.base == root
-            assert set(paths.locales) == set(["yy-Latn", "zz"])
+            assert set(paths.locales) == {"yy-Latn", "zz"}
 
             paths = L10nDiscoverPaths(root, ref_root=join(root, "en-US"))
             assert paths.ref_root == join(root, "en-US")
             assert paths.base == root
-            assert set(paths.locales) == set(["yy-Latn", "zz"])
+            assert set(paths.locales) == {"yy-Latn", "zz"}
