@@ -393,7 +393,7 @@ class TestMigrate(TestCase):
             build_file_tree(root, tree)
 
             cli(["--root", root, join(root, "migration.py")])
-            with open(join(root, "fr", "debugger.ftl")) as file:
+            with open(join(root, "fr", "debugger.ftl"), encoding="utf-8") as file:
                 assert file.read() == dedent("""\
                     # Shows a summary of the number of matches for autocomplete
                     source-search-results-summary =
@@ -408,7 +408,7 @@ class TestMigrate(TestCase):
                            *[other] Résultat { $x } sur { NUMBER($n) }
                         }
                 """)
-            with open(join(root, "lt", "debugger.ftl")) as file:
+            with open(join(root, "lt", "debugger.ftl"), encoding="utf-8") as file:
                 assert file.read() == dedent("""\
                     source-search-results-summary =
                         { $n ->
@@ -423,7 +423,7 @@ class TestMigrate(TestCase):
                            *[other] { $x } iš { NUMBER($n) } rezultatų
                         }
                 """)
-            with open(join(root, "uk", "debugger.ftl")) as file:
+            with open(join(root, "uk", "debugger.ftl"), encoding="utf-8") as file:
                 assert file.read() == dedent("""\
                     source-search-results-summary =
                         { $n ->
@@ -438,7 +438,7 @@ class TestMigrate(TestCase):
                            *[many] { $x } результатів з { NUMBER($n) }
                         }
                 """)
-            with open(join(root, "ar", "debugger.ftl")) as file:
+            with open(join(root, "ar", "debugger.ftl"), encoding="utf-8") as file:
                 assert file.read() == dedent("""\
                     source-search-results-summary =
                         { $n ->
