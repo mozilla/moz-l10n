@@ -15,10 +15,11 @@
 from __future__ import annotations
 
 from importlib.util import find_spec
-from importlib_resources import files
 from unittest import TestCase, skipIf
 
 from moz.l10n.formats import Format, detect_format
+
+from . import get_test_resource
 
 no_xml = find_spec("lxml") is None
 
@@ -35,7 +36,7 @@ class TestDetectFormat(TestCase):
             "test.properties": Format.properties,
         }
         for file, exp_format in data.items():
-            source = files("tests.formats.data").joinpath(file).read_bytes()
+            source = get_test_resource(file)
             assert detect_format(file, source) == exp_format
 
     @skipIf(no_xml, "Requires [xml] extra")
@@ -48,13 +49,13 @@ class TestDetectFormat(TestCase):
             "xcode.xliff": Format.xliff,
         }
         for file, exp_format in data.items():
-            source = files("tests.formats.data").joinpath(file).read_bytes()
+            source = get_test_resource(file)
             assert detect_format(file, source) == exp_format
 
     @skipIf(no_xml, "Requires [xml] extra")
     def test_xliff_source(self):
         for file in ("angular.xliff", "hello.xliff", "icu-docs.xliff", "xcode.xliff"):
-            source = files("tests.formats.data").joinpath(file).read_bytes()
+            source = get_test_resource(file)
             assert detect_format(None, source) == Format.xliff
 
     def test_bad_json(self):

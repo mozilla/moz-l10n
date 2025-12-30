@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 from importlib.util import find_spec
-from importlib_resources import files
 from unittest import TestCase, skipIf
 
 from moz.l10n.formats import Format, UnsupportedFormat
@@ -25,11 +24,9 @@ from moz.l10n.resource import (
     serialize_resource,
 )
 
+from .formats import get_test_resource
+
 has_lxml = find_spec("lxml") is not None
-
-
-def get_source(filename: str) -> bytes:
-    return files("tests.formats.data").joinpath(filename).read_bytes()
 
 
 class TestResource(TestCase):
@@ -45,7 +42,7 @@ class TestResource(TestCase):
             "test.properties",
         )
         for file in data:
-            res = parse_resource(file, get_source(file))
+            res = parse_resource(file, get_test_resource(file))
             assert isinstance(res, Resource)
             assert all(isinstance(s, str) for s in serialize_resource(res))
             assert all(
@@ -59,7 +56,7 @@ class TestResource(TestCase):
         are no longer necessary.
         """
         with self.assertRaises(OSError):
-            parse_resource("foo.po", get_source("foo.po"))
+            parse_resource("foo.po", get_test_resource("foo.po"))
 
     @skipIf(not has_lxml, "Requires [xml] extra")
     def test_named_xml_files(self):
@@ -71,7 +68,7 @@ class TestResource(TestCase):
             "xcode.xliff",
         )
         for file in data:
-            res = parse_resource(file, get_source(file))
+            res = parse_resource(file, get_test_resource(file))
             assert isinstance(res, Resource)
             assert all(isinstance(s, str) for s in serialize_resource(res))
             assert all(
@@ -92,7 +89,7 @@ class TestResource(TestCase):
         }
         for format, values in data.items():
             for file in values:
-                res = parse_resource(None, get_source(file))
+                res = parse_resource(None, get_test_resource(file))
                 assert isinstance(res, Resource)
                 assert res.format == format
 
@@ -107,15 +104,15 @@ class TestResource(TestCase):
         ]
         for file in files:
             with self.assertRaisesRegex(UnsupportedFormat, "XML support"):
-                parse_resource(None, get_source(file))
+                parse_resource(None, get_test_resource(file))
 
     def test_parse_unknown_format(self):
-        source = get_source("accounts.dtd")
+        source = get_test_resource("accounts.dtd")
         with self.assertRaises(UnsupportedFormat):
             parse_resource(None, source)
 
     def test_serialize_unsupported_format(self):
-        source = get_source("demo.ftl")
+        source = get_test_resource("demo.ftl")
         res = parse_resource(Format.fluent, source)
         with self.assertRaises(ValueError):
             assert all(

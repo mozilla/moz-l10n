@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
 from textwrap import dedent
 from unittest import SkipTest, TestCase
 
@@ -33,6 +32,8 @@ from moz.l10n.model import (
     VariableRef,
 )
 
+from . import get_test_resource
+
 try:
     from moz.l10n.formats.android import (
         android_parse,
@@ -43,7 +44,7 @@ try:
 except ImportError:
     raise SkipTest("Requires [xml] extra")
 
-source = files("tests.formats.data").joinpath("strings.xml").read_bytes()
+source = get_test_resource("strings.xml")
 
 
 class TestAndroid(TestCase):

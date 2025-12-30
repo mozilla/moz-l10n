@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from importlib.resources import files
+
 from moz.l10n.model import LinePos
 
 
@@ -22,7 +24,7 @@ def get_linepos(
     key: int | None = None,
     value: int | None = None,
     end: int | None = None,
-) -> None:
+) -> LinePos:
     if key is None:
         key = start
     if value is None:
@@ -30,3 +32,7 @@ def get_linepos(
     if end is None:
         end = value + 1
     return LinePos(start, key, value, end)
+
+
+def get_test_resource(filename: str) -> bytes:
+    return files("tests.formats").joinpath("data").joinpath(filename).read_bytes()

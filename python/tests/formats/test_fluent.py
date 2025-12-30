@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
 from textwrap import dedent
 from unittest import TestCase
 
@@ -40,7 +39,7 @@ from moz.l10n.model import (
     VariableRef,
 )
 
-from . import get_linepos
+from . import get_linepos, get_test_resource
 
 
 class TestFluent(TestCase):
@@ -575,7 +574,7 @@ class TestFluent(TestCase):
         assert ec.exception.args == ('Expected token: "=" after message msg at line 3',)
 
     def test_file(self):
-        bytes = files("tests.formats.data").joinpath("demo.ftl").read_bytes()
+        bytes = get_test_resource("demo.ftl")
         res = fluent_parse(bytes, with_linepos=False)
         copyright = "Any copyright is dedicated to the Public Domain.\nhttp://creativecommons.org/publicdomain/zero/1.0/"
         entries = [

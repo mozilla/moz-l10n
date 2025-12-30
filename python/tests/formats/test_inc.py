@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
 from textwrap import dedent
 from unittest import TestCase
 
@@ -22,9 +21,9 @@ from moz.l10n.formats import Format
 from moz.l10n.formats.inc import inc_parse, inc_serialize
 from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
-source = (
-    files("tests.formats.data").joinpath("defines.inc").read_bytes().decode("utf-8")
-)
+from . import get_test_resource
+
+source = get_test_resource("defines.inc").decode("utf-8")
 
 
 class TestInc(TestCase):

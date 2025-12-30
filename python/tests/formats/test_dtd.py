@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
 from textwrap import dedent
 from unittest import TestCase
 
@@ -22,9 +21,9 @@ from moz.l10n.formats import Format
 from moz.l10n.formats.dtd import dtd_parse, dtd_serialize
 from moz.l10n.model import Comment, Entry, Metadata, PatternMessage, Resource, Section
 
-source = (
-    files("tests.formats.data").joinpath("accounts.dtd").read_bytes().decode("utf-8")
-)
+from . import get_test_resource
+
+source = get_test_resource("accounts.dtd").decode("utf-8")
 
 
 class TestDtd(TestCase):

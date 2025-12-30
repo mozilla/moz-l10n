@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
 from textwrap import dedent
 from unittest import TestCase
 
@@ -34,7 +33,9 @@ from moz.l10n.model import (
     VariableRef,
 )
 
-source = files("tests.formats.data").joinpath("messages.json").read_bytes()
+from . import get_test_resource
+
+source = get_test_resource("messages.json")
 
 
 class TestWebext(TestCase):
