@@ -91,17 +91,19 @@ def get_entry(res: Resource[M], *id: str) -> Entry[M] | None:
 def get_pattern(
     res: Resource[Message],
     *id: str,
+    property: str | None = None,
     default: Pattern | None = None,
     variant: tuple[str | CatchallKey, ...] | str | None = None,
 ) -> Pattern:
     """
-    Get a pattern matching `id` from `res`.
+    Get a pattern matching `id`, `property`, and `variant` from `res`.
 
-    If the entry for `id` is a PatternMessage, its `.value` is returned.
+    If `property` is not set, a pattern from the `id` entry's `.value` is returned.
+    Otherwise, a pattern from its `.properties[property]` is returned.
 
-    If the entry for `id` is a SelectMessage,
+    If the message for `id` and `property` is a SelectMessage,
     either the pattern matching `variant` is returned,
-    or (if not found) the fallback pattern.
+    or (if not found) the fallback pattern is returned.
 
     If `default` is a Pattern, it is returned if no matching pattern is found.
     Otherwise, if a StopIteration exception is raised
@@ -112,7 +114,13 @@ def get_pattern(
             return default
         raise StopIteration
 
-    msg = entry.value
+    if property is None:
+        msg = entry.value
+    elif property in entry.properties:
+        msg = entry.properties[property]
+    else:
+        raise StopIteration
+
     if isinstance(msg, PatternMessage):
         return msg.pattern
     elif isinstance(msg, SelectMessage):

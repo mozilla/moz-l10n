@@ -153,6 +153,7 @@ class Migrate:
 def copy(
     ref_path: None | str,
     id: tuple[str, ...] | str,
+    property: str | None = None,
     variant: tuple[str | CatchallKey, ...] | str | None = None,
 ) -> Callable[
     [Resource[Message], MigrationContext],
@@ -162,6 +163,8 @@ def copy(
     Create a copy migration function, from entry `id` in `ref_path`.
 
     If `ref_path` is None, the entry is copied from the current Resource.
+
+    If `property` is set, the pattern of the specified property is copied.
 
     If `variant` is set and `id` contains a SelectMessage,
     the pattern of the specified variant is copied (or the default one).
@@ -180,7 +183,7 @@ def copy(
         else:
             res_ = res
 
-        if variant is None:
+        if property is None and variant is None:
             entry = get_entry(res_, *id)
             if entry:
                 return (entry, {id})
@@ -189,12 +192,13 @@ def copy(
                 return None
 
         try:
-            pattern = get_pattern(res_, *id, variant=variant)
+            pattern = get_pattern(res_, *id, property=property, variant=variant)
             return PatternMessage(pattern), {id}
         except StopIteration:
-            log.debug(
-                f"Copy-from pattern for variant {variant} not found: {ctx.pretty_id(id)}"
-            )
+            pp = f"property {property}" if property else ""
+            pv = f"variant {variant}" if variant else ""
+            pk = f"{pp}, {pv}" if property and variant else pp or pv
+            log.debug(f"Copy-from pattern for {pk} not found: {ctx.pretty_id(id)}")
             return None
 
     return copy_
