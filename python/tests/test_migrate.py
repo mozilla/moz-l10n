@@ -23,6 +23,7 @@ from unittest import SkipTest, TestCase
 from moz.l10n.bin.migrate import cli
 from moz.l10n.migrate import Migrate, copy
 from moz.l10n.migrate.utils import get_pattern, plural_message
+from moz.l10n.paths.discover import L10nDiscoverPaths, MissingSourceDirectoryError
 
 from .test_config import Tree, build_file_tree
 
@@ -168,6 +169,32 @@ class TestMigrate(TestCase):
 
                 with open(join(root, locale, "d.ini")) as file:
                     assert file.read() == "[Strings]\n" + "d1=C\n"
+
+    def test_ref_root(self):
+        a_ftl = "a1 = A1\n"
+        tree: Tree = {
+            "ref": {"a.ftl": a_ftl, "b.ftl": ""},
+            "root": {
+                "fr": {"a.ftl": a_ftl, "b.ftl": ""},
+                "de_Test": {"a.ftl": a_ftl},
+            },
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+
+            migrate = Migrate({"b.ftl": {"b1": copy("a.ftl", "a1")}})
+            with self.assertRaises(MissingSourceDirectoryError):
+                migrate.set_paths(join(root, "root"))
+
+            paths = L10nDiscoverPaths(join(root, "root"), ref_root=join(root, "ref"))
+            migrate.set_paths(paths)
+            migrate.apply()
+
+            with open(join(root, "ref", "b.ftl")) as file:
+                assert file.read() == ""
+            for locale in ["fr", "de_Test"]:
+                with open(join(root, "root", locale, "b.ftl")) as file:
+                    assert file.read() == "b1 = A1\n"
 
     def test_cli(self):
         bad_migration = "Migrate({})"

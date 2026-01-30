@@ -27,7 +27,7 @@ from traceback import format_exc
 
 from moz.l10n.migrate import all_migrations
 from moz.l10n.paths.config import L10nConfigPaths
-from moz.l10n.paths.discover import L10nDiscoverPaths
+from moz.l10n.paths.discover import L10nDiscoverPaths, MissingSourceDirectoryError
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +67,12 @@ def cli(args: list[str] | None = None) -> None:
         help="path to localization root, if --config is not set",
     )
     parser.add_argument(
+        "--ref",
+        metavar="PATH",
+        type=str,
+        help="path to localization reference root, if separate from --root",
+    )
+    parser.add_argument(
         "migration", nargs="+", type=str, help="path to migration module(s)"
     )
     ns = parser.parse_args(args)
@@ -88,9 +94,14 @@ def cli(args: list[str] | None = None) -> None:
         apply_migrations(
             ns.migration,
             config_path=ns.config,
-            discover_dir=ns.root,
+            discover_root=ns.root,
+            discover_ref_root=ns.ref,
             dry_run=ns.dry_run,
         )
+    except MissingSourceDirectoryError:
+        log.error(f"Reference root not found in {ns.ref or ns.root}")
+        log.debug(format_exc())
+        sys.exit(2)
     except ValueError as err:
         log.error(str(*err.args))
         log.debug(format_exc())
@@ -104,16 +115,19 @@ def apply_migrations(
     migration_paths: list[str],
     *,
     config_path: str | None = None,
-    discover_dir: str | None = None,
+    discover_root: str | None = None,
+    discover_ref_root: str | None = None,
     dry_run: bool = False,
 ) -> None:
     paths: L10nConfigPaths | L10nDiscoverPaths | None = None
     if config_path:
-        if discover_dir:
+        if discover_root:
             raise ValueError("--config and --root must not be both set.")
         paths = L10nConfigPaths(config_path)
-    elif discover_dir:
-        paths = L10nDiscoverPaths(abspath(discover_dir), ref_root=".")
+    elif discover_root:
+        if discover_ref_root is not None:
+            discover_ref_root = abspath(discover_ref_root)
+        paths = L10nDiscoverPaths(abspath(discover_root), ref_root=discover_ref_root)
 
     all_migrations.clear()
     for idx, migration_path in enumerate(migration_paths):
