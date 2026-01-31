@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
+from importlib.resources import files
 from unittest import TestCase
 
 from moz.l10n.formats import Format
@@ -33,7 +33,7 @@ from moz.l10n.model import (
     VariableRef,
 )
 
-res_path = str(files("tests.formats.data").joinpath("foo.po"))
+res_path = str(files("tests.formats").joinpath("data").joinpath("foo.po"))
 
 
 class TestGettext(TestCase):

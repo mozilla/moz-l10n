@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
+from importlib.resources import files
 from os.path import isfile, join
 from tempfile import TemporaryDirectory
 from textwrap import dedent

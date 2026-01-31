@@ -5,7 +5,6 @@ description = "Mozilla tools for localization"
 
 [dependency-groups]
 dev = [
-  "importlib-resources>=6.4.5",
   "jsonschema>=4.23.0",
   "mypy>=1.11.2",
   "pytest>=8.3.3",
@@ -26,9 +25,6 @@ strict = true
 [[tool.mypy.overrides]]
 module = "translate.storage.properties"
 ignore_missing_imports = true
-
-[tool.ruff.lint.isort]
-extra-standard-library = ["importlib_resources"]
 
 [tool.ruff.lint]
 allowed-confusables = [" "]
