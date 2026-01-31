@@ -18,13 +18,18 @@ import dataclasses
 from copy import deepcopy
 from logging import getLogger
 from os.path import isdir, isfile, join
-from typing import Callable
+from typing import Any, Callable, Union
 
 from moz.l10n.formats import Format, detect_format
 from moz.l10n.model import (
     CatchallKey,
     Entry,
+    Expression,
+    Id,
+    Markup,
     Message,
+    Metadata,
+    Pattern,
     PatternMessage,
     Resource,
     Section,
@@ -40,26 +45,26 @@ log = getLogger(__name__)
 
 all_migrations: list[Migrate] = []
 
+MigrationFunction = Callable[
+    [Resource[Message], MigrationContext],
+    Union[
+        Message,
+        Entry[Message],
+        tuple[Union[Message, Entry[Message]], Union[set[str], set[Id]]],
+        None,
+    ],
+]
+
 
 class Migrate:
+    parse_options: dict[str, Any]
     paths: L10nConfigPaths | L10nDiscoverPaths | None = None
 
     def __init__(
         self,
-        map: dict[
-            str,
-            dict[
-                tuple[str, ...] | str,
-                Callable[
-                    [Resource[Message], MigrationContext],
-                    Message
-                    | Entry[Message]
-                    | tuple[Message | Entry[Message], set[str] | set[tuple[str, ...]]]
-                    | None,
-                ],
-            ],
-        ],
+        map: dict[str, dict[tuple[str, ...] | str, MigrationFunction]],
         paths: str | L10nConfigPaths | L10nDiscoverPaths | None = None,
+        **parse_options: Any,
     ) -> None:
         """
         Define a migration that adds entries according to `map` to resources in `paths`.
@@ -83,6 +88,7 @@ class Migrate:
         self.map = map
         if paths is not None:
             self.set_paths(paths)
+        self.parse_options = parse_options
         all_migrations.append(self)
 
     def set_paths(self, paths: str | L10nConfigPaths | L10nDiscoverPaths) -> None:
@@ -120,7 +126,7 @@ class Migrate:
 
             src_res: Resource[Message] | None = None
             for locale in locales:
-                ctx = MigrationContext(self.paths, ref_path, locale)
+                ctx = MigrationContext(self.paths, ref_path, locale, self.parse_options)
                 res = ctx.get_resource(ref_path)
                 if res is None:
                     if src_res is None:
@@ -136,9 +142,8 @@ class Migrate:
 
                 changed = 0
                 for id, create in res_add_entries.items():
-                    if isinstance(id, str):
-                        id = (id,)
-                    if _create_entry(res, ctx, id, create):
+                    ctx._update(id)
+                    if _create_entry(res, ctx, create):
                         changed += 1
 
                 if changed:
@@ -153,24 +158,33 @@ class Migrate:
 def copy(
     ref_path: None | str,
     id: tuple[str, ...] | str,
+    *,
     property: str | None = None,
+    replace: Callable[[Expression | Markup | str], Expression | Markup | str | None]
+    | None = None,
+    value_only: bool = False,
     variant: tuple[str | CatchallKey, ...] | str | None = None,
-) -> Callable[
-    [Resource[Message], MigrationContext],
-    tuple[Entry[Message] | Message, set[tuple[str, ...]]] | None,
-]:
+) -> MigrationFunction:
     """
     Create a copy migration function, from entry `id` in `ref_path`.
 
     If `ref_path` is None, the entry is copied from the current Resource.
 
-    If `property` is set, the pattern of the specified property is copied.
+    If `property` is set, the Message of the specified property is copied.
+    Similarly, if `value_only` is set, only the `.value` Message is copied.
 
-    If `variant` is set and `id` contains a SelectMessage,
+    If `variant` is set and the Message is a SelectMessage,
     the pattern of the specified variant is copied (or the default one).
+
+    To change a message during the copy, define a `replace` function.
+    It may mutate each placeholder directly,
+    or return a non-None value to use as its replacement.
+    To remove a placeholder, return an empty string.
     """
     if isinstance(id, str):
         id = (id,)
+    if value_only and property:
+        raise ValueError("value_only and property must not be set at the same time")
 
     def copy_(
         res: Resource[Message], ctx: MigrationContext
@@ -186,13 +200,15 @@ def copy(
         if property is None and variant is None:
             entry = get_entry(res_, *id)
             if entry:
-                return (entry, {id})
+                _replace_placeholders(entry, replace)
+                return (entry.value if value_only else entry, {id})
             else:
                 log.debug(f"Copy-from entry not found: {ctx.pretty_id(id)}")
                 return None
 
         try:
             pattern = get_pattern(res_, *id, property=property, variant=variant)
+            _replace_placeholders(pattern, replace)
             return PatternMessage(pattern), {id}
         except StopIteration:
             pp = f"property {property}" if property else ""
@@ -202,6 +218,111 @@ def copy(
             return None
 
     return copy_
+
+
+def _replace_placeholders(
+    msg: Entry[Message] | Message | Pattern,
+    replace: Callable[[Expression | Markup | str], Expression | Markup | str | None]
+    | None,
+) -> None:
+    if not replace:
+        pass
+    elif isinstance(msg, Entry):
+        _replace_placeholders(msg.value, replace)
+        for prop in msg.properties.values():
+            _replace_placeholders(prop, replace)
+    elif isinstance(msg, SelectMessage):
+        for variant in msg.variants.values():
+            _replace_placeholders(variant, replace)
+    else:
+        pattern = msg.pattern if isinstance(msg, PatternMessage) else msg
+        for idx, ph in enumerate(pattern):
+            res = replace(ph)
+            if res is not None:
+                pattern[idx] = res
+
+
+def entry(
+    value: MigrationFunction | Entry[Message] | Message | None = None,
+    properties: dict[str, MigrationFunction | Entry[Message] | Message] | None = None,
+    *,
+    allow_partial: bool = False,
+    comment: str | None = None,
+    meta: list[Metadata] | None = None,
+) -> MigrationFunction:
+    """
+    Create a new Entry, from any number of source messages.
+
+    With non-callable `value` and `properties`,
+    the same message will be used for all locales.
+
+    If `allow_partial` is False,
+    None will be returned if any MigrationFunction return None.
+
+    If `comment` and `meta` are None and `value` resolves to an Entry,
+    its `comment` and `meta` (if any) are included in the result.
+    """
+
+    def entry_(
+        res: Resource[Message],
+        ctx: MigrationContext,
+    ) -> tuple[Entry[Message], set[Id]] | None:
+        insert_after: set[Id] = set()
+        comment_ = comment
+        meta_ = meta
+        if callable(value):
+            value_ = value(res, ctx)
+            if isinstance(value_, tuple):
+                insert_after.update(
+                    k if isinstance(k, tuple) else (k,) for k in value_[1]
+                )
+                value_ = value_[0]
+        else:
+            value_ = value
+        if isinstance(value_, Entry):
+            if comment_ is None:
+                comment_ = value_.comment
+            if meta_ is None:
+                meta_ = value_.meta
+            value_ = value_.value
+        if value_ is None:
+            if not allow_partial and value is not None:
+                log.debug(f"Entry value not found for {ctx}")
+                return None
+
+        properties_: dict[str, Message] = {}
+        if properties:
+            for name, prop in properties.items():
+                if callable(prop):
+                    prop_res = prop(res, ctx)
+                    if prop_res is None:
+                        log.debug(f"Entry property {name} not found for {ctx}")
+                        if allow_partial:
+                            continue
+                        else:
+                            return None
+                    if isinstance(prop_res, tuple):
+                        insert_after.update(
+                            k if isinstance(k, tuple) else (k,) for k in prop_res[1]
+                        )
+                        prop = prop_res[0]
+                    else:
+                        prop = prop_res
+                properties_[name] = prop.value if isinstance(prop, Entry) else prop
+
+        if not value_ and not properties_:
+            return None
+
+        entry = Entry(
+            ctx.target_id,
+            value_ or PatternMessage([]),
+            properties_,
+            comment_ or "",
+            meta_ or [],
+        )
+        return (entry, insert_after)
+
+    return entry_
 
 
 def _get_empty_resource(path: str) -> Resource[Message] | None:
@@ -228,7 +349,6 @@ def _get_empty_resource(path: str) -> Resource[Message] | None:
 def _create_entry(
     res: Resource[Message],
     ctx: MigrationContext,
-    id: tuple[str, ...],
     create: Callable[
         [Resource[Message], MigrationContext],
         Message
@@ -238,25 +358,25 @@ def _create_entry(
     ],
 ) -> bool:
     """
-    Adds entry `id` to `res`, created with the `create` function.
+    Adds an entry to `res`, created with the `create` function.
 
     The `create` function will be called with two arguments `(res: Resource, ctx: MigrationContext)`.
     It should return a Message, an Entry, or a tuple consisting of one of those,
     along with a set of identifiers for entries after which the new entry should be inserted.
 
-    If an `id` entry already exists, it is not modified.
+    If an entry already exists, it is not modified.
 
     Returns `True` on success.
     """
 
-    if get_entry(res, *id) is not None:
-        log.info(f"Already defined: {ctx.pretty_id(id)}")
+    if get_entry(res, *ctx.target_id) is not None:
+        log.info(f"Already defined: {ctx}")
         return False
 
     try:
         src_entry = create(res, ctx)
     except StopIteration:
-        log.info(f"Source not found: {ctx.pretty_id(id)}")
+        log.info(f"Source not found: {ctx}")
         return False
 
     if src_entry is None:
@@ -268,18 +388,16 @@ def _create_entry(
     elif isinstance(src_entry, Entry):
         src_ids = {src_entry.id}
     else:
-        src_ids = {id}
+        src_ids = {ctx.target_id}
 
     # For .ini and .xliff, new_entry.id will initially contain the section id.
     # This is dropped later in insert_entry_after().
     if isinstance(src_entry, Entry):
-        new_entry = dataclasses.replace(src_entry, id=id)
+        new_entry = dataclasses.replace(src_entry, id=ctx.target_id)
     elif isinstance(src_entry, (PatternMessage, SelectMessage)):
-        new_entry = Entry(id, src_entry)
+        new_entry = Entry(ctx.target_id, src_entry)
     else:
-        raise ValueError(
-            f"Unsupported entry type {type(src_entry)}: {ctx.pretty_id(id)}"
-        )
+        raise ValueError(f"Unsupported entry type {type(src_entry)}: {ctx}")
 
-    insert_entry_after(res, new_entry, *src_ids)
+    insert_entry_after(res, new_entry, *src_ids, *ctx._prev_ids)
     return True

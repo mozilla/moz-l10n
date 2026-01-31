@@ -16,12 +16,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from logging import getLogger
-from typing import TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from moz.l10n.model import (
     CatchallKey,
     Entry,
     Expression,
+    Id,
     Message,
     Pattern,
     PatternMessage,
@@ -43,7 +44,10 @@ class MigrationContext:
     paths: L10nConfigPaths | L10nDiscoverPaths
     ref_path: str
     locale: str
+    parse_options: dict[str, Any]
+    target_id: Id = ()
 
+    _prev_ids: list[Id] = field(default_factory=list)
     _resources: dict[str, Resource[Message] | None] = field(default_factory=dict)
 
     def get_resource(self, ref_path: str) -> Resource[Message] | None:
@@ -51,7 +55,7 @@ class MigrationContext:
             return self._resources[ref_path]
         tgt_path, _ = self.paths.target(ref_path, locale=self.locale)
         try:
-            res = parse_resource(tgt_path)
+            res = parse_resource(tgt_path, **self.parse_options)
         except OSError:
             log.debug(f"Resource not available: {tgt_path}")
             res = None
@@ -63,6 +67,14 @@ class MigrationContext:
 
     def pretty_id(self, id: tuple[str, ...]) -> str:
         return f"{'.'.join(id)} in {self.ref_path} for locale {self.locale}"
+
+    def _update(self, id: Id | str) -> None:
+        if self.target_id:
+            self._prev_ids.append(self.target_id)
+        self.target_id = (id,) if isinstance(id, str) else id
+
+    def __str__(self) -> str:
+        return self.pretty_id(self.target_id)
 
 
 def get_entry(res: Resource[M], *id: str) -> Entry[M] | None:

@@ -173,21 +173,12 @@ SelectMessage serialization is only supported for `fluent` and `mf2`.
 ### moz.l10n.migrate.Migrate
 
 ```python
-from moz.l10n.migrate import Migrate
+from moz.l10n.migrate import Migrate, MigrationFunction
 
 def Migrate(
     map: dict[
         str,
-        dict[
-            tuple[str, ...] | str,
-            Callable[
-                [Resource[Message], MigrationContext],
-                Message
-                | Entry[Message]
-                | tuple[Message | Entry[Message], set[str] | set[tuple[str, ...]]]
-                | None,
-            ],
-        ],
+        dict[tuple[str, ...] | str, MigrationFunction],
     ],
     paths: str | L10nConfigPaths | L10nDiscoverPaths | None = None,
 )
@@ -200,7 +191,8 @@ which is then processed with the `l10n-migrate` CLI command.
 
 `map` is a mapping of resource reference paths to target entry identifiers
 to functions that define their values;
-the function will be called with two arguments `(resource, context: MigrationContext)`.
+the MigrationFunction will be called with two arguments
+`(resource, context: MigrationContext)`.
 
 Functions defining new entries should return a Message, an Entry,
 or a tuple consisting of one of those along with a set of identifiers
@@ -215,24 +207,60 @@ the reference resource must exist to create a new resource.
 ### moz.l10n.migrate.copy
 
 ```python
-from moz.l10n.migrate import copy
+from moz.l10n.migrate import MigrationFunction, copy
 
 def copy(
     ref_path: None | str,
     id: tuple[str, ...] | str,
+    *,
+    property: str | None = None,
+    replace: Callable[[Expression | Markup | str], Expression | Markup | str | None]
+    | None = None,
+    value_only: bool = False,
     variant: tuple[str | CatchallKey, ...] | str | None = None,
-) -> Callable[
-    [Resource[Message], MigrationContext],
-    tuple[Entry[Message] | Message, set[tuple[str, ...]]] | None,
-]
+) -> MigrationFunction
 ```
 
 Create a copy migration function, from entry `id` in `ref_path`.
 
 If `ref_path` is None, the entry is copied from the current Resource.
 
-If `variant` is set and `id` contains a SelectMessage,
+If `property` is set, the Message of the specified property is copied.
+Similarly, if `value_only` is set, only the `.value` Message is copied.
+
+If `variant` is set and the Message is a SelectMessage,
 the pattern of the specified variant is copied (or the default one).
+
+To change a message during the copy, define a `replace` function.
+It may mutate each placeholder directly,
+or return a non-None value to use as its replacement.
+To remove a placeholder, return an empty string.
+
+### moz.l10n.migrate.entry
+
+```python
+from moz.l10n.migrate import MigrationFunction, entry
+
+def entry(
+    value: MigrationFunction | Entry[Message] | Message | None = None,
+    properties: dict[str, MigrationFunction | Entry[Message] | Message] | None = None,
+    *,
+    allow_partial: bool = False,
+    comment: str | None = None,
+    meta: list[Metadata] | None = None,
+) -> MigrationFunction
+```
+
+Create a new Entry, from any number of source messages.
+
+With non-callable `value` and `properties`,
+the same message will be used for all locales.
+
+If `allow_partial` is False,
+None will be returned if any MigrationFunction return None.
+
+If `comment` and `meta` are None and `value` resolves to an Entry,
+its `comment` and `meta` (if any) are included in the result.
 
 ### moz.l10n.migrate.utils
 

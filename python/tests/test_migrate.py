@@ -21,8 +21,9 @@ from textwrap import dedent
 from unittest import SkipTest, TestCase
 
 from moz.l10n.bin.migrate import cli
-from moz.l10n.migrate import Migrate, copy
+from moz.l10n.migrate import Migrate, copy, entry
 from moz.l10n.migrate.utils import get_pattern, plural_message
+from moz.l10n.model import Expression, VariableRef
 from moz.l10n.paths.discover import L10nDiscoverPaths, MissingSourceDirectoryError
 
 from .test_config import Tree, build_file_tree
@@ -121,8 +122,8 @@ class TestMigrate(TestCase):
                       </plurals>
                       <string name="y">Y</string>
                       <string name="y2">Y</string>
-                      <string name="w">W</string>
                       <string name="z2">bar Z</string>
+                      <string name="w">W</string>
                     </resources>
                     """
                 )
@@ -195,6 +196,125 @@ class TestMigrate(TestCase):
             for locale in ["fr", "de_Test"]:
                 with open(join(root, "root", locale, "b.ftl")) as file:
                     assert file.read() == "b1 = A1\n"
+
+    def test_copy(self):
+        b_ftl = dedent("""\
+            prev = Value
+                .prop = Prop
+        """)
+        tree: Tree = {
+            "en-US": {"a.properties": "", "b.ftl": ""},
+            "fr": {
+                "a.properties": "key = Refresh %S…\n",
+                "b.ftl": b_ftl,
+            },
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+
+            Migrate(
+                {
+                    "b.ftl": {
+                        "from-value": copy("b.ftl", "prev", value_only=True),
+                        "from-prop": copy("b.ftl", "prev", property="prop"),
+                        "replaced": copy(
+                            "a.properties",
+                            "key",
+                            replace=lambda ph: Expression("-term", function="message")
+                            if isinstance(ph, Expression)
+                            and ph.arg == VariableRef("arg")
+                            else None,
+                        ),
+                    }
+                },
+                paths=root,
+                properties_printf_placeholders=True,
+            ).apply()
+
+            with open(join(root, "fr", "b.ftl"), encoding="utf-8") as file:
+                assert file.read() == dedent("""\
+                    prev = Value
+                        .prop = Prop
+                    from-value = Value
+                    from-prop = Prop
+                    replaced = Refresh { -term }…
+                """)
+
+    def test_entry(self):
+        tree: Tree = {
+            "en-US": {"a.properties": "", "b.ftl": ""},
+            "fr": {
+                "a.properties": dedent("""\
+                    # LOCALIZATION NOTE: %S is brandShortName.
+                    button.label = Refresh %S…
+                    button.accesskey = e
+                """),
+                "b.ftl": dedent("""\
+                    prev = Value
+                        .prop = Prop
+                """),
+            },
+            "de": {
+                "a.properties": dedent("""\
+                    # LOCALIZATION NOTE: %S is brandShortName.
+                    button.label = Refresh %S…
+                """),
+                "b.ftl": dedent("""\
+                    prev = Value
+                        .prop = Prop
+                """),
+            },
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+
+            Migrate(
+                {
+                    "b.ftl": {
+                        "to-value": entry(value=copy("b.ftl", "prev")),
+                        "to-prop": entry(properties={"prop": copy("b.ftl", "prev")}),
+                        "button": entry(
+                            copy("a.properties", "button.label"),
+                            properties={
+                                "accesskey": copy("a.properties", "button.accesskey"),
+                            },
+                        ),
+                        "partial": entry(
+                            copy("a.properties", "button.label"),
+                            properties={
+                                "accesskey": copy("a.properties", "button.accesskey"),
+                            },
+                            allow_partial=True,
+                            comment="",
+                        ),
+                    }
+                },
+                paths=root,
+                properties_printf_placeholders=True,
+            ).apply()
+
+            with open(join(root, "fr", "b.ftl"), encoding="utf-8") as file:
+                assert file.read() == dedent("""\
+                    prev = Value
+                        .prop = Prop
+                    to-value = Value
+                    to-prop =
+                        .prop = Value
+                    # LOCALIZATION NOTE: %S is brandShortName.
+                    button = Refresh { $arg }…
+                        .accesskey = e
+                    partial = Refresh { $arg }…
+                        .accesskey = e
+                """)
+            with open(join(root, "de", "b.ftl"), encoding="utf-8") as file:
+                assert file.read() == dedent("""\
+                    prev = Value
+                        .prop = Prop
+                    to-value = Value
+                    to-prop =
+                        .prop = Value
+                    partial = Refresh { $arg }…
+                """)
 
     def test_cli(self):
         bad_migration = "Migrate({})"
