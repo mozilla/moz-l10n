@@ -107,7 +107,7 @@ class Migrate:
         else:
             raise ValueError(f"Not found: {paths}")
 
-    def apply(self, dry_run: bool = False) -> None:
+    def apply(self, dry_run: bool = False) -> dict[str, list[Entry[Message]]]:
         """
         Adds entries according to `map` to resources in `paths`.
 
@@ -116,9 +116,13 @@ class Migrate:
         If no resource exists for a target locale, one is created.
         For .ini, JSON, and XML-based resources,
         the reference resource must exist to create a new resource.
+
+        Returns a mapping of (localized) resource paths
+        to a list of message entries added to it.
         """
         if self.paths is None:
             raise ValueError("Paths not set")
+        all_changes: dict[str, list[Entry[Message]]] = {}
         for ref_path, res_add_entries in self.map.items():
             tgt_fmt, locales = self.paths.target(ref_path)
             if tgt_fmt is None:
@@ -140,19 +144,24 @@ class Migrate:
                             continue
                     res = deepcopy(src_res)
 
-                changed = 0
+                changed: list[Entry[Message]] = []
                 for id, create in res_add_entries.items():
                     ctx._update(id)
-                    if _create_entry(res, ctx, create):
-                        changed += 1
+                    new_entry = _create_entry(res, ctx, create)
+                    if new_entry is not None:
+                        changed.append(new_entry)
 
                 if changed:
-                    log.info(f"Updating {ref_path} for locale {locale}")
+                    nc = len(changed)
+                    entries = "1 entry" if nc == 1 else f"{nc} entries"
+                    log.info(f"Adding {entries} to {ref_path} for locale {locale}")
                     tgt_path = self.paths.format_target_path(tgt_fmt, locale)
                     if not dry_run:
                         with open(tgt_path, "w", encoding="utf-8") as file:
                             for line in serialize_resource(res):
                                 file.write(line)
+                    all_changes[tgt_path] = changed
+        return all_changes
 
 
 def copy(
@@ -356,7 +365,7 @@ def _create_entry(
         | tuple[Message | Entry[Message], set[tuple[str, ...]] | set[str]]
         | None,
     ],
-) -> bool:
+) -> Entry[Message] | None:
     """
     Adds an entry to `res`, created with the `create` function.
 
@@ -371,16 +380,16 @@ def _create_entry(
 
     if get_entry(res, *ctx.target_id) is not None:
         log.info(f"Already defined: {ctx}")
-        return False
+        return None
 
     try:
         src_entry = create(res, ctx)
     except StopIteration:
         log.info(f"Source not found: {ctx}")
-        return False
+        return None
 
     if src_entry is None:
-        return False
+        return None
 
     if isinstance(src_entry, tuple):
         src_ids = src_entry[1]
@@ -400,4 +409,4 @@ def _create_entry(
         raise ValueError(f"Unsupported entry type {type(src_entry)}: {ctx}")
 
     insert_entry_after(res, new_entry, *src_ids, *ctx._prev_ids)
-    return True
+    return new_entry

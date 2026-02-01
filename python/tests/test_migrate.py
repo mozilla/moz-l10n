@@ -23,7 +23,7 @@ from unittest import SkipTest, TestCase
 from moz.l10n.bin.migrate import cli
 from moz.l10n.migrate import Migrate, copy, entry
 from moz.l10n.migrate.utils import get_pattern, plural_message
-from moz.l10n.model import Expression, VariableRef
+from moz.l10n.model import Entry, Expression, PatternMessage, VariableRef
 from moz.l10n.paths.discover import L10nDiscoverPaths, MissingSourceDirectoryError
 
 from .test_config import Tree, build_file_tree
@@ -212,7 +212,7 @@ class TestMigrate(TestCase):
         with TemporaryDirectory() as root:
             build_file_tree(root, tree)
 
-            Migrate(
+            res = Migrate(
                 {
                     "b.ftl": {
                         "from-value": copy("b.ftl", "prev", value_only=True),
@@ -230,6 +230,19 @@ class TestMigrate(TestCase):
                 paths=root,
                 properties_printf_placeholders=True,
             ).apply()
+
+            assert list(res.values()) == [
+                [
+                    Entry(("from-value",), PatternMessage(["Value"])),
+                    Entry(("from-prop",), PatternMessage(["Prop"])),
+                    Entry(
+                        ("replaced",),
+                        PatternMessage(
+                            ["Refresh ", Expression("-term", "message"), "\u2026"]
+                        ),
+                    ),
+                ]
+            ]
 
             with open(join(root, "fr", "b.ftl"), encoding="utf-8") as file:
                 assert file.read() == dedent("""\
