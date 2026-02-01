@@ -19,6 +19,7 @@ from collections.abc import Iterable, Iterator
 from itertools import chain
 from os import sep, walk
 from os.path import commonpath, isdir, join, normpath, relpath, splitext
+from typing import Literal, overload
 
 from moz.l10n.formats import l10n_extensions
 from moz.l10n.util import walk_files
@@ -217,6 +218,28 @@ class L10nDiscoverPaths:
             paths[(ref_path, target)] = self.locales
         return paths
 
+    @overload
+    def ref_path(self, ref_path: str, ref_required: Literal[False]) -> str:
+        pass
+
+    @overload
+    def ref_path(self, ref_path: str, ref_required: bool = True) -> str | None:
+        pass
+
+    def ref_path(self, ref_path: str, ref_required: bool = True) -> str | None:
+        """
+        Normalize a reference path, and unless `ref_required` is set False,
+        ensure that it exists.
+        """
+        norm_ref_path = normpath(join(self._ref_root, ref_path))
+        if norm_ref_path.endswith(".po"):
+            norm_ref_path += "t"
+        return (
+            None
+            if ref_required and norm_ref_path not in self.ref_paths
+            else norm_ref_path
+        )
+
     def target(
         self, ref_path: str, *, ref_required: bool = True, locale: str | None = None
     ) -> tuple[str | None, Iterable[str]]:
@@ -227,13 +250,11 @@ class L10nDiscoverPaths:
 
         If `locale` is not set, target path will include a `{locale}` variable.
         """
-        ref_path = normpath(join(self._ref_root, ref_path))
-        if ref_path.endswith(".po"):
-            ref_path += "t"
-        if ref_required and ref_path not in self.ref_paths:
+        norm_ref_path = self.ref_path(ref_path, ref_required)
+        if norm_ref_path is None:
             return None, ()
         locale_root = join(self._base(), "{locale}")
-        target = ref_path.replace(self._ref_root, locale_root, 1)
+        target = norm_ref_path.replace(self._ref_root, locale_root, 1)
         if target.endswith(".pot"):
             target = target[:-1]
         if locale is None:

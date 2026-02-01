@@ -21,7 +21,7 @@ from glob import glob
 from os import sep
 from os.path import dirname, isfile, join, normpath, relpath
 from re import Pattern, compile
-from typing import Any, cast
+from typing import Any, Literal, cast, overload
 
 if sys.version_info >= (3, 11):
     from tomllib import load
@@ -289,6 +289,28 @@ class L10nConfigPaths:
         for incl in self._includes:
             yield from incl._all(format_map)
 
+    @overload
+    def ref_path(self, ref_path: str, ref_required: Literal[False]) -> str:
+        pass
+
+    @overload
+    def ref_path(self, ref_path: str, ref_required: bool = True) -> str | None:
+        pass
+
+    def ref_path(self, ref_path: str, ref_required: bool = True) -> str | None:
+        """
+        Normalize a reference path, and unless `ref_required` is set False,
+        ensure that it exists.
+        """
+        norm_ref_path = normpath(join(self._ref_root, ref_path))
+        if norm_ref_path.endswith(".po"):
+            norm_ref_path += "t"
+        return (
+            None
+            if ref_required and norm_ref_path not in self.ref_paths
+            else norm_ref_path
+        )
+
     def target(
         self,
         ref_path: str,
@@ -311,9 +333,7 @@ class L10nConfigPaths:
         """
         if locale is not None and self._locales and locale not in self._locales:
             return None, set()
-        norm_ref_path = normpath(join(self._ref_root, ref_path))
-        if norm_ref_path.endswith(".po"):
-            norm_ref_path += "t"
+        norm_ref_path = self.ref_path(ref_path, ref_required=False)
         pd = self._path_data.get(norm_ref_path, None)
         target = None
         locales = None
