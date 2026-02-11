@@ -45,12 +45,12 @@ log = getLogger(__name__)
 
 all_migrations: list[Migrate] = []
 
+MigrationResult = Union[str, Message, Entry[Message]]
 MigrationFunction = Callable[
     [Resource[Message], MigrationContext],
     Union[
-        Message,
-        Entry[Message],
-        tuple[Union[Message, Entry[Message]], Union[set[str], set[Id]]],
+        MigrationResult,
+        tuple[MigrationResult, Union[set[str], set[Id]]],
         None,
     ],
 ]
@@ -252,8 +252,8 @@ def _replace_placeholders(
 
 
 def entry(
-    value: MigrationFunction | Entry[Message] | Message | None = None,
-    properties: dict[str, MigrationFunction | Entry[Message] | Message] | None = None,
+    value: MigrationFunction | MigrationResult | None = None,
+    properties: dict[str, MigrationFunction | MigrationResult] | None = None,
     *,
     allow_partial: bool = False,
     comment: str | None = None,
@@ -298,6 +298,8 @@ def entry(
             if not allow_partial and value is not None:
                 log.debug(f"Entry value not found for {ctx}")
                 return None
+        if isinstance(value_, str):
+            value_ = PatternMessage([value_])
 
         properties_: dict[str, Message] = {}
         if properties:
@@ -317,7 +319,11 @@ def entry(
                         prop = prop_res[0]
                     else:
                         prop = prop_res
-                properties_[name] = prop.value if isinstance(prop, Entry) else prop
+                if isinstance(prop, str):
+                    prop = PatternMessage([prop])
+                elif isinstance(prop, Entry):
+                    prop = prop.value
+                properties_[name] = prop
 
         if not value_ and not properties_:
             return None
@@ -360,9 +366,8 @@ def _create_entry(
     ctx: MigrationContext,
     create: Callable[
         [Resource[Message], MigrationContext],
-        Message
-        | Entry[Message]
-        | tuple[Message | Entry[Message], set[tuple[str, ...]] | set[str]]
+        MigrationResult
+        | tuple[MigrationResult, set[tuple[str, ...]] | set[str]]
         | None,
     ],
 ) -> Entry[Message] | None:

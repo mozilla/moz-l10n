@@ -173,7 +173,15 @@ SelectMessage serialization is only supported for `fluent` and `mf2`.
 ### moz.l10n.migrate.Migrate
 
 ```python
-from moz.l10n.migrate import Migrate, MigrationFunction
+from moz.l10n.migrate import Migrate, MigrationFunction, MigrationResult
+
+(type) MigrationResult = str | Message | Entry[Message]
+
+(type) MigrationFunction = (
+    Resource[Message], MigrationContext
+) -> (
+    MigrationResult | tuple[MigrationResult, set[str] | set[Id]] | None
+)
 
 class Migrate(
     map: dict[
@@ -239,11 +247,11 @@ To remove a placeholder, return an empty string.
 ### moz.l10n.migrate.entry
 
 ```python
-from moz.l10n.migrate import MigrationFunction, entry
+from moz.l10n.migrate import MigrationFunction, MigrationResult, entry
 
 def entry(
-    value: MigrationFunction | Entry[Message] | Message | None = None,
-    properties: dict[str, MigrationFunction | Entry[Message] | Message] | None = None,
+    value: MigrationFunction | MigrationResult | None = None,
+    properties: dict[str, MigrationFunction | MigrationResult] | None = None,
     *,
     allow_partial: bool = False,
     comment: str | None = None,

@@ -300,6 +300,14 @@ class TestMigrate(TestCase):
                             allow_partial=True,
                             comment="",
                         ),
+                        "literal": entry(
+                            "Fixed value",
+                            properties={
+                                "prop": PatternMessage(
+                                    ["Fixed ", Expression("pattern")]
+                                )
+                            },
+                        ),
                     }
                 },
                 paths=root,
@@ -318,6 +326,8 @@ class TestMigrate(TestCase):
                         .accesskey = e
                     partial = Refresh { $arg }…
                         .accesskey = e
+                    literal = Fixed value
+                        .prop = Fixed { "pattern" }
                 """)
             with open(join(root, "de", "b.ftl"), encoding="utf-8") as file:
                 assert file.read() == dedent("""\
@@ -327,6 +337,8 @@ class TestMigrate(TestCase):
                     to-prop =
                         .prop = Value
                     partial = Refresh { $arg }…
+                    literal = Fixed value
+                        .prop = Fixed { "pattern" }
                 """)
 
     def test_cli(self):
