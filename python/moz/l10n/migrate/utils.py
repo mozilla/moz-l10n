@@ -81,7 +81,7 @@ def get_entry(res: Resource[M], *id: str) -> Entry[M] | None:
     """
     Get an entry matching `id` from `res`.
 
-    If not found, a StopIteration exception is raised
+    If not found return None
     """
     for section in res.sections:
         if section.id:
@@ -118,7 +118,7 @@ def get_pattern(
     or (if not found) the fallback pattern is returned.
 
     If `default` is a Pattern, it is returned if no matching pattern is found.
-    Otherwise, if a StopIteration exception is raised
+    Otherwise, a StopIteration exception is raised.
     """
     entry = get_entry(res, *id)
     if entry is None:

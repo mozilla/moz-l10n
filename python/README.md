@@ -175,7 +175,7 @@ SelectMessage serialization is only supported for `fluent` and `mf2`.
 ```python
 from moz.l10n.migrate import Migrate, MigrationFunction
 
-def Migrate(
+class Migrate(
     map: dict[
         str,
         dict[tuple[str, ...] | str, MigrationFunction],

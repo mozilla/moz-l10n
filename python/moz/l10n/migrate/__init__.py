@@ -375,7 +375,7 @@ def _create_entry(
 
     If an entry already exists, it is not modified.
 
-    Returns `True` on success.
+    Returns `Entry[Message]` on success.
     """
 
     if get_entry(res, *ctx.target_id) is not None:

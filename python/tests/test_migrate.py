@@ -26,7 +26,7 @@ from moz.l10n.migrate.utils import get_pattern, plural_message
 from moz.l10n.model import Entry, Expression, PatternMessage, VariableRef
 from moz.l10n.paths.discover import L10nDiscoverPaths, MissingSourceDirectoryError
 
-from .test_config import Tree, build_file_tree
+from .utils import Tree, build_file_tree
 
 try:
     import moz.l10n.formats.android  # noqa: F401
