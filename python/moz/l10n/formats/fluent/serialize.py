@@ -14,9 +14,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from re import compile, fullmatch
-from typing import Any, Iterator
+from typing import Any
 
 from fluent.syntax import FluentSerializer
 from fluent.syntax import ast as ftl

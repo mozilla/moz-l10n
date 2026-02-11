@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
 from textwrap import dedent
 from unittest import TestCase
 
@@ -22,7 +21,9 @@ from moz.l10n.formats import Format
 from moz.l10n.formats.plain_json import plain_json_parse, plain_json_serialize
 from moz.l10n.model import Entry, PatternMessage, Resource, Section
 
-source = files("tests.formats.data").joinpath("plain.json").read_bytes()
+from . import get_test_resource
+
+source = get_test_resource("plain.json")
 
 
 class TestPlain(TestCase):

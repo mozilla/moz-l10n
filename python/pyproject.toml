@@ -19,16 +19,17 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: Software Development :: Localization",
   "Topic :: Software Development :: Testing",
 ]
-requires-python = ">=3.8, <4"
+requires-python = ">=3.9, <4"
 dependencies = [
   "fluent.syntax ~= 0.19.0",
   "gitignorant ~= 0.3.1",
@@ -38,7 +39,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-xml = ["lxml >= 5.0.0, <= 5.4.0"]
+xml = ["lxml >= 6.0.0, < 6.1.0"]
 
 [project.scripts]
 l10n-build = "moz.l10n.bin.build:cli"

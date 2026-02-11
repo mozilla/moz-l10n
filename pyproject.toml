@@ -3,6 +3,16 @@ name = "monorepo"
 version = "0.0.0"
 description = "Mozilla tools for localization"
 
+[dependency-groups]
+dev = [
+  "jsonschema>=4.23.0",
+  "mypy>=1.11.2",
+  "pytest>=8.3.3",
+  "ruff>=0.9.10",
+  "types-lxml>=2024.9.16",
+  "types-polib>=1.2.0.20240811",
+]
+
 [tool.uv.workspace]
 members = ["python"]
 
@@ -16,9 +26,6 @@ strict = true
 module = "translate.storage.properties"
 ignore_missing_imports = true
 
-[tool.ruff.lint.isort]
-extra-standard-library = ["importlib_resources"]
-
 [tool.ruff.lint]
 select = [
   "E",   # pycodestyle errors
@@ -31,15 +38,4 @@ select = [
 ]
 ignore = [
   "E501", # Line too long
-]
-
-[tool.uv]
-dev-dependencies = [
-  "importlib-resources>=6.4.5",
-  "jsonschema>=4.23.0",
-  "mypy>=1.11.2",
-  "pytest>=8.3.3",
-  "ruff>=0.9.10",
-  "types-lxml>=2024.9.16",
-  "types-polib>=1.2.0.20240811",
 ]

@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from importlib_resources import files
 from textwrap import dedent
 from unittest import SkipTest, TestCase
 
@@ -33,6 +32,8 @@ from moz.l10n.model import (
     VariableRef,
 )
 
+from . import get_test_resource
+
 try:
     from moz.l10n.formats.xliff import (
         xliff_is_xcode,
@@ -45,11 +46,11 @@ except ImportError:
     raise SkipTest("Requires [xml] extra")
 
 
-hello = files("tests.formats.data").joinpath("hello.xliff").read_bytes()
-angular = files("tests.formats.data").joinpath("angular.xliff").read_bytes()
-icu_docs = files("tests.formats.data").joinpath("icu-docs.xliff").read_bytes()
-xcode = files("tests.formats.data").joinpath("xcode.xliff").read_bytes()
-xcstrings = files("tests.formats.data").joinpath("xcstrings.xliff").read_bytes()
+hello = get_test_resource("hello.xliff")
+angular = get_test_resource("angular.xliff")
+icu_docs = get_test_resource("icu-docs.xliff")
+xcode = get_test_resource("xcode.xliff")
+xcstrings = get_test_resource("xcstrings.xliff")
 
 
 class TestXliff1(TestCase):

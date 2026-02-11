@@ -14,7 +14,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Sequence, cast
+from collections.abc import Sequence
+from typing import Callable, cast
 
 from ..formats import Format, UnsupportedFormat, detect_format
 from ..formats.dtd.parse import dtd_parse

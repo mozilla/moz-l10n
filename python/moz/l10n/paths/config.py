@@ -20,7 +20,7 @@ from glob import glob
 from os import sep
 from os.path import dirname, isfile, join, normpath, relpath
 from re import Pattern, compile
-from typing import Any, Dict
+from typing import Any
 
 if sys.version_info >= (3, 11):
     from tomllib import load
@@ -48,7 +48,7 @@ def path_regex(path: str) -> Pattern[str]:
     return compile(path)
 
 
-class PartialMap(Dict[str, str]):
+class PartialMap(dict[str, str]):
     """Allows `str.format_map()` calls with partial values."""
 
     def __missing__(self, key: str) -> str:
