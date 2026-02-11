@@ -24,7 +24,15 @@ from moz.l10n.formats.properties import (
     properties_serialize,
     properties_serialize_message,
 )
-from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
+from moz.l10n.model import (
+    Comment,
+    Entry,
+    Expression,
+    PatternMessage,
+    Resource,
+    Section,
+    VariableRef,
+)
 
 from . import get_linepos, get_test_resource
 
@@ -441,3 +449,18 @@ two_lines_triple = This line is one of two and ends in \\and still has another l
         assert entry.linepos == get_linepos(6)
         assert "".join(properties_serialize(res)) == src
         assert "".join(properties_serialize(res, trim_comments=True)) == "foo = value\n"
+
+    def test_message_printf_placeholders(self):
+        src = "%S is great"
+        msg = properties_parse_message(src, printf_placeholders=True)
+        exp = Expression(VariableRef("arg"), "string", attributes={"source": "%S"})
+        assert msg == PatternMessage([exp, " is great"])
+
+    def test_resource_printf_placeholders(self):
+        src = "foo = %S is great\n"
+        res = properties_parse(src, printf_placeholders=True)
+        exp = Expression(VariableRef("arg"), "string", attributes={"source": "%S"})
+        assert res == Resource(
+            Format.properties,
+            [Section((), [Entry(("foo",), PatternMessage([exp, " is great"]))])],
+        )

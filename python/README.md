@@ -170,6 +170,128 @@ Many formats rely on non-string message parts including an appropriate `source` 
 
 SelectMessage serialization is only supported for `fluent` and `mf2`.
 
+### moz.l10n.migrate.Migrate
+
+```python
+from moz.l10n.migrate import Migrate, MigrationFunction, MigrationResult
+
+(type) MigrationResult = str | Message | Entry[Message]
+
+(type) MigrationFunction = (
+    Resource[Message], MigrationContext
+) -> (
+    MigrationResult | tuple[MigrationResult, set[str] | set[Id]] | None
+)
+
+class Migrate(
+    map: dict[
+        str,
+        dict[tuple[str, ...] | str, MigrationFunction],
+    ],
+    paths: str | L10nConfigPaths | L10nDiscoverPaths | None = None,
+)
+```
+
+Define a migration that adds entries according to `map` to resources in `paths`.
+
+This is primarily intended to be called from a migration script,
+which is then processed with the `l10n-migrate` CLI command.
+
+`map` is a mapping of resource reference paths to target entry identifiers
+to functions that define their values;
+the MigrationFunction will be called with two arguments
+`(resource, context: MigrationContext)`.
+
+Functions defining new entries should return a Message, an Entry,
+or a tuple consisting of one of those along with a set of identifiers
+for entries after which the new entry should be inserted.
+
+If an entry already exists with the target identifier, it is not modified.
+
+If no resource exists for a target locale, one is created.
+For .ini, JSON, and XML-based resources,
+the reference resource must exist to create a new resource.
+
+### moz.l10n.migrate.copy
+
+```python
+from moz.l10n.migrate import MigrationFunction, copy
+
+def copy(
+    ref_path: None | str,
+    id: tuple[str, ...] | str,
+    *,
+    property: str | None = None,
+    replace: Callable[[Expression | Markup | str], Expression | Markup | str | None]
+    | None = None,
+    value_only: bool = False,
+    variant: tuple[str | CatchallKey, ...] | str | None = None,
+) -> MigrationFunction
+```
+
+Create a copy migration function, from entry `id` in `ref_path`.
+
+If `ref_path` is None, the entry is copied from the current Resource.
+
+If `property` is set, the Message of the specified property is copied.
+Similarly, if `value_only` is set, only the `.value` Message is copied.
+
+If `variant` is set and the Message is a SelectMessage,
+the pattern of the specified variant is copied (or the default one).
+
+To change a message during the copy, define a `replace` function.
+It may mutate each placeholder directly,
+or return a non-None value to use as its replacement.
+To remove a placeholder, return an empty string.
+
+### moz.l10n.migrate.entry
+
+```python
+from moz.l10n.migrate import MigrationFunction, MigrationResult, entry
+
+def entry(
+    value: MigrationFunction | MigrationResult | None = None,
+    properties: dict[str, MigrationFunction | MigrationResult] | None = None,
+    *,
+    allow_partial: bool = False,
+    comment: str | None = None,
+    meta: list[Metadata] | None = None,
+) -> MigrationFunction
+```
+
+Create a new Entry, from any number of source messages.
+
+With non-callable `value` and `properties`,
+the same message will be used for all locales.
+
+If `allow_partial` is False,
+None will be returned if any MigrationFunction return None.
+
+If `comment` and `meta` are None and `value` resolves to an Entry,
+its `comment` and `meta` (if any) are included in the result.
+
+### moz.l10n.migrate.utils
+
+```python
+from moz.l10n.migrate.utils import (
+    MigrationContext,
+    get_entry,
+    get_pattern,
+    plural_message,
+)
+
+def make_plural_x(res, ctx: MigrationContext):
+    x_other = get_pattern(res, "x-other")
+    x_one = get_pattern(res, "x-one", default=x_other)
+    x_two = get_pattern(res, "x-two", default=x_other)
+    msg = plural_message("quantity", one=x_one, two=x_two, other=x_other)
+    return msg, {"x-one", "x-two", "x-other"}
+```
+
+Utilities for putting together more complex message migrations.
+See individual [doc comments](moz/l10n/migrate/utils.py) for more information,
+and the [test suite](tests/test_migrate.py) for example usage.
+
 ### moz.l10n.model
 
 ```python

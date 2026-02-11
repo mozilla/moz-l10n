@@ -46,6 +46,7 @@ def parse_resource(
     android_literal_quotes: bool = False,
     gettext_plurals: Sequence[str] | None = None,
     gettext_skip_obsolete: bool = False,
+    properties_printf_placeholders: bool = False,
     xliff_source_entries: bool = False,
 ) -> Resource[Message]:
     """
@@ -86,7 +87,9 @@ def parse_resource(
     elif format == Format.plain_json:
         return plain_json_parse(source)
     elif format == Format.properties:
-        return properties_parse(source)
+        return properties_parse(
+            source, printf_placeholders=properties_printf_placeholders
+        )
     elif format == Format.webext:
         return webext_parse(source)
     elif format == Format.android and android_parse is not None:
