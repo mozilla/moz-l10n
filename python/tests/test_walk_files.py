@@ -36,6 +36,7 @@ test_data_files = (
     "strings.xml",
     "test.properties",
     "xcode.xliff",
+    "xcstrings.xliff",
 )
 
 # /python/
