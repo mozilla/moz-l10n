@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from textwrap import dedent
+from typing import cast
 from unittest import SkipTest, TestCase
 
 from moz.l10n.formats import Format
@@ -1059,31 +1060,41 @@ class TestXliff1(TestCase):
                                         VariableRef("strings"),
                                         "integer",
                                         attributes={
-                                            "source": "%1$#@strings@",
-                                            "substitution": "1",
+                                            "source": "%2$#@strings@",
+                                            "substitution": "2",
                                         },
                                     ),
                                 },
                                 selectors=(VariableRef("strings"),),
                                 variants={
                                     ("one",): [
-                                        "This app has ",
+                                        "This ",
+                                        Expression(
+                                            VariableRef("arg1"),
+                                            attributes={"index": "1", "source": "%1$@"},
+                                        ),
+                                        " has ",
                                         Expression(
                                             VariableRef("strings"),
                                             attributes={
-                                                "index": "1",
-                                                "source": "%1$lld",
+                                                "index": "2",
+                                                "source": "%2$lld",
                                             },
                                         ),
                                         " string.",
                                     ],
                                     (CatchallKey("other"),): [
-                                        "This app has ",
+                                        "This ",
+                                        Expression(
+                                            VariableRef("arg1"),
+                                            attributes={"index": "1", "source": "%1$@"},
+                                        ),
+                                        " has ",
                                         Expression(
                                             VariableRef("strings"),
                                             attributes={
-                                                "index": "1",
-                                                "source": "%1$lld",
+                                                "index": "2",
+                                                "source": "%2$lld",
                                             },
                                         ),
                                         " strings.",
@@ -1095,6 +1106,15 @@ class TestXliff1(TestCase):
                 ),
             ],
         )
+        one_substitution = cast(Entry[SelectMessage], res.sections[1].entries[1]).value
+        vars = [
+            ph
+            for pat in one_substitution.variants.values()
+            for ph in pat
+            if isinstance(ph, Expression) and ph.arg == VariableRef("arg1")
+        ]
+        assert vars[0] is not vars[1]
+        assert vars[0].arg is not vars[1].arg
 
     def test_parse_xcstrings_target(self):
         res = xliff_parse(xcstrings)
@@ -1188,10 +1208,10 @@ class TestXliff1(TestCase):
                             meta=[
                                 Metadata(
                                     "source",
-                                    "This app has %1$#@strings@.",
+                                    "This %1$@ has %2$#@strings@.",
                                 ),
-                                Metadata("strings/one/source", "%1$lld string"),
-                                Metadata("strings/other/source", "%1$lld strings"),
+                                Metadata("strings/one/source", "%2$lld string"),
+                                Metadata("strings/other/source", "%2$lld strings"),
                             ],
                         ),
                     ],
@@ -1472,13 +1492,13 @@ class TestXliff1(TestCase):
                     <source>This is the string variant for other devices</source>
                   </trans-unit>
                   <trans-unit id="one_substitution">
-                    <source>%1$#@strings@</source>
+                    <source>%2$#@strings@</source>
                   </trans-unit>
                   <trans-unit id="one_substitution|==|substitutions.strings.plural.one">
-                    <source>This app has %1$lld string.</source>
+                    <source>This %1$@ has %2$lld string.</source>
                   </trans-unit>
                   <trans-unit id="one_substitution|==|substitutions.strings.plural.other">
-                    <source>This app has %1$lld strings.</source>
+                    <source>This %1$@ has %2$lld strings.</source>
                   </trans-unit>
                 </body>
               </file>

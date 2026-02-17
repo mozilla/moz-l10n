@@ -36,13 +36,13 @@
         <source>This is the string variant for other devices</source>
       </trans-unit>
       <trans-unit id="one_substitution">
-        <source>This app has %1$#@strings@.</source>
+        <source>This %1$@ has %2$#@strings@.</source>
       </trans-unit>
       <trans-unit id="one_substitution|==|substitutions.strings.plural.one">
-        <source>%1$lld string</source>
+        <source>%2$lld string</source>
       </trans-unit>
       <trans-unit id="one_substitution|==|substitutions.strings.plural.other">
-        <source>%1$lld strings</source>
+        <source>%2$lld strings</source>
       </trans-unit>
     </body>
   </file>

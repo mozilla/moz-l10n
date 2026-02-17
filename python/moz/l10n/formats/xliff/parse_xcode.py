@@ -16,7 +16,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterator
-from dataclasses import dataclass, field, replace
+from copy import deepcopy
+from dataclasses import dataclass, field
 from re import compile
 from typing import Literal, NoReturn, cast
 
@@ -136,7 +137,7 @@ def parse_xliff_xcstrings(
             msg = SelectMessage(
                 declarations=sub_vars,
                 selectors=tuple(VariableRef(name) for name in sub_vars),
-                variants={keys: sub_pattern[:] for keys in var_keys},
+                variants={keys: deepcopy(sub_pattern) for keys in var_keys},
             )
             entry = Entry((msg_id,), msg, meta=meta[:])
 
@@ -241,7 +242,7 @@ def parse_xliff_xcstrings(
                 )
                 if ph is not None:
                     if sel_ph is None:
-                        sel_ph = replace(ph)
+                        sel_ph = deepcopy(ph)
                     elif sel_ph != ph:
                         error("Placeholder mismatch")
                     for el in pattern:
