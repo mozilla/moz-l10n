@@ -23,6 +23,7 @@ from moz.l10n.formats.fluent import (
     fluent_parse_entry,
     fluent_parse_message,
     fluent_serialize,
+    fluent_serialize_entry,
     fluent_serialize_message,
 )
 from moz.l10n.model import (
@@ -102,12 +103,13 @@ class TestFluent(TestCase):
         assert res == Resource(Format.fluent, [Section((), entries)])
         assert "".join(fluent_serialize(res)) == src
 
-    def test_parse_entries(self):
+    def test_entries(self):
         source = "msg = body\n"
         entry = fluent_parse_entry(source, with_linepos=False)
         assert entry == Entry(("msg",), PatternMessage(["body"]))
+        assert fluent_serialize_entry(entry) == source
 
-        source = "-term = body\n  .attr = value\n"
+        source = "-term = body\n    .attr = value\n"
         entry = fluent_parse_entry(source)
         assert entry == Entry(
             ("-term",),
@@ -115,6 +117,7 @@ class TestFluent(TestCase):
             properties={"attr": PatternMessage(["value"])},
             linepos=get_linepos(1),
         )
+        assert fluent_serialize_entry(entry) == source
 
         with self.assertRaises(ValueError):
             fluent_parse_entry("# comment\n")

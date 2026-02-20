@@ -154,6 +154,27 @@ def fluent_astify(
     return ftl.Resource(body)
 
 
+def fluent_serialize_entry(
+    entry: Entry[str | Message],
+    *,
+    comment_str: Callable[[Entry[Any]], str] | None = None,
+    escape_syntax: bool = True,
+) -> str:
+    """
+    Serialize an Entry as a Fluent FTL message or term.
+
+    Function names are upper-cased, and expressions using the `message` function
+    are mapped to message and term references.
+
+    If `escape_syntax` is set to `False`,
+    syntax characters such as { and } in text elements are not escaped.
+    """
+    ftl_entry = fluent_astify_entry(
+        entry, comment_str=comment_str, escape_syntax=escape_syntax
+    )
+    return FluentSerializer().serialize_entry(ftl_entry)
+
+
 def fluent_astify_entry(
     entry: Entry[str | Message],
     *,
@@ -199,6 +220,37 @@ def fluent_astify_entry(
         else:
             value_ = value
         return ftl.Message(ftl.Identifier(id), value_, attributes, comment)
+
+
+def fluent_serialize_message(
+    message: str | Message | ftl.Pattern,
+    *,
+    escape_empty: bool = False,
+    escape_syntax: bool = True,
+) -> str:
+    """
+    Serialize a message as a Fluent pattern.
+
+    Function names are upper-cased, and expressions using the `message` function
+    are mapped to message and term references.
+
+    If `escape_empty` is set to `True`, a message that would serialize as an empty string
+    will instead be serialized as `{ "" }`.
+
+    If `escape_syntax` is set to `False`,
+    syntax characters such as { and } in text elements are not escaped.
+    """
+    pattern = (
+        message
+        if isinstance(message, ftl.Pattern)
+        else fluent_astify_message(
+            message, escape_empty=escape_empty, escape_syntax=escape_syntax
+        )
+    )
+    return "".join(
+        el.value if isinstance(el, ftl.TextElement) else serialize_expression(el)
+        for el in pattern.elements
+    )
 
 
 def fluent_astify_message(
@@ -276,37 +328,6 @@ def fluent_astify_message(
     if len(variants) != 1:
         raise ValueError(f"Error resolving select message variants (n={len(variants)})")
     return variants[0][1]
-
-
-def fluent_serialize_message(
-    message: str | Message | ftl.Pattern,
-    *,
-    escape_empty: bool = False,
-    escape_syntax: bool = True,
-) -> str:
-    """
-    Serialize a message as a Fluent pattern.
-
-    Function names are upper-cased, and expressions using the `message` function
-    are mapped to message and term references.
-
-    If `escape_empty` is set to `True`, a message that would serialize as an empty string
-    will instead be serialized as `{ "" }`.
-
-    If `escape_syntax` is set to `False`,
-    syntax characters such as { and } in text elements are not escaped.
-    """
-    pattern = (
-        message
-        if isinstance(message, ftl.Pattern)
-        else fluent_astify_message(
-            message, escape_empty=escape_empty, escape_syntax=escape_syntax
-        )
-    )
-    return "".join(
-        el.value if isinstance(el, ftl.TextElement) else serialize_expression(el)
-        for el in pattern.elements
-    )
 
 
 def fallback_name(message: SelectMessage) -> str:
