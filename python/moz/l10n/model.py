@@ -42,6 +42,9 @@ __all__ = [
 class VariableRef:
     name: str
 
+    def __repr__(self) -> str:
+        return f"VariableRef({self.name!r})"
+
 
 @dataclass
 class Expression:
@@ -56,6 +59,16 @@ class Expression:
     options: dict[str, str | VariableRef] = field(default_factory=dict)
     attributes: dict[str, str | Literal[True]] = field(default_factory=dict)
 
+    def __repr__(self) -> str:
+        body = [repr(self.arg)]
+        if self.function:
+            body.append(f"function={self.function!r}")
+        if self.options:
+            body.append(f"options={self.options!r}")
+        if self.attributes:
+            body.append(f"attributes={self.attributes!r}")
+        return f"Expression({','.join(body)})"
+
 
 @dataclass
 class Markup:
@@ -63,6 +76,14 @@ class Markup:
     name: str
     options: dict[str, str | VariableRef] = field(default_factory=dict)
     attributes: dict[str, str | Literal[True]] = field(default_factory=dict)
+
+    def __repr__(self) -> str:
+        body = [repr(self.kind), repr(self.name)]
+        if self.options:
+            body.append(f"options={self.options!r}")
+        if self.attributes:
+            body.append(f"attributes={self.attributes!r}")
+        return f"Expression({','.join(body)})"
 
 
 Pattern = list[Union[str, Expression, Markup]]
@@ -89,6 +110,14 @@ class PatternMessage:
         """
         return all(el == "" for el in self.pattern)
 
+    def __repr__(self) -> str:
+        body = (
+            f"declarations={self.declarations!r},pattern={self.pattern!r}"
+            if self.declarations
+            else repr(self.pattern)
+        )
+        return f"PatternMessage({body})"
+
 
 @dataclass
 class CatchallKey:
@@ -105,6 +134,9 @@ class CatchallKey:
 
     def __str__(self) -> str:
         return self.value or ""
+
+    def __repr__(self) -> str:
+        return f"CatchallKey({self.value!r})"
 
 
 @dataclass
@@ -159,6 +191,10 @@ class LinePos:
     The line one past the end of the entry or section header.
     """
 
+    def __repr__(self) -> str:
+        body = [repr(self.start), repr(self.key), repr(self.value), repr(self.end)]
+        return f"LinePos({','.join(body)})"
+
 
 @dataclass
 class Metadata:
@@ -184,6 +220,9 @@ class Metadata:
     Values have all their character \\escapes processed.
     """
 
+    def __repr__(self) -> str:
+        return f"Metadata({self.key!r},{self.value!r})"
+
 
 @dataclass
 class Comment:
@@ -203,6 +242,12 @@ class Comment:
     The parsed position of the comment,
     available for some formats.
     """
+
+    def __repr__(self) -> str:
+        body = [repr(self.comment)]
+        if self.linepos:
+            body.append(f"linepos={self.linepos!r}")
+        return f"Comment({','.join(body)})"
 
 
 V_co = TypeVar("V_co", bound=Union[Message, str], covariant=True)
@@ -314,6 +359,22 @@ class Entry(Generic[V_co], _WithMeta):
     available for some formats.
     """
 
+    def __repr__(self) -> str:
+        body = [repr(self.id)]
+        if self.comment or self.meta:
+            if self.comment:
+                body.append(f"comment={self.comment!r}")
+            if self.meta:
+                body.append(f"meta={self.meta!r}")
+            body.append(f"value={self.value!r}")
+        else:
+            body.append(repr(self.value))
+        if self.properties:
+            body.append(f"properties={self.properties!r}")
+        if self.linepos:
+            body.append(f"linepos={self.linepos!r}")
+        return f"Entry({','.join(body)})"
+
 
 @dataclass
 class Section(Generic[V_co], _WithMeta):
@@ -370,6 +431,20 @@ class Section(Generic[V_co], _WithMeta):
     available for some formats.
     """
 
+    def __repr__(self) -> str:
+        body = [repr(self.id)]
+        if self.comment or self.meta:
+            if self.comment:
+                body.append(f"comment={self.comment!r}")
+            if self.meta:
+                body.append(f"meta={self.meta!r}")
+            body.append(f"entries={self.entries!r}")
+        else:
+            body.append(repr(self.entries))
+        if self.linepos:
+            body.append(f"linepos={self.linepos!r}")
+        return f"Section({','.join(body)})"
+
 
 @dataclass
 class Resource(Generic[V_co], _WithMeta):
@@ -418,3 +493,15 @@ class Resource(Generic[V_co], _WithMeta):
             for entry in section.entries
             if isinstance(entry, Entry)
         )
+
+    def __repr__(self) -> str:
+        body = [f"Format.{self.format.name}" if self.format else "None"]
+        if self.comment or self.meta:
+            if self.comment:
+                body.append(f"comment={self.comment!r}")
+            if self.meta:
+                body.append(f"meta={self.meta!r}")
+            body.append(f"sections={self.sections!r}")
+        else:
+            body.append(repr(self.sections))
+        return f"Resource({','.join(body)})"

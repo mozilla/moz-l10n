@@ -75,6 +75,14 @@ class TestResource(TestCase):
             ],
         )
         assert list(res.all_entries()) == entries
+        assert (
+            repr(res)
+            == "Resource(Format.inc,[Section((),[Comment('c1'), "
+            + "Entry(('e0',),PatternMessage(['m0'])), Comment('c2'), "
+            + "Entry(('e1',),PatternMessage(['m1']))]), "
+            + "Section(('a',),[Entry(('e2',),PatternMessage(['m2'])), Comment('c3'), "
+            + "Entry(('e3',),PatternMessage(['m3'])), Comment('c4')])])"
+        )
 
     def test_all_entries_none(self):
         res = Resource(
@@ -85,6 +93,11 @@ class TestResource(TestCase):
             ],
         )
         assert next(res.all_entries(), None) is None
+        assert (
+            repr(res)
+            == "Resource(Format.inc,[Section((),[Comment('c1'), Comment('c2')]), "
+            + "Section(('a',),[Comment('c3'), Comment('c4')])])"
+        )
 
 
 class TestMeta(TestCase):
@@ -114,6 +127,10 @@ class TestMeta(TestCase):
         assert entry.del_meta("key") == 2
         assert entry.del_meta("bar") == 0
         assert entry.meta == [Metadata("foo", "bar")]
+        assert (
+            repr(entry)
+            == "Entry(('e0',),meta=[Metadata('foo','bar')],value=PatternMessage(['m0']))"
+        )
 
     def test_resource(self):
         res = Resource(
@@ -137,3 +154,7 @@ class TestMeta(TestCase):
         assert res.del_meta("key") == 2
         assert res.del_meta("bar") == 0
         assert res.meta == [Metadata("foo", "bar")]
+        assert (
+            repr(res)
+            == "Resource(Format.properties,meta=[Metadata('foo','bar')],sections=[Section((),[])])"
+        )
