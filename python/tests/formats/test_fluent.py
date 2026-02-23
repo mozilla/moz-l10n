@@ -23,6 +23,7 @@ from moz.l10n.formats.fluent import (
     fluent_parse_entry,
     fluent_parse_message,
     fluent_serialize,
+    fluent_serialize_entry,
     fluent_serialize_message,
 )
 from moz.l10n.model import (
@@ -102,12 +103,13 @@ class TestFluent(TestCase):
         assert res == Resource(Format.fluent, [Section((), entries)])
         assert "".join(fluent_serialize(res)) == src
 
-    def test_parse_entries(self):
+    def test_entries(self):
         source = "msg = body\n"
         entry = fluent_parse_entry(source, with_linepos=False)
         assert entry == Entry(("msg",), PatternMessage(["body"]))
+        assert fluent_serialize_entry(entry) == source
 
-        source = "-term = body\n  .attr = value\n"
+        source = "-term = body\n    .attr = value\n"
         entry = fluent_parse_entry(source)
         assert entry == Entry(
             ("-term",),
@@ -115,6 +117,7 @@ class TestFluent(TestCase):
             properties={"attr": PatternMessage(["value"])},
             linepos=get_linepos(1),
         )
+        assert fluent_serialize_entry(entry) == source
 
         with self.assertRaises(ValueError):
             fluent_parse_entry("# comment\n")
@@ -130,7 +133,8 @@ class TestFluent(TestCase):
 
         msg = fluent_parse_message("1\n  2  \n3  \n")
         assert msg == PatternMessage(["1\n  2  \n3"])
-        assert fluent_serialize_message(msg) == "1\n  2  \n3"
+        assert fluent_serialize_message(msg) == '1\n{ " " } 2  \n3'
+        assert fluent_serialize_message(msg, escape_syntax=False) == "1\n  2  \n3"
 
         msg = fluent_parse_message("# comment")
         assert msg == PatternMessage(["# comment"])
@@ -509,7 +513,7 @@ class TestFluent(TestCase):
                 """
         )
 
-    def test_escapes(self):
+    def test_char_escapes(self):
         source = 'key = { "" } { "\t" } { "\\u000a" }'
         res = fluent_parse(source)
         exp_msg = PatternMessage(
@@ -527,6 +531,46 @@ class TestFluent(TestCase):
             "".join(fluent_serialize(res))
             == 'key = { "" } { "\\u0009" } { "\\u000A" }\n'
         )
+
+    def test_syntax_escapes(self):
+        source = " {braces}[brackets]\n *\n*"
+        res_str = Resource(
+            Format.fluent,
+            [Section(id=(), entries=[Entry(("key",), source)])],
+        )
+        res_msg = Resource(
+            Format.fluent,
+            [Section(id=(), entries=[Entry(("key",), PatternMessage([source]))])],
+        )
+
+        assert "".join(fluent_serialize(res_msg)) == dedent("""\
+            key =
+                { " " }{ "{" }braces{ "}" }[brackets]
+                { " " }*
+                { "*" }
+            """)
+
+        # Note: the leading space is trimmed when parsing.
+        assert "".join(fluent_serialize(res_str)) == dedent("""\
+            key =
+                 { "{" }braces{ "}" }[brackets]
+                { " " }*
+                { "*" }
+            """)
+
+        # Note: The following serializations are not valid.
+        assert "".join(fluent_serialize(res_msg, escape_syntax=False)) == dedent("""\
+            key =
+                { " " }{braces}[brackets]
+                 *
+                *
+            """)
+        assert "".join(fluent_serialize(res_str, escape_syntax=False)) == dedent("""\
+            key =
+                 {braces}[brackets]
+                 *
+                *
+            """)
 
     def test_comment(self):
         res = fluent_parse("msg = body\n  .attr = value")
@@ -551,10 +595,11 @@ class TestFluent(TestCase):
             "".join(fluent_serialize(res))
         assert ec.exception.args == ("Metadata requires serialize_metadata parameter",)
         assert (
-            "".join(fluent_serialize(res, lambda _: None)) == "one = foo\ntwo = bar\n"
+            "".join(fluent_serialize(res, serialize_metadata=lambda _: None))
+            == "one = foo\ntwo = bar\n"
         )
         assert "".join(
-            fluent_serialize(res, lambda m: f"@{m.key}: {m.value}")
+            fluent_serialize(res, serialize_metadata=lambda m: f"@{m.key}: {m.value}")
         ) == dedent(
             """\
             one = foo

@@ -83,6 +83,20 @@ class TestMessage(TestCase):
         res = serialize_message(Format.fluent, msg)
         assert res == "hello { $world }"
 
+    def test_fluent_escape_empty(self):
+        msg = PatternMessage([""])
+        assert serialize_message(Format.fluent, msg) == ""
+        assert (
+            serialize_message(Format.fluent, msg, fluent_escape_empty=True) == '{ "" }'
+        )
+
+    def test_fluent_escape_syntax(self):
+        msg = PatternMessage(["x{}\n*y"])
+        res = serialize_message(Format.fluent, msg)
+        assert res == 'x{ "{}" }\n{ "*" }y'
+        res = serialize_message(Format.fluent, msg, fluent_escape_syntax=False)
+        assert res == "x{}\n*y"
+
 
 class TestUnsupportedFormat(TestCase):
     @classmethod

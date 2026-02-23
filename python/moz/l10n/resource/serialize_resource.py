@@ -45,6 +45,7 @@ def serialize_resource(
     format: Format | None = None,
     trim_comments: bool = False,
     *,
+    fluent_escape_syntax: bool = True,
     gettext_plurals: Sequence[str] | None = None,
     xliff_source_entries: bool = False,
 ) -> Iterator[str]:
@@ -62,7 +63,9 @@ def serialize_resource(
     if format == Format.dtd:
         return dtd_serialize(resource, trim_comments=trim_comments)
     elif format == Format.fluent:
-        return fluent_serialize(resource, trim_comments=trim_comments)
+        return fluent_serialize(
+            resource, escape_syntax=fluent_escape_syntax, trim_comments=trim_comments
+        )
     elif format == Format.gettext:
         return gettext_serialize(
             resource, plurals=gettext_plurals, trim_comments=trim_comments

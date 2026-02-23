@@ -32,7 +32,13 @@ except ImportError:
     pass
 
 
-def serialize_message(format: Format | None, msg: Message | Pattern) -> str:
+def serialize_message(
+    format: Format | None,
+    msg: Message | Pattern,
+    *,
+    fluent_escape_empty: bool = False,
+    fluent_escape_syntax: bool = True,
+) -> str:
     """
     Serialize a `Message` or `Pattern` to its string representation.
 
@@ -60,7 +66,9 @@ def serialize_message(format: Format | None, msg: Message | Pattern) -> str:
     elif format == Format.mf2:
         return mf2_serialize_message(msg)
     elif format == Format.fluent:
-        return fluent_serialize_message(msg)
+        return fluent_serialize_message(
+            msg, escape_empty=fluent_escape_empty, escape_syntax=fluent_escape_syntax
+        )
     elif not isinstance(msg, PatternMessage) or msg.declarations:
         raise ValueError(f"Unsupported message: {msg}")
     else:
