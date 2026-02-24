@@ -78,7 +78,7 @@ class TestL10nConfigPaths(TestCase):
         }
         assert paths.all() == expected
         for ref, tgt in expected:
-            assert paths.target(ref) == (tgt, ())
+            assert paths.target(ref) == (tgt, set())
         assert paths.find_reference("xx/one.po") == (
             join(root, "en", "one.pot"),
             {"locale": "xx"},
@@ -213,8 +213,11 @@ class TestL10nConfigPaths(TestCase):
         }
         assert paths.all() == expected
         for ref, tgt in expected:
-            assert paths.target(ref) == (tgt, ())
-        assert paths.target(join(root, "browser", "locales", "l10n.toml")) == (None, ())
+            assert paths.target(ref) == (tgt, set())
+        assert paths.target(join(root, "browser", "locales", "l10n.toml")) == (
+            None,
+            set(),
+        )
         paths.locales = ["aa", "bb"]
         new_base = join(paths.base, "x", "y", "z")
         paths.base = new_base
@@ -282,7 +285,7 @@ class TestL10nConfigPaths(TestCase):
         assert paths.target(res_source)[1] == {"es", "fr"}
         assert paths.all_locales == {"es", "fr", "nl", "de", "pt-BR"}
         paths.locales = []
-        assert paths.target(res_source)[1] == path_locales
+        assert paths.target(res_source)[1] == set(path_locales)
 
     def test_fenix(self):
         cfg_toml = dedent(
@@ -312,7 +315,7 @@ class TestL10nConfigPaths(TestCase):
         source_strings = join(root, "res", "values", "strings.xml")
         target_strings = join(root, "res", "values-{android_locale}", "strings.xml")
         assert paths.all() == {(source_strings, target_strings): ["abc", "de-FG"]}
-        assert paths.target(source_strings) == (target_strings, ["abc", "de-FG"])
+        assert paths.target(source_strings) == (target_strings, {"abc", "de-FG"})
         assert paths.format_target_path(target_strings, "abc") == target_strings.format(
             android_locale="b+abc"
         )
@@ -381,8 +384,8 @@ class TestL10nConfigPaths(TestCase):
         abs_ref_path = join(root, rel_ref_path)
         exp_tgt = join(root, res_path, normpath("values-{android_locale}/strings.xml"))
         assert paths.all() == {(abs_ref_path, exp_tgt): None}
-        assert paths.target(abs_ref_path) == (exp_tgt, ())
-        assert paths.target(rel_ref_path) == (exp_tgt, ())
+        assert paths.target(abs_ref_path) == (exp_tgt, set())
+        assert paths.target(rel_ref_path) == (exp_tgt, set())
         assert paths.find_reference("values-xx/strings.xml") is None
         assert paths.find_reference(join(res_path, "values-xx/strings.xml")) == (
             abs_ref_path,
@@ -531,37 +534,107 @@ class TestL10nConfigPaths(TestCase):
 
         assert list(paths.ref_paths) == [
             join(root, normpath("translations/wordpress.pot")),
-            join(root, normpath("translations/wordpress.pot")),
             join(root, normpath("translations/wordpress-react.pot")),
         ]
 
-        none_path, none_locales = paths.target("translations/wordpress.pot")
-        assert none_path == join(
-            paths.base, normpath("translations/wordpress/wordpress-es_ES.po")
+        assert paths.target("translations/wordpress.pot") == (
+            join(paths.base, normpath("translations/wordpress/wordpress-de_DE.po")),
+            {"de"},
         )
-        assert none_locales == {"es"}
-        es_path, es_locales = paths.target("translations/wordpress.pot", locale="es")
-        assert es_path == join(
-            paths.base, normpath("translations/wordpress/wordpress-es_ES.po")
-        )
-        assert es_locales == {"es"}
-        de_path, de_locales = paths.target("translations/wordpress.pot", locale="de")
-        assert de_path == join(
-            paths.base, normpath("translations/wordpress/wordpress-de_DE.po")
-        )
-        assert de_locales == {"de"}
 
-        paths.locales = ["en", "de"]
-        lim_path, lim_locales = paths.target("translations/wordpress.pot")
-        assert lim_path == join(
-            paths.base, normpath("translations/wordpress/wordpress-es_ES.po")
+        assert paths.target("translations/wordpress.pot", locale="es") == (
+            join(paths.base, normpath("translations/wordpress/wordpress-es_ES.po")),
+            {"es"},
         )
-        assert lim_locales == ()
 
-        set_path, set_locales = paths.target(
-            "translations/wordpress-react.pot", locale="de"
+        assert paths.target("translations/wordpress.pot", locale="de") == (
+            join(paths.base, normpath("translations/wordpress/wordpress-de_DE.po")),
+            {"de"},
         )
-        assert set_path == join(
-            paths.base, normpath("translations/wordpress-react/wordpress-react-de.po")
+
+        assert paths.target("translations/wordpress-react.pot", locale="de") == (
+            join(
+                paths.base,
+                normpath("translations/wordpress-react/wordpress-react-de.po"),
+            ),
+            {"de"},
         )
-        assert set_locales == {"de"}
+
+        paths.locales = ["en", "es"]
+        assert paths.target("translations/wordpress.pot") == (
+            join(paths.base, normpath("translations/wordpress/wordpress-es_ES.po")),
+            {"es"},
+        )
+
+    def test_multiple_path_matches(self):
+        cfg_toml = dedent(
+            """
+            basepath = "."
+            locales = ["de", "es", "fr"]
+
+            [[paths]]
+            reference = "en/root.ftl"
+            l10n = "{locale}/root.ftl"
+            locales = ["de"]
+
+            [[paths]]
+            reference = "en/root.ftl"
+            l10n = "{locale}/root.ftl"
+            locales = ["es"]
+
+            [[paths]]
+            reference = "en/x/*"
+            l10n = "{locale}/x/*"
+
+            [[paths]]
+            reference = "en/x/file.ftl"
+            l10n = "{locale}/x/file.ftl"
+            locales = ["de"]
+            """
+        )
+        with TemporaryDirectory() as root:
+            build_file_tree(
+                root,
+                {
+                    "l10n.toml": cfg_toml,
+                    "en": {
+                        "root.ftl": "",
+                        "x": {
+                            "base.ftl": "",
+                            "file.ftl": "",
+                        },
+                    },
+                },
+            )
+            paths = L10nConfigPaths(join(root, "l10n.toml"))
+
+        assert paths.target("en/root.ftl") == (
+            join(paths.base, normpath("{locale}/root.ftl")),
+            {"es"},
+        )
+
+        assert paths.target("en/x/base.ftl") == (
+            join(paths.base, normpath("{locale}/x/base.ftl")),
+            {"de", "es", "fr"},
+        )
+
+        assert paths.target("en/x/file.ftl") == (
+            join(paths.base, normpath("{locale}/x/file.ftl")),
+            {"de"},
+        )
+
+        assert paths.all_locales == {"de", "es", "fr"}
+        assert paths.all() == {
+            (
+                join(root, normpath("en/root.ftl")),
+                join(root, normpath("{locale}/root.ftl")),
+            ): ["es"],
+            (
+                join(root, normpath("en/x/base.ftl")),
+                join(root, normpath("{locale}/x/base.ftl")),
+            ): ["de", "es", "fr"],
+            (
+                join(root, normpath("en/x/file.ftl")),
+                join(root, normpath("{locale}/x/file.ftl")),
+            ): ["de"],
+        }
