@@ -236,7 +236,7 @@ class L10nConfigPaths:
     @property
     def ref_paths(self) -> Iterator[str]:
         """
-        All reference paths. May include duplicates.
+        All reference paths.
         """
         yield from self._path_data.keys()
         for incl in self._includes:
