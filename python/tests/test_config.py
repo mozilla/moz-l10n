@@ -552,6 +552,10 @@ class TestL10nConfigPaths(TestCase):
             {"de"},
         )
 
+        assert paths.target("translations/wordpress.pot", locale="en") == (None, set())
+
+        assert paths.target("translations/wordpress.pot", locale="tlh") == (None, set())
+
         assert paths.target("translations/wordpress-react.pot", locale="de") == (
             join(
                 paths.base,
@@ -612,6 +616,8 @@ class TestL10nConfigPaths(TestCase):
             join(paths.base, normpath("{locale}/root.ftl")),
             {"es"},
         )
+        assert paths.target("en/root.ftl", locale="de") == (None, set())
+        assert paths.target("en/root.ftl", locale="tlh") == (None, set())
 
         assert paths.target("en/x/base.ftl") == (
             join(paths.base, normpath("{locale}/x/base.ftl")),
