@@ -22,6 +22,17 @@ from typing import Any
 
 from ..util.loads import json_linecomment_loads
 
+__doc__ = """
+Parsers and serializers are provided for a number of formats,
+using common and well-established libraries to take care of the details.
+A unified API for these is provided,
+such that `FORMAT_parse(text)` will always accept `str` input,
+and `FORMAT_serialize(resource)` will always provide a `str` iterator.
+All the serializers accept a `trim_comments` argument
+which leaves out comments from the serialized result,
+but additional input types and options vary by format.
+"""
+
 # from moz.l10n.formats.xliff.common import xliff_ns
 xliff_ns = {
     "urn:oasis:names:tc:xliff:document:1.0",
@@ -77,6 +88,8 @@ both the reference and target languages in the same file.
 
 
 class UnsupportedFormat(Exception):
+    """Error raised when encountering an unsupported localization format."""
+
     pass
 
 
@@ -117,9 +130,9 @@ def detect_format(name: str | None, source: bytes | str | None = None) -> Format
             json, valid_json = json_linecomment_loads(source)
         except JSONDecodeError:
             json, valid_json = None, False
-        if is_object_of_strings(json):
+        if _is_object_of_strings(json):
             assert isinstance(json, dict)
-            if all(is_webext_message(m) for m in json.values()):
+            if all(_is_webext_message(m) for m in json.values()):
                 return Format.webext
             else:
                 return Format.plain_json if valid_json else None
@@ -145,19 +158,19 @@ def detect_format(name: str | None, source: bytes | str | None = None) -> Format
     return None
 
 
-def is_object_of_strings(obj: Any) -> bool:
+def _is_object_of_strings(obj: Any) -> bool:
     if not isinstance(obj, dict):
         return False
     for value in obj.values():
         if isinstance(value, dict):
-            if not is_object_of_strings(value):
+            if not _is_object_of_strings(value):
                 return False
         elif not isinstance(value, str):
             return False
     return True
 
 
-def is_webext_message(obj: Any) -> bool:
+def _is_webext_message(obj: Any) -> bool:
     if not isinstance(obj, dict):
         return False
     has_message = False

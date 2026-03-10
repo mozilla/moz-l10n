@@ -14,3 +14,8 @@ __all__ = [
     "mf2_to_json",
     "mf2_validate_message",
 ]
+
+__doc__ = """
+Tools for working with [Unicode MessageFormat 2.0](https://unicode.org/reports/tr35/tr35-messageFormat.html) messages,
+which may be embedded in resource formats.
+"""
