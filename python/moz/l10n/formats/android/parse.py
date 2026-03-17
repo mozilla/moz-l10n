@@ -435,7 +435,7 @@ inline_re = compile(
     r"\\u([0-9a-fA-F]{4})|"
     r"\\(.)|"
     r"(<[^%>]+>)|"
-    r"(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%]|[tT][a-zA-Z]))"
+    r"(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%@]|[tT][a-zA-Z]))"
 )
 block_tag_re = compile(r"<(div|h[123456r]|p|d[dt]|li|/?[dou]l)\b")
 break_tag_re = compile(r"<[bh]r/?>")
