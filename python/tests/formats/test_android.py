@@ -766,3 +766,38 @@ class TestAndroid(TestCase):
             </resources>
             """
         )
+
+    def test_xcode_placeholder(self):
+        src = dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">hello %@</string>
+            </resources>
+            """
+        )
+
+        res = android_parse(src)
+        assert res == Resource(
+            Format.android,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("x",),
+                            PatternMessage(
+                                [
+                                    "hello ",
+                                    Expression(
+                                        VariableRef("arg"), attributes={"source": "%@"}
+                                    ),
+                                ]
+                            ),
+                        )
+                    ],
+                )
+            ],
+        )
+        ser = "".join(android_serialize(res))
+        assert ser == src
