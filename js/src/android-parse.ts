@@ -167,8 +167,8 @@ function* parseQuotes(
 
 const _inline =
   // 1:esc-unicode     2:esc-char       4:printf
-  //                         3:esc-elem                                5:printf-conversion             6:xml-entity
-  /\\u([0-9A-Fa-f]{4})|\\(.)|(<[^%>]+>)|(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%]|[tT][a-zA-Z]))|(_entity_\d+_)/g
+  //                         3:esc-elem                                5:printf-conversion              6:xml-entity
+  /\\u([0-9A-Fa-f]{4})|\\(.)|(<[^%>]+>)|(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%@]|[tT][a-zA-Z]))|(_entity_\d+_)/g
 const _blocktag = /^<(div|h[123456r]|p|d[dt]|li|\/?[dou]l)\b/
 const _breaktag = /^<[bh]r\/?>$/
 

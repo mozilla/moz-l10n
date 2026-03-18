@@ -47,6 +47,11 @@ describe('success', () => {
     ['Hello, ', { $: 'arg1', fn: 'string', attr: { source: '%1$s' } }, '!'],
     'Hello, %1$s!'
   )
+  ok(
+    'inline %@ variable',
+    ['Hello, ', { $: 'arg', attr: { source: '%@' } }, '!'],
+    'Hello, %@!'
+  )
   ok('html elements', [{ open: 'b' }, 'bold', { close: 'b' }], '<b>bold</b>')
   ok(
     'escaped html',
