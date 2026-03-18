@@ -1,6 +1,6 @@
 {
   "name": "@mozilla/l10n",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "license": "Apache-2.0",
   "author": "Eemeli Aro <eemeli@mozilla.com>",
   "description": "Mozilla tools for localization",
