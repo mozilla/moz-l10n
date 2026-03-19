@@ -405,7 +405,7 @@ def valid_empty_pattern(pattern: ftl.Pattern) -> ftl.Pattern:
     return ftl.Pattern([ftl.Placeable(value({}, empty_text))])
 
 
-not_text = compile(r"[{}]+|(?<=\n)[ [*.]")
+not_text = compile(r"[{}]+|\n *[*.[]")
 
 
 def text(source: str, escape_syntax: bool) -> list[ftl.TextElement | ftl.Placeable]:
@@ -415,9 +415,11 @@ def text(source: str, escape_syntax: bool) -> list[ftl.TextElement | ftl.Placeab
     idx = 0
     for m in not_text.finditer(source):
         start = m.start()
+        esc = m[0].lstrip()
+        start += len(m[0]) - len(esc)
         if start > idx:
             elements.append(ftl.TextElement(source[idx:start]))
-        elements.append(ftl.Placeable(ftl.StringLiteral(m[0])))
+        elements.append(ftl.Placeable(ftl.StringLiteral(esc)))
         idx = m.end()
     if idx < len(source):
         elements.append(ftl.TextElement(source[idx:]))
@@ -484,6 +486,7 @@ def function_ref(
 
 # Non-printable ASCII C0 & C1 / Unicode Cc characters
 esc_cc = {n: f"\\u{n:04X}" for r in (range(0, 32), range(127, 160)) for n in r}
+esc_bs = compile(r'([\\"])')
 
 
 def value(
@@ -494,7 +497,7 @@ def value(
             float(val)
             return ftl.NumberLiteral(val)
         except Exception:
-            return ftl.StringLiteral(val.translate(esc_cc))
+            return ftl.StringLiteral(esc_bs.sub(r"\\\1", val).translate(esc_cc))
     elif val.name != decl_name and val.name in decl:
         return expression(decl, decl[val.name], val.name)
     else:
