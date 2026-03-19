@@ -164,14 +164,16 @@ export function fluentSerializePattern(
       throw error
     })
   let str = ''
-  for (const part of pattern) {
+  for (let part of pattern) {
     if (typeof part === 'string') {
-      str += escapeSyntax
-        ? part
-            .replaceAll('\\', '\\\\')
-            .replaceAll('{', '\\u007b')
-            .replaceAll('}', '\\u007d')
-        : part
+      if (escapeSyntax) {
+        part = part.replace(
+          /([{}])|(\n *)([*.[])/g,
+          (_, syntax1, ws, syntax2) =>
+            (ws ?? '') + `{ "${syntax1 ?? syntax2}" }`
+        )
+      }
+      str += part
     } else {
       try {
         str += `{ ${expression(part, false)} }`
@@ -245,12 +247,18 @@ function expression(expr: Expression | Markup, isSelector: boolean): string {
   throw new SerializeError(error)
 }
 
-const literal = (value: string | undefined): string =>
-  !value
-    ? '""'
-    : isNumber(value)
-      ? value
-      : `"${value.replace(/[\\"]/g, '\\$&').replaceAll('\n', '\\u000a')}"`
+function literal(value: string | undefined): string {
+  if (!value) return '""'
+  if (isNumber(value)) return value
+  const escStr = value
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\\"\x7F-\x9F]/g, (ch) => {
+      if (ch === '\\' || ch === '"') return `\\${ch}`
+      const code = ch.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')
+      return `\\u${code}`
+    })
+  return `"${escStr}"`
+}
 
 const isIdentifier = (value: string | undefined): value is string =>
   /^[A-Za-z][-0-9A-Z_a-z]*$/.test(value ?? '')
