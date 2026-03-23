@@ -133,7 +133,7 @@ class TestFluent(TestCase):
 
         msg = fluent_parse_message("1\n  2  \n3  \n")
         assert msg == PatternMessage(["1\n  2  \n3"])
-        assert fluent_serialize_message(msg) == '1\n{ " " } 2  \n3'
+        assert fluent_serialize_message(msg) == "1\n  2  \n3"
         assert fluent_serialize_message(msg, escape_syntax=False) == "1\n  2  \n3"
 
         msg = fluent_parse_message("# comment")
@@ -514,10 +514,10 @@ class TestFluent(TestCase):
         )
 
     def test_char_escapes(self):
-        source = 'key = { "" } { "\t" } { "\\u000a" }'
+        source = 'key = { "\\\\ \\"" } \\{ "\t" } { "\\u000a" }'
         res = fluent_parse(source)
         exp_msg = PatternMessage(
-            [Expression(""), " ", Expression("\t"), " ", Expression("\n")]
+            [Expression('\\ "'), " \\", Expression("\t"), " ", Expression("\n")]
         )
         assert res == Resource(
             Format.fluent,
@@ -529,7 +529,7 @@ class TestFluent(TestCase):
         )
         assert (
             "".join(fluent_serialize(res))
-            == 'key = { "" } { "\\u0009" } { "\\u000A" }\n'
+            == 'key = { "\\\\ \\"" } \\{ "\\u0009" } { "\\u000A" }\n'
         )
 
     def test_syntax_escapes(self):
@@ -546,15 +546,14 @@ class TestFluent(TestCase):
         assert "".join(fluent_serialize(res_msg)) == dedent("""\
             key =
                 { " " }{ "{" }braces{ "}" }[brackets]
-                { " " }*
+                 { "*" }
                 { "*" }
             """)
 
-        # Note: the leading space is trimmed when parsing.
         assert "".join(fluent_serialize(res_str)) == dedent("""\
             key =
                  { "{" }braces{ "}" }[brackets]
-                { " " }*
+                 { "*" }
                 { "*" }
             """)
 

@@ -36,7 +36,7 @@ describe('pattern success', () => {
 
   ok('multiple lines', ['Hello\nthe\n\n  \tworld'], 'Hello\nthe\n\n  \tworld')
   ok('empty literal', [{ _: '' }], '{ "" }')
-  ok('literal escapes', [{ _: 'one\n"two}' }], '{ "one\\u000a\\"two}" }')
+  ok('literal escapes', [{ _: 'one\n"two}' }], '{ "one\\u000A\\"two}" }')
   ok('variable reference', ['Hello ', { $: 'world' }], 'Hello { $world }')
   ok(
     'literals',
@@ -375,25 +375,34 @@ describe('entry', () => {
 
 describe('escapeSyntax option', () => {
   test('unset', () => {
-    const res = fluentSerializeEntry('key', { '=': ['{ \\foo }'] })
-    expect(res).toBe('key = \\u007b \\\\foo \\u007d\n')
+    const res = fluentSerializeEntry('key', { '=': ['{ \\foo }\n*\n ['] })
+    expect(res).toBe(`key =
+    { "{" } \\foo { "}" }
+    { "*" }
+     { "[" }\n`)
   })
 
   test('set true', () => {
     const res = fluentSerializeEntry(
       'key',
-      { '=': ['{ \\foo }'] },
+      { '=': ['{ \\foo }\n*\n ['] },
       { escapeSyntax: true }
     )
-    expect(res).toBe('key = \\u007b \\\\foo \\u007d\n')
+    expect(res).toBe(`key =
+    { "{" } \\foo { "}" }
+    { "*" }
+     { "[" }\n`)
   })
 
   test('set false', () => {
     const res = fluentSerializeEntry(
       'key',
-      { '=': ['{ \\foo }'] },
+      { '=': ['{ \\foo }\n*\n ['] },
       { escapeSyntax: false }
     )
-    expect(res).toBe('key = { \\foo }\n')
+    expect(res).toBe(`key =
+    { \\foo }
+    *
+     [\n`)
   })
 })
