@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# mypy: allow-untyped-defs
+
 from __future__ import annotations
 
 from unittest import TestCase
@@ -27,6 +29,7 @@ from moz.l10n.model import (
     Resource,
     Section,
     SelectMessage,
+    VariableRef,
 )
 
 
@@ -58,6 +61,64 @@ class TestMessage(TestCase):
             },
         ).is_empty()
 
+    def test_normalize_pattern_message(self):
+        assert PatternMessage([""]).normalize() == PatternMessage([])
+        assert PatternMessage(["", "\n"]).normalize() == PatternMessage(["\n"])
+        assert PatternMessage(["foo", ""]).normalize() == PatternMessage(["foo"])
+        assert PatternMessage(
+            declarations={"x": Expression("x")}, pattern=["x"]
+        ).normalize() == PatternMessage(["x"])
+        assert PatternMessage(
+            declarations={"x": Expression("x")},
+            pattern=["", Expression(VariableRef("x")), ""],
+        ).normalize() == PatternMessage(
+            declarations={"x": Expression("x")}, pattern=[Expression(VariableRef("x"))]
+        )
+        assert PatternMessage(
+            declarations={"x": Expression("x")},
+            pattern=[Expression("x", "fn", {"o": VariableRef("x")})],
+        ).normalize() == PatternMessage(
+            declarations={"x": Expression("x")},
+            pattern=[Expression("x", "fn", {"o": VariableRef("x")})],
+        )
+        assert PatternMessage(
+            declarations={
+                "a": Expression(VariableRef("a")),
+                "b": Expression("b", "fn", {"o": VariableRef("a")}),
+                "c": Expression(VariableRef("b")),
+                "d": Expression(VariableRef("c")),
+                "e": Expression(VariableRef("a")),
+                "f": Expression(VariableRef("e")),
+            },
+            pattern=[Expression(VariableRef("d"))],
+        ).normalize() == PatternMessage(
+            declarations={
+                "a": Expression(VariableRef("a")),
+                "b": Expression("b", "fn", {"o": VariableRef("a")}),
+                "c": Expression(VariableRef("b")),
+                "d": Expression(VariableRef("c")),
+            },
+            pattern=[Expression(VariableRef("d"))],
+        )
+
+    def test_normalize_select_message(self):
+        assert SelectMessage(
+            declarations={
+                "x": Expression("x"),
+                "y": Expression(VariableRef("y")),
+                "z": Expression(VariableRef("z")),
+            },
+            selectors=(VariableRef("x"),),
+            variants={("a",): [""], (CatchallKey(),): [Expression(VariableRef("y"))]},
+        ).normalize() == SelectMessage(
+            declarations={
+                "x": Expression("x"),
+                "y": Expression(VariableRef("y")),
+            },
+            selectors=(VariableRef("x"),),
+            variants={("a",): [], (CatchallKey(),): [Expression(VariableRef("y"))]},
+        )
+
 
 class TestResource(TestCase):
     def test_all_entries_some(self):
@@ -67,7 +128,7 @@ class TestResource(TestCase):
             Entry(("e2",), PatternMessage(["m2"])),
             Entry(("e3",), PatternMessage(["m3"])),
         ]
-        res = Resource(
+        res: Resource[PatternMessage] = Resource(
             Format.inc,
             [
                 Section((), [Comment("c1"), entries[0], Comment("c2"), entries[1]]),
@@ -85,7 +146,7 @@ class TestResource(TestCase):
         )
 
     def test_all_entries_none(self):
-        res = Resource(
+        res: Resource[PatternMessage] = Resource(
             Format.inc,
             [
                 Section((), [Comment("c1"), Comment("c2")]),
@@ -133,7 +194,7 @@ class TestMeta(TestCase):
         )
 
     def test_resource(self):
-        res = Resource(
+        res: Resource[PatternMessage] = Resource(
             Format.properties,
             [Section((), [])],
             meta=[Metadata("key", "value1"), Metadata("key", "value2")],

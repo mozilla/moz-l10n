@@ -25,6 +25,22 @@ and the parser for `mf2` depends on the `messageformat` package.
 
 ## API
 
+### normalizeMessage()
+
+```js
+import { normalizeMessage } from '@mozilla/l10n'
+```
+
+```js
+function normalizeMessage(msg: Message): Message
+```
+
+Drop unused declarations, join adjacent literal elements, and drop empty literal elements.
+
+Does not modify `msg`.
+Objects and arrays in returned value are clones of objects in `msg`.
+
+
 ### parsePattern()
 
 ```js

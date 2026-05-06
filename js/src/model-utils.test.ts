@@ -14,7 +14,12 @@
  */
 
 import { describe, expect, test } from 'vitest'
-import { messageIsEmpty, SelectMessage } from './index.ts'
+import {
+  type Message,
+  messageIsEmpty,
+  normalizeMessage,
+  type SelectMessage
+} from './index.ts'
 
 describe('messageIsEmpty', () => {
   test('Pattern', () => {
@@ -45,5 +50,103 @@ describe('messageIsEmpty', () => {
     }
     expect(messageIsEmpty(sm)).toBe(false)
     expect(messageIsEmpty(sm, true)).toBe(true)
+  })
+})
+
+describe('normalizeMessage', () => {
+  test('literals in pattern', () => {
+    expect(normalizeMessage([''])).toEqual([])
+    expect(normalizeMessage(['', '\n'])).toEqual(['\n'])
+    expect(normalizeMessage(['foo', '', ''])).toEqual(['foo'])
+  })
+
+  test('unused declarations', () => {
+    expect(normalizeMessage({ decl: { x: { _: 'x' } }, msg: ['x'] })).toEqual([
+      'x'
+    ])
+    expect(
+      normalizeMessage({
+        decl: { x: { $: 'x' }, y: { _: 'y' } },
+        msg: ['', { $: 'x' }]
+      })
+    ).toEqual({ decl: { x: { $: 'x' } }, msg: [{ $: 'x' }] })
+  })
+
+  test('variable reference in option value', () => {
+    expect(
+      normalizeMessage({
+        decl: { x: { $: 'x' }, y: { _: 'y' } },
+        msg: ['', { _: 'y', fn: 'fn', opt: { o: { $: 'x' } } }]
+      })
+    ).toEqual({
+      decl: { x: { $: 'x' } },
+      msg: [{ _: 'y', fn: 'fn', opt: { o: { $: 'x' } } }]
+    })
+  })
+
+  test('variable dependency chain', () => {
+    expect(
+      normalizeMessage({
+        decl: {
+          a: { $: 'a' },
+          b: { _: 'b', fn: 'fn', opt: { o: { $: 'a' } } },
+          c: { $: 'b' },
+          d: { $: 'c' },
+          e: { $: 'a' },
+          f: { $: 'e' }
+        },
+        msg: [{ $: 'd' }]
+      })
+    ).toEqual({
+      decl: {
+        a: { $: 'a' },
+        b: { _: 'b', fn: 'fn', opt: { o: { $: 'a' } } },
+        c: { $: 'b' },
+        d: { $: 'c' }
+      },
+      msg: [{ $: 'd' }]
+    })
+  })
+
+  test('SelectMessage', () => {
+    expect(
+      normalizeMessage({
+        decl: { x: { _: 'x' }, y: { $: 'y' }, z: { $: 'z' } },
+        sel: ['x'],
+        alt: [
+          { keys: ['a'], pat: [''] },
+          { keys: [{ '*': '' }], pat: [{ $: 'y' }] }
+        ]
+      })
+    ).toEqual({
+      decl: { x: { _: 'x' }, y: { $: 'y' } },
+      sel: ['x'],
+      alt: [
+        { keys: ['a'], pat: [] },
+        { keys: [{ '*': '' }], pat: [{ $: 'y' }] }
+      ]
+    })
+  })
+
+  describe('input is not modified', () => {
+    for (const msg of [
+      ['x'],
+      [''],
+      { decl: { a: { $: 'a' } }, msg: ['', { $: 'a' }] },
+      {
+        decl: { x: { _: 'x' }, y: { $: 'y' }, z: { $: 'z' } },
+        sel: ['x'],
+        alt: [
+          { keys: ['a'], pat: [''] },
+          { keys: [{ '*': '' }], pat: [{ $: 'y' }] }
+        ]
+      }
+    ] as Message[]) {
+      test(JSON.stringify(msg), () => {
+        const orig = structuredClone(msg)
+        expect(normalizeMessage(msg)).not.toBe(msg)
+        expect(msg).toEqual(orig)
+      })
+    }
   })
 })

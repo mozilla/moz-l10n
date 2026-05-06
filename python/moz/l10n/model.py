@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Generic, Literal, TypeVar, Union
+from typing import Generic, Iterable, Literal, TypeVar, Union
 
 from .formats import Format
 
@@ -59,6 +59,16 @@ class Expression:
     options: dict[str, str | VariableRef] = field(default_factory=dict)
     attributes: dict[str, str | Literal[True]] = field(default_factory=dict)
 
+    def variable_refs(self) -> Iterator[VariableRef]:
+        """
+        VariableRef values in this Expression
+        """
+        if isinstance(self.arg, VariableRef):
+            yield self.arg
+        for opt in self.options.values():
+            if isinstance(opt, VariableRef):
+                yield opt
+
     def __repr__(self) -> str:
         body = [repr(self.arg)]
         if self.function:
@@ -76,6 +86,14 @@ class Markup:
     name: str
     options: dict[str, str | VariableRef] = field(default_factory=dict)
     attributes: dict[str, str | Literal[True]] = field(default_factory=dict)
+
+    def variable_refs(self) -> Iterator[VariableRef]:
+        """
+        VariableRef values in this Markup
+        """
+        for opt in self.options.values():
+            if isinstance(opt, VariableRef):
+                yield opt
 
     def __repr__(self) -> str:
         body = [repr(self.kind), repr(self.name)]
@@ -109,6 +127,17 @@ class PatternMessage:
         Is the message's pattern empty, or consists only of empty strings?
         """
         return all(el == "" for el in self.pattern)
+
+    def normalize(self) -> PatternMessage:
+        """
+        Drop unused declarations,
+        join adjacent literal elements,
+        and drop empty literal elements.
+        """
+        var_refs: set[str] = set()
+        _normalize_pattern(self.pattern, var_refs)
+        _normalize_declarations(self, var_refs)
+        return self
 
     def __repr__(self) -> str:
         body = (
@@ -157,11 +186,65 @@ class SelectMessage:
             all(el == "" for el in pattern) for pattern in self.variants.values()
         )
 
+    def normalize(self) -> SelectMessage:
+        """
+        Drop unused declarations,
+        join adjacent literal elements,
+        and drop empty literal elements in all patterns.
+        """
+        var_refs = set(sel.name for sel in self.selectors)
+        for pattern in self.variants.values():
+            _normalize_pattern(pattern, var_refs)
+        _normalize_declarations(self, var_refs)
+        return self
+
     def selector_expressions(self) -> tuple[Expression, ...]:
         return tuple(self.declarations[var.name] for var in self.selectors)
 
 
 Message = Union[PatternMessage, SelectMessage]
+
+
+def _normalize_pattern(pattern: Pattern, var_refs: set[str]) -> None:
+    i = 0
+    at_str = False
+    while i < len(pattern):
+        el = pattern[i]
+        if isinstance(el, str):
+            if el == "":
+                pattern.pop(i)
+            elif at_str:
+                pattern[i - 1] += el  # type: ignore
+                pattern.pop(i)
+            else:
+                at_str = True
+                i += 1
+        else:
+            at_str = False
+            i += 1
+            for var in el.variable_refs():
+                var_refs.add(var.name)
+
+
+def _normalize_declarations(msg: Message, var_refs: set[str]) -> None:
+    decl_refs = {
+        name: set(var.name for var in decl.variable_refs() if var.name != name)
+        for name, decl in msg.declarations.items()
+    }
+    for name in list(var_refs):
+        var_refs.update(_var_dependencies(decl_refs, name))
+    for name in list(msg.declarations):
+        if name not in var_refs:
+            del msg.declarations[name]
+
+
+def _var_dependencies(decl_refs: dict[str, set[str]], name: str) -> Iterable[str]:
+    drs = decl_refs.get(name, None)
+    if drs:
+        del decl_refs[name]
+        for dr in drs:
+            yield dr
+            yield from _var_dependencies(decl_refs, dr)
 
 
 @dataclass
