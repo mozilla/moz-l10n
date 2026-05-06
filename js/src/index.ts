@@ -45,6 +45,7 @@ export {
   type PatternMessage,
   type SelectMessage
 } from './model.ts'
+export { messageIsEmpty } from './model-utils.ts'
 
 export {
   androidParsePattern,
@@ -74,26 +75,6 @@ export type FormatKey =
   | 'plain'
   | 'webext'
   | 'xliff'
-
-/**
- * Determine if a message would format as an empty string.
- *
- * @param anyVariant - If `true`,
- *   having any of the variants of a `SelectMessage` be empty returns `true`.
- */
-export function messageIsEmpty(msg: Message, anyVariant = false): boolean {
-  const emptyPattern = (pat: Pattern) => pat.every((el) => el === '')
-  if (Array.isArray(msg)) {
-    return emptyPattern(msg)
-  } else if (msg.msg) {
-    return emptyPattern(msg.msg)
-  } else {
-    const patterns = msg.alt.map((a) => a.pat)
-    return anyVariant
-      ? patterns.some(emptyPattern)
-      : patterns.every(emptyPattern)
-  }
-}
 
 /**
  * Parse the string representation of a single flat message pattern into a data structure.
