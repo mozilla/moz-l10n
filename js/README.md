@@ -40,7 +40,6 @@ Drop unused declarations, join adjacent literal elements, and drop empty literal
 Does not modify `msg`.
 Objects and arrays in returned value are clones of objects in `msg`.
 
-
 ### parsePattern()
 
 ```js
