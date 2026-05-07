@@ -58,6 +58,16 @@ describe('normalizeMessage', () => {
     expect(normalizeMessage([''])).toEqual([])
     expect(normalizeMessage(['', '\n'])).toEqual(['\n'])
     expect(normalizeMessage(['foo', '', ''])).toEqual(['foo'])
+    expect(normalizeMessage(['foo', '', 'bar'])).toEqual(['foobar'])
+    expect(normalizeMessage(['foo', { _: '' }, 'bar'])).toEqual(['foobar'])
+    expect(
+      normalizeMessage(['foo', { _: '', attr: undefined }, 'bar'])
+    ).toEqual(['foobar'])
+    expect(normalizeMessage(['foo', { _: '', attr: {} }, 'bar'])).toEqual([
+      'foo',
+      { _: '', attr: {} },
+      'bar'
+    ])
   })
 
   test('unused declarations', () => {

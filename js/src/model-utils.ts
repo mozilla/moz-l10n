@@ -72,7 +72,11 @@ function normalizePattern(pat: Pattern, varRefs: Set<string> | null): Pattern {
   for (const el of pat) {
     if (typeof el === 'string') {
       next = next ? next + el : el
-    } else {
+    } else if (
+      // Skip empty literal expressions, i.e. {||}
+      el._ !== '' ||
+      Object.values(el).reduce((s, v) => (v === undefined ? s : s + 1), 0) !== 1
+    ) {
       if (next) {
         res.push(next)
         next = ''

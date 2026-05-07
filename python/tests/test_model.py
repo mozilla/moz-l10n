@@ -65,6 +65,17 @@ class TestMessage(TestCase):
         assert PatternMessage([""]).normalize() == PatternMessage([])
         assert PatternMessage(["", "\n"]).normalize() == PatternMessage(["\n"])
         assert PatternMessage(["foo", ""]).normalize() == PatternMessage(["foo"])
+        assert PatternMessage(["foo", "", "bar"]).normalize() == PatternMessage(
+            ["foobar"]
+        )
+        assert PatternMessage(
+            ["foo", Expression(""), "bar"]
+        ).normalize() == PatternMessage(["foobar"])
+        assert PatternMessage(
+            ["foo", Expression("", attributes={"source": ""}), "bar"]
+        ).normalize() == PatternMessage(
+            ["foo", Expression("", attributes={"source": ""}), "bar"]
+        )
         assert PatternMessage(
             declarations={"x": Expression("x")}, pattern=["x"]
         ).normalize() == PatternMessage(["x"])
