@@ -134,6 +134,8 @@ class PatternMessage:
         Drop unused declarations,
         join adjacent literal elements,
         and drop empty literal elements.
+
+        Mutates this PatternMessage.
         """
         var_refs: set[str] = set()
         _normalize_pattern(self.pattern, var_refs)
@@ -192,6 +194,8 @@ class SelectMessage:
         Drop unused declarations,
         join adjacent literal elements,
         and drop empty literal elements in all patterns.
+
+        Mutates this SelectMessage.
         """
         var_refs = set(sel.name for sel in self.selectors)
         for pattern in self.variants.values():
