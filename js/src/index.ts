@@ -45,7 +45,7 @@ export {
   type PatternMessage,
   type SelectMessage
 } from './model.ts'
-export { messageIsEmpty } from './model-utils.ts'
+export { messageIsEmpty, normalizeMessage } from './model-utils.ts'
 
 export {
   androidParsePattern,
