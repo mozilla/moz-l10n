@@ -18,7 +18,7 @@ import re
 from collections.abc import Iterable, Iterator
 from itertools import chain
 from os import sep, walk
-from os.path import commonpath, isdir, join, normpath, relpath, splitext
+from os.path import commonpath, dirname, isdir, join, normpath, relpath, splitext
 
 from moz.l10n.formats import l10n_extensions
 from moz.l10n.util import walk_files
@@ -130,13 +130,17 @@ class L10nDiscoverPaths:
                 base_dirs.append((dirpath, locale_dirs))
             dirnames[:] = (dn for dn in dirnames if not dn.startswith("."))
 
-            if any(not fn.startswith(".") and fn.endswith(".pot") for fn in filenames):
-                pot_dirs.append(dirpath)
-            if any(
+            # .pot is in `l10n_extensions`!
+            # We don't need to check for these if there isn't any at all.
+            if not any(
                 not fn.startswith(".") and splitext(fn)[1] in l10n_extensions
                 for fn in filenames
             ):
-                l10n_dirs.append(dirpath)
+                continue
+
+            l10n_dirs.append(dirpath)
+            if any(not fn.startswith(".") and fn.endswith(".pot") for fn in filenames):
+                pot_dirs.append(dirpath)
 
         if ref_root:
             for dir in list(ref_dirs):
@@ -160,8 +164,19 @@ class L10nDiscoverPaths:
         # with the most locale subdirectories,
         # with a preference for directories with localizable contents.
         base_dirs = [bd for bd in base_dirs if not dir_contains(self._ref_root, bd[0])]
+        base_dir_roots = {bd[0] for bd in base_dirs}
+        confirmed_base_dirs: set[str] = set()
+        for ld in l10n_dirs:
+            parent = ld
+            while True:
+                parent = dirname(parent)
+                if parent in base_dir_roots:
+                    confirmed_base_dirs.add(parent)
+                    break
+                if parent == root or parent == dirname(parent):
+                    break
         base_dirs = [
-            bd for bd in base_dirs if any(dir_contains(bd[0], ld) for ld in l10n_dirs)
+            bd for bd in base_dirs if bd[0] in confirmed_base_dirs
         ] or base_dirs
 
         locale_dirs_: list[str] | None

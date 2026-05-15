@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from os import mkdir
+from os import makedirs
 from os.path import join
 from typing import Union
 
@@ -29,5 +29,5 @@ def build_file_tree(root: str, tree: Tree) -> None:
                 if value:
                     file.write(value)
         else:
-            mkdir(path)
+            makedirs(path, exist_ok=True)
             build_file_tree(path, value)
