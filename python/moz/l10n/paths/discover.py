@@ -172,7 +172,6 @@ class L10nDiscoverPaths:
                 parent = dirname(parent)
                 if parent in base_dir_roots:
                     confirmed_base_dirs.add(parent)
-                    break
                 if parent == root or parent == dirname(parent):
                     break
         base_dirs = [

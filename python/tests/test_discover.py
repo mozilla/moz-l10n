@@ -259,3 +259,25 @@ class TestL10nDiscover(TestCase):
             assert paths.locales is not None
             assert set(paths.locales) == {"de", "fr"}
             assert any("browser.ftl" in p for p in paths.ref_paths)
+
+
+    def test_split_repos_locale_id_intermediate_names(self):
+        """Locale-id-like directory names (e.g. "aa") may appear as component
+        subdirs in source tree, not just locale roots. Let's ensure these
+        don't shadow real localization base dir."""
+        source_tree: Tree = {"dom": {"aa": {"strings.ftl": ""}}}
+        l10n_tree: Tree = {
+            "de": {"dom": {"aa": {"strings.ftl": ""}}},
+            "fr": {"dom": {"aa": {"strings.ftl": ""}}},
+        }
+        with TemporaryDirectory() as tmp:
+            source_root = join(tmp, "src")
+            l10n_root = join(tmp, "l10n")
+            build_file_tree(source_root, source_tree)
+            build_file_tree(l10n_root, l10n_tree)
+
+            paths = L10nDiscoverPaths(l10n_root, ref_root=source_root)
+            assert paths.ref_root == source_root
+            assert paths.base == l10n_root
+            assert paths.locales is not None
+            assert set(paths.locales) == {"de", "fr"}
