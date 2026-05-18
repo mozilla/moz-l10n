@@ -161,8 +161,9 @@ class L10nDiscoverPaths:
             raise MissingSourceDirectoryError
 
         # Pick the localization base dir not in the reference directory
-        # with the most locale subdirectories,
-        # with a preference for directories with localizable contents.
+        # with the most locale subdirectories.
+        # Walk up from each l10n_dir to confirm which base dirs actually contain
+        # localizable files and avoid false positives on locale-id-like dir names.
         base_dirs = [bd for bd in base_dirs if not dir_contains(self._ref_root, bd[0])]
         base_dir_roots = {bd[0] for bd in base_dirs}
         confirmed_base_dirs: set[str] = set()
