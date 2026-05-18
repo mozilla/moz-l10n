@@ -260,7 +260,6 @@ class TestL10nDiscover(TestCase):
             assert set(paths.locales) == {"de", "fr"}
             assert any("browser.ftl" in p for p in paths.ref_paths)
 
-
     def test_split_repos_locale_id_intermediate_names(self):
         """Locale-id-like directory names (e.g. "aa") may appear as component
         subdirs in source tree, not just locale roots. Let's ensure these
