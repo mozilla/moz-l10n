@@ -110,7 +110,8 @@ class L10nDiscoverPaths:
 
         # dir -> score
         ref_dirs: dict[str, int] = {ref_root: len(source_locale)} if ref_root else {}
-        base_dirs: list[tuple[str, list[str]]] = []  # [(root, [locale_dir])]
+        # base_dirs: list[tuple[str, list[str]]] = []  # [(root, [locale_dir])]
+        base_dirs: dict[str, list[str]] = {}
         pot_dirs: list[str] = []
         l10n_dirs: list[str] = []
         if ref_root and not dir_contains(root, ref_root):
@@ -127,20 +128,18 @@ class L10nDiscoverPaths:
                 elif locale_id.fullmatch(dir):
                     locale_dirs.append(dir)
             if locale_dirs:
-                base_dirs.append((dirpath, locale_dirs))
+                base_dirs[dirpath] = locale_dirs
             dirnames[:] = (dn for dn in dirnames if not dn.startswith("."))
 
-            # .pot is in `l10n_extensions`!
-            # We don't need to check for these if there isn't any at all.
-            if not any(
+            if any(
                 not fn.startswith(".") and splitext(fn)[1] in l10n_extensions
                 for fn in filenames
             ):
-                continue
-
-            l10n_dirs.append(dirpath)
-            if any(not fn.startswith(".") and fn.endswith(".pot") for fn in filenames):
-                pot_dirs.append(dirpath)
+                l10n_dirs.append(dirpath)
+                if any(
+                    not fn.startswith(".") and fn.endswith(".pot") for fn in filenames
+                ):
+                    pot_dirs.append(dirpath)
 
         if ref_root:
             for dir in list(ref_dirs):
@@ -160,28 +159,37 @@ class L10nDiscoverPaths:
         else:
             raise MissingSourceDirectoryError
 
-        # Pick the localization base dir not in the reference directory
-        # with the most locale subdirectories.
+        # Pick the localization base dir not in the reference directory with most locale
+        # subdirectories, with preference for directories with localizable contents.
         # Walk up from each l10n_dir to confirm which base dirs actually contain
         # localizable files and avoid false positives on locale-id-like dir names.
-        base_dirs = [bd for bd in base_dirs if not dir_contains(self._ref_root, bd[0])]
-        base_dir_roots = {bd[0] for bd in base_dirs}
-        confirmed_base_dirs: set[str] = set()
+        # base_dirs = [bd for bd in base_dirs if not dir_contains(self._ref_root, bd[0])]
+        base_dirs = {
+            bd: lds
+            for bd, lds in base_dirs.items()
+            if not dir_contains(self._ref_root, bd)
+        }
+        found_parent_dirs: set[str] = set()
         for ld in l10n_dirs:
             parent = ld
             while True:
                 parent = dirname(parent)
-                if parent in base_dir_roots:
-                    confirmed_base_dirs.add(parent)
+                if parent in base_dirs:
+                    found_parent_dirs.add(parent)
                 if parent == root or parent == dirname(parent):
                     break
-        base_dirs = [
-            bd for bd in base_dirs if bd[0] in confirmed_base_dirs
-        ] or base_dirs
+        base_dirs = {
+            bd: lds for bd, lds in base_dirs.items() if bd in found_parent_dirs
+        } or base_dirs
+        base_dirs = {
+            base_dir: locale_dirs
+            for base_dir, locale_dirs in base_dirs.items()
+            if not dir_contains(self._ref_root, base_dir)
+        }
 
         locale_dirs_: list[str] | None
         self.base, locale_dirs_ = max(
-            base_dirs, key=lambda s: len(s[1]), default=(None, None)
+            base_dirs.items(), key=lambda s: len(s[1]), default=(None, None)
         )
         if locale_dirs_:
             self.locales = [dir.replace("_", "-") for dir in locale_dirs_]
