@@ -118,6 +118,8 @@ class TestAndroid(TestCase):
                                         attributes={"source": "%2$d"},
                                     ),
                                     " new messages.",
+                                    Expression("%", attributes={"source": "%%"}),
+                                    Expression("\n", attributes={"source": "%n"}),
                                 ]
                             ),
                         ),
@@ -456,7 +458,7 @@ class TestAndroid(TestCase):
               <!-- standalone -->
 
               <string name="welcome">Welcome to <b>&foo;</b>!</string>
-              <string name="placeholders">Hello, %1$s! You have %2$d new messages.</string>
+              <string name="placeholders">Hello, %1$s! You have %2$d new messages.%%%n</string>
               <string name="real_html">Hello, %1$s! You have <b>%2$d new messages</b>.</string>
               <string name="escaped_html"><![CDATA[Hello, %1$s! You have <b>%2$d new messages</b>.]]></string>
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>

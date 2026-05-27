@@ -490,6 +490,9 @@ def parse_inline(
                     if conversion == "%":
                         # Literal %
                         yield Expression("%", attributes={"source": m[4]})
+                    elif conversion == "n":
+                        # Literal newline
+                        yield Expression("\n", attributes={"source": m[4]})
                     else:
                         # Placeholder
                         func: str | None

@@ -214,9 +214,6 @@ function* parseInline(
             attr.source = m[0]
             let fn: string | undefined = undefined
             switch (m[5]) {
-              case '%':
-                yield { _: '%', attr }
-                continue // for
               case 'b':
               case 'B':
                 fn = 'boolean'
@@ -244,6 +241,12 @@ function* parseInline(
               case 'G':
                 fn = 'number'
                 break
+              case 'n':
+                yield { _: '\n', attr }
+                continue // for
+              case '%':
+                yield { _: '%', attr }
+                continue // for
               default:
                 if (m[5][0].toLowerCase() === 't') fn = 'datetime'
             }

@@ -48,6 +48,15 @@ describe('success', () => {
     'Hello, %1$s!'
   )
   ok(
+    'inline percent escapes',
+    [
+      'Hello',
+      { _: '%', attr: { source: '%%' } },
+      { _: '\n', attr: { source: '%n' } }
+    ],
+    'Hello%%%n'
+  )
+  ok(
     'inline %@ variable',
     ['Hello, ', { $: 'arg', attr: { source: '%@' } }, '!'],
     'Hello, %@!'
