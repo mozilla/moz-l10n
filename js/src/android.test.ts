@@ -32,6 +32,7 @@ describe('success', () => {
       expect(res).toEqual(pattern)
     })
 
+  ok('empty pattern', [], '')
   ok(
     'resource reference',
     [{ _: '@foo:bar/baz', fn: 'reference' }],
