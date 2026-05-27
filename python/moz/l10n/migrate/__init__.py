@@ -209,6 +209,7 @@ def copy(
         if property is None and variant is None:
             entry = get_entry(res_, *id)
             if entry:
+                entry = deepcopy(entry)
                 _replace_placeholders(entry, replace)
                 return (entry.value if value_only else entry, {id})
             else:
@@ -217,6 +218,7 @@ def copy(
 
         try:
             pattern = get_pattern(res_, *id, property=property, variant=variant)
+            pattern = deepcopy(pattern)
             _replace_placeholders(pattern, replace)
             return PatternMessage(pattern), {id}
         except StopIteration:

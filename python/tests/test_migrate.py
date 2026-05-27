@@ -207,8 +207,8 @@ class TestMigrate(TestCase):
 
     def test_copy(self):
         b_ftl = dedent("""\
-            prev = Value
-                .prop = Prop
+            prev = Value { $x }
+                .prop = Prop { "a" }
         """)
         tree: Tree = {
             "en-US": {"a.properties": "", "b.ftl": ""},
@@ -225,7 +225,23 @@ class TestMigrate(TestCase):
                     "b.ftl": {
                         "from-value": copy("b.ftl", "prev", value_only=True),
                         "from-prop": copy("b.ftl", "prev", property="prop"),
-                        "replaced": copy(
+                        "replaced-value": copy(
+                            None,
+                            "prev",
+                            value_only=True,
+                            replace=lambda ph: Expression(VariableRef("y"))
+                            if isinstance(ph, Expression)
+                            else None,
+                        ),
+                        "replaced-prop": copy(
+                            None,
+                            "prev",
+                            property="prop",
+                            replace=lambda ph: Expression("b")
+                            if isinstance(ph, Expression)
+                            else None,
+                        ),
+                        "replaced-remote": copy(
                             "a.properties",
                             "key",
                             replace=lambda ph: Expression("-term", function="message")
@@ -241,10 +257,20 @@ class TestMigrate(TestCase):
 
             assert list(res.values()) == [
                 [
-                    Entry(("from-value",), PatternMessage(["Value"])),
-                    Entry(("from-prop",), PatternMessage(["Prop"])),
                     Entry(
-                        ("replaced",),
+                        ("from-value",),
+                        PatternMessage(["Value ", Expression(VariableRef("x"))]),
+                    ),
+                    Entry(("from-prop",), PatternMessage(["Prop ", Expression("a")])),
+                    Entry(
+                        ("replaced-value",),
+                        PatternMessage(["Value ", Expression(VariableRef("y"))]),
+                    ),
+                    Entry(
+                        ("replaced-prop",), PatternMessage(["Prop ", Expression("b")])
+                    ),
+                    Entry(
+                        ("replaced-remote",),
                         PatternMessage(
                             ["Refresh ", Expression("-term", "message"), "\u2026"]
                         ),
@@ -254,11 +280,13 @@ class TestMigrate(TestCase):
 
             with open(join(root, "fr", "b.ftl"), encoding="utf-8") as file:
                 assert file.read() == dedent("""\
-                    prev = Value
-                        .prop = Prop
-                    from-value = Value
-                    from-prop = Prop
-                    replaced = Refresh { -term }…
+                    prev = Value { $x }
+                        .prop = Prop { "a" }
+                    from-value = Value { $x }
+                    from-prop = Prop { "a" }
+                    replaced-value = Value { $y }
+                    replaced-prop = Prop { "b" }
+                    replaced-remote = Refresh { -term }…
                 """)
 
     def test_entry(self):
