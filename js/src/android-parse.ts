@@ -167,8 +167,8 @@ function* parseQuotes(
 
 const _inline =
   // 1:esc-unicode     2:esc-char       4:printf
-  //                         3:esc-elem                                5:printf-conversion              6:xml-entity
-  /\\u([0-9A-Fa-f]{4})|\\(.)|(<[^%>]+>)|(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%@]|[tT][a-zA-Z]))|(_entity_\d+_)/g
+  //                         3:esc-elem                                  5:printf-conversion              6:xml-entity
+  /\\u([0-9A-Fa-f]{4})|\\(.)|(<[^%>]+>)|(%(?:[1-9]\$|<)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%@]|[tT][a-zA-Z]))|(_entity_\d+_)/g
 const _blocktag = /^<(div|h[123456r]|p|d[dt]|li|\/?[dou]l)\b/
 const _breaktag = /^<[bh]r\/?>$/
 
@@ -178,6 +178,7 @@ function* parseInline(
 ): Iterable<string | Expression | Markup> {
   let buffer = ''
   let atBreak = false
+  let prevVarName = ''
   for (const part of pattern) {
     if (typeof part === 'string') {
       let pos = 0
@@ -250,7 +251,21 @@ function* parseInline(
               default:
                 if (m[5][0].toLowerCase() === 't') fn = 'datetime'
             }
-            yield { $: varName(m[4]), fn, attr }
+            let name
+            if (m[0].startsWith('%<')) {
+              // # https://developer.android.com/reference/java/util/Formatter#argument-index
+              if (prevVarName) {
+                name = prevVarName
+                const prevIdx = /[1-9]$/.test(name) ? name.at(-1) + '$' : ''
+                attr.source = `%${prevIdx}${m[0].substring(2)}`
+              } else {
+                throw new ParseError(`Invalid ${m[0]} placeholder`)
+              }
+            } else {
+              name = varName(m[4])
+              prevVarName = name
+            }
+            yield { $: name, fn, attr }
           } else {
             yield { $: entities[m[6]] ?? 'UNKNOWN', fn: 'entity' }
           }

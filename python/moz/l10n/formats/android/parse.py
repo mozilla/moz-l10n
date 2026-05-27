@@ -435,10 +435,11 @@ inline_re = compile(
     r"\\u([0-9a-fA-F]{4})|"
     r"\\(.)|"
     r"(<[^%>]+>)|"
-    r"(%(?:[1-9]\$)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%@]|[tT][a-zA-Z]))"
+    r"(%(?:[1-9]\$|<)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%@]|[tT][a-zA-Z]))"
 )
 block_tag_re = compile(r"<(div|h[123456r]|p|d[dt]|li|/?[dou]l)\b")
 break_tag_re = compile(r"<[bh]r/?>")
+var_idx_re = compile(r"[1-9]$")
 
 
 def parse_inline(
@@ -446,6 +447,7 @@ def parse_inline(
 ) -> Iterator[str | Expression | Markup]:
     acc = ""
     at_br = False
+    prev_var_name = None
     for part in iter:
         if not isinstance(part, str):
             if acc:
@@ -508,9 +510,21 @@ def parse_inline(
                         else:
                             c0 = conversion[0]
                             func = "datetime" if c0 == "t" or c0 == "T" else None
-                        name = get_var_name(m[4])
+                        source = m[0]
+                        if source.startswith("%<"):
+                            # https://developer.android.com/reference/java/util/Formatter#argument-index
+                            if prev_var_name:
+                                name = prev_var_name
+                                prev_idx_m = var_idx_re.search(name)
+                                prev_idx = prev_idx_m[0] + "$" if prev_idx_m else ""
+                                source = f"%{prev_idx}{source[2:]}"
+                            else:
+                                raise ValueError(f"Invalid {source} placeholder")
+                        else:
+                            name = get_var_name(source)
+                            prev_var_name = name
                         yield Expression(
-                            VariableRef(name), func, attributes={"source": m[4]}
+                            VariableRef(name), func, attributes={"source": source}
                         )
                 pos = m.end()
             acc += part[pos:]
@@ -518,14 +532,14 @@ def parse_inline(
         yield acc
 
 
-printf = compile(r"%([1-9]\$)?")
+arg_idx = compile(r"%([1-9]\$)?")
 not_name_char = compile(f"[^{xml_name_start}{xml_name_rest}]")
 not_name_start = compile(f"[^{xml_name_start}]")
 
 
 def get_var_name(src: str) -> str:
     """Returns a valid MF2 name."""
-    pm = printf.match(src)
+    pm = arg_idx.match(src)
     if pm:
         return f"arg{pm[1][0]}" if pm[1] else "arg"
     name = not_name_char.sub("", src)

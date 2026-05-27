@@ -769,6 +769,55 @@ class TestAndroid(TestCase):
             """
         )
 
+    def test_previous_placeholder(self):
+        src = dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">Birthday: %1$tm %&lt;te,%&lt;tY</string>
+            </resources>
+            """
+        )
+
+        res = android_parse(src)
+        assert res == Resource(
+            Format.android,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("x",),
+                            PatternMessage(
+                                [
+                                    "Birthday: ",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$tm"},
+                                    ),
+                                    " ",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$te"},
+                                    ),
+                                    ",",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$tY"},
+                                    ),
+                                ]
+                            ),
+                        )
+                    ],
+                )
+            ],
+        )
+        ser = "".join(android_serialize(res))
+        assert ser == src.replace("&lt;", "1$")
+
     def test_xcode_placeholder(self):
         src = dedent(
             """\
