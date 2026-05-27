@@ -22,7 +22,6 @@ from unittest import SkipTest, TestCase
 
 from moz.l10n.bin.migrate import cli
 from moz.l10n.migrate import Migrate, copy, entry
-from moz.l10n.migrate.utils import get_pattern, plural_message
 from moz.l10n.model import Entry, Expression, PatternMessage, VariableRef
 from moz.l10n.paths.discover import L10nDiscoverPaths, MissingSourceDirectoryError
 
@@ -74,21 +73,10 @@ class TestMigrate(TestCase):
             </resources>
             """
         )
-        tree: Tree = {
-            "l10n.toml": cfg_toml,
-            "foo": {
-                "values": {"strings.xml": ""},
-                "values-fr": {"strings.xml": foo_fr},
-                "values-de": {"strings.xml": foo_de},
-            },
-            "bar": {
-                "values": {"strings.xml": ""},
-                "values-fr": {"strings.xml": bar},
-                "values-de": {"strings.xml": bar},
-            },
-        }
-        with TemporaryDirectory() as root:
-            build_file_tree(root, tree)
+        migration = dedent(
+            """\
+            from moz.l10n.migrate import Migrate, copy
+            from moz.l10n.migrate.utils import get_pattern, plural_message
 
             def make_plural_x(res, _):
                 x_other = get_pattern(res, "x-other")
@@ -104,9 +92,29 @@ class TestMigrate(TestCase):
                         "y2": copy(None, "y"),
                         "z2": copy("bar/values/strings.xml", "z"),
                     }
-                },
-                join(root, "l10n.toml"),
-            ).apply()
+                }
+            )
+
+            """
+        )
+        tree: Tree = {
+            "l10n.toml": cfg_toml,
+            "migration.py": migration,
+            "foo": {
+                "values": {"strings.xml": ""},
+                "values-fr": {"strings.xml": foo_fr},
+                "values-de": {"strings.xml": foo_de},
+            },
+            "bar": {
+                "values": {"strings.xml": ""},
+                "values-fr": {"strings.xml": bar},
+                "values-de": {"strings.xml": bar},
+            },
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+
+            cli(["--config", join(root, "l10n.toml"), join(root, "migration.py")])
 
             with open(join(root, "foo", "values-fr", "strings.xml")) as file:
                 assert file.read() == dedent(
