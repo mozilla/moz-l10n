@@ -174,7 +174,12 @@ class L10nConfigPaths:
                 if incl_path not in _seen:
                     _seen.add(incl_path)
                     self._includes.append(
-                        L10nConfigPaths(incl_path, cfg_load=cfg_load, _seen=_seen)
+                        L10nConfigPaths(
+                            incl_path,
+                            cfg_load=cfg_load,
+                            locale_map=locale_map,
+                            _seen=_seen,
+                        )
                     )
 
     @property
