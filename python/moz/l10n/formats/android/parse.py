@@ -435,7 +435,7 @@ inline_re = compile(
     r"\\u([0-9a-fA-F]{4})|"
     r"\\(.)|"
     r"(<[^%>]+>)|"
-    r"(%(?:[1-9]\$|<)?[-#+ 0,(]?[0-9.]*([a-su-zA-SU-Z%@]|[tT][a-zA-Z]))"
+    r"(%(?:[1-9]\$|<)?[-#+ 0,(]?[0-9.]*([tT]?.))"
 )
 block_tag_re = compile(r"<(div|h[123456r]|p|d[dt]|li|/?[dou]l)\b")
 break_tag_re = compile(r"<[bh]r/?>")
@@ -491,10 +491,10 @@ def parse_inline(
                     conversion = m[5]
                     if conversion == "%":
                         # Literal %
-                        yield Expression("%", attributes={"source": m[4]})
+                        yield Expression("%", attributes={"source": m[0]})
                     elif conversion == "n":
                         # Literal newline
-                        yield Expression("\n", attributes={"source": m[4]})
+                        yield Expression("\n", attributes={"source": m[0]})
                     else:
                         # Placeholder
                         func: str | None
@@ -507,9 +507,10 @@ def parse_inline(
                             func = "integer"
                         elif conversion in {"a", "A", "e", "E", "f", "g", "G"}:
                             func = "number"
+                        elif len(conversion) == 2 and conversion[0] in {"t", "T"}:
+                            func = "datetime"
                         else:
-                            c0 = conversion[0]
-                            func = "datetime" if c0 == "t" or c0 == "T" else None
+                            func = None
                         source = m[0]
                         if source.startswith("%<"):
                             # https://developer.android.com/reference/java/util/Formatter#argument-index

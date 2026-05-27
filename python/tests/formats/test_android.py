@@ -219,6 +219,31 @@ class TestAndroid(TestCase):
                                 ]
                             ),
                         ),
+                        Entry(
+                            ("datetime",),
+                            PatternMessage(
+                                [
+                                    "Birthday: ",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$tm"},
+                                    ),
+                                    " ",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$te"},
+                                    ),
+                                    ",",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$tY"},
+                                    ),
+                                ]
+                            ),
+                        ),
                         Entry(("ws_trimmed",), PatternMessage([])),
                         Entry(
                             ("ws_quoted",),
@@ -463,6 +488,7 @@ class TestAndroid(TestCase):
               <string name="escaped_html"><![CDATA[Hello, %1$s! You have <b>%2$d new messages</b>.]]></string>
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
               <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
+              <string name="datetime">Birthday: %1$tm %1$te,%1$tY</string>
               <string name="ws_trimmed"></string>
               <string name="ws_quoted">\\u0020\\u0020\\u0020\\u2008\\n \\u0020\\u0020\\u0020\\u2003</string>
               <string name="ws_escaped">\\u0020\\u0020\\u2008 \\u2003</string>
