@@ -110,7 +110,6 @@ class L10nDiscoverPaths:
 
         # dir -> score
         ref_dirs: dict[str, int] = {ref_root: len(source_locale)} if ref_root else {}
-        # base_dirs: list[tuple[str, list[str]]] = []  # [(root, [locale_dir])]
         base_dirs: dict[str, list[str]] = {}
         pot_dirs: list[str] = []
         l10n_dirs: list[str] = []
@@ -169,23 +168,18 @@ class L10nDiscoverPaths:
             for bd, lds in base_dirs.items()
             if not dir_contains(self._ref_root, bd)
         }
-        found_parent_dirs: set[str] = set()
+        dirs_with_contents: set[str] = set()
         for ld in l10n_dirs:
             parent = ld
             while True:
                 parent = dirname(parent)
                 if parent in base_dirs:
-                    found_parent_dirs.add(parent)
+                    dirs_with_contents.add(parent)
                 if parent == root or parent == dirname(parent):
                     break
         base_dirs = {
-            bd: lds for bd, lds in base_dirs.items() if bd in found_parent_dirs
+            bd: lds for bd, lds in base_dirs.items() if bd in dirs_with_contents
         } or base_dirs
-        base_dirs = {
-            base_dir: locale_dirs
-            for base_dir, locale_dirs in base_dirs.items()
-            if not dir_contains(self._ref_root, base_dir)
-        }
 
         locale_dirs_: list[str] | None
         self.base, locale_dirs_ = max(
