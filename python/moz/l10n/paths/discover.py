@@ -113,12 +113,13 @@ class L10nDiscoverPaths:
         base_dirs: dict[str, list[str]] = {}
         pot_dirs: list[str] = []
         l10n_dirs: list[str] = []
+        # Important! We walk with `topdown=True` to get shortest paths first!
         if ref_root and not dir_contains(root, ref_root):
             walk_roots: Iterator[tuple[str, list[str], list[str]]] = chain(
-                walk(root), walk(ref_root)
+                walk(root, topdown=True), walk(ref_root, topdown=True)
             )
         else:
-            walk_roots = walk(root)
+            walk_roots = walk(root, topdown=True)
         for dirpath, dirnames, filenames in walk_roots:
             locale_dirs = []
             for dir in dirnames:
@@ -158,16 +159,14 @@ class L10nDiscoverPaths:
         else:
             raise MissingSourceDirectoryError
 
-        # Pick the localization base dir not in the reference directory with most locale
-        # subdirectories, with preference for directories with localizable contents.
-        # Walk up from each l10n_dir to confirm which base dirs actually contain
-        # localizable files and avoid false positives on locale-id-like dir names.
-        # base_dirs = [bd for bd in base_dirs if not dir_contains(self._ref_root, bd[0])]
+        # Pick localization base dirs not in reference directory.
         base_dirs = {
             bd: lds
             for bd, lds in base_dirs.items()
             if not dir_contains(self._ref_root, bd)
         }
+        # Walk up parents of each l10n_dir to gather base dirs containing
+        # localizable files & avoid false positives on locale-id-like sub-dir names.
         dirs_with_contents: set[str] = set()
         for ld in l10n_dirs:
             parent = ld
@@ -184,10 +183,13 @@ class L10nDiscoverPaths:
         locale_dirs_: list[str] | None
         self.base, locale_dirs_ = max(
             base_dirs.items(), key=lambda s: len(s[1]), default=(None, None)
+        # Select final base dir and containing list of locale subdirectories
+        # by maximum number of locale subdirectories.
         )
         if locale_dirs_:
             self.locales = [dir.replace("_", "-") for dir in locale_dirs_]
             self.locales.sort()
+
         else:
             self.locales = None
 
