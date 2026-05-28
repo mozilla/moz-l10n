@@ -118,6 +118,8 @@ class TestAndroid(TestCase):
                                         attributes={"source": "%2$d"},
                                     ),
                                     " new messages.",
+                                    Expression("%", attributes={"source": "%%"}),
+                                    Expression("\n", attributes={"source": "%n"}),
                                 ]
                             ),
                         ),
@@ -213,6 +215,31 @@ class TestAndroid(TestCase):
                                         "close",
                                         "xliff:g",
                                         attributes={"translate": "no"},
+                                    ),
+                                ]
+                            ),
+                        ),
+                        Entry(
+                            ("datetime",),
+                            PatternMessage(
+                                [
+                                    "Birthday: ",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$tm"},
+                                    ),
+                                    " ",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$te"},
+                                    ),
+                                    ",",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$tY"},
                                     ),
                                 ]
                             ),
@@ -456,11 +483,12 @@ class TestAndroid(TestCase):
               <!-- standalone -->
 
               <string name="welcome">Welcome to <b>&foo;</b>!</string>
-              <string name="placeholders">Hello, %1$s! You have %2$d new messages.</string>
+              <string name="placeholders">Hello, %1$s! You have %2$d new messages.%%%n</string>
               <string name="real_html">Hello, %1$s! You have <b>%2$d new messages</b>.</string>
               <string name="escaped_html"><![CDATA[Hello, %1$s! You have <b>%2$d new messages</b>.]]></string>
               <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
               <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
+              <string name="datetime">Birthday: %1$tm %1$te,%1$tY</string>
               <string name="ws_trimmed"></string>
               <string name="ws_quoted">\\u0020\\u0020\\u0020\\u2008\\n \\u0020\\u0020\\u0020\\u2003</string>
               <string name="ws_escaped">\\u0020\\u0020\\u2008 \\u2003</string>
@@ -766,6 +794,55 @@ class TestAndroid(TestCase):
             </resources>
             """
         )
+
+    def test_previous_placeholder(self):
+        src = dedent(
+            """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <string name="x">Birthday: %1$tm %&lt;te,%&lt;tY</string>
+            </resources>
+            """
+        )
+
+        res = android_parse(src)
+        assert res == Resource(
+            Format.android,
+            [
+                Section(
+                    (),
+                    [
+                        Entry(
+                            ("x",),
+                            PatternMessage(
+                                [
+                                    "Birthday: ",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$tm"},
+                                    ),
+                                    " ",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$te"},
+                                    ),
+                                    ",",
+                                    Expression(
+                                        VariableRef("arg1"),
+                                        function="datetime",
+                                        attributes={"source": "%1$tY"},
+                                    ),
+                                ]
+                            ),
+                        )
+                    ],
+                )
+            ],
+        )
+        ser = "".join(android_serialize(res))
+        assert ser == src.replace("&lt;", "1$")
 
     def test_xcode_placeholder(self):
         src = dedent(
