@@ -180,11 +180,13 @@ class L10nDiscoverPaths:
             bd: lds for bd, lds in base_dirs.items() if bd in dirs_with_contents
         } or base_dirs
 
-        locale_dirs_: list[str] | None
-        self.base, locale_dirs_ = max(
-            base_dirs.items(), key=lambda s: len(s[1]), default=(None, None)
         # Select final base dir and containing list of locale subdirectories
         # by maximum number of locale subdirectories.
+        locale_dirs_: list[str] | None
+        self.base, locale_dirs_ = max(
+            base_dirs.items(),
+            key=lambda s: len(s[1]),
+            default=(None, None),
         )
         if locale_dirs_:
             self.locales = [dir.replace("_", "-") for dir in locale_dirs_]
