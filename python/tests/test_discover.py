@@ -119,6 +119,7 @@ class TestL10nDiscover(TestCase):
             paths = L10nDiscoverPaths(root)
 
             assert paths.ref_root == join(root, "source", "en")
+            assert paths.base is not None
             assert paths.base == join(root, "target")
             assert paths.locales == ["yy-Latn", "zz"]
             assert paths.all_locales == {"yy-Latn", "zz"}
@@ -218,9 +219,64 @@ class TestL10nDiscover(TestCase):
             paths = L10nDiscoverPaths(root)
             assert paths.ref_root == join(root, "en")
             assert paths.base == root
+            assert paths.locales is not None
             assert set(paths.locales) == {"yy-Latn", "zz"}
 
             paths = L10nDiscoverPaths(root, ref_root=join(root, "en-US"))
             assert paths.ref_root == join(root, "en-US")
             assert paths.base == root
+            assert paths.locales is not None
             assert set(paths.locales) == {"yy-Latn", "zz"}
+
+    def test_split_repos(self):
+        """Source and translation in separate sibling directories,
+        as in firefox-l10n-source / firefox-l10n."""
+        source_tree: Tree = {
+            "browser": {"browser.ftl": ""},
+            "toolkit": {"global": {"main.ftl": ""}},
+        }
+        l10n_tree: Tree = {
+            "de": {
+                "browser": {"browser.ftl": ""},
+                "toolkit": {"global": {"main.ftl": ""}},
+            },
+            "fr": {
+                "browser": {"browser.ftl": ""},
+            },
+        }
+        with TemporaryDirectory() as tmp:
+            source_root = join(tmp, "firefox-l10n-source")
+            l10n_root = join(tmp, "firefox-l10n")
+            build_file_tree(source_root, source_tree)
+            build_file_tree(l10n_root, l10n_tree)
+
+            with self.assertRaises(MissingSourceDirectoryError):
+                L10nDiscoverPaths(l10n_root)
+
+            paths = L10nDiscoverPaths(l10n_root, ref_root=source_root)
+            assert paths.ref_root == source_root
+            assert paths.base == l10n_root
+            assert paths.locales is not None
+            assert set(paths.locales) == {"de", "fr"}
+            assert any("browser.ftl" in p for p in paths.ref_paths)
+
+    def test_split_repos_locale_id_intermediate_names(self):
+        """Locale-id-like directory names (e.g. "aa") may appear as component
+        subdirs in source tree, not just locale roots. Let's ensure these
+        don't shadow real localization base dir."""
+        source_tree: Tree = {"dom": {"aa": {"strings.ftl": ""}}}
+        l10n_tree: Tree = {
+            "de": {"dom": {"aa": {"strings.ftl": ""}}},
+            "fr": {"dom": {"aa": {"strings.ftl": ""}}},
+        }
+        with TemporaryDirectory() as tmp:
+            source_root = join(tmp, "src")
+            l10n_root = join(tmp, "l10n")
+            build_file_tree(source_root, source_tree)
+            build_file_tree(l10n_root, l10n_tree)
+
+            paths = L10nDiscoverPaths(l10n_root, ref_root=source_root)
+            assert paths.ref_root == source_root
+            assert paths.base == l10n_root
+            assert paths.locales is not None
+            assert set(paths.locales) == {"de", "fr"}
