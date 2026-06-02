@@ -31,6 +31,20 @@ describe('parsePattern', () => {
     expect(pattern).toEqual(['{foo %s}'])
   })
 
+  for (const format of [
+    'android',
+    'fluent',
+    'mf2',
+    'plain',
+    'webext',
+    'xliff'
+  ] as const) {
+    test(`${format} empty`, () => {
+      const pattern = parsePattern(format, '')
+      expect(pattern).toEqual([])
+    })
+  }
+
   for (const [format, str] of [
     ['unsupported' as FormatKey, 'bar'],
     ['android', 'invalid <xml>'],
@@ -54,6 +68,20 @@ describe('serializePattern', () => {
     const str = serializePattern('plain', ['{foo %s}'])
     expect(str).toBe('{foo %s}')
   })
+
+  for (const format of [
+    'android',
+    'fluent',
+    'mf2',
+    'plain',
+    'webext',
+    'xliff'
+  ] as const) {
+    test(`${format} empty`, () => {
+      const str = serializePattern(format, [])
+      expect(str).toBe('')
+    })
+  }
 
   for (const [format, pattern, exp] of [
     ['unsupported' as FormatKey, ['bar'], 'bar'],

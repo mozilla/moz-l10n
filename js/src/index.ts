@@ -100,7 +100,7 @@ export function parsePattern(
     case 'xliff':
       return xliffParsePattern(src)
     case 'plain':
-      return [src]
+      return src ? [src] : []
     default:
       throw new ParseError(`${format}: Unsupported format`)
   }
