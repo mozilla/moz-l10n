@@ -25,7 +25,7 @@ export function serialize(root: Element) {
   const str = new XMLSerializer().serializeToString(root)
   if (str.startsWith(`<${name}`) && str.endsWith(`</${name}>`)) {
     return str.replace(/^<.*?>/, '').slice(0, -1 * (name.length + 3))
-  } else if (new RegExp(`^<${name}[^<>]+/>$`).test(str)) {
+  } else if (new RegExp(`^<${name}[^<>]*/>$`).test(str)) {
     return ''
   } else {
     throw 'Unexpected XML serialization'

@@ -98,6 +98,58 @@ class TestMessage(TestCase):
         assert res == "x{}\n*y"
 
 
+class TestEmptyMessage(TestCase):
+    def test_plain(self):
+        msg = parse_message(Format.plain_json, "")
+        assert msg == PatternMessage([])
+        res = serialize_message(Format.plain_json, msg)
+        assert res == ""
+
+    def test_printf(self):
+        msg = parse_message(Format.plain_json, "", printf_placeholders=True)
+        assert msg == PatternMessage([])
+        res = serialize_message(Format.plain_json, msg)
+        assert res == ""
+
+    def test_properties_printf(self):
+        msg = parse_message(Format.properties, "", printf_placeholders=True)
+        assert msg == PatternMessage([])
+        res = serialize_message(Format.properties, msg)
+        assert res == ""
+
+    def test_webext(self):
+        msg = parse_message(Format.webext, "")
+        assert msg == PatternMessage([])
+        res = serialize_message(Format.webext, msg)
+        assert res == ""
+
+    def test_fluent(self):
+        msg = parse_message(Format.fluent, "")
+        assert msg == PatternMessage([])
+        res = serialize_message(Format.fluent, msg)
+        assert res == ""
+
+    def test_android(self):
+        try:
+            from moz.l10n.formats.android import android_parse_message  # noqa: F401
+        except ImportError:
+            raise SkipTest("Requires [xml] extra")
+        msg = parse_message(Format.android, "")
+        assert msg == PatternMessage([])
+        res = serialize_message(Format.android, msg)
+        assert res == ""
+
+    def test_xliff(self):
+        try:
+            from moz.l10n.formats.xliff import xliff_parse_message  # noqa: F401
+        except ImportError:
+            raise SkipTest("Requires [xml] extra")
+        msg = parse_message(Format.xliff, "")
+        assert msg == PatternMessage([])
+        res = serialize_message(Format.xliff, msg)
+        assert res == ""
+
+
 class TestUnsupportedFormat(TestCase):
     @classmethod
     def setUpClass(cls):
