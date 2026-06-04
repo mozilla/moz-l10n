@@ -39,7 +39,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-xml = ["lxml >= 6.0.0, < 6.2.0"]
+xml = ["lxml >= 6.0.0, < 7.0.0"]
 
 [project.scripts]
 l10n-build = "moz.l10n.bin.build:cli"
