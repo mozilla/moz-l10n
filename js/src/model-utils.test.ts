@@ -30,7 +30,9 @@ describe('messageIsEmpty', () => {
 
   test('PatternMessage', () => {
     expect(messageIsEmpty({ decl: {}, msg: [] })).toBe(true)
-    expect(messageIsEmpty({ decl: { x: { _: '' } }, msg: ['', ''] })).toBe(true)
+    expect(messageIsEmpty({ decl: { x: { _: 'X' } }, msg: ['', ''] })).toBe(
+      true
+    )
     expect(messageIsEmpty({ decl: {}, msg: [' '] })).toBe(false)
     expect(messageIsEmpty([' '])).toBe(false)
   })
@@ -59,10 +61,14 @@ describe('normalizeMessage', () => {
     expect(normalizeMessage(['', '\n'])).toEqual(['\n'])
     expect(normalizeMessage(['foo', '', ''])).toEqual(['foo'])
     expect(normalizeMessage(['foo', '', 'bar'])).toEqual(['foobar'])
-    expect(normalizeMessage(['foo', { _: '' }, 'bar'])).toEqual(['foobar'])
+    expect(normalizeMessage(['foo', { _: '' }, 'bar'])).toEqual([
+      'foo',
+      { _: '' },
+      'bar'
+    ])
     expect(
       normalizeMessage(['foo', { _: '', attr: undefined }, 'bar'])
-    ).toEqual(['foobar'])
+    ).toEqual(['foo', { _: '', attr: undefined }, 'bar'])
     expect(normalizeMessage(['foo', { _: '', attr: {} }, 'bar'])).toEqual([
       'foo',
       { _: '', attr: {} },
