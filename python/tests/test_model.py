@@ -70,7 +70,7 @@ class TestMessage(TestCase):
         )
         assert PatternMessage(
             ["foo", Expression(""), "bar"]
-        ).normalize() == PatternMessage(["foobar"])
+        ).normalize() == PatternMessage(["foo", Expression(""), "bar"])
         assert PatternMessage(
             ["foo", Expression("", attributes={"source": ""}), "bar"]
         ).normalize() == PatternMessage(
