@@ -42,17 +42,17 @@ def parse_printf_pattern(src: str | None) -> Iterator[str | Expression]:
             continue
 
         func: str | None
-        # TODO post-py38: should be a match
-        if datetime:
-            func = "datetime"
-        elif type in {"c", "C", "s", "S"}:
-            func = "string"
-        elif type in {"d", "D", "o", "O", "p", "u", "U", "x", "X"}:
-            func = "integer"
-        elif type in {"a", "A", "e", "E", "f", "F", "g", "G"}:
-            func = "number"
-        else:
-            func = "printf"
+        match type:
+            case _ if datetime:
+                func = "datetime"
+            case "c" | "C" | "s" | "S":
+                func = "string"
+            case "d" | "D" | "o" | "O" | "p" | "u" | "U" | "x" | "X":
+                func = "integer"
+            case "a" | "A" | "e" | "E" | "f" | "F" | "g" | "G":
+                func = "number"
+            case _:
+                func = "printf"
         yield Expression(
             VariableRef(argname or ("arg" + (argnum or ""))),
             func,

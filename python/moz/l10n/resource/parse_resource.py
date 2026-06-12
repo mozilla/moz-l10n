@@ -68,48 +68,62 @@ def parse_resource(
         with open(input, mode="rb") as file:
             source = file.read()
             input_is_file = True
-    # TODO post-py38: should be a match
+
     format = input if isinstance(input, Format) else detect_format(input, source)
-    if format == Format.dtd:
-        return dtd_parse(source)
-    elif format == Format.fluent:
-        return fluent_parse(source)
-    elif format == Format.gettext:
-        # Workaround for https://github.com/izimobil/polib/issues/170
-        source_ = cast(str, input) if input_is_file else source
-        return gettext_parse(
-            source_, plurals=gettext_plurals, skip_obsolete=gettext_skip_obsolete
-        )
-    elif format == Format.inc:
-        return inc_parse(source)
-    elif format == Format.ini:
-        return ini_parse(source)
-    elif format == Format.plain_json:
-        return plain_json_parse(source)
-    elif format == Format.properties:
-        return properties_parse(
-            source, printf_placeholders=properties_printf_placeholders
-        )
-    elif format == Format.webext:
-        return webext_parse(source)
-    elif format == Format.android and android_parse is not None:
-        return android_parse(
-            source,
-            ascii_spaces=android_ascii_spaces,
-            literal_quotes=android_literal_quotes,
-        )
-    elif format == Format.xliff and xliff_parse is not None:
-        return xliff_parse(source, source_entries=xliff_source_entries)
-    else:
-        msg = (
-            "Resource format detection failed"
-            if format is None
-            else f"Unsupported resource format: {format.name}"
-        )
-        if xliff_parse is None and (
-            (input_is_file and cast(str, input).endswith((".xlf", ".xliff", ".xml")))
-            or (isinstance(source, str) and source.startswith("<"))
-            or (isinstance(source, bytes) and source.startswith(b"<"))
-        ):
-            msg += ". For XML support `lxml` is required."
-        raise UnsupportedFormat(msg)
+    match format:
+        case Format.dtd:
+            return dtd_parse(source)
+
+        case Format.fluent:
+            return fluent_parse(source)
+
+        case Format.gettext:
+            # Workaround for https://github.com/izimobil/polib/issues/170
+            source_ = cast(str, input) if input_is_file else source
+            return gettext_parse(
+                source_, plurals=gettext_plurals, skip_obsolete=gettext_skip_obsolete
+            )
+
+        case Format.inc:
+            return inc_parse(source)
+
+        case Format.ini:
+            return ini_parse(source)
+
+        case Format.plain_json:
+            return plain_json_parse(source)
+
+        case Format.properties:
+            return properties_parse(
+                source, printf_placeholders=properties_printf_placeholders
+            )
+
+        case Format.webext:
+            return webext_parse(source)
+
+        case Format.android if android_parse is not None:
+            return android_parse(
+                source,
+                ascii_spaces=android_ascii_spaces,
+                literal_quotes=android_literal_quotes,
+            )
+
+        case Format.xliff if xliff_parse is not None:
+            return xliff_parse(source, source_entries=xliff_source_entries)
+
+        case _:
+            msg = (
+                "Resource format detection failed"
+                if format is None
+                else f"Unsupported resource format: {format.name}"
+            )
+            if xliff_parse is None and (
+                (
+                    input_is_file
+                    and cast(str, input).endswith((".xlf", ".xliff", ".xml"))
+                )
+                or (isinstance(source, str) and source.startswith("<"))
+                or (isinstance(source, bytes) and source.startswith(b"<"))
+            ):
+                msg += ". For XML support `lxml` is required."
+            raise UnsupportedFormat(msg)

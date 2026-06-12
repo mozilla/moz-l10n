@@ -197,7 +197,7 @@ class SelectMessage:
 
         Mutates this SelectMessage.
         """
-        var_refs = set(sel.name for sel in self.selectors)
+        var_refs = {sel.name for sel in self.selectors}
         for pattern in self.variants.values():
             _normalize_pattern(pattern, var_refs)
         _normalize_declarations(self, var_refs)
@@ -368,7 +368,7 @@ class Entry(Generic[V_co], _WithMeta):
     i.e. the concatenation of its section header identifier (if any) and its own.
     """
 
-    value: V_co
+    value: V_co  # type: ignore
     """
     The value of an entry, i.e. the message.
 

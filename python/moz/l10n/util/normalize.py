@@ -48,7 +48,7 @@ def _normalize_pattern(pattern: Pattern, var_refs: set[str]) -> None:
 
 def _normalize_declarations(msg: Message, var_refs: set[str]) -> None:
     decl_refs = {
-        name: set(var.name for var in decl.variable_refs() if var.name != name)
+        name: {var.name for var in decl.variable_refs() if var.name != name}
         for name, decl in msg.declarations.items()
     }
     for name in list(var_refs):
