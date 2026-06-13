@@ -25,13 +25,29 @@ and the parser for `mf2` depends on the `messageformat` package.
 
 ## API
 
+### messagesEqual()
+
+```js
+import { messagesEqual } from '@mozilla/l10n'
+```
+
+```ts
+function messagesEqual(a: Message, b: Message): boolean
+```
+
+Are the messages `a` and `b` deeply equal?
+
+Messages are not normalised for this comparison.
+All catchall keys are considered equal with each other,
+and declaration order is ignored.
+
 ### normalizeMessage()
 
 ```js
 import { normalizeMessage } from '@mozilla/l10n'
 ```
 
-```js
+```ts
 function normalizeMessage(msg: Message): Message
 ```
 
@@ -46,7 +62,7 @@ Objects and arrays in returned value are clones of objects in `msg`.
 import { ParseError, parsePattern } from '@mozilla/l10n'
 ```
 
-```js
+```ts
 function parsePattern(
   format: 'android' | 'fluent' | 'mf2' | 'plain' | 'webext' | 'xliff',
   src: string,
@@ -54,7 +70,7 @@ function parsePattern(
 ): Pattern
 
 class ParseError extends Error {
-  range?: [number, number]  // Set for fluent, mf2, and webext errors
+  range?: [number, number] // Set for fluent, mf2, and webext errors
 }
 ```
 
@@ -71,7 +87,7 @@ If `onError` is undefined, errors are thrown.
 import { SerializeError, serializePattern } from '@mozilla/l10n'
 ```
 
-```js
+```ts
 function serializePattern(
   format: 'android' | 'fluent' | 'mf2' | 'plain' | 'webext' | 'xliff',
   pattern: Pattern,
@@ -79,7 +95,7 @@ function serializePattern(
 ): string
 
 class SerializeError extends Error {
-  pos?: number  // Set for fluent, plain, and webext errors
+  pos?: number // Set for fluent, plain, and webext errors
 }
 ```
 

@@ -17,6 +17,7 @@ import { describe, expect, test } from 'vitest'
 import {
   type Message,
   messageIsEmpty,
+  messagesEqual,
   normalizeMessage,
   type SelectMessage
 } from './index.ts'
@@ -159,4 +160,99 @@ describe('normalizeMessage', () => {
       })
     }
   })
+})
+
+describe('messagesEqual', () => {
+  const repl = (x: unknown) => JSON.stringify(x).replace(/"/g, '')
+
+  const ok: Message[] = [
+    ['abc'],
+    ['a', 'b'],
+    [
+      'a',
+      { $: 'b' },
+      { _: 'c' },
+      { open: 'd' },
+      { close: 'd' },
+      { elem: 'e' },
+      { fn: 'f' }
+    ],
+    { decl: {}, msg: ['a'] },
+    { decl: { a: { $: 'b', fn: 'c' } }, msg: ['a', { $: 'a' }] },
+    {
+      decl: { a: { $: 'a' } },
+      sel: ['a'],
+      alt: [{ keys: [{ '*': '' }], pat: ['b'] }]
+    }
+  ]
+  for (const msg of ok) {
+    test(repl(msg), () => {
+      const copy = structuredClone(msg)
+      expect(messagesEqual(msg, copy)).toBe(true)
+    })
+  }
+
+  const ok2: Array<[Message, Message]> = [
+    [[{ $: 'a', fn: 'f' }], [{ $: 'a', fn: 'f', opt: {} }]],
+    [[{ elem: 'a', attr: {} }], [{ elem: 'a' }]],
+    [['a'], { decl: {}, msg: ['a'] }],
+    [{ decl: {}, msg: ['b'] }, ['b']],
+    [
+      { decl: { a: { $: 'a' }, b: { _: 'b' } }, msg: [] },
+      { decl: { b: { _: 'b' }, a: { $: 'a' } }, msg: [] }
+    ],
+    [
+      {
+        decl: { a: { $: 'a' } },
+        sel: ['a'],
+        alt: [{ keys: [{ '*': '' }], pat: ['b'] }]
+      },
+      {
+        decl: { a: { $: 'a' } },
+        sel: ['a'],
+        alt: [{ keys: [{ '*': 'c' }], pat: ['b'] }]
+      }
+    ]
+  ]
+  for (const [a, b] of ok2) {
+    test(`${repl(a)} = ${repl(b)}`, () => {
+      expect(messagesEqual(a, b)).toBe(true)
+    })
+  }
+
+  const notOk: Array<[Message, Message]> = [
+    [['a'], ['b']],
+    [[], ['']],
+    [['a', ''], ['a']],
+    [['ab'], ['a', 'b']],
+    [[{ $: 'a' }], []],
+    [[{ $: 'a' }], [{ $: 'a', fn: 'f' }]],
+    [
+      [{ $: 'a', fn: 'f', opt: { b: 'c' } }],
+      [{ $: 'a', fn: 'f', opt: { b: { $: 'c' } } }]
+    ],
+    [
+      {
+        decl: { a: { $: 'a' } },
+        sel: ['a'],
+        alt: [
+          { keys: ['b'], pat: [] },
+          { keys: [{ '*': '' }], pat: [] }
+        ]
+      },
+      {
+        decl: { a: { $: 'a' } },
+        sel: ['a'],
+        alt: [
+          { keys: [{ '*': '' }], pat: [] },
+          { keys: ['b'], pat: [] }
+        ]
+      }
+    ]
+  ]
+  for (const [a, b] of notOk) {
+    test(`${repl(a)} != ${repl(b)}`, () => {
+      expect(messagesEqual(a, b)).toBe(false)
+    })
+  }
 })
