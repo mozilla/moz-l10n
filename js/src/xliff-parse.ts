@@ -35,7 +35,6 @@ const printf =
   /%([1-9]\$)?[-#+ 0,]?[0-9.]*(?:(?:hh?|ll?|qztj)[douxX]|L[aAeEfFgG]|[@%aAcCdDeEfFgGoOspSuUxX])/g
 
 function* parseElement(el: Element): Iterable<string | Expression | Markup> {
-  // @ts-expect-error No, TS, it _is_ iterable.
   for (const node of el.childNodes as Iterable<ChildNode>) {
     if (node instanceof Text) {
       const src = node.data
@@ -87,7 +86,6 @@ function* parseElement(el: Element): Iterable<string | Expression | Markup> {
       let opt: Record<string, string> | undefined = undefined
       if (node.hasAttributes()) {
         opt = Object.create(null) as Record<string, string>
-        // @ts-expect-error No, TS, it _is_ iterable.
         for (const attr of node.attributes as Iterable<Attr>) {
           opt[attr.name] = attr.value
         }

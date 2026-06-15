@@ -67,7 +67,6 @@ export function androidParsePattern(src: string): Pattern {
 function* flattenElements(
   root: Element
 ): Iterable<string | Expression | Markup> {
-  // @ts-expect-error No, TS, it _is_ iterable.
   for (const node of root.childNodes as Iterable<ChildNode>) {
     if (node instanceof Text) {
       if (node.textContent) yield node.textContent
@@ -80,7 +79,6 @@ function* flattenElements(
     let opt: Record<string, string> | undefined = undefined
     if (node.hasAttributes()) {
       opt = Object.create(null) as Record<string, string>
-      // @ts-expect-error No, TS, it _is_ iterable.
       for (const attr of node.attributes as Iterable<Attr>) {
         opt[attr.name] = attr.value
       }
