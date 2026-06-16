@@ -15,6 +15,7 @@
 
 import type {
   Expression,
+  Markup,
   Message,
   Pattern,
   PatternMessage,
@@ -132,4 +133,111 @@ function normalizeDeclarations(
     }
   }
   return hasDecl ? decl : null
+}
+
+/**
+ * Are the messages `a` and `b` deeply equal?
+ *
+ * Messages are not normalised for this comparison.
+ * All catchall keys are considered equal with each other,
+ * and declaration order is ignored.
+ */
+export function messagesEqual(a: Message, b: Message): boolean {
+  if (a === b) return true
+  if (Array.isArray(a)) {
+    if (Array.isArray(b)) return patternsEqual(a, b)
+    if (b.msg && !Object.keys(b.decl).length) return patternsEqual(a, b.msg)
+    return false
+  }
+  if (Array.isArray(b)) {
+    if (a.msg && !Object.keys(a.decl).length) return patternsEqual(a.msg, b)
+    return false
+  }
+  if (a.msg) {
+    // PatternMessage
+    if (!b.msg || !patternsEqual(a.msg, b.msg)) return false
+  } else {
+    // SelectMessage
+    if (b.msg || a.sel.length !== b.sel.length || a.alt.length !== b.alt.length)
+      return false
+    for (let i = 0; i < a.sel.length; ++i) {
+      if (a.sel[i] !== b.sel[i]) return false
+    }
+    for (let i = 0; i < a.alt.length; ++i) {
+      const av = a.alt[i]
+      const bv = b.alt[i]
+      for (let j = 0; j < av.keys.length; ++j) {
+        const ak = av.keys[j]
+        const bk = bv.keys[j]
+        if (typeof ak === 'string') {
+          if (ak !== bk) return false
+        } else {
+          if (typeof bk === 'string') return false
+          // All catchall keys are considered equal with each other
+        }
+      }
+      if (!patternsEqual(av.pat, bv.pat)) return false
+    }
+  }
+  const ad = Object.entries(a.decl)
+  if (ad.length !== Object.keys(b.decl).length) return false
+  for (const [name, ax] of ad) {
+    // Declaration order is ignored
+    const bx = b.decl[name]
+    if (!bx || !placeholdersEqual(ax, bx)) return false
+  }
+  return true
+}
+
+function patternsEqual(a: Pattern, b: Pattern) {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; ++i) {
+    const ai = a[i]
+    const bi = b[i]
+    if (typeof ai === 'string') {
+      if (ai !== bi) return false
+    } else if (typeof bi === 'string' || !placeholdersEqual(ai, bi)) {
+      return false
+    }
+  }
+  return true
+}
+
+/** Are the placeholders `a` and `b` deeply equal?  */
+function placeholdersEqual(
+  a: Expression | Markup,
+  b: Expression | Markup
+): boolean {
+  if (
+    a._ !== b._ ||
+    a.$ !== b.$ ||
+    a.fn !== b.fn ||
+    a.open !== b.open ||
+    a.close !== b.close ||
+    a.elem !== b.elem
+  )
+    return false
+
+  if (a.opt || b.opt) {
+    const ao = a.opt ? Object.entries(a.opt) : []
+    const bol = b.opt ? Object.keys(b.opt).length : 0
+    if (ao.length !== bol) return false
+    for (const [key, av] of ao) {
+      const bv = b.opt![key]
+      if (typeof av === 'string') {
+        if (bv !== av) return false
+      } else {
+        if (typeof bv !== 'object' || bv.$ !== av.$) return false
+      }
+    }
+  }
+
+  if (a.attr || b.attr) {
+    const aa = a.attr ? Object.entries(a.attr) : []
+    const bal = b.attr ? Object.keys(b.attr).length : 0
+    if (aa.length !== bal) return false
+    for (const [key, av] of aa) if (b.attr![key] !== av) return false
+  }
+
+  return true
 }
