@@ -130,7 +130,7 @@ export function serializePattern(
     case 'android':
       return androidSerializePattern(pattern, onError)
     case 'fluent':
-      return fluentSerializePattern(pattern, { onError })
+      return fluentSerializePattern(pattern, undefined, { onError })
     case 'mf2':
       return mf2SerializePattern(pattern, false)
     case 'webext':
