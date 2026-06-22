@@ -383,7 +383,7 @@ describe('entry', () => {
     expect(str).toBe('key = { NUMBER($x, minimumFractionDigits: 3) }\n')
   })
 
-  test('serialize variable reference to declaration', () => {
+  test('serialize chain of variable references', () => {
     const msg: Message = {
       decl: {
         x: { $: 'y', fn: 'number', opt: { minimumFractionDigits: '3' } },
