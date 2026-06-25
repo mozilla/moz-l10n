@@ -32,6 +32,7 @@ describe('success', () => {
       expect(res).toEqual(pattern)
     })
 
+  ok('empty pattern', [], '')
   ok(
     'resource reference',
     [{ _: '@foo:bar/baz', fn: 'reference' }],
@@ -46,6 +47,15 @@ describe('success', () => {
     'inline variable',
     ['Hello, ', { $: 'arg1', fn: 'string', attr: { source: '%1$s' } }, '!'],
     'Hello, %1$s!'
+  )
+  ok(
+    'inline percent escapes',
+    [
+      'Hello',
+      { _: '%', attr: { source: '%%' } },
+      { _: '\n', attr: { source: '%n' } }
+    ],
+    'Hello%%%n'
   )
   ok(
     'inline %@ variable',
@@ -94,6 +104,20 @@ describe('success', () => {
     ],
     'Welcome to <b>&foo;</b>!'
   )
+
+  test('inline previous variable references', () => {
+    const pattern = androidParsePattern('Birthday: %1$tm %&lt;te,%&lt;tY')
+    expect(pattern).toEqual([
+      'Birthday: ',
+      { $: 'arg1', fn: 'datetime', attr: { source: '%1$tm' } },
+      ' ',
+      { $: 'arg1', fn: 'datetime', attr: { source: '%1$te' } },
+      ',',
+      { $: 'arg1', fn: 'datetime', attr: { source: '%1$tY' } }
+    ])
+    const res = androidSerializePattern(pattern)
+    expect(res).toBe('Birthday: %1$tm %1$te,%1$tY')
+  })
 })
 
 describe('newlines', () => {

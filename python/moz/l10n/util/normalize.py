@@ -26,9 +26,6 @@ __all__ = [
 
 
 def _normalize_pattern(pattern: Pattern, var_refs: set[str]) -> None:
-    from moz.l10n.model import Expression
-
-    empty_literal = Expression("")
     i = 0
     at_str = False
     while i < len(pattern):
@@ -42,8 +39,6 @@ def _normalize_pattern(pattern: Pattern, var_refs: set[str]) -> None:
             else:
                 at_str = True
                 i += 1
-        elif el == empty_literal:
-            pattern.pop(i)
         else:
             at_str = False
             i += 1

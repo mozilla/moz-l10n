@@ -65,8 +65,10 @@ export function fluentSerializeMessage(
   options?: FluentSerializeOptions
 ): string {
   if (!message) return ''
-  if (Array.isArray(message)) return fluentSerializePattern(message, options)
-  if (message.msg) return fluentSerializePattern(message.msg, options)
+  if (Array.isArray(message))
+    return fluentSerializePattern(message, undefined, options)
+  if (message.msg)
+    return fluentSerializePattern(message.msg, message.decl, options)
 
   // It gets a bit complicated for SelectMessage. We'll be modifying this list,
   // building select expressions for each selector starting from the last one
@@ -76,10 +78,10 @@ export function fluentSerializeMessage(
   // will be next to all other variants for which the first N-1 keys are equal.
   const variants = message.alt.map(
     (v) =>
-      [[...v.keys], [fluentSerializePattern(v.pat, options)]] satisfies [
-        unknown[],
-        string[]
-      ]
+      [
+        [...v.keys],
+        [fluentSerializePattern(v.pat, message.decl, options)]
+      ] satisfies [unknown[], string[]]
   )
 
   const other = fallbackName(message)
@@ -92,7 +94,7 @@ export function fluentSerializeMessage(
       !selExpr.opt &&
       (selExpr.fn === 'number' || selExpr.fn === 'string')
         ? '$' + selExpr.$
-        : expression(selExpr, true)
+        : expression(selExpr, undefined, true)
     let baseKeys = ''
     let selPattern: string[] | null = null
     let i = 0
@@ -155,6 +157,7 @@ function variant(
 
 export function fluentSerializePattern(
   pattern: Pattern,
+  declarations?: Record<string, Expression>,
   options?: FluentSerializeOptions
 ): string {
   const escapeSyntax = options?.escapeSyntax ?? true
@@ -176,7 +179,7 @@ export function fluentSerializePattern(
       str += part
     } else {
       try {
-        str += `{ ${expression(part, false)} }`
+        str += `{ ${expression(part, declarations, false)} }`
       } catch (error) {
         if (error instanceof SerializeError) {
           error.pos = str.length
@@ -191,7 +194,25 @@ export function fluentSerializePattern(
   return str
 }
 
-function expression(expr: Expression | Markup, isSelector: boolean): string {
+function expression(
+  expr: Expression | Markup,
+  declarations: Record<string, Expression> | undefined,
+  isSelector: boolean
+): string {
+  if (declarations && expr.$) {
+    let decl = declarations[expr.$]
+    while (decl) {
+      if (decl.fn && expr.fn) {
+        const error = `fluent: Unsupported placeholder ${JSON.stringify(expr)} with declaration ${JSON.stringify(decl)}`
+        throw new SerializeError(error)
+      }
+      const v0: string = expr.$!
+      const v1: string = decl.$!
+      expr = expr.fn ? ({ ...expr, $: v1 } as Expression) : decl
+      if (v0 === v1) break
+      else decl = declarations[v1]
+    }
+  }
   if ('fn' in expr && isIdentifier(expr.fn)) {
     const options: string[] = []
     if (expr.opt) {

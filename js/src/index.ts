@@ -45,7 +45,12 @@ export {
   type PatternMessage,
   type SelectMessage
 } from './model.ts'
-export { messageIsEmpty, normalizeMessage } from './model-utils.ts'
+
+export {
+  messageIsEmpty,
+  messagesEqual,
+  normalizeMessage
+} from './model-utils.ts'
 
 export {
   androidParsePattern,
@@ -100,7 +105,7 @@ export function parsePattern(
     case 'xliff':
       return xliffParsePattern(src)
     case 'plain':
-      return [src]
+      return src ? [src] : []
     default:
       throw new ParseError(`${format}: Unsupported format`)
   }
@@ -125,7 +130,7 @@ export function serializePattern(
     case 'android':
       return androidSerializePattern(pattern, onError)
     case 'fluent':
-      return fluentSerializePattern(pattern, { onError })
+      return fluentSerializePattern(pattern, undefined, { onError })
     case 'mf2':
       return mf2SerializePattern(pattern, false)
     case 'webext':

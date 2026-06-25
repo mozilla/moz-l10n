@@ -16,11 +16,12 @@
   <!-- standalone -->
 
   <string name="welcome">Welcome to <b>&foo;</b>!</string>
-  <string name="placeholders">Hello, %1$s! You have %2$d new messages.</string>
+  <string name="placeholders">Hello, %1$s! You have %2$d new messages.%%%n</string>
   <string name="real_html">Hello, %1$s! You have <b>%2$d new messages</b>.</string>
   <string name="escaped_html">Hello, %1$s! You have &lt;b>%2$d new messages&lt;/b>.</string>
   <string name="protected">Hello, <xliff:g id="user" example="Bob">%1$s</xliff:g>! You have <xliff:g id="count">%2$d</xliff:g> new messages.</string>
   <string name="nested_protections">Welcome to <xliff:g><b><xliff:g>Foo</xliff:g></b>!</xliff:g></string>
+  <string name="datetime">Birthday: %1$tm %1$te,%1$tY</string>
 
   <string name="ws_trimmed"> &#32;  &#8200;
     &#8195;</string>

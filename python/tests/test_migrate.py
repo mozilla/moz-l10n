@@ -22,7 +22,6 @@ from unittest import SkipTest, TestCase
 
 from moz.l10n.bin.migrate import cli
 from moz.l10n.migrate import Migrate, copy, entry
-from moz.l10n.migrate.utils import get_pattern, plural_message
 from moz.l10n.model import Entry, Expression, PatternMessage, VariableRef
 from moz.l10n.paths.discover import L10nDiscoverPaths, MissingSourceDirectoryError
 
@@ -74,21 +73,10 @@ class TestMigrate(TestCase):
             </resources>
             """
         )
-        tree: Tree = {
-            "l10n.toml": cfg_toml,
-            "foo": {
-                "values": {"strings.xml": ""},
-                "values-fr": {"strings.xml": foo_fr},
-                "values-de": {"strings.xml": foo_de},
-            },
-            "bar": {
-                "values": {"strings.xml": ""},
-                "values-fr": {"strings.xml": bar},
-                "values-de": {"strings.xml": bar},
-            },
-        }
-        with TemporaryDirectory() as root:
-            build_file_tree(root, tree)
+        migration = dedent(
+            """\
+            from moz.l10n.migrate import Migrate, copy
+            from moz.l10n.migrate.utils import get_pattern, plural_message
 
             def make_plural_x(res, _):
                 x_other = get_pattern(res, "x-other")
@@ -104,9 +92,29 @@ class TestMigrate(TestCase):
                         "y2": copy(None, "y"),
                         "z2": copy("bar/values/strings.xml", "z"),
                     }
-                },
-                join(root, "l10n.toml"),
-            ).apply()
+                }
+            )
+
+            """
+        )
+        tree: Tree = {
+            "l10n.toml": cfg_toml,
+            "migration.py": migration,
+            "foo": {
+                "values": {"strings.xml": ""},
+                "values-fr": {"strings.xml": foo_fr},
+                "values-de": {"strings.xml": foo_de},
+            },
+            "bar": {
+                "values": {"strings.xml": ""},
+                "values-fr": {"strings.xml": bar},
+                "values-de": {"strings.xml": bar},
+            },
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+
+            cli(["--config", join(root, "l10n.toml"), join(root, "migration.py")])
 
             with open(join(root, "foo", "values-fr", "strings.xml")) as file:
                 assert file.read() == dedent(
@@ -199,8 +207,8 @@ class TestMigrate(TestCase):
 
     def test_copy(self):
         b_ftl = dedent("""\
-            prev = Value
-                .prop = Prop
+            prev = Value { $x }
+                .prop = Prop { "a" }
         """)
         tree: Tree = {
             "en-US": {"a.properties": "", "b.ftl": ""},
@@ -217,7 +225,23 @@ class TestMigrate(TestCase):
                     "b.ftl": {
                         "from-value": copy("b.ftl", "prev", value_only=True),
                         "from-prop": copy("b.ftl", "prev", property="prop"),
-                        "replaced": copy(
+                        "replaced-value": copy(
+                            None,
+                            "prev",
+                            value_only=True,
+                            replace=lambda ph: Expression(VariableRef("y"))
+                            if isinstance(ph, Expression)
+                            else None,
+                        ),
+                        "replaced-prop": copy(
+                            None,
+                            "prev",
+                            property="prop",
+                            replace=lambda ph: Expression("b")
+                            if isinstance(ph, Expression)
+                            else None,
+                        ),
+                        "replaced-remote": copy(
                             "a.properties",
                             "key",
                             replace=lambda ph: Expression("-term", function="message")
@@ -233,10 +257,20 @@ class TestMigrate(TestCase):
 
             assert list(res.values()) == [
                 [
-                    Entry(("from-value",), PatternMessage(["Value"])),
-                    Entry(("from-prop",), PatternMessage(["Prop"])),
                     Entry(
-                        ("replaced",),
+                        ("from-value",),
+                        PatternMessage(["Value ", Expression(VariableRef("x"))]),
+                    ),
+                    Entry(("from-prop",), PatternMessage(["Prop ", Expression("a")])),
+                    Entry(
+                        ("replaced-value",),
+                        PatternMessage(["Value ", Expression(VariableRef("y"))]),
+                    ),
+                    Entry(
+                        ("replaced-prop",), PatternMessage(["Prop ", Expression("b")])
+                    ),
+                    Entry(
+                        ("replaced-remote",),
                         PatternMessage(
                             ["Refresh ", Expression("-term", "message"), "\u2026"]
                         ),
@@ -246,11 +280,13 @@ class TestMigrate(TestCase):
 
             with open(join(root, "fr", "b.ftl"), encoding="utf-8") as file:
                 assert file.read() == dedent("""\
-                    prev = Value
-                        .prop = Prop
-                    from-value = Value
-                    from-prop = Prop
-                    replaced = Refresh { -term }…
+                    prev = Value { $x }
+                        .prop = Prop { "a" }
+                    from-value = Value { $x }
+                    from-prop = Prop { "a" }
+                    replaced-value = Value { $y }
+                    replaced-prop = Prop { "b" }
+                    replaced-remote = Refresh { -term }…
                 """)
 
     def test_entry(self):

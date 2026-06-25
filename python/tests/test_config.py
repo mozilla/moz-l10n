@@ -386,6 +386,10 @@ class TestL10nConfigPaths(TestCase):
         assert paths.all() == {(abs_ref_path, exp_tgt): None}
         assert paths.target(abs_ref_path) == (exp_tgt, set())
         assert paths.target(rel_ref_path) == (exp_tgt, set())
+        assert paths.target(rel_ref_path, locale="fr") == (
+            join(root, res_path, normpath("values-fr/strings.xml")),
+            {"fr"},
+        )
         assert paths.find_reference("values-xx/strings.xml") is None
         assert paths.find_reference(join(res_path, "values-xx/strings.xml")) == (
             abs_ref_path,

@@ -22,7 +22,7 @@ import {
   fluentSerializeEntry,
   fluentSerializePattern
 } from './fluent-serialize.ts'
-import type { Entry, Pattern } from './model.ts'
+import type { Entry, Message, Pattern } from './model.ts'
 
 describe('pattern success', () => {
   const ok = (name: string, pattern: Pattern, exp: string) =>
@@ -87,7 +87,7 @@ describe('pattern serialize errors', () => {
   const fail = (name: string, pattern: Pattern) =>
     test(name, () => {
       const onError = vi.fn()
-      const src = fluentSerializePattern(pattern, { onError })
+      const src = fluentSerializePattern(pattern, undefined, { onError })
       expect(onError).toHaveBeenCalledOnce()
       const error = onError.mock.calls[0][0]
       expect(error).toBeInstanceOf(SerializeError)
@@ -371,6 +371,29 @@ describe('entry', () => {
   fail('missing key', 'value\n', 'E0003')
   fail('missing expression end', 'key = missing {', 'E0028')
   fail('missing expression body', 'key = missing {}\n', 'E0028')
+
+  test('serialize variable reference to declaration', () => {
+    const msg: Message = {
+      decl: {
+        x: { $: 'x', fn: 'number', opt: { minimumFractionDigits: '3' } }
+      },
+      msg: [{ $: 'x' }]
+    }
+    const str = fluentSerializeEntry('key', { '=': msg })
+    expect(str).toBe('key = { NUMBER($x, minimumFractionDigits: 3) }\n')
+  })
+
+  test('serialize chain of variable references', () => {
+    const msg: Message = {
+      decl: {
+        x: { $: 'y', fn: 'number', opt: { minimumFractionDigits: '3' } },
+        y: { $: 'z' }
+      },
+      msg: [{ $: 'x' }]
+    }
+    const str = fluentSerializeEntry('key', { '=': msg })
+    expect(str).toBe('key = { NUMBER($z, minimumFractionDigits: 3) }\n')
+  })
 })
 
 describe('escapeSyntax option', () => {

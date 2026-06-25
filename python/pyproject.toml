@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "moz.l10n"
-version = "0.11.2"
+version = "0.11.3"
 description = "Mozilla tools for localization"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -39,7 +39,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-xml = ["lxml >= 6.0.0, < 6.1.0"]
+xml = ["lxml >= 6.0.0, < 7.0.0"]
 
 [project.scripts]
 l10n-build = "moz.l10n.bin.build:cli"
