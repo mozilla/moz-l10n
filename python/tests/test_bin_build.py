@@ -22,8 +22,9 @@ from textwrap import dedent
 from unittest import TestCase
 from unittest.mock import patch
 
-from moz.l10n.bin.build import cli, write_target_file
-from moz.l10n.bin.build_file import cli as build_file_cli
+import pytest
+from click.testing import CliRunner
+from moz.l10n.bin import build, build_file
 from moz.l10n.formats import Format
 from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
@@ -61,7 +62,7 @@ class TestBuild(TestCase):
             tgt_path = join(tmpdir, "tgt.ftl")
             with open(l10n_path, mode="w") as file:
                 file.write(l10n_src)
-            msg_delta, total_count, missing_ids = write_target_file(
+            msg_delta, total_count, missing_ids = build.write_target_file(
                 "", source_res, l10n_path, tgt_path
             )
             with open(tgt_path, mode="r") as file:
@@ -110,7 +111,7 @@ class TestBuild(TestCase):
             tgt_path = join(tmpdir, "tgt.ftl")
             with open(l10n_path, mode="w") as file:
                 file.write(l10n_src)
-            msg_delta, total_count, missing_ids = write_target_file(
+            msg_delta, total_count, missing_ids = build.write_target_file(
                 "", source_res, l10n_path, tgt_path
             )
             with open(tgt_path, mode="r") as file:
@@ -146,7 +147,7 @@ class TestBuild(TestCase):
             tgt_path = join(tmpdir, "tgt.ini")
             with open(l10n_path, mode="w") as file:
                 file.write(l10n_src)
-            msg_delta, total_count, missing_ids = write_target_file(
+            msg_delta, total_count, missing_ids = build.write_target_file(
                 "", source_res, l10n_path, tgt_path
             )
             assert msg_delta == 1
@@ -188,21 +189,17 @@ class TestBuild(TestCase):
         with TemporaryDirectory() as root:
             build_file_tree(root, tree)
             target = join(root, "out")
-            argv = [
-                "l10n-build",
-                "--config",
-                join(root, "l10n.toml"),
-                "--base",
-                root,
-                "--target",
-                target,
-                "--locales",
-                "fr",
-                "de",
+            # fmt: off
+            runner = CliRunner()
+            result = runner.invoke(build.cli, [
+                "--config", join(root, "l10n.toml"),
+                "--base", root,
+                "--target", target,
+                "--locales", "fr", "de",
                 "--coverage",
-            ]
-            with patch.object(sys, "argv", argv):
-                cli()
+            ])
+            # fmt: on
+            assert result.exit_code == 0
 
             with open(join(target, "fr", "coverage.json"), encoding="utf-8") as f:
                 fr_coverage = json.load(f)
@@ -232,20 +229,16 @@ class TestBuild(TestCase):
         with TemporaryDirectory() as root:
             build_file_tree(root, tree)
             target = join(root, "out")
-            argv = [
-                "l10n-build",
-                "--config",
-                join(root, "l10n.toml"),
-                "--base",
-                root,
-                "--target",
-                target,
-                "--locales",
-                "fr",
-            ]
-            with patch.object(sys, "argv", argv):
-                cli()
-
+            # fmt: off
+            runner = CliRunner()
+            result = runner.invoke(build.cli, [
+                "--config", join(root, "l10n.toml"),
+                "--base", root,
+                "--target", target,
+                "--locales", "fr",
+            ])
+            # fmt: on
+            assert result.exit_code == 0
             assert not exists(join(target, "fr", "coverage.json"))
 
 
@@ -257,19 +250,16 @@ class TestBuildFile(TestCase):
             build_file_tree(root, {"en.ftl": src, "fr.ftl": l10n})
             target = join(root, "file.ftl")
             coverage = join(root, "coverage.json")
-            argv = [
-                "l10n-build-file",
-                "--source",
-                join(root, "en.ftl"),
-                "--l10n",
-                join(root, "fr.ftl"),
-                "--target",
-                target,
-                "--coverage-base",
-                root,
-            ]
-            with patch.object(sys, "argv", argv):
-                build_file_cli()
+            # fmt: off
+            runner = CliRunner()
+            result = runner.invoke(build_file.cli, [
+                "--source", join(root, "en.ftl"),
+                "--l10n", join(root, "fr.ftl"),
+                "--target", target,
+                "--coverage-base", root,
+            ])
+            # fmt: on
+            assert result.exit_code == 0
 
             with open(coverage, encoding="utf-8") as f:
                 assert json.load(f) == {"file.ftl": {"total": 3, "missing": ["msg-c"]}}
@@ -292,19 +282,16 @@ class TestBuildFile(TestCase):
                     },
                     f,
                 )
-            argv = [
-                "l10n-build-file",
-                "--source",
-                join(root, "en.ftl"),
-                "--l10n",
-                join(root, "fr.ftl"),
-                "--target",
-                target,
-                "--coverage-base",
-                root,
-            ]
-            with patch.object(sys, "argv", argv):
-                build_file_cli()
+            # fmt: off
+            runner = CliRunner()
+            result = runner.invoke(build_file.cli, [
+                "--source", join(root, "en.ftl"),
+                "--l10n", join(root, "fr.ftl"),
+                "--target", target,
+                "--coverage-base", root,
+            ])
+            # fmt: on
+            assert result.exit_code == 0
 
             with open(coverage, encoding="utf-8") as f:
                 assert json.load(f) == {
@@ -318,17 +305,15 @@ class TestBuildFile(TestCase):
             build_file_tree(root, {"en.ftl": src})
             target = join(root, "file.ftl")
             coverage = join(root, "coverage.json")
-            argv = [
-                "l10n-build-file",
-                "--source",
-                join(root, "en.ftl"),
-                "--target",
-                target,
-                "--coverage-base",
-                root,
-            ]
-            with patch.object(sys, "argv", argv):
-                build_file_cli()
+            # fmt: off
+            runner = CliRunner()
+            result = runner.invoke(build_file.cli, [
+                "--source", join(root, "en.ftl"),
+                "--target", target,
+                "--coverage-base", root,
+            ])
+            # fmt: on
+            assert result.exit_code == 0
 
             with open(coverage, encoding="utf-8") as f:
                 assert json.load(f) == {"file.ftl": {"total": 2, "missing": []}}
@@ -338,17 +323,15 @@ class TestBuildFile(TestCase):
             build_file_tree(root, {"en.txt": "not a known format\n"})
             target = join(root, "file.txt")
             coverage = join(root, "coverage.json")
-            argv = [
-                "l10n-build-file",
-                "--source",
-                join(root, "en.txt"),
-                "--target",
-                target,
-                "--coverage-base",
-                root,
-            ]
-            with patch.object(sys, "argv", argv):
-                build_file_cli()
+            # fmt: off
+            runner = CliRunner()
+            result = runner.invoke(build_file.cli, [
+                "--source", join(root, "en.ftl"),
+                "--target", target,
+                "--coverage-base", root,
+            ])
+            # fmt: on
+            assert result.exit_code == 0
 
             with open(coverage, encoding="utf-8") as f:
                 assert json.load(f) == {"file.txt": {"total": 0, "missing": []}}
@@ -378,20 +361,17 @@ class TestBuildFile(TestCase):
         with TemporaryDirectory() as root:
             build_file_tree(root, tree)
             target = join(root, "out")
-            argv = [
-                "l10n-build",
-                "--config",
-                join(root, "l10n.toml"),
-                "--base",
-                root,
-                "--target",
-                target,
-                "--locales",
-                "fr",
+            # fmt: off
+            runner = CliRunner()
+            result = runner.invoke(build.cli, [
+                "--config", join(root, "l10n.toml"),
+                "--base", root,
+                "--target", target,
+                "--locales", "fr",
                 "--coverage",
-            ]
-            with patch.object(sys, "argv", argv):
-                cli()
+            ])
+            # fmt: on
+            assert result.exit_code == 0
 
             coverage = join(target, "fr", "coverage.json")
             with open(coverage, encoding="utf-8") as f:
@@ -403,19 +383,17 @@ class TestBuildFile(TestCase):
             fr_full = join(root, "fr", "file.ftl")
             with open(fr_full, "w", encoding="utf-8") as f:
                 f.write("msg-a = fr\nmsg-b = fr\n")
-            argv = [
-                "l10n-build-file",
-                "--source",
-                join(root, "en", "file.ftl"),
-                "--l10n",
-                fr_full,
-                "--target",
-                join(target, "fr", "file.ftl"),
-                "--coverage-base",
-                join(target, "fr"),
-            ]
-            with patch.object(sys, "argv", argv):
-                build_file_cli()
+
+            # fmt: off
+            runner = CliRunner()
+            result = runner.invoke(build_file.cli, [
+                "--source", join(root, "en", "file.ftl"),
+                "--l10n", fr_full,
+                "--target", join(target, "fr", "file.ftl"),
+                "--coverage-base", join(target, "fr"),
+            ])
+            # fmt: on
+            assert result.exit_code == 0
 
             with open(coverage, encoding="utf-8") as f:
                 # Same key updated in place, no stale duplicate entry.
@@ -426,14 +404,18 @@ class TestBuildFile(TestCase):
         with TemporaryDirectory() as root:
             build_file_tree(root, {"en.ftl": src})
             target = join(root, "out.ftl")
-            argv = [
-                "l10n-build-file",
-                "--source",
-                join(root, "en.ftl"),
-                "--target",
-                target,
-            ]
-            with patch.object(sys, "argv", argv):
-                build_file_cli()
+
+            # fmt: off
+            runner = CliRunner()
+            result = runner.invoke(build_file.cli, [
+                "--source", join(root, "en.ftl"),
+                "--target", target,
+            ])
+            # fmt: on
+            assert result.exit_code == 0
 
             assert not exists(join(root, "coverage.json"))
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
