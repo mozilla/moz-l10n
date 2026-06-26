@@ -151,7 +151,7 @@ def compare(
     return errors, missing
 
 
-def msg_ids(path: str) -> set[str]:
+def msg_ids(path: str) -> list[str] | set[str]:
     res = parse_resource(path)
     return {
         ".".join(section.id + entry.id)
