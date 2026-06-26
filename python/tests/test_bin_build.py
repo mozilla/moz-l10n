@@ -19,9 +19,10 @@ from os.path import exists, join
 from tempfile import TemporaryDirectory
 from textwrap import dedent
 
+import moz.l10n.bin
 import pytest
 from click.testing import CliRunner
-from moz.l10n.bin import build, build_file
+from moz.l10n.bin import build
 from moz.l10n.formats import Format
 from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
@@ -190,7 +191,7 @@ def test_cli_writes_coverage_json():
         target = join(root, "out")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(build.cli, [
+        result = runner.invoke(moz.l10n.bin.cli, ["build",
             "--config", join(root, "l10n.toml"),
             "--base", root,
             "--target", target,
@@ -229,7 +230,7 @@ def test_cli_skips_coverage_without_flag():
         target = join(root, "out")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(build.cli, [
+        result = runner.invoke(moz.l10n.bin.cli, ["build",
             "--config", join(root, "l10n.toml"),
             "--base", root,
             "--target", target,
@@ -249,7 +250,7 @@ def test_coverage_merge():
         coverage = join(root, "coverage.json")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(build_file.cli, [
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.ftl"),
             "--l10n", join(root, "fr.ftl"),
             "--target", target,
@@ -282,7 +283,7 @@ def test_coverage_updates_existing_file():
             )
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(build_file.cli, [
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.ftl"),
             "--l10n", join(root, "fr.ftl"),
             "--target", target,
@@ -306,7 +307,7 @@ def test_coverage_source_only():
         coverage = join(root, "coverage.json")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(build_file.cli, [
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.ftl"),
             "--target", target,
             "--coverage-base", root,
@@ -325,7 +326,7 @@ def test_coverage_unparseable_source():
         coverage = join(root, "coverage.json")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(build_file.cli, [
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.txt"),
             "--target", target,
             "--coverage-base", root,
@@ -364,7 +365,7 @@ def test_coverage_matches_l10n_build():
         target = join(root, "out")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(build.cli, [
+        result = runner.invoke(moz.l10n.bin.cli, ["build",
             "--config", join(root, "l10n.toml"),
             "--base", root,
             "--target", target,
@@ -387,7 +388,7 @@ def test_coverage_matches_l10n_build():
 
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(build_file.cli, [
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en", "file.ftl"),
             "--l10n", fr_full,
             "--target", join(target, "fr", "file.ftl"),
@@ -409,7 +410,7 @@ def test_skips_coverage_without_flag():
 
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(build_file.cli, [
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.ftl"),
             "--target", target,
         ])
