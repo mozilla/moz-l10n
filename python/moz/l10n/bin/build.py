@@ -16,14 +16,11 @@ from __future__ import annotations
 
 import json
 import logging
-
-# from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from collections import defaultdict
 from os import makedirs
 from os.path import dirname, exists, join, relpath
 from shutil import copyfile
 
-# from textwrap import dedent
 import click
 from moz.l10n.formats import Format, UnsupportedFormat
 from moz.l10n.model import Comment, Entry, Message, Resource, Section
@@ -109,9 +106,6 @@ def cli(
     For Fluent, adds empty files for any missing from the target locale.
     For other formats, copies file from the source locale if they are missing from the target.
     """
-    # TODO: see if this is actually needed!
-    # parser = ArgumentParser(formatter_class=RawDescriptionHelpFormatter)
-    print("in build.cli!!!!")
     log_level = (
         logging.WARNING if not verbose else logging.INFO if verbose else logging.DEBUG
     )
