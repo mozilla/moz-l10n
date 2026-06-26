@@ -33,13 +33,43 @@ from moz.l10n.resource import parse_resource, serialize_resource
 log = logging.getLogger(__name__)
 
 
+class _CustomCommand(click.Command):
+    """
+    Custom Click Command parser to help mimicing argparse's `nargs="+"` behavior.
+
+    Consumes all space-separated tokens until it hits another flag prefixing with `-`.
+    """
+
+    def parse_args(self, ctx, args):
+        new_args = []
+        i = 0
+        # u
+        while i < len(args):
+            new_args.append(args[i])
+            if args[i] != "--locales":
+                i += 1
+                continue
+            i += 1
+            first = True
+            # Consume all upcoming items until we hit the end or another dash flag
+            while i < len(args) and not args[i].startswith("-"):
+                if not first:
+                    # Inject flag name again to satisfy Click's multiple=True
+                    new_args.append("--locales")
+                new_args.append(args[i])
+                first = False
+                i += 1
+        # Hand off the cleanly rewritten arguments to standard Click parsing
+        return super().parse_args(ctx, new_args)
+
+
 def _settify(
     context: click.Context, param: click.Parameter, value: tuple[str, ...]
 ) -> set[str]:
     return set(value) if value else set()
 
 
-@click.command()
+@click.command(cls=_CustomCommand)
 @click.option("--verbose", is_flag=True, help="increase logging verbosity")
 @click.option("--config", metavar="PATH", required=True, help="l10n.toml config file")
 @click.option(
@@ -48,12 +78,12 @@ def _settify(
 @click.option(
     "--target", metavar="PATH", required=True, help="target dir for localizations"
 )
-@click.argument(
+@click.option(
     "--locales",
     metavar="LOCALE",
-    nargs=-1,
+    multiple=True,
     required=True,
-    # help="target locales",
+    help="target locales",
     callback=_settify,
 )
 @click.option(

@@ -8,8 +8,8 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "monorepo",
     "moz-l10n",
-    "moz-l10n-root",
 ]
 
 [[package]]
@@ -36,32 +36,14 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.1.8"
+version = "8.1.7"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.10'",
-]
 dependencies = [
-    { name = "colorama", marker = "python_full_version < '3.10' and sys_platform == 'win32'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593, upload-time = "2024-12-21T18:38:44.339Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/96/d3/f04c7bfcf5c1862a2a5b845c6b2b360488cf47af55dfa79c98f6a6bf98b5/click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de", size = 336121, upload-time = "2023-08-17T17:29:11.868Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/d4/7ebdbd03970677812aac39c869717059dbb71a4cfc033ca6e5221787892c/click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2", size = 98188, upload-time = "2024-12-21T18:38:41.666Z" },
-]
-
-[[package]]
-name = "click"
-version = "8.4.1"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.10'",
-]
-dependencies = [
-    { name = "colorama", marker = "python_full_version >= '3.10' and sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/98/518d8e5081007684232226f475082b30087d0f585e8457db087298259f49/click-8.4.1.tar.gz", hash = "sha256:918b5633eddf6b41c32d4f454bf0de810065c74e3f7dbf8ee5452f8be88d3e96", size = 353007, upload-time = "2026-05-22T04:08:37.769Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/0d/67e5b4109ea4a837e80daa87c2c696711955e40449a97e8926672534def2/click-8.4.1-py3-none-any.whl", hash = "sha256:482be17c6991b8c19c5429a1e995d9b0efdbb63172824c41f99965dc0ade8ec2", size = 116639, upload-time = "2026-05-22T04:08:35.26Z" },
+    { url = "https://files.pythonhosted.org/packages/00/2e/d53fa4befbf2cfa713304affc7ca780ce4fc1fd8710527771b58311a3229/click-8.1.7-py3-none-any.whl", hash = "sha256:ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28", size = 97941, upload-time = "2023-08-17T17:29:10.08Z" },
 ]
 
 [[package]]
@@ -298,39 +280,8 @@ wheels = [
 ]
 
 [[package]]
-name = "moz-l10n"
-version = "0.11.3"
-source = { editable = "python" }
-dependencies = [
-    { name = "click", version = "8.1.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "click", version = "8.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "fluent-syntax" },
-    { name = "gitignorant" },
-    { name = "iniparse" },
-    { name = "polib" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
-]
-
-[package.optional-dependencies]
-xml = [
-    { name = "lxml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click", specifier = ">=8.1.8" },
-    { name = "fluent-syntax", specifier = "~=0.19.0" },
-    { name = "gitignorant", specifier = "~=0.3.1" },
-    { name = "iniparse", specifier = "~=0.5" },
-    { name = "lxml", marker = "extra == 'xml'", specifier = ">=6.0.0,<7.0.0" },
-    { name = "polib", specifier = "~=1.2" },
-    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1.1.0" },
-]
-provides-extras = ["xml"]
-
-[[package]]
-name = "moz-l10n-root"
-version = "0.11.3"
+name = "monorepo"
+version = "0.0.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]
@@ -354,6 +305,36 @@ dev = [
     { name = "types-lxml", specifier = ">=2024.9.16" },
     { name = "types-polib", specifier = ">=1.2.0.20240811" },
 ]
+
+[[package]]
+name = "moz-l10n"
+version = "0.11.3"
+source = { editable = "python" }
+dependencies = [
+    { name = "click" },
+    { name = "fluent-syntax" },
+    { name = "gitignorant" },
+    { name = "iniparse" },
+    { name = "polib" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+
+[package.optional-dependencies]
+xml = [
+    { name = "lxml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = "==8.1.7" },
+    { name = "fluent-syntax", specifier = "~=0.19.0" },
+    { name = "gitignorant", specifier = "~=0.3.1" },
+    { name = "iniparse", specifier = "~=0.5" },
+    { name = "lxml", marker = "extra == 'xml'", specifier = ">=6.0.0,<7.0.0" },
+    { name = "polib", specifier = "~=1.2" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1.1.0" },
+]
+provides-extras = ["xml"]
 
 [[package]]
 name = "mypy"
