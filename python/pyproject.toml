@@ -31,6 +31,7 @@ classifiers = [
 ]
 requires-python = ">=3.9, <4"
 dependencies = [
+  "click==8.1.7",
   "fluent.syntax ~= 0.19.0",
   "gitignorant ~= 0.3.1",
   "iniparse ~= 0.5",
