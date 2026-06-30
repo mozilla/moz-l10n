@@ -58,6 +58,8 @@ export function webextParsePattern(
 }
 
 function findDeclarationName(decl: Record<string, Expression>, name: string) {
+  // Matches the declaration name mapping in the Python implementation at
+  // moz.l10n.formats.webext.parse.webext_parse_message
   let name_ = name.replaceAll('@', '_').replace(/^(?=[0-9])/, '_')
   if (Object.hasOwn(decl, name_)) return name_
   name_ = name_.toLowerCase()
