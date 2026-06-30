@@ -14,7 +14,7 @@
  */
 
 import { ParseError } from './errors.ts'
-import type { Message, Pattern } from './model.ts'
+import type { Expression, Message, Pattern } from './model.ts'
 
 export function webextParsePattern(
   msg: Message,
@@ -37,10 +37,10 @@ export function webextParsePattern(
     pos = m.index + matchSrc.length
     if (m[1]) {
       // Named placeholder
-      const name = m[1].toLowerCase()
+      const name = findDeclarationName(decl, m[1])
       const attr = Object.assign(Object.create(null), { source: matchSrc })
-      pattern.push({ $: name, attr })
-      if (!decl[name]) {
+      pattern.push({ $: name ?? m[1], attr })
+      if (!name) {
         const error = `webext: Unresolved Variable ${matchSrc}`
         onError(new ParseError(error, m.index, pos))
       }
@@ -55,4 +55,12 @@ export function webextParsePattern(
   }
   if (pos < src.length) addText(src.substring(pos))
   return pattern
+}
+
+function findDeclarationName(decl: Record<string, Expression>, name: string) {
+  let name_ = name.replaceAll('@', '_').replace(/^(?=[0-9])/, '_')
+  if (Object.hasOwn(decl, name_)) return name_
+  name_ = name_.toLowerCase()
+  for (const dn of Object.keys(decl)) if (dn.toLowerCase() === name_) return dn
+  return null
 }
