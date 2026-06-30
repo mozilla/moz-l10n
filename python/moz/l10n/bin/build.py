@@ -155,16 +155,16 @@ def write_target_file(
         l10n_res.sections = []
     else:
         l10n_res = Resource(source_res.format, [])
-        l10n_map = {}
+        l10n_map: dict[tuple[str, ...], Entry[Message]] = {}
     # Fluent uses per-message fallback at runtime, allowing resources to be incomplete.
     is_fluent = source_res.format == Format.fluent
     msg_delta = 0
     total_count = 0
     missing_ids: list[str | list[str]] = []
 
-    def missing_id(id: tuple[str, ...]) -> str | list[str]:
-        # Keep the id structural; a single-part id is simplified to a string.
-        return id[0] if len(id) == 1 else list(id)
+    def missing_id(_id: tuple[str, ...]) -> str | list[str]:
+        """Keep id structural; a single-part id is simplified to a string."""
+        return _id[0] if len(_id) == 1 else list(_id)
 
     def get_entry(
         section_id: tuple[str, ...], source_entry: Entry[Message] | Comment
@@ -173,9 +173,9 @@ def write_target_file(
         if isinstance(source_entry, Comment):
             return None
         total_count += 1
-        id = section_id + source_entry.id
-        if id in l10n_map:
-            l10n_entry = l10n_map[id]
+        _id = section_id + source_entry.id
+        if _id in l10n_map:
+            l10n_entry = l10n_map[_id]
             if is_fluent and not l10n_entry.id[0].startswith("-"):
                 # If source_res includes Fluent message attributes not in l10n_res, exclude the entry.
                 # If l10n_res includes additional message attributes,
@@ -184,22 +184,21 @@ def write_target_file(
                 lk = l10n_entry.properties.keys()
                 if sk != lk:
                     if set(sk).issubset(lk):
-                        l10n_entry.properties = {
-                            name: l10n_entry.properties[name] for name in sk
-                        }
+                        for name in set(lk).difference(sk):
+                            del l10n_entry.properties[name]
                         return l10n_entry
                     msg_delta -= 1
-                    missing_ids.append(missing_id(id))
+                    missing_ids.append(missing_id(_id))
                     return None
             return l10n_entry
-        elif is_fluent:
+        if is_fluent:
             msg_delta -= 1
-            missing_ids.append(missing_id(id))
+            missing_ids.append(missing_id(_id))
             return None
-        else:
-            msg_delta += 1
-            missing_ids.append(missing_id(id))
-            return source_entry
+
+        msg_delta += 1
+        missing_ids.append(missing_id(_id))
+        return source_entry
 
     for section in source_res.sections:
         tgt_entries = [
