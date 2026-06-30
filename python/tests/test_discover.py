@@ -123,6 +123,7 @@ class TestL10nDiscover(TestCase):
             assert paths.base == join(root, "target")
             assert paths.locales == ["yy-Latn", "zz"]
             assert paths.all_locales == {"yy-Latn", "zz"}
+            assert paths.locale_dir_sep == "_"
             assert paths.all() == {
                 (
                     join(paths.ref_root, "a.ftl"),
@@ -221,12 +222,20 @@ class TestL10nDiscover(TestCase):
             assert paths.base == root
             assert paths.locales is not None
             assert set(paths.locales) == {"yy-Latn", "zz"}
+            assert paths.locale_dir_sep == "_"
 
             paths = L10nDiscoverPaths(root, ref_root=join(root, "en-US"))
             assert paths.ref_root == join(root, "en-US")
             assert paths.base == root
             assert paths.locales is not None
             assert set(paths.locales) == {"yy-Latn", "zz"}
+            assert paths.locale_dir_sep == "_"
+
+            paths.locales = ["xx-Brai", "yy-Latn", "zz"]
+            assert paths.target("a.ftl", locale="xx-Brai") == (
+                join(root, "xx_Brai", "a.ftl"),
+                {"xx-Brai"},
+            )
 
     def test_split_repos(self):
         """Source and translation in separate sibling directories,

@@ -19,6 +19,7 @@ from collections.abc import Iterable, Iterator
 from itertools import chain
 from os import sep, walk
 from os.path import commonpath, dirname, isdir, join, normpath, relpath, splitext
+from typing import Literal
 
 from moz.l10n.formats import l10n_extensions
 from moz.l10n.util import walk_files
@@ -32,11 +33,14 @@ def dir_contains(dir: str, path: str) -> bool:
     return commonpath((dir, path)) == dir
 
 
-def locale_dirname(base: str, locale: str) -> str:
-    if "-" in locale and not isdir(join(base, locale)):
-        alt_dir = locale.replace("-", "_")
-        if isdir(join(base, alt_dir)):
-            return alt_dir
+def locale_dirname(base: str, locale: str, locale_dir_sep: Literal["-", "_"]) -> str:
+    if "-" not in locale or isdir(join(base, locale)):
+        return locale
+
+    alt_dir = locale.replace("-", "_")
+    if locale_dir_sep == "_" or isdir(join(base, alt_dir)):
+        return alt_dir
+
     return locale
 
 
@@ -53,6 +57,8 @@ class L10nDiscoverPaths:
     """Locales detected from subdirectory names under `base`."""
     ref_paths: list[str]
     """Reference paths"""
+    locale_dir_sep: Literal["-", "_"]
+    """Most common locale directory separator, defaulting to `-`."""
 
     def __init__(
         self,
@@ -191,9 +197,15 @@ class L10nDiscoverPaths:
         if locale_dirs_:
             self.locales = [dir.replace("_", "-") for dir in locale_dirs_]
             self.locales.sort()
-
+            self.locale_dir_sep = (
+                "_"
+                if sum("_" in dir for dir in locale_dirs_)
+                > sum("-" in dir for dir in locale_dirs_)
+                else "-"
+            )
         else:
             self.locales = None
+            self.locale_dir_sep = "-"
 
         self.ref_paths = (
             list(walk_files(self._ref_root, ignorepath=ignorepath))
@@ -264,8 +276,8 @@ class L10nDiscoverPaths:
         return None, ()
 
     def format_target_path(self, target: str, locale: str) -> str:
-        base = self._base()
-        return normpath(target.format(locale=locale_dirname(base, locale)))
+        locale = locale_dirname(self._base(), locale, self.locale_dir_sep)
+        return normpath(target.format(locale=locale))
 
     def find_reference(self, target: str) -> tuple[str, dict[str, str]] | None:
         """
