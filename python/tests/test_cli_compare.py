@@ -1,0 +1,147 @@
+#!/usr/bin/env python
+
+# Copyright Mozilla Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from __future__ import annotations
+
+import json
+import os
+from tempfile import TemporaryDirectory
+
+import moz.l10n.bin
+import pytest
+from click.testing import CliRunner
+
+from .utils import Tree, build_file_tree
+
+FILE = "file.ftl"
+SOURCE = "source.json"
+
+
+def test_compare_missing_messages():
+    source_map = {FILE: ["msg-a", "msg-b", "msg-c"]}
+    fr_ftl = "msg-a = Bonjour\nmsg-b = Monde"
+
+    with TemporaryDirectory() as tmp_dir:
+        source_json_path = os.path.join(tmp_dir, SOURCE)
+        with open(source_json_path, "w", encoding="utf-8") as f:
+            json.dump(source_map, f)
+
+        fr_dir = os.path.join(tmp_dir, "fr")
+        os.makedirs(fr_dir, exist_ok=True)
+        with open(os.path.join(fr_dir, FILE), "w", encoding="utf-8") as f:
+            f.write(fr_ftl)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            moz.l10n.bin.cli, ["compare", fr_dir, "--source", source_json_path]
+        )
+
+        assert result.exit_code == 0
+        assert "source: 3" in result.output
+        assert "fr: -1" in result.output
+
+        result = runner.invoke(
+            moz.l10n.bin.cli,
+            ["compare", fr_dir, "--json", "--source", source_json_path],
+        )
+        assert result.exit_code == 0
+        parsed_output = json.loads(result.output)
+        assert "fr" in parsed_output
+        assert parsed_output["fr"]["missing"] == {FILE: ["msg-c"]}
+        assert parsed_output["fr"]["errors"] is None
+
+
+def test_compare_multiple_paths():
+    locales = "fr", "es", "nb-NO", "de"
+    tree: Tree = {locale: {FILE: "msg-a = Translated\n"} for locale in locales}
+    tree[SOURCE] = json.dumps({FILE: ["msg-a"]})
+
+    with TemporaryDirectory() as tmp_dir:
+        build_file_tree(tmp_dir, tree)
+        os.chdir(tmp_dir)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            moz.l10n.bin.cli, ["compare", "--source", SOURCE, "--json", *locales]
+        )
+
+        assert result.exit_code == 0
+        json_output = json.loads(result.output)
+        assert all(locale in json_output for locale in locales)
+
+        # testing again with some changes
+        with open(os.path.join(tmp_dir, "de", FILE), "w", encoding="utf8") as file_obj:
+            file_obj.write("!@$%!@#$")
+        os.unlink(os.path.join(tmp_dir, "nb-NO", FILE))
+
+        result = runner.invoke(
+            moz.l10n.bin.cli, ["compare", "--source", SOURCE, "--json", *locales]
+        )
+        json_output = json.loads(result.output)
+        assert json_output["nb-NO"]["missing"] == {FILE: ["msg-a"]}
+        assert all(
+            json_output[locale]["missing"] is None
+            for locale in locales
+            if locale != "nb-NO"
+        )
+        assert json_output["de"]["errors"] is not None
+        assert all(
+            json_output[locale]["errors"] is None
+            for locale in locales
+            if locale != "de"
+        )
+
+
+def test_compare_ext_inclusion_and_exclusion():
+    # Source has keys spread across different file types
+    source_map = {FILE: ["msg-ftl"], "file.ini": ["msg-ini"], "file.txt": ["msg-txt"]}
+
+    with TemporaryDirectory() as tmp_dir:
+        source_json_path = os.path.join(tmp_dir, SOURCE)
+        with open(source_json_path, "w", encoding="utf-8") as f:
+            json.dump(source_map, f)
+
+        fr_dir = os.path.join(tmp_dir, "fr")
+        os.makedirs(fr_dir, exist_ok=True)
+
+        # Write files but leave them empty so keys count as missing
+        extensions = "ftl", "ini", "txt"
+        paths = tuple(os.path.join(fr_dir, f"file.{ext}") for ext in extensions)
+        for path in paths:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            moz.l10n.bin.cli,
+            ["compare", fr_dir, "--source", source_json_path, "--ext", "ftl", "ini"],
+        )
+        assert result.exit_code == 0
+        # Source total should only count messages from included extensions
+        assert "source: 2" in result.output
+
+        # Exclusion with '!' - look at everything EXCEPT .txt
+        result = runner.invoke(
+            moz.l10n.bin.cli,
+            ["compare", fr_dir, "--source", source_json_path, "--ext", "!txt"],
+        )
+        assert result.exit_code == 0
+        # Source total should drop .txt messages (3 total - 1 txt = 2)
+        assert "source: 2" in result.output
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

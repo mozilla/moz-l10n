@@ -17,75 +17,80 @@
 from __future__ import annotations
 
 import json
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from os.path import abspath, basename, dirname, isdir, join, normpath, relpath
-from textwrap import dedent
 
+import click
+from moz.l10n.bin.utils import cli_settify, make_list_option_class, set_log_level
 from moz.l10n.formats import UnsupportedFormat
 from moz.l10n.model import Entry
 from moz.l10n.paths import L10nConfigPaths, L10nDiscoverPaths
 from moz.l10n.resource import parse_resource
 
 
-def cli() -> None:
-    parser = ArgumentParser(
-        description=dedent(
-            """
-            Compare localizations to their `source`, which may be
-            - a directory (using L10nDiscoverPaths),
-            - a TOML config file (using L10nConfigPaths), or
-            - a JSON file containing a mapping of file paths to arrays of messages.
-            """
-        ),
-        formatter_class=RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="count", default=0, help="increase output verbosity"
-    )
-    parser.add_argument("--json", action="store_true", help="output JSON")
-    parser.add_argument(
-        "--ext", nargs="+", type=str, help="file extensions, prefix with ! to exclude"
-    )
-    parser.add_argument(
-        "--source",
-        metavar="PATH",
-        required=True,
-        type=str,
-        help="path to source file listing expected files & messages",
-    )
-    parser.add_argument("paths", nargs="+", type=str, help="directories to test")
-    args = parser.parse_args()
+@click.command(cls=make_list_option_class("--ext"))
+@click.option("-v", "--verbose", count=True, help="Set logging verbosity")
+@click.option("--json", "json_output", is_flag=True, help="output JSON")
+@click.option(
+    "--ext",
+    help="file extensions, prefix with ! to exclude",
+    multiple=True,
+    type=str,
+    callback=cli_settify,
+)
+@click.option(
+    "--source",
+    metavar="PATH",
+    required=True,
+    type=str,
+    help="path to source file listing expected files & messages",
+)
+@click.argument("paths", nargs=-1, required=True)
+def cli(
+    verbose: int,
+    json_output: bool,
+    ext: set[str],
+    source: str,
+    paths: tuple[str, ...],
+) -> None:
+    """
+    Compare localizations to their `source` and get a report.
+
+    Source may be:
+    - a directory (using `L10nDiscoverPaths`),
+    - a TOML config file (using `L10nConfigPaths`), or
+    - a JSON file containing a mapping of file paths to arrays of messages.
+
+
+    """
+    set_log_level(verbose)
 
     ext_include: set[str] = set()
     ext_exclude: set[str] = set()
-    if args.ext:
-        arg_ext: list[str] = args.ext
-        if len(arg_ext) == 1 and "," in arg_ext[0]:
-            arg_ext = [ext.strip() for ext in arg_ext[0].split(",")]
-        for ext in arg_ext:
-            if ext.startswith("!"):
-                ext = ext[1:]
-                ext_exclude.add(ext if ext.startswith(".") else f".{ext}")
+    if ext:
+        for item in ext:
+            if item.startswith("!"):
+                item = item[1:]
+                ext_exclude.add(item if item.startswith(".") else f".{item}")
             else:
-                ext_include.add(ext if ext.startswith(".") else f".{ext}")
+                ext_include.add(item if item.startswith(".") else f".{item}")
 
     def ext_filter(path: str) -> bool:
         included = not ext_include or any(path.endswith(ext) for ext in ext_include)
         excluded = ext_exclude and any(path.endswith(ext) for ext in ext_exclude)
         return included and not excluded
 
-    if args.source.endswith(".json"):
-        with open(args.source) as f:
+    if source.endswith(".json"):
+        with open(source) as f:
             source_data: dict[str, list[str] | set[str]] = json.load(f)
         if ext_include or ext_exclude:
             source_data = {k: set(v) for k, v in source_data.items() if ext_filter(k)}
     else:
         source_paths: L10nConfigPaths | L10nDiscoverPaths = (
-            L10nConfigPaths(args.source)
-            if args.source.endswith(".toml")
-            else L10nDiscoverPaths(args.source, args.source)
+            L10nConfigPaths(source)
+            if source.endswith(".toml")
+            else L10nDiscoverPaths(source, source)
         )
-        path0 = abspath(args.paths[0])
+        path0 = abspath(paths[0])
         locale0 = basename(path0)
         source_paths.base = dirname(path0)
         source_data = {}
@@ -98,17 +103,17 @@ def cli() -> None:
                     continue
     source_total = sum(len(sd) for sd in source_data.values())
     if source_total == 0:
-        raise ValueError(f"No messages found for source {args.source}")
-    if not args.json:
+        raise ValueError(f"No messages found for source {source}")
+    if not json_output:
         print(f"source: {source_total}")
 
     json_res = {}
-    for path in args.paths:
+    for path in paths:
         if not isdir(path):
             continue
         lc = basename(normpath(path))
         errors, missing = compare(source_data, path)
-        if args.json:
+        if json_output:
             json_res[lc] = {
                 "errors": errors or None,
                 "missing": missing or None,
@@ -118,14 +123,14 @@ def cli() -> None:
             print(f"{lc}: {-total}")
             for path, error in errors.items():
                 print(f"  !!! {path}: {error}")
-            if args.verbose > 0:
+            if verbose > 0:
                 for path, messages in missing.items():
                     print(f"  {path}: {-len(messages)}")
-                    if args.verbose > 1:
+                    if verbose > 1:
                         for msg in messages:
                             print(f"    {msg}")
 
-    if args.json:
+    if json_output:
         print(json.dumps(json_res, ensure_ascii=False))
 
 

@@ -12,19 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import click
 from moz.l10n.bin import build, build_file, compare, fix, lint, migrate
 
 
 @click.group()
-def cli():
+def cli() -> None:
     """The Mozilla Localization CLI Suite."""
     pass
 
 
 cli.add_command(build.cli, name="build")
 cli.add_command(build_file.cli, name="build-file")
-# cli.add_command(compare.cli, name="compare")
+cli.add_command(compare.cli, name="compare")
 # cli.add_command(fix.cli, name="fix")
 # cli.add_command(lint.cli, name="lint")
 # cli.add_command(migrate.cli, name="migrate")
