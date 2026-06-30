@@ -22,6 +22,7 @@ from os.path import dirname, exists, join, relpath
 from shutil import copyfile
 
 import click
+from moz.l10n.bin.utils import cli_settify, make_list_option_class, set_log_level
 from moz.l10n.formats import Format, UnsupportedFormat
 from moz.l10n.model import Comment, Entry, Message, Resource, Section
 from moz.l10n.paths.config import L10nConfigPaths
@@ -30,44 +31,8 @@ from moz.l10n.resource import parse_resource, serialize_resource
 log = logging.getLogger(__name__)
 
 
-class _CustomCommand(click.Command):
-    """
-    Custom Click Command parser to help mimicing argparse's `nargs="+"` behavior.
-
-    Consumes all space-separated tokens until it hits another flag prefixing with `-`.
-    """
-
-    def parse_args(self, ctx, args):
-        new_args = []
-        i = 0
-        # u
-        while i < len(args):
-            new_args.append(args[i])
-            if args[i] != "--locales":
-                i += 1
-                continue
-            i += 1
-            first = True
-            # Consume all upcoming items until we hit the end or another dash flag
-            while i < len(args) and not args[i].startswith("-"):
-                if not first:
-                    # Inject flag name again to satisfy Click's multiple=True
-                    new_args.append("--locales")
-                new_args.append(args[i])
-                first = False
-                i += 1
-        # Hand off the cleanly rewritten arguments to standard Click parsing
-        return super().parse_args(ctx, new_args)
-
-
-def _settify(
-    context: click.Context, param: click.Parameter, value: tuple[str, ...]
-) -> set[str]:
-    return set(value) if value else set()
-
-
-@click.command(cls=_CustomCommand)
-@click.option("--verbose", is_flag=True, help="increase logging verbosity")
+@click.command(cls=make_list_option_class("--locales"))
+@click.option("--verbose", help="increase logging verbosity")
 @click.option("--config", metavar="PATH", required=True, help="l10n.toml config file")
 @click.option(
     "--base", metavar="PATH", required=True, help="base dir for localizations"
@@ -81,7 +46,7 @@ def _settify(
     multiple=True,
     required=True,
     help="target locales",
-    callback=_settify,
+    callback=cli_settify,
 )
 @click.option(
     "--coverage",
@@ -89,7 +54,7 @@ def _settify(
     help="write a coverage.json file per locale with the translation ratio",
 )
 def cli(
-    verbose: bool,
+    verbose: int,
     config: str,
     base: str,
     target: str,
@@ -106,10 +71,7 @@ def cli(
     For Fluent, adds empty files for any missing from the target locale.
     For other formats, copies file from the source locale if they are missing from the target.
     """
-    log_level = (
-        logging.WARNING if not verbose else logging.INFO if verbose else logging.DEBUG
-    )
-    logging.basicConfig(format="%(message)s", level=log_level)
+    set_log_level(verbose)
 
     # locale -> [ftl_missing, src_fallback]
     msg_data: dict[str, list[int]] = defaultdict(lambda: [0, 0])
