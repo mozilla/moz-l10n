@@ -20,19 +20,27 @@ LOG_FORMAT: str = "%(message)s"
 
 
 def make_list_option_class(
-    option_names: str | list[str] | tuple[str],
+    option_names: str | list[str] | tuple[str] | None = None,
+    custom_usage: str | None = None,
 ) -> type[click.Command]:
     """
-    Generate unique click.Command class to support argparse-style multi-token `nargs="+"` flags.
-    e.g.:
-        --locales fr de --coverage
+    Generate unique click.Command class to:
+
+    * support argparse-style multi-token `nargs="+"` flags. e.g.:
+      `--locales fr de --coverage ...`
+    * have custom "Usage: " declaration on `--help`
     """
-    normalized_options = (
-        {option_names} if isinstance(option_names, str) else set(option_names)
-    )
+    normalized_options = set()
+    if option_names:
+        normalized_options.update(
+            {option_names} if isinstance(option_names, str) else option_names
+        )
 
     class CustomMultiCommand(click.Command):
-        def parse_args(self, ctx, args):
+        def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
+            if not normalized_options:
+                return super().parse_args(ctx, args)
+
             new_args = []
             i = 0
             while i < len(args):
@@ -54,6 +62,12 @@ def make_list_option_class(
                     i += 1
             return super().parse_args(ctx, new_args)
 
+        def format_usage(self, ctx: click.Context, formatter: click.HelpFormatter):
+            if custom_usage:
+                formatter.write_usage(ctx.command_path, custom_usage)
+            else:
+                super().format_usage(ctx, formatter)
+
     return CustomMultiCommand
 
 
@@ -67,17 +81,28 @@ def cli_settify(
         return set()
     items = []
     for item in value:
-        items.append(item.strip(', \t'))
+        items.append(item.strip(", \t"))
     return set(items)
 
 
-def set_log_level(verbose: int) -> int:
+def set_log_level(verbose: int, quiet: bool = False) -> int:
+    """Deal with `verbose` integer initializing `logging` with the according level.
+    * 0 -> logging.WARNING. Default. Only warnings and errors are logged.
+    * 1 -> logging.INFO. Info messages are logged as well.
+    * 2 -> logging.DEBUG. Moste verbose. Also debug messages are logged.
+
+    Also returns the logging built-in level integer (10, 20, 30).
+    """
     log_level = (
-        logging.WARNING
-        if not verbose
-        else logging.INFO
-        if verbose == 1
-        else logging.DEBUG
+        logging.ERROR
+        if quiet
+        else (
+            logging.WARNING
+            if not verbose
+            else logging.INFO
+            if verbose == 1
+            else logging.DEBUG
+        )
     )
     logging.basicConfig(format=LOG_FORMAT, level=log_level)
     return log_level

@@ -20,8 +20,7 @@ from moz.l10n.bin import build, build_file, compare, fix, lint, migrate
 
 @click.group()
 def cli() -> None:
-    """The Mozilla Localization CLI Suite."""
-    pass
+    """Entry point for the Mozilla Localization CLI Suite."""
 
 
 cli.add_command(build.cli, name="build")
@@ -29,4 +28,4 @@ cli.add_command(build_file.cli, name="build-file")
 cli.add_command(compare.cli, name="compare")
 # cli.add_command(fix.cli, name="fix")
 # cli.add_command(lint.cli, name="lint")
-# cli.add_command(migrate.cli, name="migrate")
+cli.add_command(migrate.cli, name="migrate")
