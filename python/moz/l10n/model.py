@@ -102,7 +102,7 @@ class Markup:
             body.append(f"options={self.options!r}")
         if self.attributes:
             body.append(f"attributes={self.attributes!r}")
-        return f"Expression({','.join(body)})"
+        return f"Markup({','.join(body)})"
 
 
 Pattern = list[Union[str, Expression, Markup]]
