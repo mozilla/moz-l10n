@@ -25,7 +25,7 @@ from moz.l10n.bin import build, cli
 from moz.l10n.formats import Format
 from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
-from .utils import Tree, build_file_tree
+from ..utils import Tree, build_file_tree
 
 
 def test_write_target_file_fluent():

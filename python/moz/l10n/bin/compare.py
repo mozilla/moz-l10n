@@ -27,12 +27,13 @@ from moz.l10n.paths import L10nConfigPaths, L10nDiscoverPaths
 from moz.l10n.resource import parse_resource
 
 
-@click.command(cls=make_list_option_class("--ext"))
+@click.command(cls=make_list_option_class("--ext", custom_usage="PATHS... [OPTIONS]"))
+@click.argument("paths", nargs=-1, required=True)
 @click.option("-v", "--verbose", count=True, help="Set logging verbosity")
 @click.option("--json", "json_output", is_flag=True, help="output JSON")
 @click.option(
     "--ext",
-    help="file extensions, prefix with ! to exclude",
+    help="File extensions separated by commad or space. Prefix with ! to exclude.",
     multiple=True,
     type=str,
     callback=cli_settify,
@@ -44,35 +45,31 @@ from moz.l10n.resource import parse_resource
     type=str,
     help="path to source file listing expected files & messages",
 )
-@click.argument("paths", nargs=-1, required=True)
 def cli(
-    verbose: int,
-    json_output: bool,
-    ext: set[str],
-    source: str,
     paths: tuple[str, ...],
+    source: str,
+    verbose: int,
+    ext: set[str],
+    *,
+    json_output: bool = False,
 ) -> None:
-    """
-    Compare localizations to their `source` and get a report.
+    """Compare localizations to their `source` and get a report.
 
     Source may be:
     - a directory (using `L10nDiscoverPaths`),
     - a TOML config file (using `L10nConfigPaths`), or
     - a JSON file containing a mapping of file paths to arrays of messages.
-
-
     """
     set_log_level(verbose)
 
     ext_include: set[str] = set()
     ext_exclude: set[str] = set()
-    if ext:
-        for item in ext:
-            if item.startswith("!"):
-                item = item[1:]
-                ext_exclude.add(item if item.startswith(".") else f".{item}")
-            else:
-                ext_include.add(item if item.startswith(".") else f".{item}")
+    for item in ext:
+        if item.startswith("!"):
+            item = item[1:]
+            ext_exclude.add(item if item.startswith(".") else f".{item}")
+        else:
+            ext_include.add(item if item.startswith(".") else f".{item}")
 
     def ext_filter(path: str) -> bool:
         included = not ext_include or any(path.endswith(ext) for ext in ext_include)

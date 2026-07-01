@@ -16,13 +16,10 @@ from __future__ import annotations
 
 import json
 import logging
-
-# from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from os import makedirs
 from os.path import dirname, exists, join, relpath
 from shutil import copyfile
 
-# from textwrap import dedent
 import click
 from moz.l10n.bin.build import write_target_file
 from moz.l10n.formats import UnsupportedFormat

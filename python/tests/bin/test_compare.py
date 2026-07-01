@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright Mozilla Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,13 +22,14 @@ import moz.l10n.bin
 import pytest
 from click.testing import CliRunner
 
-from .utils import Tree, build_file_tree
+from ..utils import Tree, build_file_tree
 
 FILE = "file.ftl"
 SOURCE = "source.json"
 
 
-def test_compare_missing_messages():
+def test_compare_missing_messages() -> None:
+    """"""
     source_map = {FILE: ["msg-a", "msg-b", "msg-c"]}
     fr_ftl = "msg-a = Bonjour\nmsg-b = Monde"
 
@@ -71,11 +70,12 @@ def test_compare_multiple_paths():
 
     with TemporaryDirectory() as tmp_dir:
         build_file_tree(tmp_dir, tree)
+        cwd = os.getcwd()
         os.chdir(tmp_dir)
 
         runner = CliRunner()
         result = runner.invoke(
-            moz.l10n.bin.cli, ["compare", "--source", SOURCE, "--json", *locales]
+            moz.l10n.bin.cli, ["compare", *locales, "--source", SOURCE, "--json"]
         )
 
         assert result.exit_code == 0
@@ -88,8 +88,10 @@ def test_compare_multiple_paths():
         os.unlink(os.path.join(tmp_dir, "nb-NO", FILE))
 
         result = runner.invoke(
-            moz.l10n.bin.cli, ["compare", "--source", SOURCE, "--json", *locales]
+            moz.l10n.bin.cli, ["compare", *locales, "--source", SOURCE, "--json"]
         )
+        os.chdir(cwd)
+
         json_output = json.loads(result.output)
         assert json_output["nb-NO"]["missing"] == {FILE: ["msg-a"]}
         assert all(
@@ -105,7 +107,7 @@ def test_compare_multiple_paths():
         )
 
 
-def test_compare_ext_inclusion_and_exclusion():
+def test_compare_ext_inclusion_and_exclusion() -> None:
     # Source has keys spread across different file types
     source_map = {FILE: ["msg-ftl"], "file.ini": ["msg-ini"], "file.txt": ["msg-txt"]}
 
@@ -125,19 +127,23 @@ def test_compare_ext_inclusion_and_exclusion():
                 f.write("")
 
         runner = CliRunner()
-        result = runner.invoke(
-            moz.l10n.bin.cli,
-            ["compare", fr_dir, "--source", source_json_path, "--ext", "ftl", "ini"],
-        )
+        cmd_stem = ["compare", fr_dir, "--source", source_json_path, "--ext"]
+
+        # Test counting messages only from included extensions
+        result = runner.invoke(moz.l10n.bin.cli, [*cmd_stem, ".ftl", "ini"])
         assert result.exit_code == 0
-        # Source total should only count messages from included extensions
         assert "source: 2" in result.output
 
+        result = runner.invoke(moz.l10n.bin.cli, [*cmd_stem, "ini"])
+        assert result.exit_code == 0
+        assert "source: 1" in result.output
+
+        result = runner.invoke(moz.l10n.bin.cli, ' '.join(cmd_stem) + " .ftl, ini, .txt")
+        assert result.exit_code == 0
+        assert "source: 3" in result.output
+
         # Exclusion with '!' - look at everything EXCEPT .txt
-        result = runner.invoke(
-            moz.l10n.bin.cli,
-            ["compare", fr_dir, "--source", source_json_path, "--ext", "!txt"],
-        )
+        result = runner.invoke(moz.l10n.bin.cli, [*cmd_stem, "!txt"])
         assert result.exit_code == 0
         # Source total should drop .txt messages (3 total - 1 txt = 2)
         assert "source: 2" in result.output
