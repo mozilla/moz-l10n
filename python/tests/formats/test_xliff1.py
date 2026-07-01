@@ -164,6 +164,21 @@ class TestXliff1(TestCase):
         res = xliff_serialize_message(msg)
         assert res == ""
 
+    def test_message_with_tags(self):
+        src = 'Go to <a href="open-account">Create password</a> in settings.'
+        msg = xliff_parse_message(src)
+        assert msg == PatternMessage(
+            [
+                "Go to ",
+                Markup("open", "a", options={"href": "open-account"}),
+                "Create password",
+                Markup("close", "a"),
+                " in settings.",
+            ]
+        )
+        res = xliff_serialize_message(msg)
+        assert res == src
+
     def test_message_xcode(self):
         src = "Hello, <b>%s</b>"
         msg = xliff_parse_message(src, is_xcode=True)
