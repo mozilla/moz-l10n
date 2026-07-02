@@ -22,6 +22,7 @@ from shutil import copyfile
 
 import click
 from moz.l10n.bin.build import write_target_file
+from moz.l10n.bin.utils import set_log_level
 from moz.l10n.formats import UnsupportedFormat
 from moz.l10n.model import Entry
 from moz.l10n.resource import parse_resource, serialize_resource
@@ -55,24 +56,7 @@ def cli(
 
     Trims out all comments and messages not in the source file.
     """
-    # parser = ArgumentParser(formatter_class=RawDescriptionHelpFormatter)
-
-    # parser.add_argument("--source", metavar="PATH", required=True, help="source file")
-    # parser.add_argument("--l10n", metavar="PATH", help="localization file")
-    # parser.add_argument("--target", metavar="PATH", required=True, help="output target")
-    # parser.add_argument(
-    #     "--coverage-base",
-    #     metavar="DIR",
-    #     help="base dir for coverage reporting: update <DIR>/coverage.json with "
-    #     "this file's translation ratio, keyed by --target's path relative to DIR "
-    #     "(e.g. browser/browser.ftl), matching l10n-build's keys",
-    # )
-    # args = parser.parse_args()
-
-    log_level = (
-        logging.WARNING if not verbose else logging.INFO if verbose else logging.DEBUG
-    )
-    logging.basicConfig(format="%(message)s", level=log_level)
+    set_log_level(verbose)
 
     try:
         try:
