@@ -63,7 +63,7 @@ def test_compare_missing_messages() -> None:
         assert parsed_output["fr"]["errors"] is None
 
 
-def test_compare_multiple_paths():
+def test_compare_multiple_paths() -> None:
     locales = "fr", "es", "nb-NO", "de"
     tree: Tree = {locale: {FILE: "msg-a = Translated\n"} for locale in locales}
     tree[SOURCE] = json.dumps({FILE: ["msg-a"]})

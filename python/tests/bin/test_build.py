@@ -28,7 +28,7 @@ from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 from ..utils import Tree, build_file_tree
 
 
-def test_write_target_file_fluent():
+def test_write_target_file_fluent() -> None:
     entries: list[Entry[PatternMessage] | Comment] = [
         Entry(("msg-a",), PatternMessage(["s"])),
         Entry(("msg-b",), PatternMessage(["s"]), {"attr": PatternMessage(["s"])}),
@@ -77,7 +77,7 @@ def test_write_target_file_fluent():
         assert missing_ids == ["msg-c", "-term-c"]
 
 
-def test_write_target_file_nonfluent():
+def test_write_target_file_nonfluent() -> None:
     entries: list[Entry[PatternMessage] | Comment] = [
         Entry(("msg-a",), PatternMessage(["s"])),
         Entry(("msg-b",), PatternMessage(["s"]), {"attr": PatternMessage(["s"])}),
@@ -132,7 +132,7 @@ def test_write_target_file_nonfluent():
         assert missing_ids == ["-term-c"]
 
 
-def test_write_target_file_multipart_id():
+def test_write_target_file_multipart_id() -> None:
     # INI sections produce two-part ids, kept as a list rather than joined.
     entries: list[Entry[PatternMessage] | Comment] = [
         Entry(("WelcomeText",), PatternMessage(["s"])),
@@ -153,7 +153,7 @@ def test_write_target_file_multipart_id():
         assert missing_ids == [["Strings", "LicenseText"]]
 
 
-def test_cli_writes_coverage_json():
+def test_cli_writes_coverage_json() -> None:
     cfg_toml = dedent(
         """
         basepath = "."
@@ -209,7 +209,7 @@ def test_cli_writes_coverage_json():
         assert de_coverage == {"file.ftl": {"total": 4, "missing": ["msg-c", "msg-d"]}}
 
 
-def test_cli_skips_coverage_without_flag():
+def test_cli_skips_coverage_without_flag() -> None:
     cfg_toml = dedent(
         """
         basepath = "."
@@ -240,7 +240,7 @@ def test_cli_skips_coverage_without_flag():
         assert not exists(join(target, "fr", "coverage.json"))
 
 
-def test_coverage_merge():
+def test_coverage_merge() -> None:
     src = "msg-a = src\nmsg-b = src\nmsg-c = src\n"
     l10n = "msg-a = fr\nmsg-b = fr\n"
     with TemporaryDirectory() as root:
@@ -262,7 +262,7 @@ def test_coverage_merge():
             assert json.load(f) == {"file.ftl": {"total": 3, "missing": ["msg-c"]}}
 
 
-def test_coverage_updates_existing_file():
+def test_coverage_updates_existing_file() -> None:
     # fastermake builds one resource at a time, sharing the per-locale
     # coverage.json: the existing entries are preserved and the current
     # resource's entry is added/overwritten.
@@ -298,7 +298,7 @@ def test_coverage_updates_existing_file():
             }
 
 
-def test_coverage_source_only():
+def test_coverage_source_only() -> None:
     src = "msg-a = src\nmsg-b = src\n"
     with TemporaryDirectory() as root:
         build_file_tree(root, {"en.ftl": src})
@@ -318,7 +318,7 @@ def test_coverage_source_only():
             assert json.load(f) == {"file.ftl": {"total": 2, "missing": []}}
 
 
-def test_coverage_unparseable_source():
+def test_coverage_unparseable_source() -> None:
     with TemporaryDirectory() as root:
         build_file_tree(root, {"en.txt": "not a known format\n"})
         target = join(root, "file.txt")
@@ -337,7 +337,7 @@ def test_coverage_unparseable_source():
             assert json.load(f) == {"file.txt": {"total": 0, "missing": []}}
 
 
-def test_coverage_matches_l10n_build():
+def test_coverage_matches_l10n_build() -> None:
     # A coverage.json first created by l10n-build is then updated by
     # l10n-build-file for one resource. With --coverage-base set to the
     # locale dir, the key is derived as target's relative path, so the
@@ -401,7 +401,7 @@ def test_coverage_matches_l10n_build():
             assert json.load(f) == {"file.ftl": {"total": 3, "missing": ["msg-c"]}}
 
 
-def test_skips_coverage_without_flag():
+def test_skips_coverage_without_flag() -> None:
     src = "msg-a = src\n"
     with TemporaryDirectory() as root:
         build_file_tree(root, {"en.ftl": src})

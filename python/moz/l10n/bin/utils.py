@@ -30,7 +30,7 @@ def make_list_option_class(
       `--locales fr de --coverage ...`
     * have custom "Usage: " declaration on `--help`
     """
-    normalized_options = set()
+    normalized_options: set[str] = set()
     if option_names:
         normalized_options.update(
             {option_names} if isinstance(option_names, str) else option_names
@@ -62,7 +62,7 @@ def make_list_option_class(
                     i += 1
             return super().parse_args(ctx, new_args)
 
-        def format_usage(self, ctx: click.Context, formatter: click.HelpFormatter):
+        def format_usage(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
             if custom_usage:
                 formatter.write_usage(ctx.command_path, custom_usage)
             else:
