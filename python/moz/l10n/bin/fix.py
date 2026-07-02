@@ -130,7 +130,10 @@ def fix(
 
 
 def fix_file(root: str, path: str) -> Result:
-    rel_path = relpath(path, root)
+    try:
+        rel_path = relpath(path, root)
+    except ValueError:
+        rel_path = abspath(path)
     try:
         with open(path, "+rb") as file:
             prev = file.read()
