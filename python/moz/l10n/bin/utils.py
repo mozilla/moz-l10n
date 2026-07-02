@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import logging
 
 import click
@@ -62,7 +64,9 @@ def make_list_option_class(
                     i += 1
             return super().parse_args(ctx, new_args)
 
-        def format_usage(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        def format_usage(
+            self, ctx: click.Context, formatter: click.HelpFormatter
+        ) -> None:
             if custom_usage:
                 formatter.write_usage(ctx.command_path, custom_usage)
             else:
