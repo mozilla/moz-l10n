@@ -39,7 +39,7 @@ Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 @click.option(
     "-n", "--dry-run", is_flag=True, help="Do not apply changes to file system"
 )
-@click.option("--config", metavar="PATH", help="l10n.toml config file")
+@click.option("--config", metavar="PATH", help="Path to l10n.toml config file")
 @click.option(
     "--root",
     metavar="PATH",

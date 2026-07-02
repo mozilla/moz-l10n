@@ -16,14 +16,14 @@ from __future__ import annotations
 
 import logging
 import sys
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from collections.abc import Iterable
 from enum import Enum
 from glob import glob
 from os import getcwd
 from os.path import abspath, isdir, relpath, splitext
-from textwrap import dedent
 
+import click
+from moz.l10n.bin.utils import set_log_level
 from moz.l10n.formats import UnsupportedFormat, l10n_extensions
 from moz.l10n.paths.config import L10nConfigPaths
 from moz.l10n.paths.discover import L10nDiscoverPaths
@@ -34,62 +34,36 @@ log = logging.getLogger(__name__)
 Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 
 
-def cli() -> None:
-    parser = ArgumentParser(
-        description=dedent(
-            """
-            Lint/validate localization resources.
+@click.command()
+@click.option("-v", "--verbose", count=True, help="Set logging verbosity")
+@click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors")
+@click.option("--config", metavar="PATH", help="Path to l10n.toml config file")
+@click.option(
+    "-u",
+    "--skip-unknown",
+    is_flag=True,
+    help="Skip files without a known L10n extension",
+)
+@click.argument("paths", nargs=-1, required=True)
+def cli(
+    verbose: int, quiet: bool, config: str, skip_unknown: bool, paths: tuple[str, ...]
+) -> None:
+    """Lint/validate localization resources.
 
-            If `paths` is a single directory, it is iterated with L10nConfigPaths if --config is set, or L10nDiscoverPaths otherwise.
+    If `paths` is a single directory, it is iterated with L10nConfigPaths if --config is set, or L10nDiscoverPaths otherwise.
 
-            If `paths` is not a single directory, its values are treated as glob expressions, with ** support.
+    If `paths` is not a single directory, its values are treated as glob expressions, with ** support.
 
-            FIXME: Currently only checks that files can be parsed, and does not check their contents more deeply.
-            """
-        ),
-        formatter_class=RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "-q", "--quiet", action="store_true", help="only log input argument errors"
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="count", default=0, help="increase logging verbosity"
-    )
-    parser.add_argument(
-        "--config", metavar="PATH", type=str, help="path to l10n.toml config file"
-    )
-    parser.add_argument(
-        "-u",
-        "--skip-unknown",
-        action="store_true",
-        help="skip files without a known L10n extension",
-    )
-    parser.add_argument("paths", nargs="*", type=str, help="directory or files to fix")
-    args = parser.parse_args()
+    FIXME: Currently only checks that files can be parsed, and does not check their contents more deeply.
+    """
+    set_log_level(verbose, quiet)
 
-    log_level = (
-        logging.ERROR
-        if args.quiet
-        else (
-            logging.WARNING
-            if args.verbose == 0
-            else logging.INFO
-            if args.verbose == 1
-            else logging.DEBUG
-        )
-    )
-    logging.basicConfig(format="%(message)s", level=log_level)
-
-    res = lint(
-        args.paths,
-        config_path=args.config,
-        skip_unknown=args.skip_unknown,
-    )
+    res = lint(paths, config_path=config, skip_unknown=skip_unknown)
     sys.exit(res)
 
 
 def lint(
-    file_paths: list[str],
+    file_paths: list[str] | tuple[str, ...],
     *,
     config_path: str | None = None,
     skip_unknown: bool = False,
@@ -120,7 +94,7 @@ def lint(
         root_dir = getcwd()
         path_iter = (path for fp in file_paths for path in glob(fp, recursive=True))
     else:
-        log.error("Either paths of --config is required")
+        log.error("Either paths or --config is required")
         return 2
 
     ok = 0
@@ -142,6 +116,7 @@ def lint(
 
 
 def lint_file(root: str, path: str, skip_unknown: bool) -> Result:
+    """Lint a single file and log accordingly."""
     try:
         log_path = relpath(path, root)
         if log_path.startswith(".."):
