@@ -138,9 +138,13 @@ def test_compare_ext_inclusion_and_exclusion() -> None:
         assert result.exit_code == 0
         assert "source: 1" in result.output
 
-        result = runner.invoke(
-            moz.l10n.bin.cli, " ".join(cmd_stem) + " .ftl, ini, .txt"
-        )
+        # Test comma separation for multi args via single string
+        cmd = (" ".join(cmd_stem) + " .ftl, ini, .txt")
+        # Using single string `shlex.split` is used swallowing win-style double
+        # backslashes m( this works properly on cli tho!
+        if os.name == 'nt' and os.sep in cmd:
+            cmd = cmd.replace(os.sep, os.altsep)
+        result = runner.invoke(moz.l10n.bin.cli, cmd)
         assert result.exit_code == 0
         assert "source: 3" in result.output
 
