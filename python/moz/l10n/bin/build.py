@@ -20,6 +20,7 @@ from collections import defaultdict
 from os import makedirs
 from os.path import dirname, exists, join, relpath
 from shutil import copyfile
+from typing import Any
 
 import click
 from moz.l10n.bin.utils import cli_settify, make_list_option_class, set_log_level
@@ -146,7 +147,7 @@ def write_target_file(
 ) -> tuple[int, int, list[str | list[str]]]:
     if exists(l10n_path):
         l10n_res = parse_resource(l10n_path)
-        l10n_map = {
+        l10n_map: dict[tuple[str, ...], Any] = {
             section.id + entry.id: entry
             for section in l10n_res.sections
             for entry in section.entries
@@ -155,7 +156,7 @@ def write_target_file(
         l10n_res.sections = []
     else:
         l10n_res = Resource(source_res.format, [])
-        l10n_map: dict[tuple[str, ...], Entry[Message]] = {}
+        l10n_map = {}
     # Fluent uses per-message fallback at runtime, allowing resources to be incomplete.
     is_fluent = source_res.format == Format.fluent
     msg_delta = 0
@@ -168,7 +169,7 @@ def write_target_file(
 
     def get_entry(
         section_id: tuple[str, ...], source_entry: Entry[Message] | Comment
-    ) -> Entry[Message] | Comment | None:
+    ) -> Entry[Message] | Comment | Any | None:
         nonlocal msg_delta, total_count
         if isinstance(source_entry, Comment):
             return None
