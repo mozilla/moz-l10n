@@ -465,7 +465,7 @@ def set_pattern(el: etree._Element, pattern: Pattern) -> None:
                     )
                 if parent.tag != name or parent == el:
                     raise ValueError(f"Improper element nesting for {part} in {parent}")
-                node = parent
+                prev = parent
                 parent = cast(etree._Element, parent.getparent())
             else:
                 attrib = {}
