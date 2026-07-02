@@ -138,7 +138,9 @@ def test_compare_ext_inclusion_and_exclusion() -> None:
         assert result.exit_code == 0
         assert "source: 1" in result.output
 
-        result = runner.invoke(moz.l10n.bin.cli, ' '.join(cmd_stem) + " .ftl, ini, .txt")
+        result = runner.invoke(
+            moz.l10n.bin.cli, " ".join(cmd_stem) + " .ftl, ini, .txt"
+        )
         assert result.exit_code == 0
         assert "source: 3" in result.output
 
