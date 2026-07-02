@@ -15,6 +15,7 @@ The library currently supports the following message pattern formats:
 - `fluent`: Fluent (without internal selectors)
 - `mf2`: MessageFormat 2.0
 - `plain`: Patterns without placeholders (used in multiple resource formats)
+- `properties`: Java .properties files
 - `webext`: WebExtensions (messages.json)
 - `xliff`: XLIFF 1.2, including XCode customizations
 
@@ -64,7 +65,14 @@ import { ParseError, parsePattern } from '@mozilla/l10n'
 
 ```ts
 function parsePattern(
-  format: 'android' | 'fluent' | 'mf2' | 'plain' | 'webext' | 'xliff',
+  format:
+    | 'android'
+    | 'fluent'
+    | 'mf2'
+    | 'plain'
+    | 'properties'
+    | 'webext'
+    | 'xliff',
   src: string,
   baseMsg?: Message
 ): Pattern
@@ -89,13 +97,20 @@ import { SerializeError, serializePattern } from '@mozilla/l10n'
 
 ```ts
 function serializePattern(
-  format: 'android' | 'fluent' | 'mf2' | 'plain' | 'webext' | 'xliff',
+  format:
+    | 'android'
+    | 'fluent'
+    | 'mf2'
+    | 'plain'
+    | 'properties'
+    | 'webext'
+    | 'xliff',
   pattern: Pattern,
   onError?: (error: SerializeError) => void
 ): string
 
 class SerializeError extends Error {
-  pos?: number // Set for fluent, plain, and webext errors
+  pos?: number // Set for fluent, plain, properties, and webext errors
 }
 ```
 

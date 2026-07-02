@@ -15,7 +15,7 @@
 
 import { androidParsePattern } from './android-parse.ts'
 import { androidSerializePattern } from './android-serialize.ts'
-import { ParseError, SerializeError } from './errors.js'
+import { ERROR_RESULT, ParseError, SerializeError } from './errors.ts'
 import { fluentParseEntry, fluentParsePattern } from './fluent-parse.ts'
 import {
   fluentSerializeEntry,
@@ -26,6 +26,8 @@ import {
 import { mf2ParseMessage, mf2ParsePattern } from './mf2-parse.ts'
 import { mf2SerializeMessage, mf2SerializePattern } from './mf2-serialize.ts'
 import type { Message, Pattern } from './model.ts'
+import { propertiesParsePattern } from './properties-parse.ts'
+import { propertiesSerializePattern } from './properties-serialize.ts'
 import { webextParsePattern } from './webext-parse.ts'
 import { webextSerializePattern } from './webext-serialize.ts'
 import { xliffParsePattern } from './xliff-parse.ts'
@@ -65,6 +67,8 @@ export {
   mf2SerializeMessage,
   mf2SerializePattern,
   ParseError,
+  propertiesParsePattern,
+  propertiesSerializePattern,
   SerializeError,
   webextParsePattern,
   webextSerializePattern,
@@ -78,6 +82,7 @@ export type FormatKey =
   | 'fluent'
   | 'mf2'
   | 'plain'
+  | 'properties'
   | 'webext'
   | 'xliff'
 
@@ -100,6 +105,8 @@ export function parsePattern(
       return fluentParsePattern(src)
     case 'mf2':
       return mf2ParsePattern(src)
+    case 'properties':
+      return propertiesParsePattern(src)
     case 'webext':
       return webextParsePattern(baseMsg ?? [], src)
     case 'xliff':
@@ -133,6 +140,8 @@ export function serializePattern(
       return fluentSerializePattern(pattern, undefined, { onError })
     case 'mf2':
       return mf2SerializePattern(pattern, false)
+    case 'properties':
+      return propertiesSerializePattern(pattern, onError)
     case 'webext':
       return webextSerializePattern(pattern, onError)
     case 'xliff':
@@ -148,7 +157,7 @@ export function serializePattern(
     else {
       const error = `${format}: Unsupported pattern part: ${JSON.stringify(part)}`
       onError(new SerializeError(error, res.length))
-      res += '{�}'
+      res += ERROR_RESULT
     }
   }
   return res
