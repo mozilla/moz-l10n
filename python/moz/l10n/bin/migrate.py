@@ -22,7 +22,7 @@ from os.path import abspath
 from traceback import format_exc
 
 import click
-from moz.l10n.bin.utils import make_list_option_class, set_log_level
+from moz.l10n.bin.utils import set_log_level
 from moz.l10n.migrate import all_migrations
 from moz.l10n.paths.android_locale import get_android_locale
 from moz.l10n.paths.config import L10nConfigPaths
@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 
 
-@click.command(cls=make_list_option_class())
+@click.command()
 @click.option("-v", "--verbose", count=True, help="Set logging verbosity")
 @click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors")
 @click.option(
