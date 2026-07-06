@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 
 @click.command()
-@click.option("--verbose", is_flag=True, help="increase logging verbosity")
+@click.option("-v", "--verbose", count=True, help="Set logging verbosity")
 @click.option("--source", metavar="PATH", required=True, help="source file")
 @click.option("--l10n", metavar="PATH", help="localization file")
 @click.option("--target", metavar="PATH", required=True, help="output target")
