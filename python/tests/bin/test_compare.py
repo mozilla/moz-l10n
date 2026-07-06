@@ -128,7 +128,7 @@ def test_compare_ext_inclusion_and_exclusion() -> None:
         cmd_stem = ["compare", fr_dir, "--source", source_json_path, "--ext"]
 
         # Test counting messages only from included extensions
-        result = runner.invoke(moz.l10n.bin.cli, [*cmd_stem, ".ftl", "ini"])
+        result = runner.invoke(moz.l10n.bin.cli, [*cmd_stem, ".ftl,ini"])
         assert result.exit_code == 0
         assert "source: 2" in result.output
 

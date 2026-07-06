@@ -19,14 +19,14 @@ from os.path import abspath, basename, dirname, isdir, join, normpath, relpath
 from typing import Collection
 
 import click
-from moz.l10n.bin.utils import cli_settify, make_list_option_class, set_log_level
+from moz.l10n.bin.utils import set_log_level
 from moz.l10n.formats import UnsupportedFormat
 from moz.l10n.model import Entry
 from moz.l10n.paths import L10nConfigPaths, L10nDiscoverPaths
 from moz.l10n.resource import parse_resource
 
 
-@click.command(cls=make_list_option_class("--ext", custom_usage="PATHS... [OPTIONS]"))
+@click.command()
 @click.argument("paths", nargs=-1, required=True)
 @click.option(
     "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
@@ -34,10 +34,8 @@ from moz.l10n.resource import parse_resource
 @click.option("--json", "json_output", is_flag=True, help="output JSON")
 @click.option(
     "--ext",
-    help="File extensions separated by space. Prefix with ! to exclude.",
-    multiple=True,
+    help="File extension(s). Separate multiple by comma (`ini,flt`). Prefix with ! to exclude (`!json`).",
     type=str,
-    callback=cli_settify,
 )
 @click.option(
     "--source",
@@ -50,7 +48,7 @@ def cli(
     paths: tuple[str, ...],
     source: str,
     verbose: int,
-    ext: set[str],
+    ext: str,
     *,
     json_output: bool = False,
 ) -> None:
@@ -65,12 +63,13 @@ def cli(
 
     ext_include: set[str] = set()
     ext_exclude: set[str] = set()
-    for item in ext:
-        if item.startswith("!"):
-            item = item[1:]
-            ext_exclude.add(item if item.startswith(".") else f".{item}")
-        else:
-            ext_include.add(item if item.startswith(".") else f".{item}")
+    if ext:
+        for item in (ext,) if "," not in ext else ext.split(","):
+            if item.startswith("!"):
+                item = item[1:]
+                ext_exclude.add(item if item.startswith(".") else f".{item}")
+            else:
+                ext_include.add(item if item.startswith(".") else f".{item}")
 
     def ext_filter(path: str) -> bool:
         included = not ext_include or any(path.endswith(ext) for ext in ext_include)

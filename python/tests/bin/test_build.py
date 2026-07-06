@@ -195,7 +195,7 @@ def test_cli_writes_coverage_json() -> None:
             "--config", join(root, "l10n.toml"),
             "--base", root,
             "--target", target,
-            "--locales", "fr", "de",
+            "--locales", "fr,de",
             "--coverage",
         ])
         # fmt: on

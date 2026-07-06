@@ -23,7 +23,7 @@ from shutil import copyfile
 from typing import Any
 
 import click
-from moz.l10n.bin.utils import cli_settify, make_list_option_class, set_log_level
+from moz.l10n.bin.utils import set_log_level
 from moz.l10n.formats import Format, UnsupportedFormat
 from moz.l10n.model import Comment, Entry, Message, Resource, Section
 from moz.l10n.paths.config import L10nConfigPaths
@@ -32,7 +32,7 @@ from moz.l10n.resource import parse_resource, serialize_resource
 log = logging.getLogger(__name__)
 
 
-@click.command(cls=make_list_option_class("--locales"))
+@click.command()
 @click.option(
     "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
 )
@@ -46,10 +46,9 @@ log = logging.getLogger(__name__)
 @click.option(
     "--locales",
     metavar="LOCALE",
-    multiple=True,
     required=True,
-    help="target locales",
-    callback=cli_settify,
+    type=str,
+    help="Target locale(s). Separate multiple by comma (`en,fr,nb-NO`)",
 )
 @click.option(
     "--coverage",
@@ -61,7 +60,7 @@ def cli(
     config: str,
     base: str,
     target: str,
-    locales: set[str],
+    locales: str,
     coverage: str | None = None,
 ) -> None:
     """
@@ -79,11 +78,12 @@ def cli(
     # locale -> [ftl_missing, src_fallback]
     msg_data: dict[str, list[int]] = defaultdict(lambda: [0, 0])
 
+    locales_ = set(locales.split(",") if "," in locales else set([locales]))
     # locale -> {file_path -> {"total": int, "missing": [id, ...]}}.
     # Pre-initialized so every requested locale gets a coverage.json,
     # even if no source files were parseable.
     coverage_data: dict[str, dict[str, dict[str, int | list[str | list[str]]]]] = {
-        locale: {} for locale in locales
+        locale: {} for locale in locales_
     }
 
     paths = L10nConfigPaths(config)
@@ -95,7 +95,7 @@ def cli(
             source = parse_resource(source_path)
         except UnsupportedFormat:
             source = None
-        for locale in locales.intersection(path_locales) if path_locales else locales:
+        for locale in locales_.intersection(path_locales) if path_locales else locales_:
             l10n_path = l10n_path_template.format(locale=locale)
             rel_path = relpath(l10n_path, base)
             tgt_path = join(target, rel_path)
