@@ -327,7 +327,7 @@ xml = [
 
 [package.metadata]
 requires-dist = [
-    { name = "click", specifier = "==8.1.7" },
+    { name = "click", specifier = "~=8.1" },
     { name = "fluent-syntax", specifier = "~=0.19.0" },
     { name = "gitignorant", specifier = "~=0.3.1" },
     { name = "iniparse", specifier = "~=0.5" },
