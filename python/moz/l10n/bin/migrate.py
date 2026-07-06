@@ -35,24 +35,27 @@ Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 
 @click.command()
 @click.option(
-    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (-v/--verbose INFO, -vv DEBUG).",
 )
-@click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors")
+@click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors.")
 @click.option(
-    "-n", "--dry-run", is_flag=True, help="Do not apply changes to file system"
+    "-n", "--dry-run", is_flag=True, help="Do not apply changes to file system."
 )
-@click.option("--config", metavar="PATH", help="Path to l10n.toml config file")
+@click.option("--config", metavar="PATH", help="Path to l10n.toml config file.")
 @click.option(
     "--root",
     metavar="PATH",
     type=str,
-    help="Path to localization root, if --config is not set",
+    help="Path to localization root, if --config is not set.",
 )
 @click.option(
     "--ref",
     metavar="PATH",
     type=str,
-    help="Path to localization reference root, if separate from --root",
+    help="Path to localization reference root, if separate from --root.",
 )
 @click.argument("migration", nargs=-1, required=True)
 def cli(

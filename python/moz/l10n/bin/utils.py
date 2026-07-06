@@ -31,7 +31,7 @@ def set_log_level(verbose: int, quiet: bool = False) -> int:
     """Deal with `verbose` integer initializing `logging` with the according level.
     * 0 -> logging.WARNING. Default. Only warnings and errors are logged.
     * 1 -> logging.INFO. Info messages are logged as well.
-    * 2 -> logging.DEBUG. Moste verbose. Also debug messages are logged.
+    * 2 -> logging.DEBUG. Most verbose. Also logged debug messages.
 
     Also returns the logging built-in level integer (10, 20, 30).
     """

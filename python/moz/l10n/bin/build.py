@@ -34,26 +34,31 @@ log = logging.getLogger(__name__)
 
 @click.command()
 @click.option(
-    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (-v/--verbose INFO, -vv DEBUG).",
 )
-@click.option("--config", metavar="PATH", required=True, help="l10n.toml config file")
 @click.option(
-    "--base", metavar="PATH", required=True, help="base dir for localizations"
+    "--config", metavar="PATH", required=True, help="Path to l10n.toml config file."
 )
 @click.option(
-    "--target", metavar="PATH", required=True, help="target dir for localizations"
+    "--base", metavar="PATH", required=True, help="Base dir for localizations."
+)
+@click.option(
+    "--target", metavar="PATH", required=True, help="Target dir for localizations."
 )
 @click.option(
     "--locales",
     metavar="LOCALE",
     required=True,
     type=str,
-    help="Target locale(s). Separate multiple by comma (`en,fr,nb-NO`)",
+    help="Target locale(s). Separate multiple by comma (`en,fr,nb-NO`).",
 )
 @click.option(
     "--coverage",
     is_flag=True,
-    help="write a coverage.json file per locale with the translation ratio",
+    help="Write a coverage.json file per locale with the translation ratio.",
 )
 def cli(
     verbose: int,

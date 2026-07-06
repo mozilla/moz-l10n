@@ -31,15 +31,18 @@ Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 
 @click.command()
 @click.option(
-    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (-v/--verbose INFO, -vv DEBUG).",
 )
-@click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors")
-@click.option("--config", metavar="PATH", help="Path to l10n.toml config file")
+@click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors.")
+@click.option("--config", metavar="PATH", help="Path to l10n.toml config file.")
 @click.option(
     "-u",
     "--skip-unknown",
     is_flag=True,
-    help="Skip files without a known L10n extension",
+    help="Skip files without a known L10n extension.",
 )
 @click.argument("paths", nargs=-1, required=True)
 def cli(

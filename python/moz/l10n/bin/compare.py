@@ -29,9 +29,12 @@ from moz.l10n.resource import parse_resource
 @click.command()
 @click.argument("paths", nargs=-1, required=True)
 @click.option(
-    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (-v/--verbose INFO, -vv DEBUG).",
 )
-@click.option("--json", "json_output", is_flag=True, help="output JSON")
+@click.option("--json", "json_output", is_flag=True, help="Output JSON.")
 @click.option(
     "--ext",
     help="File extension(s). Separate multiple by comma (`ini,flt`). Prefix with ! to exclude (`!json`).",

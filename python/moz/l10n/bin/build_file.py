@@ -29,17 +29,20 @@ from moz.l10n.resource import parse_resource, serialize_resource
 
 @click.command()
 @click.option(
-    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (-v/--verbose INFO, -vv DEBUG).",
 )
-@click.option("--source", metavar="PATH", required=True, help="source file")
-@click.option("--l10n", metavar="PATH", help="localization file")
-@click.option("--target", metavar="PATH", required=True, help="output target")
+@click.option("--source", metavar="PATH", required=True, help="Source file.")
+@click.option("--l10n", metavar="PATH", help="Localization file.")
+@click.option("--target", metavar="PATH", required=True, help="Output target.")
 @click.option(
     "--coverage-base",
     metavar="DIR",
-    help="base dir for coverage reporting: update <DIR>/coverage.json with "
+    help="Base dir for coverage reporting: update <DIR>/coverage.json with "
     "this file's translation ratio, keyed by --target's path relative to DIR "
-    "(e.g. browser/browser.ftl), matching l10n-build's keys",
+    "(e.g. browser/browser.ftl), matching l10n-build's keys.",
 )
 def cli(
     verbose: bool,

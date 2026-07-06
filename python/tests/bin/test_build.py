@@ -420,32 +420,27 @@ def test_cli_verbosity() -> None:
         ]
         # fmt: on
         runner = CliRunner()
+        # Test no logging.
         result = runner.invoke(moz.l10n.bin.cli, ["build", *args])
         assert result.exit_code == 0
         assert result.output == ""
 
         # Test DEBUG logging. "build" will put "source " first.
         del logging.root.handlers[:]
-        result = runner.invoke(moz.l10n.bin.cli, ["build", "--verbose", "2", *args])
+        result = runner.invoke(moz.l10n.bin.cli, ["build", "-vv", *args])
         assert result.exit_code == 0
         assert result.output.startswith("source ")
 
         # Test INFO logging.
         del logging.root.handlers[:]
-        result = runner.invoke(moz.l10n.bin.cli, ["build", "--verbose", "1", *args])
+        result = runner.invoke(moz.l10n.bin.cli, ["build", "-v", *args])
         assert result.exit_code == 0
         assert not result.output.startswith("source ")
         assert result.output != ""
 
-        # Test no logging.
         del logging.root.handlers[:]
-        result = runner.invoke(moz.l10n.bin.cli, ["build", "-v", "0", *args])
-        assert result.exit_code == 0
-        assert result.output == ""
-
-        # Test missing int argument to `--verbose`
         result = runner.invoke(moz.l10n.bin.cli, ["build", "--verbose", *args])
-        assert result.exit_code == 2
+        assert result.exit_code == 0
 
 
 if __name__ == "__main__":

@@ -31,15 +31,18 @@ Result = Enum("Result", ("OK", "FIXED", "UNSUPPORTED", "FAIL"))
 
 @click.command()
 @click.option(
-    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (-v/--verbose INFO, -vv DEBUG).",
 )
-@click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors")
-@click.option("--config", metavar="PATH", help="Path to l10n.toml config file")
+@click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors.")
+@click.option("--config", metavar="PATH", help="Path to l10n.toml config file.")
 @click.option(
     "--continue",
     "continue_on_error",
     is_flag=True,
-    help="Do not stop at first parse error",
+    help="Do not stop at first parse error.",
 )
 @click.argument("paths", nargs=-1)
 def cli(
