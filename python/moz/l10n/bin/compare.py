@@ -31,7 +31,7 @@ from moz.l10n.resource import parse_resource
 @click.option("--json", "json_output", is_flag=True, help="output JSON")
 @click.option(
     "--ext",
-    help="File extensions separated by commad or space. Prefix with ! to exclude.",
+    help="File extensions separated by space. Prefix with ! to exclude.",
     multiple=True,
     type=str,
     callback=cli_settify,
@@ -41,7 +41,7 @@ from moz.l10n.resource import parse_resource
     metavar="PATH",
     required=True,
     type=str,
-    help="path to source file listing expected files & messages",
+    help="Path to source file listing expected files & messages.",
 )
 def cli(
     paths: tuple[str, ...],
