@@ -29,6 +29,14 @@ from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
 from ..utils import Tree, build_file_tree
 
+CFG_TOML_TEMPLATE = """
+basepath = "."
+locales = ["fr", {}]
+[[paths]]
+    reference = "en/file.ftl"
+    l10n = "{{locale}}/file.ftl"
+"""
+
 
 def test_write_target_file_fluent() -> None:
     entries: list[Entry[PatternMessage] | Comment] = [
@@ -156,15 +164,6 @@ def test_write_target_file_multipart_id() -> None:
 
 
 def test_cli_writes_coverage_json() -> None:
-    cfg_toml = dedent(
-        """
-        basepath = "."
-        locales = ["fr", "de"]
-        [[paths]]
-            reference = "en/file.ftl"
-            l10n = "{locale}/file.ftl"
-        """
-    )
     source_ftl = dedent("""\
         msg-a = src
         msg-b = src
@@ -182,7 +181,7 @@ def test_cli_writes_coverage_json() -> None:
         msg-b = de
         """)
     tree: Tree = {
-        "l10n.toml": cfg_toml,
+        "l10n.toml": CFG_TOML_TEMPLATE.format('"de"'),
         "en": {"file.ftl": source_ftl},
         "fr": {"file.ftl": fr_ftl},
         "de": {"file.ftl": de_ftl},
@@ -212,17 +211,8 @@ def test_cli_writes_coverage_json() -> None:
 
 
 def test_cli_skips_coverage_without_flag() -> None:
-    cfg_toml = dedent(
-        """
-        basepath = "."
-        locales = ["fr"]
-        [[paths]]
-            reference = "en/file.ftl"
-            l10n = "{locale}/file.ftl"
-        """
-    )
     tree: Tree = {
-        "l10n.toml": cfg_toml,
+        "l10n.toml": CFG_TOML_TEMPLATE.format(""),
         "en": {"file.ftl": "msg-a = src\n"},
         "fr": {"file.ftl": "msg-a = fr\n"},
     }
@@ -345,19 +335,10 @@ def test_coverage_matches_l10n_build() -> None:
     # locale dir, the key is derived as target's relative path, so the
     # entry is overwritten in place rather than added under a divergent
     # (absolute) path.
-    cfg_toml = dedent(
-        """
-        basepath = "."
-        locales = ["fr"]
-        [[paths]]
-            reference = "en/file.ftl"
-            l10n = "{locale}/file.ftl"
-        """
-    )
     source_ftl = "msg-a = src\nmsg-b = src\nmsg-c = src\n"
     fr_ftl = "msg-a = fr\n"
     tree: Tree = {
-        "l10n.toml": cfg_toml,
+        "l10n.toml": CFG_TOML_TEMPLATE.format(""),
         "en": {"file.ftl": source_ftl},
         "fr": {"file.ftl": fr_ftl},
     }
