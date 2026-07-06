@@ -29,9 +29,10 @@ to support them, install as `moz.l10n[xml]`.
 
 ## Command-line Tools
 
-For usage details, use each command's `--help` argument.
+Access all sub-commands through `moz-l10n`.\
+For usage details, use each sub-command's `--help` argument.
 
-### `l10n-build`
+### `moz-l10n build`
 
 Build localization files for release.
 
@@ -39,14 +40,14 @@ Iterates source files as defined by `--config`, reads localization sources from 
 Trims out all comments and messages not in the source files for each of the `--locales`.
 Adds empty files for any missing from the target locale.
 
-### `l10n-build-file`
+### `moz-l10n build-file`
 
 Build one localization file for release.
 
 Uses the `--source` file as a baseline, applying `--l10n` localizations (if set) to build `--target`.
 Trims out all comments and messages not in the source file.
 
-### `l10n-compare`
+### `moz-l10n compare`
 
 Compare localizations to their `source`, which may be
 
@@ -54,12 +55,28 @@ Compare localizations to their `source`, which may be
 - a TOML config file (using `L10nConfigPaths`), or
 - a JSON file containing a mapping of file paths to arrays of messages.
 
-### `l10n-fix`
+### `moz-l10n fix`
 
 Fix the formatting for localization resources.
 
 If `paths` is a single directory, it is iterated with `L10nConfigPaths` if `--config` is set, or `L10nDiscoverPaths` otherwise.
 If `paths` is not a single directory, its values are treated as glob expressions, with `**` support.
+
+### `moz-l10n lint`
+
+Lint/validate localization resources.
+
+If `paths` is a single directory, it is iterated with L10nConfigPaths if --config is set, or L10nDiscoverPaths otherwise.
+
+If `paths` is not a single directory, its values are treated as glob expressions, with `**` support.
+
+FIXME: Currently only checks that files can be parsed, and does not check their contents more deeply.
+
+### `moz-l10n migrate`
+
+Apply migrations to localization resources.
+
+Returns 0 on success, 1 on internal error, or 2 on argument error.
 
 ## Python API
 
