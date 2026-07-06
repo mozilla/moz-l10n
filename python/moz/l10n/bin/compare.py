@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from os.path import abspath, basename, dirname, isdir, join, normpath, relpath
+from typing import Collection
 
 import click
 from moz.l10n.bin.utils import cli_settify, make_list_option_class, set_log_level
@@ -78,7 +79,7 @@ def cli(
 
     if source.endswith(".json"):
         with open(source) as f:
-            source_data: dict[str, list[str] | set[str]] = json.load(f)
+            source_data: dict[str, Collection[str]] = json.load(f)
         if ext_include or ext_exclude:
             source_data = {k: set(v) for k, v in source_data.items() if ext_filter(k)}
     else:
@@ -132,7 +133,7 @@ def cli(
 
 
 def compare(
-    source_data: dict[str, list[str] | set[str]], root: str
+    source_data: dict[str, Collection[str]], root: str
 ) -> tuple[dict[str, str], dict[str, list[str]]]:
     errors: dict[str, str] = {}
     missing: dict[str, list[str]] = {}
@@ -153,7 +154,7 @@ def compare(
     return errors, missing
 
 
-def msg_ids(path: str) -> list[str] | set[str]:
+def msg_ids(path: str) -> Collection[str]:
     res = parse_resource(path)
     return {
         ".".join(section.id + entry.id)
