@@ -165,9 +165,9 @@ def write_target_file(
     total_count = 0
     missing_ids: list[str | list[str]] = []
 
-    def missing_id(entry_id: tuple[str, ...]) -> str | list[str]:
+    def missing_id(id: tuple[str, ...]) -> str | list[str]:
         """Keep id structural; a single-part id is simplified to a string."""
-        return entry_id[0] if len(entry_id) == 1 else list(entry_id)
+        return id[0] if len(id) == 1 else list(id)
 
     def get_entry(
         section_id: tuple[str, ...], source_entry: Entry[Message] | Comment
@@ -176,9 +176,9 @@ def write_target_file(
         if isinstance(source_entry, Comment):
             return None
         total_count += 1
-        entry_id = section_id + source_entry.id
-        if entry_id in l10n_map:
-            l10n_entry = l10n_map[entry_id]
+        id = section_id + source_entry.id
+        if id in l10n_map:
+            l10n_entry = l10n_map[id]
             if is_fluent and not l10n_entry.id[0].startswith("-"):
                 # If source_res includes Fluent message attributes not in l10n_res, exclude the entry.
                 # If l10n_res includes additional message attributes,
@@ -191,16 +191,16 @@ def write_target_file(
                             del l10n_entry.properties[name]
                         return l10n_entry
                     msg_delta -= 1
-                    missing_ids.append(missing_id(entry_id))
+                    missing_ids.append(missing_id(id))
                     return None
             return l10n_entry
         if is_fluent:
             msg_delta -= 1
-            missing_ids.append(missing_id(entry_id))
+            missing_ids.append(missing_id(id))
             return None
 
         msg_delta += 1
-        missing_ids.append(missing_id(entry_id))
+        missing_ids.append(missing_id(id))
         return source_entry
 
     for section in source_res.sections:
