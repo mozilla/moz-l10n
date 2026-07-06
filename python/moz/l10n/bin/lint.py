@@ -16,17 +16,12 @@ from __future__ import annotations
 
 import logging
 import sys
-from collections.abc import Iterable
 from enum import Enum
-from glob import glob
-from os import getcwd
-from os.path import abspath, isdir, relpath, splitext
+from os.path import relpath, splitext
 
 import click
-from moz.l10n.bin.utils import set_log_level
+from moz.l10n.bin.utils import handle_paths, set_log_level
 from moz.l10n.formats import UnsupportedFormat, l10n_extensions
-from moz.l10n.paths.config import L10nConfigPaths
-from moz.l10n.paths.discover import L10nDiscoverPaths
 from moz.l10n.resource import parse_resource
 
 log = logging.getLogger(__name__)
@@ -80,22 +75,9 @@ def lint(
 
     Returns 0 on success, 1 on parse error, or 2 on argument error.
     """
-    if config_path:
-        if file_paths:
-            log.error("With --config, paths must not be set.")
-            return 2
-        cfg_paths = L10nConfigPaths(config_path)
-        root_dir = abspath(cfg_paths.base)
-        path_iter: Iterable[str] = cfg_paths.ref_paths
-    elif len(file_paths) == 1 and isdir(file_paths[0]):
-        root_dir = abspath(file_paths[0])
-        path_iter = L10nDiscoverPaths(root_dir, ref_root=".").ref_paths
-    elif file_paths:
-        root_dir = getcwd()
-        path_iter = (path for fp in file_paths for path in glob(fp, recursive=True))
-    else:
-        log.error("Either paths or --config is required")
-        return 2
+    exit_code, path_iter, root_dir = handle_paths(config_path, file_paths, log)
+    if exit_code or path_iter is None:
+        return exit_code
 
     ok = 0
     unsupported = 0

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from os.path import join
 from tempfile import TemporaryDirectory
+from textwrap import dedent
 
 import moz.l10n.bin
 import pytest
@@ -30,11 +31,23 @@ def test_help() -> None:
     assert result.exit_code == 0
 
 
-def test_no_args() -> None:
-    # `paths` is a required argument, so click itself rejects an empty invocation.
+def test_wrong_args() -> None:
+    """Test `paths` or `config` being required."""
     runner = CliRunner()
+    # Test none
     result = runner.invoke(moz.l10n.bin.cli, ["fix"])
     assert result.exit_code == 2
+
+    tree: Tree = {"a.ftl": "a = A\n"}
+    with TemporaryDirectory() as root:
+        build_file_tree(root, tree)
+
+        # Test both
+        result = runner.invoke(
+            moz.l10n.bin.cli,
+            ["fix", "--config", join(root, "l10n.toml"), join(root, "a.ftl")],
+        )
+        assert result.exit_code == 2
 
 
 def test_already_formatted() -> None:
@@ -49,6 +62,20 @@ def test_already_formatted() -> None:
 
         with open(join(root, "a.ftl")) as file:
             assert file.read() == "a = A\n"
+
+
+def test_directory() -> None:
+    """Test passing in a directory path."""
+    tree: Tree = {
+        "en-US": {"a.ftl": "a = A\n"},
+        "fr": {"a.ftl": "a = A\n"},
+    }
+    with TemporaryDirectory() as root:
+        build_file_tree(root, tree)
+
+        runner = CliRunner()
+        result = runner.invoke(moz.l10n.bin.cli, ["fix", root])
+        assert result.exit_code == 0
 
 
 def test_reformats() -> None:
@@ -88,31 +115,31 @@ def test_unsupported() -> None:
         assert result.exit_code == 0
 
 
-def test_directory() -> None:
+def test_config() -> None:
+    """Test using `--config` arg explicitly."""
+    cfg_toml = dedent(
+        """
+        locales = ["fr"]
+        [[paths]]
+            reference = "en-US/**/*.ftl"
+            l10n = "{locale}/**/*.ftl"
+        """
+    )
     tree: Tree = {
-        "en-US": {"a.ftl": "a = A\n"},
-        "fr": {"a.ftl": "a = A\n"},
+        "l10n.toml": cfg_toml,
+        "en-US": {"a.ftl": "a=A"},
     }
     with TemporaryDirectory() as root:
         build_file_tree(root, tree)
 
         runner = CliRunner()
-        result = runner.invoke(moz.l10n.bin.cli, ["fix", root])
+        result = runner.invoke(
+            moz.l10n.bin.cli, ["fix", "--config", join(root, "l10n.toml")]
+        )
         assert result.exit_code == 0
 
-
-def test_config_with_paths() -> None:
-    tree: Tree = {"a.ftl": "a = A\n"}
-    with TemporaryDirectory() as root:
-        build_file_tree(root, tree)
-
-        runner = CliRunner()
-        # --config combined with paths is an argument error.
-        result = runner.invoke(
-            moz.l10n.bin.cli,
-            ["fix", "--config", join(root, "l10n.toml"), join(root, "a.ftl")],
-        )
-        assert result.exit_code == 2
+        with open(join(root, "en-US", "a.ftl")) as file:
+            assert file.read() == "a = A\n"
 
 
 if __name__ == "__main__":

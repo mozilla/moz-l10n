@@ -15,10 +15,17 @@
 from __future__ import annotations
 
 import logging
+import os
+from collections.abc import Iterable
+from glob import glob
 
 import click
+from moz.l10n.paths.config import L10nConfigPaths
+from moz.l10n.paths.discover import L10nDiscoverPaths
 
 LOG_FORMAT: str = "%(message)s"
+LOG_ERROR_CONFIG_AND_PATHS = "With --config, paths must not be set!"
+LOG_ERROR_CONFIG_OR_PATHS = "Either paths OR --config is required!"
 
 
 def make_list_option_class(
@@ -110,3 +117,35 @@ def set_log_level(verbose: int, quiet: bool = False) -> int:
     )
     logging.basicConfig(format=LOG_FORMAT, level=log_level)
     return log_level
+
+
+def handle_paths(
+    config_path: str | None,
+    file_paths: list[str] | tuple[str, ...],
+    log: logging.Logger,
+) -> tuple[int, Iterable[str] | None, str]:
+    """Deal with config and file paths.
+    Both cannot be set at the same time.
+    Return error code, path_iter object and root_dir.
+    """
+    if config_path:
+        if file_paths:
+            log.error(LOG_ERROR_CONFIG_AND_PATHS)
+            return 2, None, ""
+        cfg_paths = L10nConfigPaths(config_path)
+        root_dir = os.path.abspath(cfg_paths.base)
+        path_iter: Iterable[str] = cfg_paths.ref_paths
+
+    elif len(file_paths) == 1 and os.path.isdir(file_paths[0]):
+        root_dir = os.path.abspath(file_paths[0])
+        path_iter = L10nDiscoverPaths(root_dir, ref_root=".").ref_paths
+
+    elif file_paths:
+        root_dir = os.getcwd()
+        path_iter = (path for fp in file_paths for path in glob(fp, recursive=True))
+
+    else:
+        log.error(LOG_ERROR_CONFIG_OR_PATHS)
+        return 2, None, ""
+
+    return 0, path_iter, root_dir
