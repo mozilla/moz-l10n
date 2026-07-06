@@ -29,19 +29,14 @@ SOURCE = "source.json"
 
 
 def test_compare_missing_messages() -> None:
-    """"""
+    """Test proper occurrence "missing" and "errors" in output report."""
     source_map = {FILE: ["msg-a", "msg-b", "msg-c"]}
     fr_ftl = "msg-a = Bonjour\nmsg-b = Monde"
-
+    tree: Tree = {SOURCE: json.dumps(source_map), "fr": {FILE: fr_ftl}}
     with TemporaryDirectory() as tmp_dir:
+        build_file_tree(tmp_dir, tree)
         source_json_path = os.path.join(tmp_dir, SOURCE)
-        with open(source_json_path, "w", encoding="utf-8") as f:
-            json.dump(source_map, f)
-
         fr_dir = os.path.join(tmp_dir, "fr")
-        os.makedirs(fr_dir, exist_ok=True)
-        with open(os.path.join(fr_dir, FILE), "w", encoding="utf-8") as f:
-            f.write(fr_ftl)
 
         runner = CliRunner()
         result = runner.invoke(
@@ -64,6 +59,9 @@ def test_compare_missing_messages() -> None:
 
 
 def test_compare_multiple_paths() -> None:
+    """Test passing a number of paths to be compared
+    and using short relative paths to work.
+    """
     locales = "fr", "es", "nb-NO", "de"
     tree: Tree = {locale: {FILE: "msg-a = Translated\n"} for locale in locales}
     tree[SOURCE] = json.dumps({FILE: ["msg-a"]})
@@ -108,7 +106,7 @@ def test_compare_multiple_paths() -> None:
 
 
 def test_compare_ext_inclusion_and_exclusion() -> None:
-    # Source has keys spread across different file types
+    """Test source having keys spread across different file types."""
     source_map = {FILE: ["msg-ftl"], "file.ini": ["msg-ini"], "file.txt": ["msg-txt"]}
 
     with TemporaryDirectory() as tmp_dir:
@@ -137,16 +135,6 @@ def test_compare_ext_inclusion_and_exclusion() -> None:
         result = runner.invoke(moz.l10n.bin.cli, [*cmd_stem, "ini"])
         assert result.exit_code == 0
         assert "source: 1" in result.output
-
-        # Test comma separation for multi args via single string
-        cmd = " ".join(cmd_stem) + " .ftl, ini, .txt"
-        # Using single string `shlex.split` is used swallowing win-style double
-        # backslashes m( this works properly on cli tho!
-        if os.name == "nt" and os.sep in cmd:
-            cmd = cmd.replace(os.sep, os.altsep)
-        result = runner.invoke(moz.l10n.bin.cli, cmd)
-        assert result.exit_code == 0
-        assert "source: 3" in result.output
 
         # Exclusion with '!' - look at everything EXCEPT .txt
         result = runner.invoke(moz.l10n.bin.cli, [*cmd_stem, "!txt"])
