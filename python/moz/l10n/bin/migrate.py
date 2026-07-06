@@ -34,7 +34,9 @@ Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 
 
 @click.command()
-@click.option("-v", "--verbose", count=True, help="Set logging verbosity")
+@click.option(
+    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+)
 @click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors")
 @click.option(
     "-n", "--dry-run", is_flag=True, help="Do not apply changes to file system"

@@ -15,13 +15,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from os.path import exists, join
 from tempfile import TemporaryDirectory
 from textwrap import dedent
 
+import moz.l10n.bin
 import pytest
 from click.testing import CliRunner
-from moz.l10n.bin import build, cli
+from moz.l10n.bin import build
 from moz.l10n.formats import Format
 from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
@@ -190,7 +192,7 @@ def test_cli_writes_coverage_json() -> None:
         target = join(root, "out")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(cli, ["build",
+        result = runner.invoke(moz.l10n.bin.cli, ["build",
             "--config", join(root, "l10n.toml"),
             "--base", root,
             "--target", target,
@@ -229,7 +231,7 @@ def test_cli_skips_coverage_without_flag() -> None:
         target = join(root, "out")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(cli, ["build",
+        result = runner.invoke(moz.l10n.bin.cli, ["build",
             "--config", join(root, "l10n.toml"),
             "--base", root,
             "--target", target,
@@ -249,7 +251,7 @@ def test_coverage_merge() -> None:
         coverage = join(root, "coverage.json")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(cli, ["build-file",
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.ftl"),
             "--l10n", join(root, "fr.ftl"),
             "--target", target,
@@ -282,7 +284,7 @@ def test_coverage_updates_existing_file() -> None:
             )
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(cli, ["build-file",
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.ftl"),
             "--l10n", join(root, "fr.ftl"),
             "--target", target,
@@ -306,7 +308,7 @@ def test_coverage_source_only() -> None:
         coverage = join(root, "coverage.json")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(cli, ["build-file",
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.ftl"),
             "--target", target,
             "--coverage-base", root,
@@ -325,7 +327,7 @@ def test_coverage_unparseable_source() -> None:
         coverage = join(root, "coverage.json")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(cli, ["build-file",
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.txt"),
             "--target", target,
             "--coverage-base", root,
@@ -364,7 +366,7 @@ def test_coverage_matches_l10n_build() -> None:
         target = join(root, "out")
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(cli, ["build",
+        result = runner.invoke(moz.l10n.bin.cli, ["build",
             "--config", join(root, "l10n.toml"),
             "--base", root,
             "--target", target,
@@ -387,7 +389,7 @@ def test_coverage_matches_l10n_build() -> None:
 
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(cli, ["build-file",
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en", "file.ftl"),
             "--l10n", fr_full,
             "--target", join(target, "fr", "file.ftl"),
@@ -409,7 +411,7 @@ def test_skips_coverage_without_flag() -> None:
 
         # fmt: off
         runner = CliRunner()
-        result = runner.invoke(cli, ["build-file",
+        result = runner.invoke(moz.l10n.bin.cli, ["build-file",
             "--source", join(root, "en.ftl"),
             "--target", target,
         ])
@@ -417,6 +419,52 @@ def test_skips_coverage_without_flag() -> None:
         assert result.exit_code == 0
 
         assert not exists(join(root, "coverage.json"))
+
+
+def test_cli_verbosity() -> None:
+    """Test different and default log levels set by -v or --verbose."""
+    tree: Tree = {
+        "l10n.toml": CFG_TOML_TEMPLATE.format(""),
+        "en": {"file.ftl": "msg-a = src\n"},
+        "fr": {"file.ftl": "msg-a = fr\n"},
+    }
+    with TemporaryDirectory() as root:
+        build_file_tree(root, tree)
+        target = join(root, "out")
+        # fmt: off
+        args = [
+            "--config", join(root, "l10n.toml"),
+            "--base", root, "--target", target,
+            "--locales", "fr"
+        ]
+        # fmt: on
+        runner = CliRunner()
+        result = runner.invoke(moz.l10n.bin.cli, ["build", *args])
+        assert result.exit_code == 0
+        assert result.output == ""
+
+        # Test DEBUG logging. "build" will put "source " first.
+        del logging.root.handlers[:]
+        result = runner.invoke(moz.l10n.bin.cli, ["build", "--verbose", "2", *args])
+        assert result.exit_code == 0
+        assert result.output.startswith("source ")
+
+        # Test INFO logging.
+        del logging.root.handlers[:]
+        result = runner.invoke(moz.l10n.bin.cli, ["build", "--verbose", "1", *args])
+        assert result.exit_code == 0
+        assert not result.output.startswith("source ")
+        assert result.output != ""
+
+        # Test no logging.
+        del logging.root.handlers[:]
+        result = runner.invoke(moz.l10n.bin.cli, ["build", "-v", "0", *args])
+        assert result.exit_code == 0
+        assert result.output == ""
+
+        # Test missing int argument to `--verbose`
+        result = runner.invoke(moz.l10n.bin.cli, ["build", "--verbose", *args])
+        assert result.exit_code == 2
 
 
 if __name__ == "__main__":

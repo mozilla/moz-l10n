@@ -33,7 +33,9 @@ log = logging.getLogger(__name__)
 
 
 @click.command(cls=make_list_option_class("--locales"))
-@click.option("-v", "--verbose", count=True, help="Set logging verbosity")
+@click.option(
+    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+)
 @click.option("--config", metavar="PATH", required=True, help="l10n.toml config file")
 @click.option(
     "--base", metavar="PATH", required=True, help="base dir for localizations"

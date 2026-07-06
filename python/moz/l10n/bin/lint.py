@@ -30,7 +30,9 @@ Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 
 
 @click.command()
-@click.option("-v", "--verbose", count=True, help="Set logging verbosity")
+@click.option(
+    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+)
 @click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors")
 @click.option("--config", metavar="PATH", help="Path to l10n.toml config file")
 @click.option(
@@ -47,7 +49,7 @@ def cli(
 
     If `paths` is a single directory, it is iterated with L10nConfigPaths if --config is set, or L10nDiscoverPaths otherwise.
 
-    If `paths` is not a single directory, its values are treated as glob expressions, with ** support.
+    If `paths` is not a single directory, its values are treated as glob expressions, with `**` support.
 
     FIXME: Currently only checks that files can be parsed, and does not check their contents more deeply.
     """

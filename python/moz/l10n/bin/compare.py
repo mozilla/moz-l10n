@@ -27,7 +27,9 @@ from moz.l10n.resource import parse_resource
 
 @click.command(cls=make_list_option_class("--ext", custom_usage="PATHS... [OPTIONS]"))
 @click.argument("paths", nargs=-1, required=True)
-@click.option("-v", "--verbose", count=True, help="Set logging verbosity")
+@click.option(
+    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+)
 @click.option("--json", "json_output", is_flag=True, help="output JSON")
 @click.option(
     "--ext",

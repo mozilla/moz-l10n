@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import json
-import logging
 from os import makedirs
 from os.path import dirname, exists, join, relpath
 from shutil import copyfile
@@ -27,11 +26,11 @@ from moz.l10n.formats import UnsupportedFormat
 from moz.l10n.model import Entry
 from moz.l10n.resource import parse_resource, serialize_resource
 
-log = logging.getLogger(__name__)
-
 
 @click.command()
-@click.option("-v", "--verbose", count=True, help="Set logging verbosity")
+@click.option(
+    "-v", "--verbose", type=int, default=0, help="Set logging verbosity level (0-2)."
+)
 @click.option("--source", metavar="PATH", required=True, help="source file")
 @click.option("--l10n", metavar="PATH", help="localization file")
 @click.option("--target", metavar="PATH", required=True, help="output target")
