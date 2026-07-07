@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 def _locales_settify(
     context: click.Context, param: click.Parameter, value: str
 ) -> set[str]:
-    """Help turning comma separated locales string into proprerly stripped `set`."""
+    """Help turning comma separated locales string into properly stripped `set`."""
     value = value.strip("\"'")
     locales: set[str] = set()
     if not value:

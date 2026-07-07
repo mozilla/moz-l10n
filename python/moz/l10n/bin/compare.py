@@ -29,7 +29,7 @@ from moz.l10n.resource import parse_resource
 def _ext_settify(
     context: click.Context, param: click.Parameter, value: str | None
 ) -> tuple[set[str], set[str]]:
-    """Help turning comma separated extenstions string into proprerly stripped sets.
+    """Help turning comma separated extenstions string into properly stripped sets.
     Sorting into include and exclude sets according to `!`-prefix.
     Ensuring `.` prefixing each extension.
     """
