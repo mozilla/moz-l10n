@@ -54,15 +54,16 @@ def handle_paths(
     config_path: str | None,
     file_paths: list[str] | tuple[str, ...],
     log: logging.Logger,
-) -> tuple[int, Iterable[str] | None, str]:
+) -> tuple[Iterable[str] | None, str]:
     """Deal with config and file paths.
     Both cannot be set at the same time.
-    Return error code, path_iter object and root_dir.
+    Return path_iter object and root_dir.
     """
     if config_path:
         if file_paths:
             log.error(LOG_ERROR_CONFIG_AND_PATHS)
-            return 2, None, ""
+            return None, ""
+
         cfg_paths = L10nConfigPaths(config_path)
         root_dir = os.path.abspath(cfg_paths.base)
         path_iter: Iterable[str] = cfg_paths.ref_paths
@@ -77,6 +78,6 @@ def handle_paths(
 
     else:
         log.error(LOG_ERROR_CONFIG_OR_PATHS)
-        return 2, None, ""
+        return None, ""
 
-    return 0, path_iter, root_dir
+    return path_iter, root_dir

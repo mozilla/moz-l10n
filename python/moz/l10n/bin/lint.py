@@ -80,9 +80,9 @@ def lint(
 
     Returns 0 on success, 1 on parse error, or 2 on argument error.
     """
-    exit_code, path_iter, root_dir = handle_paths(config_path, file_paths, log)
-    if exit_code or path_iter is None:
-        return exit_code
+    path_iter, root_dir = handle_paths(config_path, file_paths, log)
+    if path_iter is None:
+        return 2
 
     ok = 0
     unsupported = 0
