@@ -74,33 +74,29 @@ def test_compare_multiple_paths() -> None:
 
     with TemporaryDirectory() as tmp_dir:
         build_file_tree(tmp_dir, tree)
-        cwd = os.getcwd()
-        try:
-            os.chdir(tmp_dir)
+        monkeypatch = pytest.MonkeyPatch()
+        monkeypatch.chdir(tmp_dir)
 
-            runner = CliRunner()
-            args = ["compare", *locales, "--source", SOURCE]
-            result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
+        runner = CliRunner()
+        args = ["compare", *locales, "--source", SOURCE]
+        result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
 
-            assert result.exit_code == 0
-            json_output = json.loads(result.output)
-            assert all(locale in json_output for locale in locales)
+        assert result.exit_code == 0
+        json_output = json.loads(result.output)
+        assert all(locale in json_output for locale in locales)
 
-            # testing again with some changes
-            with open(
-                os.path.join(tmp_dir, "de", FILE), "w", encoding="utf8"
-            ) as file_obj:
-                file_obj.write("!@$%!@#$")
-            os.unlink(os.path.join(tmp_dir, "nb-NO", FILE))
+        # testing again with some changes
+        with open(
+            os.path.join(tmp_dir, "de", FILE), "w", encoding="utf8"
+        ) as file_obj:
+            file_obj.write("!@$%!@#$")
+        os.unlink(os.path.join(tmp_dir, "nb-NO", FILE))
 
-            result = runner.invoke(moz.l10n.bin.cli, args)
-            assert "!!!" in result.output
+        result = runner.invoke(moz.l10n.bin.cli, args)
+        assert "!!!" in result.output
 
-            result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
-            json_output = json.loads(result.output)
-
-        finally:
-            os.chdir(cwd)
+        result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
+        json_output = json.loads(result.output)
 
         assert json_output["nb-NO"]["missing"] == {FILE: ["msg-a"]}
         assert all(
