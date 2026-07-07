@@ -87,7 +87,7 @@ def cli(
         log.debug(format_exc())
         sys.exit(2)
     except ValueError as err:
-        log.error(str(*err.args))
+        log.error(str(err))
         log.debug(format_exc())
         sys.exit(2)
     except Exception:

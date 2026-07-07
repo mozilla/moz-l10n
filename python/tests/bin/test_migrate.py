@@ -349,5 +349,34 @@ def test_firefox_plural_properties() -> None:
             """)
 
 
+def test_multi_arg_value_error() -> None:
+    """Test catching `ValueError` raised during apply with more than one arg."""
+    a_ftl = "a1 = A1\n"
+    migration = dedent(
+        """\
+        from moz.l10n.migrate import Migrate
+
+        def boom(res, ctx):
+            raise ValueError("first arg", "second arg")
+
+        Migrate({"a.ftl": {"new-id": boom}})
+        """
+    )
+    tree: Tree = {
+        "en-US": {"a.ftl": a_ftl},
+        "fr": {"a.ftl": a_ftl},
+        "migration.py": migration,
+    }
+    with TemporaryDirectory() as root:
+        build_file_tree(root, tree)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            moz.l10n.bin.cli,
+            ["migrate", "--root", root, join(root, "migration.py")],
+        )
+        assert result.exit_code == 2
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
