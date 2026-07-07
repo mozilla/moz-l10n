@@ -64,7 +64,7 @@ def test_compare_missing_messages() -> None:
         assert parsed_output["fr"]["errors"] is None
 
 
-def test_compare_multiple_paths() -> None:
+def test_compare_multiple_paths(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test passing a number of paths to be compared
     and using short relative paths to work.
     """
@@ -74,7 +74,6 @@ def test_compare_multiple_paths() -> None:
 
     with TemporaryDirectory() as tmp_dir:
         build_file_tree(tmp_dir, tree)
-        monkeypatch = pytest.MonkeyPatch()
         monkeypatch.chdir(tmp_dir)
 
         runner = CliRunner()
@@ -110,6 +109,8 @@ def test_compare_multiple_paths() -> None:
             for locale in locales
             if locale != "de"
         )
+        # fixes VS Code test adapter breaking with FileNotFoundError
+        monkeypatch.undo()
 
 
 def test_compare_ext_inclusion_and_exclusion() -> None:
