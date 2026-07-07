@@ -45,7 +45,7 @@ from moz.l10n.resource import parse_resource, serialize_resource
     "(e.g. browser/browser.ftl), matching l10n-build's keys.",
 )
 def cli(
-    verbose: bool,
+    verbose: int,
     source: str,
     target: str,
     l10n: str | None = None,

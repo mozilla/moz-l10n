@@ -46,7 +46,11 @@ Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 )
 @click.argument("paths", nargs=-1)
 def cli(
-    verbose: int, quiet: bool, config: str, skip_unknown: bool, paths: tuple[str, ...]
+    verbose: int,
+    quiet: bool,
+    config: str,
+    skip_unknown: bool,
+    paths: tuple[str, ...],
 ) -> None:
     """Lint/validate localization resources.
 
