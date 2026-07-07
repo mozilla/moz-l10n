@@ -85,7 +85,7 @@ def cli(
     base: str,
     target: str,
     locales: set[str],
-    coverage: str | None = None,
+    coverage: bool,
 ) -> None:
     """
     Build localization files for release.
