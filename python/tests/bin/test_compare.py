@@ -78,9 +78,8 @@ def test_compare_multiple_paths() -> None:
         os.chdir(tmp_dir)
 
         runner = CliRunner()
-        result = runner.invoke(
-            moz.l10n.bin.cli, ["compare", *locales, "--source", SOURCE, "--json"]
-        )
+        args = ["compare", *locales, "--source", SOURCE]
+        result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
 
         assert result.exit_code == 0
         json_output = json.loads(result.output)
@@ -91,12 +90,14 @@ def test_compare_multiple_paths() -> None:
             file_obj.write("!@$%!@#$")
         os.unlink(os.path.join(tmp_dir, "nb-NO", FILE))
 
-        result = runner.invoke(
-            moz.l10n.bin.cli, ["compare", *locales, "--source", SOURCE, "--json"]
-        )
+        result = runner.invoke(moz.l10n.bin.cli, args)
+        assert "!!!" in result.output
+
+        result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
+        json_output = json.loads(result.output)
+
         os.chdir(cwd)
 
-        json_output = json.loads(result.output)
         assert json_output["nb-NO"]["missing"] == {FILE: ["msg-a"]}
         assert all(
             json_output[locale]["missing"] is None

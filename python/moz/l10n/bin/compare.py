@@ -121,17 +121,20 @@ def cli(
         source_paths.base = dirname(path0)
         source_data = {}
         for ref_path, tgt_path in source_paths.all():
-            if ext_filter(tgt_path):
-                try:
-                    path = relpath(tgt_path.format(locale=locale0), path0)
-                    source_data[path] = msg_ids(ref_path)
-                except UnsupportedFormat:
-                    continue
+            if not ext_filter(tgt_path):
+                continue
+            try:
+                path = relpath(tgt_path.format(locale=locale0), path0)
+                source_data[path] = msg_ids(ref_path)
+            except UnsupportedFormat:
+                continue
+
     source_total = sum(len(sd) for sd in source_data.values())
     if source_total == 0:
         raise ValueError(f"No messages found for source {source}")
+
     if not json_output:
-        print(f"source: {source_total}")
+        click.echo(f"source: {source_total}")
 
     json_res = {}
     for path in paths:
@@ -144,20 +147,24 @@ def cli(
                 "errors": errors or None,
                 "missing": missing or None,
             }
-        else:
-            total = sum(len(rm) for rm in missing.values())
-            print(f"{lc}: {-total}")
-            for path, error in errors.items():
-                print(f"  !!! {path}: {error}")
-            if verbose > 0:
-                for path, messages in missing.items():
-                    print(f"  {path}: {-len(messages)}")
-                    if verbose > 1:
-                        for msg in messages:
-                            print(f"    {msg}")
+            continue
+
+        total = sum(len(rm) for rm in missing.values())
+        click.echo(f"{lc}: {-total}")
+        for path_, error in errors.items():
+            prefix = click.style("  !!!", fg="red", bold=True)
+            click.echo(f"{prefix} {path_}: {error}")
+        if not verbose:
+            continue
+        for path_, messages in missing.items():
+            click.echo(f"  {path_}: {-len(messages)}")
+            if verbose == 1:
+                continue
+            for msg in messages:
+                click.echo(f"    {msg}")
 
     if json_output:
-        print(json.dumps(json_res, ensure_ascii=False))
+        click.echo(json.dumps(json_res, ensure_ascii=False))
 
 
 def compare(
@@ -166,19 +173,18 @@ def compare(
     errors: dict[str, str] = {}
     missing: dict[str, list[str]] = {}
     for path, src_messages in source_data.items():
-        if src_messages:
-            try:
-                tgt_messages = msg_ids(join(root, path))
-                for msg in src_messages:
-                    if msg not in tgt_messages:
-                        if path in missing:
-                            missing[path].append(msg)
-                        else:
-                            missing[path] = [msg]
-            except FileNotFoundError:
-                missing[path] = list(src_messages)
-            except Exception as e:
-                errors[path] = str(e)
+        if not src_messages:
+            continue
+        try:
+            tgt_messages = msg_ids(join(root, path))
+            for msg in src_messages:
+                if msg in tgt_messages:
+                    continue
+                missing.setdefault(path, []).append(msg)
+        except FileNotFoundError:
+            missing[path] = list(src_messages)
+        except Exception as e:
+            errors[path] = str(e)
     return errors, missing
 
 
