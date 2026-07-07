@@ -96,7 +96,10 @@ def test_directory() -> None:
 
 
 def test_config_with_paths() -> None:
-    tree: Tree = {"a.ftl": "a = A\n"}
+    tree: Tree = {
+        "l10n.toml": "",
+        "a.ftl": "a = A\n"
+    }
     with TemporaryDirectory() as root:
         build_file_tree(root, tree)
 
@@ -107,6 +110,11 @@ def test_config_with_paths() -> None:
             ["lint", "--config", join(root, "l10n.toml"), join(root, "a.ftl")],
         )
         assert result.exit_code == 2
+        # --config WITHOUT paths works.
+        result = runner.invoke(
+            moz.l10n.bin.cli, ["lint", "--config", join(root, "l10n.toml")]
+        )
+        assert result.exit_code == 0
 
 
 if __name__ == "__main__":

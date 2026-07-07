@@ -44,7 +44,7 @@ Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
     is_flag=True,
     help="Skip files without a known L10n extension.",
 )
-@click.argument("paths", nargs=-1, required=True)
+@click.argument("paths", nargs=-1)
 def cli(
     verbose: int, quiet: bool, config: str, skip_unknown: bool, paths: tuple[str, ...]
 ) -> None:
