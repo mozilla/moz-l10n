@@ -75,28 +75,32 @@ def test_compare_multiple_paths() -> None:
     with TemporaryDirectory() as tmp_dir:
         build_file_tree(tmp_dir, tree)
         cwd = os.getcwd()
-        os.chdir(tmp_dir)
+        try:
+            os.chdir(tmp_dir)
 
-        runner = CliRunner()
-        args = ["compare", *locales, "--source", SOURCE]
-        result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
+            runner = CliRunner()
+            args = ["compare", *locales, "--source", SOURCE]
+            result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
 
-        assert result.exit_code == 0
-        json_output = json.loads(result.output)
-        assert all(locale in json_output for locale in locales)
+            assert result.exit_code == 0
+            json_output = json.loads(result.output)
+            assert all(locale in json_output for locale in locales)
 
-        # testing again with some changes
-        with open(os.path.join(tmp_dir, "de", FILE), "w", encoding="utf8") as file_obj:
-            file_obj.write("!@$%!@#$")
-        os.unlink(os.path.join(tmp_dir, "nb-NO", FILE))
+            # testing again with some changes
+            with open(
+                os.path.join(tmp_dir, "de", FILE), "w", encoding="utf8"
+            ) as file_obj:
+                file_obj.write("!@$%!@#$")
+            os.unlink(os.path.join(tmp_dir, "nb-NO", FILE))
 
-        result = runner.invoke(moz.l10n.bin.cli, args)
-        assert "!!!" in result.output
+            result = runner.invoke(moz.l10n.bin.cli, args)
+            assert "!!!" in result.output
 
-        result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
-        json_output = json.loads(result.output)
+            result = runner.invoke(moz.l10n.bin.cli, [*args, "--json"])
+            json_output = json.loads(result.output)
 
-        os.chdir(cwd)
+        finally:
+            os.chdir(cwd)
 
         assert json_output["nb-NO"]["missing"] == {FILE: ["msg-a"]}
         assert all(
@@ -148,6 +152,21 @@ def test_compare_ext_inclusion_and_exclusion() -> None:
         assert result.exit_code == 0
         # Source total should drop .txt messages (3 total - 1 txt = 2)
         assert "source: 2" in result.output
+
+
+def test_ext_settify() -> None:
+    """Explicitly test the settifyer."""
+    func = moz.l10n.bin.compare._ext_settify
+
+    ext = "txt"
+    in_set, ex_set = func(None, None, ext)  # ty:ignore[invalid-argument-type]
+    assert in_set == set([".txt"])
+    assert ex_set == set()
+
+    ext = "'.ftl,!txt, ini'"
+    in_set, ex_set = func(None, None, ext)  # ty:ignore[invalid-argument-type]
+    assert in_set == set([".ftl", ".ini"])
+    assert ex_set == set([".txt"])
 
 
 if __name__ == "__main__":
