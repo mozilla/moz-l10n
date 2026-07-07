@@ -83,7 +83,7 @@ def cli(
     # locale -> [ftl_missing, src_fallback]
     msg_data: dict[str, list[int]] = defaultdict(lambda: [0, 0])
 
-    locales_ = set(locales.split(",") if "," in locales else set([locales]))
+    locales_ = set(locales.split(","))
     # locale -> {file_path -> {"total": int, "missing": [id, ...]}}.
     # Pre-initialized so every requested locale gets a coverage.json,
     # even if no source files were parseable.
