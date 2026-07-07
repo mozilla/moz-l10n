@@ -85,9 +85,7 @@ def test_compare_multiple_paths(monkeypatch: pytest.MonkeyPatch) -> None:
         assert all(locale in json_output for locale in locales)
 
         # testing again with some changes
-        with open(
-            os.path.join(tmp_dir, "de", FILE), "w", encoding="utf8"
-        ) as file_obj:
+        with open(os.path.join(tmp_dir, "de", FILE), "w", encoding="utf8") as file_obj:
             file_obj.write("!@$%!@#$")
         os.unlink(os.path.join(tmp_dir, "nb-NO", FILE))
 
