@@ -137,7 +137,7 @@ def test_compare_ext_inclusion_and_exclusion() -> None:
         assert "source: 1" in result.output
 
         # Exclusion with '!' - look at everything EXCEPT .txt
-        result = runner.invoke(moz.l10n.bin.cli, [*cmd_stem, "!txt"])
+        result = runner.invoke(moz.l10n.bin.cli, [*cmd_stem, "!txt,!"])
         assert result.exit_code == 0
         # Source total should drop .txt messages (3 total - 1 txt = 2)
         assert "source: 2" in result.output

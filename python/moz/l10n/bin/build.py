@@ -32,6 +32,24 @@ from moz.l10n.resource import parse_resource, serialize_resource
 log = logging.getLogger(__name__)
 
 
+def _locales_settify(
+    context: click.Context, param: click.Parameter, value: str
+) -> set[str]:
+    """Help turning comma separated locales string into proprerly stripped `set`."""
+    value = value.strip('"\'')
+    locales: set[str] = set()
+    if not value:
+        return locales
+
+    for item in value.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        locales.add(item)
+
+    return locales
+
+
 @click.command()
 @click.option(
     "-v",
@@ -54,6 +72,7 @@ log = logging.getLogger(__name__)
     required=True,
     type=str,
     help="Target locale(s). Separate multiple by comma (`en,fr,nb-NO`).",
+    callback=_locales_settify,
 )
 @click.option(
     "--coverage",
@@ -65,7 +84,7 @@ def cli(
     config: str,
     base: str,
     target: str,
-    locales: str,
+    locales: set[str],
     coverage: str | None = None,
 ) -> None:
     """
@@ -83,12 +102,11 @@ def cli(
     # locale -> [ftl_missing, src_fallback]
     msg_data: dict[str, list[int]] = defaultdict(lambda: [0, 0])
 
-    locales_ = set(locales.split(","))
     # locale -> {file_path -> {"total": int, "missing": [id, ...]}}.
     # Pre-initialized so every requested locale gets a coverage.json,
     # even if no source files were parseable.
     coverage_data: dict[str, dict[str, dict[str, int | list[str | list[str]]]]] = {
-        locale: {} for locale in locales_
+        locale: {} for locale in locales
     }
 
     paths = L10nConfigPaths(config)
@@ -100,7 +118,7 @@ def cli(
             source = parse_resource(source_path)
         except UnsupportedFormat:
             source = None
-        for locale in locales_.intersection(path_locales) if path_locales else locales_:
+        for locale in locales.intersection(path_locales) if path_locales else locales:
             l10n_path = l10n_path_template.format(locale=locale)
             rel_path = relpath(l10n_path, base)
             tgt_path = join(target, rel_path)

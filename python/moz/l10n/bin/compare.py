@@ -26,6 +26,39 @@ from moz.l10n.paths import L10nConfigPaths, L10nDiscoverPaths
 from moz.l10n.resource import parse_resource
 
 
+def _ext_settify(
+    context: click.Context, param: click.Parameter, value: str | None
+) -> tuple[set[str], set[str]]:
+    """Help turning comma separated extenstions string into proprerly stripped sets.
+    Sorting into include and exclude sets according to `!`-prefix.
+    Ensuring `.` prefixing each extension.
+    """
+    ext_include: set[str] = set()
+    ext_exclude: set[str] = set()
+    value = None if value is None else value.strip("\"'")
+    if not value:
+        return ext_include, ext_exclude
+
+    for item in value.split(","):
+        item = item.strip()
+        exclude = item.startswith("!")
+        if exclude:
+            item = item[1:]
+
+        if not item:
+            continue
+
+        if not item.startswith("."):
+            item = f".{item}"
+
+        if exclude:
+            ext_exclude.add(item)
+        else:
+            ext_include.add(item)
+
+    return ext_include, ext_exclude
+
+
 @click.command()
 @click.argument("paths", nargs=-1, required=True)
 @click.option(
@@ -37,8 +70,9 @@ from moz.l10n.resource import parse_resource
 @click.option("--json", "json_output", is_flag=True, help="Output JSON.")
 @click.option(
     "--ext",
-    help="File extension(s). Separate multiple by comma (`ini,flt`). Prefix with ! to exclude (`!json`).",
+    help="File extension(s). Separate multiple by comma (`ini,ftl`). Prefix with ! to exclude (`!json`).",
     type=str,
+    callback=_ext_settify,
 )
 @click.option(
     "--source",
@@ -51,7 +85,7 @@ def cli(
     paths: tuple[str, ...],
     source: str,
     verbose: int,
-    ext: str,
+    ext: tuple[set[str], set[str]],
     *,
     json_output: bool = False,
 ) -> None:
@@ -64,15 +98,7 @@ def cli(
     """
     set_log_level(verbose)
 
-    ext_include: set[str] = set()
-    ext_exclude: set[str] = set()
-    if ext:
-        for item in (ext,) if "," not in ext else ext.split(","):
-            if item.startswith("!"):
-                item = item[1:]
-                ext_exclude.add(item if item.startswith(".") else f".{item}")
-            else:
-                ext_include.add(item if item.startswith(".") else f".{item}")
+    ext_include, ext_exclude = ext
 
     def ext_filter(path: str) -> bool:
         included = not ext_include or any(path.endswith(ext) for ext in ext_include)
