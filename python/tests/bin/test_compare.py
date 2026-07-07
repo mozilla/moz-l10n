@@ -39,13 +39,19 @@ def test_compare_missing_messages() -> None:
         fr_dir = os.path.join(tmp_dir, "fr")
 
         runner = CliRunner()
-        result = runner.invoke(
-            moz.l10n.bin.cli, ["compare", fr_dir, "--source", source_json_path]
-        )
+        args = ["compare", fr_dir, "--source", source_json_path]
+        result = runner.invoke(moz.l10n.bin.cli, args)
 
         assert result.exit_code == 0
         assert "source: 3" in result.output
         assert "fr: -1" in result.output
+
+        # test same with INFO level logging paths
+        result = runner.invoke(moz.l10n.bin.cli, [*args, "--verbose"])
+        assert FILE in result.output
+        # test same with DEBUG level logging messages
+        result = runner.invoke(moz.l10n.bin.cli, [*args, "-vv"])
+        assert "msg-c" in result.output
 
         result = runner.invoke(
             moz.l10n.bin.cli,
