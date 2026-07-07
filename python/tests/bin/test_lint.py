@@ -98,7 +98,7 @@ def test_directory() -> None:
 def test_config_with_paths() -> None:
     tree: Tree = {
         "l10n.toml": "",
-        "a.ftl": "a = A\n"
+        "a.ftl": "a = A\n",
     }
     with TemporaryDirectory() as root:
         build_file_tree(root, tree)
