@@ -29,12 +29,12 @@ from moz.l10n.model import Comment, Entry, PatternMessage, Resource, Section
 
 from ..utils import Tree, build_file_tree
 
-CFG_TOML_TEMPLATE = """
+CFG_TOML = """
 basepath = "."
-locales = ["fr", {}]
+locales = ["fr"]
 [[paths]]
     reference = "en/file.ftl"
-    l10n = "{{locale}}/file.ftl"
+    l10n = "{locale}/file.ftl"
 """
 
 
@@ -181,7 +181,13 @@ def test_cli_writes_coverage_json() -> None:
         msg-b = de
         """)
     tree: Tree = {
-        "l10n.toml": CFG_TOML_TEMPLATE.format('"de"'),
+        "l10n.toml": dedent("""
+            basepath = "."
+            locales = ["fr", "de"]
+            [[paths]]
+                reference = "en/file.ftl"
+                l10n = "{locale}/file.ftl"
+        """),
         "en": {"file.ftl": source_ftl},
         "fr": {"file.ftl": fr_ftl},
         "de": {"file.ftl": de_ftl},
@@ -212,7 +218,7 @@ def test_cli_writes_coverage_json() -> None:
 
 def test_cli_skips_coverage_without_flag() -> None:
     tree: Tree = {
-        "l10n.toml": CFG_TOML_TEMPLATE.format(""),
+        "l10n.toml": CFG_TOML,
         "en": {"file.ftl": "msg-a = src\n"},
         "fr": {"file.ftl": "msg-a = fr\n"},
     }
@@ -338,7 +344,7 @@ def test_coverage_matches_l10n_build() -> None:
     source_ftl = "msg-a = src\nmsg-b = src\nmsg-c = src\n"
     fr_ftl = "msg-a = fr\n"
     tree: Tree = {
-        "l10n.toml": CFG_TOML_TEMPLATE.format(""),
+        "l10n.toml": CFG_TOML,
         "en": {"file.ftl": source_ftl},
         "fr": {"file.ftl": fr_ftl},
     }
@@ -405,7 +411,7 @@ def test_skips_coverage_without_flag() -> None:
 def test_cli_verbosity() -> None:
     """Test different and default log levels set by -v or --verbose."""
     tree: Tree = {
-        "l10n.toml": CFG_TOML_TEMPLATE.format(""),
+        "l10n.toml": CFG_TOML,
         "en": {"file.ftl": "msg-a = src\n"},
         "fr": {"file.ftl": "msg-a = fr\n"},
     }
