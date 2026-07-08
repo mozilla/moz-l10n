@@ -279,5 +279,22 @@ def test_cli_verbosity() -> None:
         assert result.exit_code == 0
 
 
+def test_locales_settify() -> None:
+    """Explicitly test the settifyer."""
+    func = moz.l10n.bin.build._locales_settify
+
+    locales = "en"
+    result = func(None, None, locales)  # ty:ignore[invalid-argument-type]
+    assert result == set(["en"])
+
+    locales = "'fr,de,nb-NO'"
+    result = func(None, None, locales)  # ty:ignore[invalid-argument-type]
+    assert result == set(["fr", "de", "nb-NO"])
+
+    locales = "fr, en, nb-NO "
+    result = func(None, None, locales)  # ty:ignore[invalid-argument-type]
+    assert result == set(["fr", "en", "nb-NO"])
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
