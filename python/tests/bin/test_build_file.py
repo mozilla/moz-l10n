@@ -124,11 +124,12 @@ def test_coverage_unparseable_source() -> None:
 
 
 def test_coverage_matches_l10n_build() -> None:
-    # A coverage.json first created by l10n-build is then updated by
-    # l10n-build-file for one resource. With --coverage-base set to the
-    # locale dir, the key is derived as target's relative path, so the
-    # entry is overwritten in place rather than added under a divergent
-    # (absolute) path.
+    """Test `coverage.json` first created by `moz-l10n build` is then
+    updated by `moz-l10n build-file` for one resource.
+    With `--coverage-base` set to locale dir, the key is derived as target's
+    relative path, so the entry is overwritten in place rather than added under
+    a divergent (absolute) path.
+    """
     source_ftl = "msg-a = src\nmsg-b = src\nmsg-c = src\n"
     fr_ftl = "msg-a = fr\n"
     tree: Tree = {

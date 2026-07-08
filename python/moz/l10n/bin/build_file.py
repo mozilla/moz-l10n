@@ -42,7 +42,7 @@ from moz.l10n.resource import parse_resource, serialize_resource
     metavar="DIR",
     help="Base dir for coverage reporting: update <DIR>/coverage.json with "
     "this file's translation ratio, keyed by --target's path relative to DIR "
-    "(e.g. browser/browser.ftl), matching l10n-build's keys.",
+    "(e.g. browser/browser.ftl), matching `moz-l10n build`'s keys.",
 )
 def cli(
     verbose: int,

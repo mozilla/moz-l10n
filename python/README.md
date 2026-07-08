@@ -212,7 +212,7 @@ class Migrate(
 Define a migration that adds entries according to `map` to resources in `paths`.
 
 This is primarily intended to be called from a migration script,
-which is then processed with the `l10n-migrate` CLI command.
+which is then processed with the `moz-l10n migrate` CLI command.
 
 `map` is a mapping of resource reference paths to target entry identifiers
 to functions that define their values;
