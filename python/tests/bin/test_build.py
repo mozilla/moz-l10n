@@ -287,7 +287,11 @@ def test_locales_settify() -> None:
     result = func(None, None, locales)  # ty:ignore[invalid-argument-type]
     assert result == set(["en"])
 
-    locales = "'fr,de,nb-NO'"
+    locales = ""
+    result = func(None, None, locales)  # ty:ignore[invalid-argument-type]
+    assert result == set([])
+
+    locales = "'fr,de,,nb-NO'"
     result = func(None, None, locales)  # ty:ignore[invalid-argument-type]
     assert result == set(["fr", "de", "nb-NO"])
 
