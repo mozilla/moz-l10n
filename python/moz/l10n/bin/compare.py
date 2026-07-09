@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
 from os.path import abspath, basename, dirname, isdir, join, normpath, relpath
 from typing import Collection
 
@@ -158,10 +159,9 @@ def cli(
             continue
         for path_, messages in missing.items():
             click.echo(f"  {path_}: {-len(messages)}")
-            if verbose == 1:
-                continue
-            for msg in messages:
-                click.echo(f"    {msg}")
+            if verbose > 1:
+                for msg in messages:
+                    click.echo(f"    {msg}")
 
     if json_output:
         click.echo(json.dumps(json_res, ensure_ascii=False))
@@ -171,18 +171,17 @@ def compare(
     source_data: dict[str, Collection[str]], root: str
 ) -> tuple[dict[str, str], dict[str, list[str]]]:
     errors: dict[str, str] = {}
-    missing: dict[str, list[str]] = {}
+    missing: defaultdict[str, list[str]] = defaultdict(list)
     for path, src_messages in source_data.items():
         if not src_messages:
             continue
         try:
             tgt_messages = msg_ids(join(root, path))
             for msg in src_messages:
-                if msg in tgt_messages:
-                    continue
-                missing.setdefault(path, []).append(msg)
+                if msg not in tgt_messages:
+                    missing[path].append(msg)
         except FileNotFoundError:
-            missing[path] = list(src_messages)
+            missing[path].extend(list(src_messages))
         except Exception as e:
             errors[path] = str(e)
     return errors, missing
