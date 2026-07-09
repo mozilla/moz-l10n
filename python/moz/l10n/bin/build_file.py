@@ -86,7 +86,7 @@ def cli(
             )
 
         if coverage_base:
-            # Match l10n-build: one coverage.json per locale dir, keyed by the
+            # Match `moz-l10n build`: one coverage.json per locale dir, keyed by the
             # file path relative to that dir (e.g. browser/browser.ftl). The
             # --coverage-base dir holds the coverage.json and is the root the
             # key is computed against. Read any pre-existing file and
