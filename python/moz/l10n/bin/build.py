@@ -36,18 +36,7 @@ def _locales_settify(
     context: click.Context, param: click.Parameter, value: str
 ) -> set[str]:
     """Help turning comma separated locales string into properly stripped `set`."""
-    value = value.strip("\"'")
-    locales: set[str] = set()
-    if not value:
-        return locales
-
-    for item in value.split(","):
-        item = item.strip()
-        if not item:
-            continue
-        locales.add(item)
-
-    return locales
+    return set(filter(None, (item.strip() for item in value.strip("\"'").split(","))))
 
 
 @click.command()
