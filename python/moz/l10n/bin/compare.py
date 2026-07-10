@@ -92,7 +92,9 @@ def cli() -> None:
         for ref_path, tgt_path in source_paths.all():
             if ext_filter(tgt_path):
                 try:
-                    path = relpath(tgt_path.format(locale=locale0), path0)
+                    path = relpath(
+                        source_paths.format_target_path(tgt_path, locale0), path0
+                    )
                     source_data[path] = msg_ids(ref_path)
                 except UnsupportedFormat:
                     continue

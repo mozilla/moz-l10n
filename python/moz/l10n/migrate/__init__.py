@@ -36,7 +36,6 @@ from moz.l10n.model import (
     SelectMessage,
 )
 from moz.l10n.paths import L10nConfigPaths, L10nDiscoverPaths
-from moz.l10n.paths.android_locale import get_android_locale
 from moz.l10n.resource import parse_resource, serialize_resource
 
 from .utils import MigrationContext, get_entry, get_pattern, insert_entry_after
@@ -101,9 +100,7 @@ class Migrate:
         elif isdir(paths):
             self.paths = L10nDiscoverPaths(paths)
         elif isfile(paths):
-            self.paths = L10nConfigPaths(
-                paths, locale_map={"android_locale": get_android_locale}
-            )
+            self.paths = L10nConfigPaths(paths)
         else:
             raise ValueError(f"Not found: {paths}")
 

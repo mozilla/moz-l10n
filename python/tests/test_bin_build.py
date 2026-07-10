@@ -214,6 +214,45 @@ class TestBuild(TestCase):
                 "file.ftl": {"total": 4, "missing": ["msg-c", "msg-d"]}
             }
 
+    def test_cli_android_locale_template(self):
+        """Test `{android_locale}` target template to resolve via default
+        locale map including the legacy ISO remap "he" -> "iw".
+        (Used to crash with KeyError: 'android_locale')
+        """
+        cfg_toml = dedent(
+            """
+            basepath = "."
+            locales = ["he"]
+            [[paths]]
+                reference = "en/file.ftl"
+                l10n = "{android_locale}/file.ftl"
+            """
+        )
+        tree: Tree = {
+            "l10n.toml": cfg_toml,
+            "en": {"file.ftl": "msg-a = src\nmsg-b = src\n"},
+            # "he" translations live under Android locale dir name:
+            "iw": {"file.ftl": "msg-a = he\n"},
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+            target = join(root, "out")
+            # fmt: off
+            argv = ["l10n-build",
+                "--config", join(root, "l10n.toml"),
+                "--base", root,
+                "--target", target,
+                "--locales", "he",
+            ]
+            # fmt: on
+            with patch.object(sys, "argv", argv):
+                cli()
+
+            # Output lands under Android dir name "iw", not BCP-47 "he".
+            assert not exists(join(target, "he", "file.ftl"))
+            with open(join(target, "iw", "file.ftl"), encoding="utf-8") as f:
+                assert f.read() == "msg-a = he\n"
+
     def test_cli_skips_coverage_without_flag(self):
         cfg_toml = dedent(
             """
