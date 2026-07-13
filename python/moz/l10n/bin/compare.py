@@ -37,11 +37,10 @@ def _ext_settify(
     """
     ext_include: set[str] = set()
     ext_exclude: set[str] = set()
-    value = None if value is None else value.strip("\"'")
     if not value:
         return ext_include, ext_exclude
 
-    for item in value.split(","):
+    for item in value.strip("\"'").split(","):
         item = item.strip()
         exclude = item.startswith("!")
         if exclude:
@@ -183,7 +182,7 @@ def compare(
                 if msg not in tgt_messages:
                     missing[path].append(msg)
         except FileNotFoundError:
-            missing[path].extend(list(src_messages))
+            missing[path] = list(src_messages)
         except Exception as e:
             errors[path] = str(e)
     return errors, missing

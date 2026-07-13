@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from collections.abc import Sequence
 from enum import Enum
 from os.path import relpath, splitext
 
@@ -67,7 +68,7 @@ def cli(
 
 
 def lint(
-    file_paths: list[str] | tuple[str, ...],
+    file_paths: Sequence[str],
     *,
     config_path: str | None = None,
     skip_unknown: bool = False,

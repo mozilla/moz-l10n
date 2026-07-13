@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from collections.abc import Sequence
 from enum import Enum
 from os.path import abspath, relpath
 
@@ -65,7 +66,7 @@ def cli(
 
 
 def fix(
-    file_paths: list[str] | tuple[str, ...],
+    file_paths: Sequence[str],
     config_path: str | None = None,
     continue_on_error: bool = False,
 ) -> int:

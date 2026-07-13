@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from glob import glob
 
 from moz.l10n.paths.config import L10nConfigPaths
@@ -53,7 +53,7 @@ def set_log_level(verbose: int, quiet: bool = False) -> int:
 
 def handle_paths(
     config_path: str | None,
-    file_paths: list[str] | tuple[str, ...],
+    file_paths: Sequence[str],
     log: logging.Logger,
 ) -> tuple[Iterable[str] | None, str]:
     """Deal with config and file paths.
