@@ -8,6 +8,7 @@ dev = [
   "jsonschema>=4.23.0",
   "mypy>=1.11.2",
   "pytest>=8.3.3",
+  "pytest-cov>=7.1.0",
   "ruff>=0.9.10",
   "types-lxml>=2024.9.16",
   "types-polib>=1.2.0.20240811",
@@ -40,3 +41,10 @@ select = [
 ignore = [
   "E501", # Line too long
 ]
+[tool.ty.environment]
+python = ".venv"
+
+[tool.coverage.run]
+omit = ["tests/*", "**/tests/*"]
+[tool.coverage.report]
+skip_empty = true
