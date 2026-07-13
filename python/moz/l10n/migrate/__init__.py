@@ -69,7 +69,7 @@ class Migrate:
         Define a migration that adds entries according to `map` to resources in `paths`.
 
         This is primarily intended to be called from a migration script,
-        which is then processed with the `l10n-migrate` CLI command.
+        which is then processed with the `moz-l10n migrate` CLI command.
 
         `map` is a mapping of resource reference paths to entry identifiers
         to functions that define their values;
@@ -82,7 +82,7 @@ class Migrate:
 
         If `paths` is a string, it needs to be either a path to a directory
         or a path to an l10n config file.
-        This may also be set by an `l10n-migrate` CLI argument.
+        This may also be set by an `moz-l10n migrate` CLI argument.
         """
         self.map = map
         if paths is not None:

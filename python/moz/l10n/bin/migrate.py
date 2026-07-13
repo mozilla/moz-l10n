@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright Mozilla Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,13 +16,13 @@ from __future__ import annotations
 
 import logging
 import sys
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from enum import Enum
 from importlib.util import module_from_spec, spec_from_file_location
 from os.path import abspath
-from textwrap import dedent
 from traceback import format_exc
 
+import click
+from moz.l10n.bin.utils import set_log_level
 from moz.l10n.migrate import all_migrations
 from moz.l10n.paths.config import L10nConfigPaths
 from moz.l10n.paths.discover import L10nDiscoverPaths, MissingSourceDirectoryError
@@ -34,76 +32,60 @@ log = logging.getLogger(__name__)
 Result = Enum("Result", ("OK", "SKIP", "UNSUPPORTED", "FAIL"))
 
 
-def cli(args: list[str] | None = None) -> None:
-    parser = ArgumentParser(
-        description=dedent(
-            """
-            Apply migrations to localization resources.
+@click.command()
+@click.option(
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (-v/--verbose INFO, -vv DEBUG).",
+)
+@click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors.")
+@click.option(
+    "-n", "--dry-run", is_flag=True, help="Do not apply changes to file system."
+)
+@click.option("--config", metavar="PATH", help="Path to l10n.toml config file.")
+@click.option(
+    "--root",
+    metavar="PATH",
+    type=str,
+    help="Path to localization root, if --config is not set.",
+)
+@click.option(
+    "--ref",
+    metavar="PATH",
+    type=str,
+    help="Path to localization reference root, if separate from --root.",
+)
+@click.argument("migration", nargs=-1, required=True)
+def cli(
+    verbose: int,
+    quiet: bool,
+    dry_run: bool,
+    config: str,
+    root: str,
+    ref: str,
+    migration: tuple[str],
+) -> None:
+    """Apply migrations to localization resources.
 
-            Returns 0 on success, 1 on internal error, or 2 on argument error.
-            """
-        ),
-        formatter_class=RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "-q", "--quiet", action="store_true", help="only log input argument errors"
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="count", default=0, help="increase logging verbosity"
-    )
-    parser.add_argument(
-        "-n",
-        "--dry-run",
-        action="store_true",
-        help="do not apply changes to file system",
-    )
-    parser.add_argument(
-        "--config", metavar="PATH", type=str, help="path to l10n.toml config file"
-    )
-    parser.add_argument(
-        "--root",
-        metavar="PATH",
-        type=str,
-        help="path to localization root, if --config is not set",
-    )
-    parser.add_argument(
-        "--ref",
-        metavar="PATH",
-        type=str,
-        help="path to localization reference root, if separate from --root",
-    )
-    parser.add_argument(
-        "migration", nargs="+", type=str, help="path to migration module(s)"
-    )
-    ns = parser.parse_args(args)
-
-    log_level = (
-        logging.ERROR
-        if ns.quiet
-        else (
-            logging.WARNING
-            if ns.verbose == 0
-            else logging.INFO
-            if ns.verbose == 1
-            else logging.DEBUG
-        )
-    )
-    logging.basicConfig(format="%(message)s", level=log_level)
+    Returns 0 on success, 1 on internal error, or 2 on argument error.
+    """
+    set_log_level(verbose, quiet)
 
     try:
         apply_migrations(
-            ns.migration,
-            config_path=ns.config,
-            discover_root=ns.root,
-            discover_ref_root=ns.ref,
-            dry_run=ns.dry_run,
+            migration,
+            config_path=config,
+            discover_root=root,
+            discover_ref_root=ref,
+            dry_run=dry_run,
         )
     except MissingSourceDirectoryError:
-        log.error(f"Reference root not found in {ns.ref or ns.root}")
+        log.error(f"Reference root not found in {ref or root}")
         log.debug(format_exc())
         sys.exit(2)
     except ValueError as err:
-        log.error(str(*err.args))
+        log.error(str(err))
         log.debug(format_exc())
         sys.exit(2)
     except Exception:
@@ -112,7 +94,7 @@ def cli(args: list[str] | None = None) -> None:
 
 
 def apply_migrations(
-    migration_paths: list[str],
+    migration_paths: list[str] | tuple[str],
     *,
     config_path: str | None = None,
     discover_root: str | None = None,
