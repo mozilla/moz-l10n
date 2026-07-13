@@ -69,8 +69,7 @@ def fix(
     config_path: str | None = None,
     continue_on_error: bool = False,
 ) -> int:
-    """
-    Fix the formatting for `file_paths` localization resources.
+    """Fix the formatting for `file_paths` localization resources.
 
     If a single directory is given,
     it is iterated with `L10nConfigPaths` if `config_path` is set,

@@ -29,6 +29,7 @@ LOG_ERROR_CONFIG_OR_PATHS = "Either paths OR --config is required!"
 
 def set_log_level(verbose: int, quiet: bool = False) -> int:
     """Deal with `verbose` integer initializing `logging` with the according level.
+
     * 0 -> logging.WARNING. Default. Only warnings and errors are logged.
     * 1 -> logging.INFO. Info messages are logged as well.
     * 2 -> logging.DEBUG. Most verbose. Also logged debug messages.
@@ -56,6 +57,7 @@ def handle_paths(
     log: logging.Logger,
 ) -> tuple[Iterable[str] | None, str]:
     """Deal with config and file paths.
+
     Both cannot be set at the same time.
     Return path_iter object and root_dir.
     """

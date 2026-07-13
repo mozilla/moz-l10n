@@ -76,15 +76,14 @@ def cli(
     locales: set[str],
     coverage: bool,
 ) -> None:
-    """
-    Build localization files for release.
+    """Build localization files for release.
 
     Iterates source files as defined by --config, reads localization sources from --base, and writes to --target.
 
     Trims out all comments and messages not in the source files for each of the --locales.
 
     For Fluent, adds empty files for any missing from the target locale.
-    For other formats, copies file from the source locale if they are missing from the target.
+    For other formats, copies files from the source locale if they are missing from the target.
     """
     set_log_level(verbose)
 

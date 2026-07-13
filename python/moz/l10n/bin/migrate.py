@@ -67,8 +67,7 @@ def cli(
     ref: str,
     migration: tuple[str],
 ) -> None:
-    """
-    Apply migrations to localization resources.
+    """Apply migrations to localization resources.
 
     Returns 0 on success, 1 on internal error, or 2 on argument error.
     """

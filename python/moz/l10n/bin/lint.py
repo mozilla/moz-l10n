@@ -72,8 +72,7 @@ def lint(
     config_path: str | None = None,
     skip_unknown: bool = False,
 ) -> int:
-    """
-    Lint/validate `file_paths` localization resources.
+    """Lint/validate `file_paths` localization resources.
 
     If a single directory is given,
     it is iterated with `L10nConfigPaths` if `config_path` is set,

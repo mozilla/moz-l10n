@@ -31,6 +31,7 @@ def _ext_settify(
     context: click.Context, param: click.Parameter, value: str | None
 ) -> tuple[set[str], set[str]]:
     """Help turning comma separated extenstions string into properly stripped sets.
+
     Sorting into include and exclude sets according to `!`-prefix.
     Ensuring `.` prefixing each extension.
     """
@@ -92,6 +93,7 @@ def cli(
 ) -> None:
     """Compare localizations to their `source` and get a report.
 
+    \b
     Source may be:
     - a directory (using `L10nDiscoverPaths`),
     - a TOML config file (using `L10nConfigPaths`), or

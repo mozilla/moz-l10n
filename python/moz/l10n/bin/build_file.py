@@ -51,8 +51,7 @@ def cli(
     l10n: str | None = None,
     coverage_base: str | None = None,
 ) -> None:
-    """
-    Build one localization file for release.
+    """Build one localization file for release.
 
     Uses the --source file as a baseline, applying --l10n localizations (if set) to build --target.
 
