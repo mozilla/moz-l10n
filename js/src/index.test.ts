@@ -36,6 +36,7 @@ describe('parsePattern', () => {
     'fluent',
     'mf2',
     'plain',
+    'properties',
     'webext',
     'xliff'
   ] as const) {
@@ -74,6 +75,7 @@ describe('serializePattern', () => {
     'fluent',
     'mf2',
     'plain',
+    'properties',
     'webext',
     'xliff'
   ] as const) {
@@ -86,6 +88,7 @@ describe('serializePattern', () => {
   for (const [format, pattern, exp] of [
     ['unsupported' as FormatKey, ['bar'], 'bar'],
     ['plain', ['hello ', { _: 'lit' }], 'hello {�}'],
+    ['properties', ['hello ', { _: 'lit' }], 'hello {�}'],
     ['android', [{ open: 'x' }, 'not closed'], '<x>not closed</x>'],
     ['fluent', [{ _: undefined }, { $: undefined }], '{�}{�}']
   ] as [FormatKey, Pattern, string][]) {

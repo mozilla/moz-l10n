@@ -19,6 +19,7 @@ from collections.abc import Iterable, Iterator
 from itertools import chain
 from os import sep, walk
 from os.path import commonpath, dirname, isdir, join, normpath, relpath, splitext
+from typing import Literal
 
 from moz.l10n.formats import l10n_extensions
 from moz.l10n.util import walk_files
@@ -28,15 +29,18 @@ locale_id = re.compile(
 )
 
 
-def dir_contains(dir: str, path: str) -> bool:
+def _dir_contains(dir: str, path: str) -> bool:
     return commonpath((dir, path)) == dir
 
 
-def locale_dirname(base: str, locale: str) -> str:
-    if "-" in locale and not isdir(join(base, locale)):
-        alt_dir = locale.replace("-", "_")
-        if isdir(join(base, alt_dir)):
-            return alt_dir
+def _locale_dirname(base: str, locale: str, locale_dir_sep: Literal["-", "_"]) -> str:
+    if "-" not in locale or isdir(join(base, locale)):
+        return locale
+
+    alt_dir = locale.replace("-", "_")
+    if locale_dir_sep == "_" or isdir(join(base, alt_dir)):
+        return alt_dir
+
     return locale
 
 
@@ -53,6 +57,8 @@ class L10nDiscoverPaths:
     """Locales detected from subdirectory names under `base`."""
     ref_paths: list[str]
     """Reference paths"""
+    locale_dir_sep: Literal["-", "_"]
+    """Most common locale directory separator, defaulting to `-`."""
 
     def __init__(
         self,
@@ -114,7 +120,7 @@ class L10nDiscoverPaths:
         pot_dirs: list[str] = []
         l10n_dirs: list[str] = []
         # Important! We walk with `topdown=True` to get shortest paths first!
-        if ref_root and not dir_contains(root, ref_root):
+        if ref_root and not _dir_contains(root, ref_root):
             walk_roots: Iterator[tuple[str, list[str], list[str]]] = chain(
                 walk(root, topdown=True), walk(ref_root, topdown=True)
             )
@@ -143,14 +149,16 @@ class L10nDiscoverPaths:
 
         if ref_root:
             for dir in list(ref_dirs):
-                if not dir_contains(ref_root, dir):
+                if not _dir_contains(ref_root, dir):
                     del ref_dirs[dir]
 
         # Filter reference dirs to those with localizable contents,
         # with a preference for .pot template files.
         ref_dirs_with_files = [
-            dir for dir in ref_dirs if any(dir_contains(dir, pd) for pd in pot_dirs)
-        ] or [dir for dir in ref_dirs if any(dir_contains(dir, ld) for ld in l10n_dirs)]
+            dir for dir in ref_dirs if any(_dir_contains(dir, pd) for pd in pot_dirs)
+        ] or [
+            dir for dir in ref_dirs if any(_dir_contains(dir, ld) for ld in l10n_dirs)
+        ]
         if ref_dirs_with_files:
             self._ref_root = min(
                 (rd for rd in ref_dirs.items() if rd[0] in ref_dirs_with_files),
@@ -163,7 +171,7 @@ class L10nDiscoverPaths:
         base_dirs = {
             bd: lds
             for bd, lds in base_dirs.items()
-            if not dir_contains(self._ref_root, bd)
+            if not _dir_contains(self._ref_root, bd)
         }
         # Walk up parents of each l10n_dir to gather base dirs containing
         # localizable files & avoid false positives on locale-id-like sub-dir names.
@@ -191,9 +199,15 @@ class L10nDiscoverPaths:
         if locale_dirs_:
             self.locales = [dir.replace("_", "-") for dir in locale_dirs_]
             self.locales.sort()
-
+            self.locale_dir_sep = (
+                "_"
+                if sum("_" in dir for dir in locale_dirs_)
+                > sum("-" in dir for dir in locale_dirs_)
+                else "-"
+            )
         else:
             self.locales = None
+            self.locale_dir_sep = "-"
 
         self.ref_paths = (
             list(walk_files(self._ref_root, ignorepath=ignorepath))
@@ -202,7 +216,7 @@ class L10nDiscoverPaths:
         )
         if force_paths:
             self.ref_paths.extend(
-                path for path in force_paths if dir_contains(self._ref_root, path)
+                path for path in force_paths if _dir_contains(self._ref_root, path)
             )
 
     @property
@@ -264,8 +278,8 @@ class L10nDiscoverPaths:
         return None, ()
 
     def format_target_path(self, target: str, locale: str) -> str:
-        base = self._base()
-        return normpath(target.format(locale=locale_dirname(base, locale)))
+        locale = _locale_dirname(self._base(), locale, self.locale_dir_sep)
+        return normpath(target.format(locale=locale))
 
     def find_reference(self, target: str) -> tuple[str, dict[str, str]] | None:
         """

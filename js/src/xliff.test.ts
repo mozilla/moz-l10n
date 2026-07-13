@@ -53,6 +53,17 @@ describe('success', () => {
     ],
     '<x id="INTERPOLATION" equiv-text="{{minutes}}"/> minutes ago'
   )
+  ok(
+    'parts',
+    [
+      'Go to ',
+      { opt: { href: 'open-account' }, open: 'a' },
+      'Create password',
+      { close: 'a' },
+      ' in settings.'
+    ],
+    'Go to <a href="open-account">Create password</a> in settings.'
+  )
 })
 
 describe('parse errors', () => {

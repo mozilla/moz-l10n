@@ -47,6 +47,15 @@ ok(
 )
 
 ok(
+  'named placeholder with upper-case declaration name',
+  {
+    decl: { WORLD: { $: 'arg1', attr: { source: '$1' } } },
+    msg: ['Hello ', { $: 'WORLD', attr: { source: '$World$' } }]
+  },
+  'Hello $World$'
+)
+
+ok(
   'repeated named placeholder',
   {
     decl: { foo: { $: 'arg1', attr: { source: '$1' } } },
@@ -72,7 +81,7 @@ test('unresolved variable', () => {
   const error = onError.mock.calls[0][0]
   expect(error).toBeInstanceOf(ParseError)
   expect(error.message).toBe('webext: Unresolved Variable $Bar$')
-  expect(res).toEqual(['Has ', { $: 'bar', attr: { source: '$Bar$' } }, '?'])
+  expect(res).toEqual(['Has ', { $: 'Bar', attr: { source: '$Bar$' } }, '?'])
 })
 
 test('unsupported pattern part', () => {

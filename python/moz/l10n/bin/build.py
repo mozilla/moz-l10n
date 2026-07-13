@@ -16,13 +16,14 @@ from __future__ import annotations
 
 import json
 import logging
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from collections import defaultdict
 from os import makedirs
 from os.path import dirname, exists, join, relpath
 from shutil import copyfile
-from textwrap import dedent
+from typing import Any
 
+import click
+from moz.l10n.bin.utils import set_log_level
 from moz.l10n.formats import Format, UnsupportedFormat
 from moz.l10n.model import Comment, Entry, Message, Resource, Section
 from moz.l10n.paths.config import L10nConfigPaths
@@ -31,58 +32,61 @@ from moz.l10n.resource import parse_resource, serialize_resource
 log = logging.getLogger(__name__)
 
 
-def cli() -> None:
-    parser = ArgumentParser(
-        description=dedent(
-            """
-            Build localization files for release.
+def _locales_settify(
+    context: click.Context, param: click.Parameter, value: str
+) -> set[str]:
+    """Help turning comma separated locales string into properly stripped `set`."""
+    split = value.strip("\"'").split(",")
+    return set(filter(None, (item.strip() for item in split)))
 
-            Iterates source files as defined by --config, reads localization sources from --base, and writes to --target.
 
-            Trims out all comments and messages not in the source files for each of the --locales.
+@click.command()
+@click.option(
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (-v/--verbose INFO, -vv DEBUG).",
+)
+@click.option(
+    "--config", metavar="PATH", required=True, help="Path to l10n.toml config file."
+)
+@click.option(
+    "--base", metavar="PATH", required=True, help="Base dir for localizations."
+)
+@click.option(
+    "--target", metavar="PATH", required=True, help="Target dir for localizations."
+)
+@click.option(
+    "--locales",
+    metavar="LOCALE",
+    required=True,
+    type=str,
+    help="Target locale(s). Separate multiple by comma (`en,fr,nb-NO`).",
+    callback=_locales_settify,
+)
+@click.option(
+    "--coverage",
+    is_flag=True,
+    help="Write a coverage.json file per locale with the translation ratio.",
+)
+def cli(
+    verbose: int,
+    config: str,
+    base: str,
+    target: str,
+    locales: set[str],
+    coverage: bool,
+) -> None:
+    """Build localization files for release.
 
-            For Fluent, adds empty files for any missing from the target locale.
-            For other formats, copies file from the source locale if they are missing from the target.
-            """
-        ),
-        formatter_class=RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="count", default=0, help="increase logging verbosity"
-    )
-    parser.add_argument(
-        "--config", metavar="PATH", required=True, help="l10n.toml config file"
-    )
-    parser.add_argument(
-        "--base", metavar="PATH", required=True, help="base dir for localizations"
-    )
-    parser.add_argument(
-        "--target", metavar="PATH", required=True, help="target dir for localizations"
-    )
-    parser.add_argument(
-        "--locales", metavar="LOCALE", nargs="+", required=True, help="target locales"
-    )
-    parser.add_argument(
-        "--coverage",
-        action="store_true",
-        help="write a coverage.json file per locale with the translation ratio",
-    )
-    args = parser.parse_args()
+    Iterates source files as defined by --config, reads localization sources from --base, and writes to --target.
 
-    log_level = (
-        logging.WARNING
-        if args.verbose == 0
-        else logging.INFO
-        if args.verbose == 1
-        else logging.DEBUG
-    )
-    logging.basicConfig(format="%(message)s", level=log_level)
+    Trims out all comments and messages not in the source files for each of the --locales.
 
-    cfg_path: str = args.config
-    l10n_base: str = args.base
-    l10n_target: str = args.target
-    locales: set[str] = set(args.locales)
-    write_coverage: bool = args.coverage
+    For Fluent, adds empty files for any missing from the target locale.
+    For other formats, copies files from the source locale if they are missing from the target.
+    """
+    set_log_level(verbose)
 
     # locale -> [ftl_missing, src_fallback]
     msg_data: dict[str, list[int]] = defaultdict(lambda: [0, 0])
@@ -94,8 +98,8 @@ def cli() -> None:
         locale: {} for locale in locales
     }
 
-    paths = L10nConfigPaths(cfg_path)
-    paths.base = l10n_base
+    paths = L10nConfigPaths(config)
+    paths.base = base
     paths.locales = None
     for (source_path, l10n_path_template), path_locales in paths.all().items():
         log.debug(f"source {source_path}")
@@ -105,8 +109,8 @@ def cli() -> None:
             source = None
         for locale in locales.intersection(path_locales) if path_locales else locales:
             l10n_path = l10n_path_template.format(locale=locale)
-            rel_path = relpath(l10n_path, l10n_base)
-            tgt_path = join(l10n_target, rel_path)
+            rel_path = relpath(l10n_path, base)
+            tgt_path = join(target, rel_path)
             makedirs(dirname(tgt_path), exist_ok=True)
             if source:
                 msg_delta, total_count, missing_ids = write_target_file(
@@ -118,8 +122,8 @@ def cli() -> None:
                     msg_data[locale][1] += msg_delta
                 else:
                     msg_data[locale]
-                if write_coverage:
-                    file_key = relpath(l10n_path, join(l10n_base, locale))
+                if coverage:
+                    file_key = relpath(l10n_path, join(base, locale))
                     coverage_data[locale][file_key] = {
                         "total": total_count,
                         "missing": missing_ids,
@@ -133,9 +137,9 @@ def cli() -> None:
                 else:
                     log.info(f"skip {rel_path}")
 
-    if write_coverage:
+    if coverage:
         for locale, file_coverage in coverage_data.items():
-            coverage_path = join(l10n_target, locale, "coverage.json")
+            coverage_path = join(target, locale, "coverage.json")
             makedirs(dirname(coverage_path), exist_ok=True)
             with open(coverage_path, "w", encoding="utf-8") as f:
                 json.dump(file_coverage, f, indent=2, sort_keys=True)
@@ -157,7 +161,7 @@ def write_target_file(
 ) -> tuple[int, int, list[str | list[str]]]:
     if exists(l10n_path):
         l10n_res = parse_resource(l10n_path)
-        l10n_map = {
+        l10n_map: dict[tuple[str, ...], Any] = {
             section.id + entry.id: entry
             for section in l10n_res.sections
             for entry in section.entries
@@ -174,12 +178,12 @@ def write_target_file(
     missing_ids: list[str | list[str]] = []
 
     def missing_id(id: tuple[str, ...]) -> str | list[str]:
-        # Keep the id structural; a single-part id is simplified to a string.
+        """Keep id structural; a single-part id is simplified to a string."""
         return id[0] if len(id) == 1 else list(id)
 
     def get_entry(
         section_id: tuple[str, ...], source_entry: Entry[Message] | Comment
-    ) -> Entry[Message] | Comment | None:
+    ) -> Entry[Message] | Comment | Any | None:
         nonlocal msg_delta, total_count
         if isinstance(source_entry, Comment):
             return None
@@ -195,22 +199,21 @@ def write_target_file(
                 lk = l10n_entry.properties.keys()
                 if sk != lk:
                     if set(sk).issubset(lk):
-                        l10n_entry.properties = {
-                            name: l10n_entry.properties[name] for name in sk
-                        }
+                        for name in set(lk).difference(sk):
+                            del l10n_entry.properties[name]
                         return l10n_entry
                     msg_delta -= 1
                     missing_ids.append(missing_id(id))
                     return None
             return l10n_entry
-        elif is_fluent:
+        if is_fluent:
             msg_delta -= 1
             missing_ids.append(missing_id(id))
             return None
-        else:
-            msg_delta += 1
-            missing_ids.append(missing_id(id))
-            return source_entry
+
+        msg_delta += 1
+        missing_ids.append(missing_id(id))
+        return source_entry
 
     for section in source_res.sections:
         tgt_entries = [

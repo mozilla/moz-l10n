@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright Mozilla Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,17 +16,13 @@ from __future__ import annotations
 
 import logging
 import sys
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
-from collections.abc import Iterable
+from collections.abc import Sequence
 from enum import Enum
-from glob import glob
-from os import getcwd
-from os.path import abspath, isdir, relpath
-from textwrap import dedent
+from os.path import abspath, relpath
 
+import click
+from moz.l10n.bin.utils import handle_paths, set_log_level
 from moz.l10n.formats import UnsupportedFormat
-from moz.l10n.paths.config import L10nConfigPaths
-from moz.l10n.paths.discover import L10nDiscoverPaths
 from moz.l10n.resource import parse_resource, serialize_resource
 
 log = logging.getLogger(__name__)
@@ -36,59 +30,47 @@ log = logging.getLogger(__name__)
 Result = Enum("Result", ("OK", "FIXED", "UNSUPPORTED", "FAIL"))
 
 
-def cli() -> None:
-    parser = ArgumentParser(
-        description=dedent(
-            """
-            Fix the formatting for localization resources.
+@click.command()
+@click.option(
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (-v/--verbose INFO, -vv DEBUG).",
+)
+@click.option("-q", "--quiet", is_flag=True, help="Only log input argument errors.")
+@click.option("--config", metavar="PATH", help="Path to l10n.toml config file.")
+@click.option(
+    "--continue",
+    "continue_on_error",
+    is_flag=True,
+    help="Do not stop at first parse error.",
+)
+@click.argument("paths", nargs=-1)
+def cli(
+    verbose: int,
+    quiet: bool,
+    config: str,
+    continue_on_error: bool,
+    paths: tuple[str, ...],
+) -> None:
+    """Fix the formatting for localization resources.
 
-            If `paths` is a single directory, it is iterated with L10nConfigPaths if --config is set, or L10nDiscoverPaths otherwise.
+    If `paths` is a single directory, it is iterated with L10nConfigPaths if --config is set, or L10nDiscoverPaths otherwise.
 
-            If `paths` is not a single directory, its values are treated as glob expressions, with ** support.
-            """
-        ),
-        formatter_class=RawDescriptionHelpFormatter,
-    )
-    parser.add_argument("-q", "--quiet", action="store_true", help="only log errors")
-    parser.add_argument(
-        "-v", "--verbose", action="count", default=0, help="increase logging verbosity"
-    )
-    parser.add_argument(
-        "--config", metavar="PATH", type=str, help="path to l10n.toml config file"
-    )
-    parser.add_argument(
-        "--continue",
-        action="store_true",
-        dest="continue_on_error",
-        help="do not stop at first parse error",
-    )
-    parser.add_argument("paths", nargs="*", type=str, help="directory or files to fix")
-    args = parser.parse_args()
+    If `paths` is not a single directory, its values are treated as glob expressions, with `**` support.
+    """
+    set_log_level(verbose, quiet)
 
-    log_level = (
-        logging.ERROR
-        if args.quiet
-        else (
-            logging.WARNING
-            if args.verbose == 0
-            else logging.INFO
-            if args.verbose == 1
-            else logging.DEBUG
-        )
-    )
-    logging.basicConfig(format="%(message)s", level=log_level)
-
-    res = fix(args.paths, args.config, args.continue_on_error)
+    res = fix(paths, config, continue_on_error)
     sys.exit(res)
 
 
 def fix(
-    file_paths: list[str],
+    file_paths: Sequence[str],
     config_path: str | None = None,
     continue_on_error: bool = False,
 ) -> int:
-    """
-    Fix the formatting for `file_paths` localization resources.
+    """Fix the formatting for `file_paths` localization resources.
 
     If a single directory is given,
     it is iterated with `L10nConfigPaths` if `config_path` is set,
@@ -101,21 +83,8 @@ def fix(
 
     Returns 0 on success, 1 on parse error, or 2 on argument error.
     """
-    if config_path:
-        if file_paths:
-            log.error("With --config, paths must not be set.")
-            return 2
-        cfg_paths = L10nConfigPaths(config_path)
-        root_dir = abspath(cfg_paths.base)
-        path_iter: Iterable[str] = cfg_paths.ref_paths
-    elif len(file_paths) == 1 and isdir(file_paths[0]):
-        root_dir = abspath(file_paths[0])
-        path_iter = L10nDiscoverPaths(root_dir, ref_root=".").ref_paths
-    elif file_paths:
-        root_dir = getcwd()
-        path_iter = (path for fp in file_paths for path in glob(fp, recursive=True))
-    else:
-        log.error("Either paths of --config is required")
+    path_iter, root_dir = handle_paths(config_path, file_paths, log)
+    if path_iter is None:
         return 2
 
     fixed = 0
@@ -148,7 +117,10 @@ def fix(
 
 
 def fix_file(root: str, path: str) -> Result:
-    rel_path = relpath(path, root)
+    try:
+        rel_path = relpath(path, root)
+    except ValueError:
+        rel_path = abspath(path)
     try:
         with open(path, "+rb") as file:
             prev = file.read()
