@@ -300,5 +300,44 @@ def test_locales_settify() -> None:
     assert result == set(["fr", "en", "nb-NO"])
 
 
+def test_cli_android_locale_template() -> None:
+    """Test `{android_locale}` target template to resolve via default
+    locale map including the legacy ISO remap "he" -> "iw".
+    (Used to crash with KeyError: 'android_locale')
+    """
+    cfg_toml = dedent(
+        """
+        basepath = "."
+        locales = ["he"]
+        [[paths]]
+            reference = "en/file.ftl"
+            l10n = "{android_locale}/file.ftl"
+        """
+    )
+    tree: Tree = {
+        "l10n.toml": cfg_toml,
+        "en": {"file.ftl": "msg-a = src\nmsg-b = src\n"},
+        # "he" translations live under Android locale dir name:
+        "iw": {"file.ftl": "msg-a = he\n"},
+    }
+    with TemporaryDirectory() as root:
+        build_file_tree(root, tree)
+        target = join(root, "out")
+        # fmt: off
+        runner = CliRunner()
+        result = runner.invoke(moz.l10n.bin.cli, ["build",
+            "--config", join(root, "l10n.toml"),
+            "--base", root,
+            "--target", target,
+            "--locales", "he",
+        ])
+        # fmt: on
+        assert result.exit_code == 0
+        # Output lands under Android dir name "iw", not BCP-47 "he".
+        assert not exists(join(target, "he", "file.ftl"))
+        with open(join(target, "iw", "file.ftl"), encoding="utf-8") as f:
+            assert f.read() == "msg-a = he\n"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
