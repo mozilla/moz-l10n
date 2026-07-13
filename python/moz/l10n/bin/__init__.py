@@ -19,6 +19,7 @@ from moz.l10n.bin import build, build_file, compare, fix, lint, migrate
 
 
 @click.group()
+@click.version_option(package_name="moz-l10n")
 def cli() -> None:
     """Welcome to the Mozilla Localization CLI Suite."""
 
