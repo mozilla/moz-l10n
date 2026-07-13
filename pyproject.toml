@@ -2,7 +2,6 @@
 name = "monorepo"
 version = "0.0.0"
 description = "Mozilla tools for localization"
-requires-python = ">=3.9, <4"
 
 [dependency-groups]
 dev = [
