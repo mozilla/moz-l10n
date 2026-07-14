@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterator
+from typing import cast
 
 from lxml import etree
 
@@ -85,7 +86,7 @@ def parse_pattern(
         else:
             yield el.text
     for child in el:
-        q = etree.QName(child.tag)
+        q = etree.QName(cast(str, child.tag))
         ns = q.namespace
         name = q.localname if not ns or ns in xliff_ns else q.text
         options: dict[str, str | VariableRef] = dict(child.attrib)
