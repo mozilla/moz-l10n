@@ -34,15 +34,19 @@ path_stars = compile(r"[*](?:[*](?:[/\\][*]*)?)?")
 path_var = compile(r"{(\w+)}")
 
 DEFAULT_LOCALE_MAP: dict[str, Callable[[str], str]] = {
+    "locale": lambda locale: locale,
     "android_locale": get_android_locale,
 }
 """
-Default mapping of path variable names to locale-transform functions,
-applied by `L10nConfigPaths` unless overridden.
+Default mapping of path variable names to locale-transform functions.
 
-The `locale_map` mechanism is platform-agnostic: each entry maps `{variable}`
-usable in `[[paths]]` templates to a function called with the locale.
-Register additional platforms here rather than per call site.
+Each entry maps a `{variable}` usable in `[[paths]]` templates to a function
+called with the locale.
+* `locale` is the identity baseline;
+* `android_locale` is a provided extension.
+
+These are applied by `L10nConfigPaths` unless overridden via `locale_map`.
+Register further platform variables here rather than at each call site.
 """
 
 
@@ -109,7 +113,8 @@ class L10nConfigPaths:
         set `locale_map` to be a mapping of path variable names to functions,
         which will be called with `locale` as their only argument.
         These are merged over `DEFAULT_LOCALE_MAP`, with user entries taking
-        precedence, built-in keys `{android_locale}` are available by default.
+        precedence, so the built-in `{locale}` and `{android_locale}` variables
+        are available by default.
         """
         if cfg_load:
             toml = cfg_load(cfg_path)
@@ -380,9 +385,18 @@ class L10nConfigPaths:
         return path, locales
 
     def format_target_path(self, target: str, locale: str) -> str:
-        lc_map = {"locale": locale}
-        for key, fn in self._locale_map.items():
-            lc_map[key] = fn(locale)
+        """
+        Fill locale variables in `target` template for a given `locale`.
+
+        Each value from locale map (by default `{locale}/{android_locale}`)
+        is replaced with its transform of `locale` and returned normalized.
+
+        Example:
+            >>> target = "values-{android_locale}/strings.xml"
+            >>> format_target_path(target, "he")
+            values-iw/strings.xml
+        """
+        lc_map = {key: fn(locale) for key, fn in self._locale_map.items()}
         return normpath(target.format_map(lc_map))
 
     def find_reference(self, target: str) -> tuple[str, dict[str, str]] | None:
