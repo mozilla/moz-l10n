@@ -78,13 +78,7 @@ export {
 }
 
 export type FormatKey =
-  | 'android'
-  | 'fluent'
-  | 'mf2'
-  | 'plain'
-  | 'properties'
-  | 'webext'
-  | 'xliff'
+  'android' | 'fluent' | 'mf2' | 'plain' | 'properties' | 'webext' | 'xliff'
 
 /**
  * Parse the string representation of a single flat message pattern into a data structure.

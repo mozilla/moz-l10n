@@ -67,9 +67,11 @@ def plural(ref_path: str, id: str):
                 (get_key(ctx.locale, idx), part) for idx, part in enumerate(parts)
             ]
             var_list.sort(
-                key=lambda v: plural_categories.index(k)
-                if isinstance(k := v[0], str) and k in plural_categories
-                else 6
+                key=lambda v: (
+                    plural_categories.index(k)
+                    if isinstance(k := v[0], str) and k in plural_categories
+                    else 6
+                )
             )
             entry.value = SelectMessage(
                 {"n": Expression(VariableRef("n"), "number")},

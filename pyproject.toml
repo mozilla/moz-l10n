@@ -40,6 +40,7 @@ select = [
 ]
 ignore = [
   "E501", # Line too long
+  "PLC0415", # `import` should be at the top-level of a file
 ]
 [tool.ty.environment]
 python = ".venv"
