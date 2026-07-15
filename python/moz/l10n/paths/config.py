@@ -33,7 +33,7 @@ else:
 path_stars = compile(r"[*](?:[*](?:[/\\][*]*)?)?")
 path_var = compile(r"{(\w+)}")
 
-DEFAULT_LOCALE_MAP: dict[str, Callable[[str], str]] = {
+_DEFAULT_LOCALE_MAP: dict[str, Callable[[str], str]] = {
     "locale": lambda locale: locale,
     "android_locale": get_android_locale,
 }
@@ -46,7 +46,6 @@ called with the locale.
 * `android_locale` is a provided extension.
 
 These are applied by `L10nConfigPaths` unless overridden via `locale_map`.
-Register further platform variables here rather than at each call site.
 """
 
 
@@ -112,9 +111,8 @@ class L10nConfigPaths:
         To use custom path variables for locales,
         set `locale_map` to be a mapping of path variable names to functions,
         which will be called with `locale` as their only argument.
-        These are merged over `DEFAULT_LOCALE_MAP`, with user entries taking
-        precedence, so the built-in `{locale}` and `{android_locale}` variables
-        are available by default.
+        These will extend the built-in `{locale}` and `{android_locale}` variables,
+        with user entries taking precedence.
         """
         if cfg_load:
             toml = cfg_load(cfg_path)
@@ -122,7 +120,7 @@ class L10nConfigPaths:
             with open(cfg_path, mode="rb") as file:
                 toml = load(file)
         self._cfg_path = cfg_path
-        self._locale_map = {**DEFAULT_LOCALE_MAP, **(locale_map or {})}
+        self._locale_map = {**_DEFAULT_LOCALE_MAP, **(locale_map or {})}
         base = toml.get("basepath", ".")
         self._base = normpath(join(dirname(cfg_path), base))
         self._ref_root = self._base

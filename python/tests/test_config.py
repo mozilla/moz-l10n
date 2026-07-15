@@ -333,7 +333,7 @@ class TestL10nConfigPaths(TestCase):
         assert paths.find_reference("res/values-xx/nonesuch") is None
 
     def test_default_locale_map(self):
-        """Test `{android_locale}` resolving via `DEFAULT_LOCALE_MAP` without
+        """Test `{android_locale}` resolving via `_DEFAULT_LOCALE_MAP` without
         explicit locale_map, and application of legacy ISO remap ("he" -> "iw").
         """
         cfg_toml = dedent(
@@ -361,7 +361,7 @@ class TestL10nConfigPaths(TestCase):
         )
 
     def test_locale_map_override(self):
-        """Test user-supplied `locale_map` to override `DEFAULT_LOCALE_MAP` entries."""
+        """Test user-supplied `locale_map` to override `_DEFAULT_LOCALE_MAP` entries."""
         cfg_toml = dedent(
             """
             [[paths]]
