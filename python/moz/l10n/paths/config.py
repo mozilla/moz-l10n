@@ -23,6 +23,8 @@ from os.path import dirname, isfile, join, normpath, relpath
 from re import Pattern, compile
 from typing import Any, cast
 
+from .android_locale import get_android_locale
+
 if sys.version_info >= (3, 11):
     from tomllib import load
 else:
@@ -30,6 +32,21 @@ else:
 
 path_stars = compile(r"[*](?:[*](?:[/\\][*]*)?)?")
 path_var = compile(r"{(\w+)}")
+
+_DEFAULT_LOCALE_MAP: dict[str, Callable[[str], str]] = {
+    "locale": lambda locale: locale,
+    "android_locale": get_android_locale,
+}
+"""
+Default mapping of path variable names to locale-transform functions.
+
+Each entry maps a `{variable}` usable in `[[paths]]` templates to a function
+called with the locale.
+* `locale` is the identity baseline;
+* `android_locale` is a provided extension.
+
+These are applied by `L10nConfigPaths` unless overridden via `locale_map`.
+"""
 
 
 def path_regex(path: str) -> Pattern[str]:
@@ -94,6 +111,8 @@ class L10nConfigPaths:
         To use custom path variables for locales,
         set `locale_map` to be a mapping of path variable names to functions,
         which will be called with `locale` as their only argument.
+        These will extend the built-in `{locale}` and `{android_locale}` variables,
+        with user entries taking precedence.
         """
         if cfg_load:
             toml = cfg_load(cfg_path)
@@ -101,7 +120,7 @@ class L10nConfigPaths:
             with open(cfg_path, mode="rb") as file:
                 toml = load(file)
         self._cfg_path = cfg_path
-        self._locale_map = locale_map or {}
+        self._locale_map = {**_DEFAULT_LOCALE_MAP, **(locale_map or {})}
         base = toml.get("basepath", ".")
         self._base = normpath(join(dirname(cfg_path), base))
         self._ref_root = self._base
@@ -364,9 +383,18 @@ class L10nConfigPaths:
         return path, locales
 
     def format_target_path(self, target: str, locale: str) -> str:
-        lc_map = {"locale": locale}
-        for key, fn in self._locale_map.items():
-            lc_map[key] = fn(locale)
+        """
+        Fill locale variables in `target` template for a given `locale`.
+
+        Each value from locale map (by default `{locale}/{android_locale}`)
+        is replaced with its transform of `locale` and returned normalized.
+
+        Example:
+            >>> target = "values-{android_locale}/strings.xml"
+            >>> format_target_path(target, "he")
+            values-iw/strings.xml
+        """
+        lc_map = {key: fn(locale) for key, fn in self._locale_map.items()}
         return normpath(target.format_map(lc_map))
 
     def find_reference(self, target: str) -> tuple[str, dict[str, str]] | None:

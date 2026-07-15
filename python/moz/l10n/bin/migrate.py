@@ -24,7 +24,6 @@ from traceback import format_exc
 import click
 from moz.l10n.bin.utils import set_log_level
 from moz.l10n.migrate import all_migrations
-from moz.l10n.paths.android_locale import get_android_locale
 from moz.l10n.paths.config import L10nConfigPaths
 from moz.l10n.paths.discover import L10nDiscoverPaths, MissingSourceDirectoryError
 
@@ -106,9 +105,7 @@ def apply_migrations(
     if config_path:
         if discover_root:
             raise ValueError("--config and --root must not be both set.")
-        paths = L10nConfigPaths(
-            config_path, locale_map={"android_locale": get_android_locale}
-        )
+        paths = L10nConfigPaths(config_path)
     elif discover_root:
         if discover_ref_root is not None:
             discover_ref_root = abspath(discover_ref_root)

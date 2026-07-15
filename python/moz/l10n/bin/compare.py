@@ -126,7 +126,9 @@ def cli(
             if not ext_filter(tgt_path):
                 continue
             try:
-                path = relpath(tgt_path.format(locale=locale0), path0)
+                path = relpath(
+                    source_paths.format_target_path(tgt_path, locale0), path0
+                )
                 source_data[path] = msg_ids(ref_path)
             except UnsupportedFormat:
                 continue

@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import os
 from tempfile import TemporaryDirectory
+from textwrap import dedent
 
 import moz.l10n.bin
 import pytest
@@ -162,6 +163,46 @@ def test_ext_settify() -> None:
     in_set, ex_set = func(None, None, ext)  # ty:ignore[invalid-argument-type]
     assert in_set == set([".ftl", ".ini"])
     assert ex_set == set([".txt"])
+
+
+def test_cli_android_locale_template() -> None:
+    """Test `{android_locale}` target template to resolve via default
+    locale map including the legacy ISO remap "he" -> "iw".
+    (Used to crash with KeyError: 'android_locale')
+    """
+    cfg_toml = dedent(
+        """
+        basepath = "."
+        [[paths]]
+            reference = "en/file.ftl"
+            l10n = "{android_locale}/file.ftl"
+        """
+    )
+    tree: Tree = {
+        "l10n.toml": cfg_toml,
+        "en": {"file.ftl": "msg-a = src\nmsg-b = src\nmsg-c = src\n"},
+        # "he" translations live under Android locale dir name ("iw"):
+        "iw": {"file.ftl": "msg-a = he\n"},
+        # while compared path is BCP-47 locale dir:
+        "he": {},
+    }
+    with TemporaryDirectory() as root:
+        build_file_tree(root, tree)
+        # fmt: off
+        runner = CliRunner()
+        result = runner.invoke(moz.l10n.bin.cli, ["compare",
+            os.path.join(root, "he"),
+            "--source", os.path.join(root, "l10n.toml"),
+            "--json",
+        ])
+        # fmt: on
+        json_result = json.loads(result.output)
+        assert result.exit_code == 0
+
+    assert list(json_result.keys()) == ["he"]
+    assert json_result["he"]["errors"] is None
+    missing = sorted(m for ids in json_result["he"]["missing"].values() for m in ids)
+    assert missing == ["msg-b", "msg-c"]
 
 
 if __name__ == "__main__":

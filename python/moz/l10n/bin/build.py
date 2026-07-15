@@ -108,7 +108,7 @@ def cli(
         except UnsupportedFormat:
             source = None
         for locale in locales.intersection(path_locales) if path_locales else locales:
-            l10n_path = l10n_path_template.format(locale=locale)
+            l10n_path = paths.format_target_path(l10n_path_template, locale)
             rel_path = relpath(l10n_path, base)
             tgt_path = join(target, rel_path)
             makedirs(dirname(tgt_path), exist_ok=True)

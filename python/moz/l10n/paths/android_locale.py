@@ -19,8 +19,16 @@ from re import fullmatch
 ANDROID_LOCALES = {"he": "iw", "id": "in", "yi": "ji"}
 
 
-# https://android.googlesource.com/platform/tools/base/+/master/sdk-common/src/main/java/com/android/ide/common/resources/configuration/LocaleQualifier.java#28
 def get_android_locale(locale: str) -> str:
+    """
+    Convert BCP-47 locale string to Android locale qualifier.
+
+    Examples:
+        `he` -> `iw`, `en-GB` -> `en-rGB`, `sr-Latn"` -> `b+sr+Latn`
+
+    AOSP Source:
+        https://android.googlesource.com/platform/tools/base/+/master/sdk-common/src/main/java/com/android/ide/common/resources/configuration/LocaleQualifier.java#28
+    """
     lc, *rest = locale.split("-")
     if lc in ANDROID_LOCALES:
         lc = ANDROID_LOCALES[lc]
@@ -32,6 +40,13 @@ def get_android_locale(locale: str) -> str:
 
 
 def parse_android_locale(alocale: str) -> str | None:
+    """
+    Convert Android locale qualifier string back to BCP-47 locale,
+    or return `None` if not a valid qualifier.
+
+    Examples:
+        `iw` -> `he`, `en-rGB` -> `en-GB`, `b+sr+Latn` -> `sr-Latn`
+    """
     if alocale.startswith("b+"):
         lc, *rest = alocale[2:].split("+")
     else:

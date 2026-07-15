@@ -332,6 +332,59 @@ class TestL10nConfigPaths(TestCase):
         )
         assert paths.find_reference("res/values-xx/nonesuch") is None
 
+    def test_default_locale_map(self):
+        """Test `{android_locale}` resolving via `_DEFAULT_LOCALE_MAP` without
+        explicit locale_map, and application of legacy ISO remap ("he" -> "iw").
+        """
+        cfg_toml = dedent(
+            """
+            locales = ["fr", "he"]
+            [[paths]]
+                reference = "res/values/strings.xml"
+                l10n = "res/values-{android_locale}/strings.xml"
+            """
+        )
+        tree: Tree = {
+            "l10n.toml": cfg_toml,
+            "res": {"values": {"strings.xml": ""}},
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+            paths = L10nConfigPaths(join(root, "l10n.toml"))
+
+        target = join(root, "res", "values-{android_locale}", "strings.xml")
+        assert paths.format_target_path(target, "fr") == target.format(
+            android_locale="fr"
+        )
+        assert paths.format_target_path(target, "he") == target.format(
+            android_locale="iw"
+        )
+
+    def test_locale_map_override(self):
+        """Test user-supplied `locale_map` to override `_DEFAULT_LOCALE_MAP` entries."""
+        cfg_toml = dedent(
+            """
+            [[paths]]
+                reference = "res/values/strings.xml"
+                l10n = "res/values-{android_locale}/strings.xml"
+            """
+        )
+        tree: Tree = {
+            "l10n.toml": cfg_toml,
+            "res": {"values": {"strings.xml": ""}},
+        }
+        with TemporaryDirectory() as root:
+            build_file_tree(root, tree)
+            paths = L10nConfigPaths(
+                join(root, "l10n.toml"),
+                locale_map={"android_locale": lambda lc: lc.upper()},
+            )
+
+        target = join(root, "res", "values-{android_locale}", "strings.xml")
+        assert paths.format_target_path(target, "he") == target.format(
+            android_locale="HE"
+        )
+
     def test_firefox_for_android(self):
         root_toml = dedent(
             """
