@@ -286,7 +286,7 @@ def set_pattern_message(
         if allow_cdata and tag_like.search(el.text) is not None:
             # The manual wrapper is a workaround for
             # https://bugs.launchpad.net/lxml/+bug/2111509
-            el.text = etree.CDATA(f"<![CDATA[{el.text}]]>")  # type: ignore[assignment]
+            el.text = etree.CDATA(f"<![CDATA[{el.text}]]>")
     elif isinstance(msg, PatternMessage) and not msg.declarations:
         set_pattern(el, msg.pattern, allow_cdata=allow_cdata)
     else:
@@ -390,7 +390,7 @@ def set_pattern(
     ):
         # The manual wrapper is a workaround for
         # https://bugs.launchpad.net/lxml/+bug/2111509
-        el.text = etree.CDATA(f"<![CDATA[{el.text}]]>")  # type: ignore[assignment]
+        el.text = etree.CDATA(f"<![CDATA[{el.text}]]>")
 
 
 def entity_name(part: Expression) -> str | None:

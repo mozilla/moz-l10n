@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Iterable, Iterator
 from re import ASCII, compile, match
-from typing import Literal
+from typing import Literal, cast
 
 from lxml import etree
 
@@ -345,7 +345,7 @@ def flatten(el: etree._Element) -> Iterator[str | Expression | Markup]:
             yield Expression(VariableRef(child.name), "entity")
         else:
             name = (
-                f"{child.prefix}:{etree.QName(child.tag).localname}"
+                f"{child.prefix}:{etree.QName(cast(str, child.tag)).localname}"
                 if child.prefix
                 else str(child.tag)
             )

@@ -120,24 +120,29 @@ def test_copy() -> None:
                         None,
                         "prev",
                         value_only=True,
-                        replace=lambda ph: Expression(VariableRef("y"))
-                        if isinstance(ph, Expression)
-                        else None,
+                        replace=lambda ph: (
+                            Expression(VariableRef("y"))
+                            if isinstance(ph, Expression)
+                            else None
+                        ),
                     ),
                     "replaced-prop": copy(
                         None,
                         "prev",
                         property="prop",
-                        replace=lambda ph: Expression("b")
-                        if isinstance(ph, Expression)
-                        else None,
+                        replace=lambda ph: (
+                            Expression("b") if isinstance(ph, Expression) else None
+                        ),
                     ),
                     "replaced-remote": copy(
                         "a.properties",
                         "key",
-                        replace=lambda ph: Expression("-term", function="message")
-                        if isinstance(ph, Expression) and ph.arg == VariableRef("arg")
-                        else None,
+                        replace=lambda ph: (
+                            Expression("-term", function="message")
+                            if isinstance(ph, Expression)
+                            and ph.arg == VariableRef("arg")
+                            else None
+                        ),
                     ),
                 }
             },

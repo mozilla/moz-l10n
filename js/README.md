@@ -66,13 +66,7 @@ import { ParseError, parsePattern } from '@mozilla/l10n'
 ```ts
 function parsePattern(
   format:
-    | 'android'
-    | 'fluent'
-    | 'mf2'
-    | 'plain'
-    | 'properties'
-    | 'webext'
-    | 'xliff',
+    'android' | 'fluent' | 'mf2' | 'plain' | 'properties' | 'webext' | 'xliff',
   src: string,
   baseMsg?: Message
 ): Pattern
@@ -98,13 +92,7 @@ import { SerializeError, serializePattern } from '@mozilla/l10n'
 ```ts
 function serializePattern(
   format:
-    | 'android'
-    | 'fluent'
-    | 'mf2'
-    | 'plain'
-    | 'properties'
-    | 'webext'
-    | 'xliff',
+    'android' | 'fluent' | 'mf2' | 'plain' | 'properties' | 'webext' | 'xliff',
   pattern: Pattern,
   onError?: (error: SerializeError) => void
 ): string
