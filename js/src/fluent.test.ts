@@ -43,14 +43,19 @@ describe('pattern success', () => {
     [{ _: 'one' }, ' ', { _: '42', fn: 'number' }],
     '{ "one" } { 42 }'
   )
-  ok('function', [{ $: 'x', fn: 'foo' }], '{ FOO($x) }')
+  ok(
+    'function',
+    [{ $: 'x', fn: 'foo', attr: { 'fluent-fn': 'FOO' } }],
+    '{ FOO($x) }'
+  )
   ok(
     'options',
     [
       {
         $: 'x',
         fn: 'number',
-        opt: { minimumFractionDigits: '2', notation: 'compact' }
+        opt: { minimumFractionDigits: '2', notation: 'compact' },
+        attr: { 'fluent-fn': 'NUMBER' }
       }
     ],
     '{ NUMBER($x, minimumFractionDigits: 2, notation: "compact") }'
@@ -62,6 +67,18 @@ describe('pattern success', () => {
     [{ _: '-foo', fn: 'message', opt: { bar: '42' } }],
     '{ -foo(bar: 42) }'
   )
+
+  test(':number with no options and no @fluent-fn', () => {
+    const src = fluentSerializePattern([{ $: 'x', fn: 'number', opt: {} }])
+    expect(src).toBe('{ $x }')
+  })
+
+  test(':number with options and no @fluent-fn', () => {
+    const src = fluentSerializePattern([
+      { $: 'x', fn: 'number', opt: { minimumFractionDigits: '2' } }
+    ])
+    expect(src).toBe('{ NUMBER($x, minimumFractionDigits: 2) }')
+  })
 })
 
 describe('pattern parse errors', () => {
@@ -104,6 +121,7 @@ describe('pattern serialize errors', () => {
     { _: 'foo', fn: 'message', opt: { x: 'y' } }
   ])
   fail('invalid term reference', [{ _: '-foo.bar', fn: 'message' }])
+  fail('function reference with no @fluent-fn', [{ $: 'x', fn: 'foo' }])
 })
 
 describe('entry', () => {
@@ -137,7 +155,12 @@ describe('entry', () => {
   ok('plain', 'plain = Progress: { NUMBER($num, style: "percent") }.\n', {
     '=': [
       'Progress: ',
-      { $: 'num', fn: 'number', opt: { style: 'percent' } },
+      {
+        $: 'num',
+        fn: 'number',
+        opt: { style: 'percent' },
+        attr: { 'fluent-fn': 'NUMBER' }
+      },
       '.'
     ]
   })
@@ -176,11 +199,42 @@ describe('entry', () => {
     `,
     {
       '=': {
-        decl: { num_1: { $: 'num', fn: 'number' } },
-        sel: ['num_1'],
+        decl: { num: { $: 'num', fn: 'number' } },
+        sel: ['num'],
         alt: [
           { keys: ['one'], pat: ['One ', { $: 'num' }] },
           { keys: [{ '*': 'other' }], pat: ['Other'] }
+        ]
+      }
+    }
+  )
+
+  ok(
+    'ordinal-selector',
+    ftl`
+    ordinal-selector =
+        { NUMBER($var, type: "ordinal") ->
+            [1] first
+            [one] { $var }st
+           *[other] { $var }nd
+        }
+
+    `,
+    {
+      '=': {
+        decl: {
+          var_1: {
+            $: 'var',
+            fn: 'number',
+            opt: { type: 'ordinal' },
+            attr: { 'fluent-fn': 'NUMBER' }
+          }
+        },
+        sel: ['var_1'],
+        alt: [
+          { keys: ['1'], pat: ['first'] },
+          { keys: ['one'], pat: [{ $: 'var' }, 'st'] },
+          { keys: [{ '*': 'other' }], pat: [{ $: 'var' }, 'nd'] }
         ]
       }
     }
@@ -312,8 +366,8 @@ describe('entry', () => {
     `,
     {
       '=': {
-        decl: { _1: { _: '-term.attr', fn: 'message' } },
-        sel: ['_1'],
+        decl: { sel_1: { _: '-term.attr', fn: 'message' } },
+        sel: ['sel_1'],
         alt: [
           { keys: ['foo'], pat: ['Foo'] },
           { keys: [{ '*': 'other' }], pat: ['Other'] }

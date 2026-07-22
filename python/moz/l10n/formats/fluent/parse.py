@@ -53,6 +53,7 @@ def fluent_parse(
     Messages with no value will have an empty pattern assigned as their Entry.value.
 
     Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the Resource.
+    Original Fluent function names are stored as `@fluent-fn` expression attributes.
 
     The parsed resource will not include any metadata.
     """
@@ -145,6 +146,7 @@ def fluent_parse_entry(
     Messages with no value will have an empty pattern assigned as their Entry.value.
 
     Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the result.
+    Original Fluent function names are stored as `@fluent-fn` expression attributes.
     """
     if isinstance(source, str):
         ftl_entry = FluentParser(with_spans=with_linepos).parse_entry(source)
@@ -162,6 +164,7 @@ def fluent_parse_message(source: str) -> Message:
     Parse a Fluent pattern into a Message.
 
     Function names are lower-cased, so e.g. the Fluent `NUMBER` is `number` in the result.
+    Original Fluent function names are stored as `@fluent-fn` expression attributes.
 
     Leading and trailing whitespace is stripped.
     """
@@ -265,12 +268,14 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
         declarations = {}
         selectors = []
         for expr in sel_expressions:
-            stem = expr.arg.name if isinstance(expr.arg, VariableRef) else ""
-            i = 0
-            name = stem
-            while name in var_names or name == "":
-                i += 1
-                name = f"{stem}_{i}"
+            name = expr.arg.name if isinstance(expr.arg, VariableRef) else None
+            if name is None or expr.attributes.get("fluent-fn") is not None:
+                stem = name or "sel"
+                name = None
+                i = 0
+                while name is None or name in var_names:
+                    i += 1
+                    name = f"{stem}_{i}"
             declarations[name] = expr
             selectors.append(VariableRef(name))
             var_names.add(name)
@@ -371,7 +376,7 @@ def inline_expression(exp: ftl.InlineExpression) -> Expression:
         name = exp.id.name
         return Expression(VariableRef(name))
     else:  # ftl.FunctionReference
-        name = exp.id.name.lower()
+        name = exp.id.name
         if len(exp.arguments.positional) > 1:
             raise ValueError(
                 f"Functions with more than one positional argument are not supported: {name}"
@@ -395,8 +400,9 @@ def inline_expression(exp: ftl.InlineExpression) -> Expression:
         ftl_named = exp.arguments.named
         return Expression(
             arg,
-            name,
+            name.lower(),
             {opt.name.name: literal_value(opt.value) for opt in ftl_named},
+            {"fluent-fn": name},
         )
 
 

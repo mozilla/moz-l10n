@@ -90,8 +90,8 @@ class TestFluent(TestCase):
             Entry(
                 ("has-placeholder",),
                 SelectMessage(
-                    declarations={"num_1": Expression(VariableRef("num"), "number")},
-                    selectors=(VariableRef("num_1"),),
+                    declarations={"num": Expression(VariableRef("num"), "number")},
+                    selectors=(VariableRef("num"),),
                     variants={
                         ("one",): ["One ", Expression(VariableRef("num"))],
                         (other,): ["Other"],
@@ -149,8 +149,8 @@ class TestFluent(TestCase):
             """
         )
         assert msg == SelectMessage(
-            declarations={"num_1": Expression(VariableRef("num"), function="number")},
-            selectors=(VariableRef("num_1"),),
+            declarations={"num": Expression(VariableRef("num"), function="number")},
+            selectors=(VariableRef("num"),),
             variants={
                 ("one",): ["One ", Expression(VariableRef("num"))],
                 (CatchallKey("other"),): ["Other"],
@@ -281,8 +281,17 @@ class TestFluent(TestCase):
                 ("functions",),
                 PatternMessage(
                     [
-                        Expression(VariableRef("arg"), "number"),
-                        Expression("bar", "foo", {"opt": "val"}),
+                        Expression(
+                            VariableRef("arg"),
+                            "number",
+                            attributes={"fluent-fn": "NUMBER"},
+                        ),
+                        Expression(
+                            "bar",
+                            "foo",
+                            {"opt": "val"},
+                            attributes={"fluent-fn": "FOO"},
+                        ),
                     ]
                 ),
                 linepos=get_linepos(14),
@@ -358,8 +367,8 @@ class TestFluent(TestCase):
             Entry(
                 ("term-sel",),
                 SelectMessage(
-                    declarations={"_1": Expression("-term.attr", "message")},
-                    selectors=(VariableRef("_1"),),
+                    declarations={"sel_1": Expression("-term.attr", "message")},
+                    selectors=(VariableRef("sel_1"),),
                     variants={
                         ("foo",): ["Foo"],
                         (other,): ["Other"],
@@ -672,8 +681,8 @@ class TestFluent(TestCase):
             Entry(
                 id=("delete-all-message",),
                 value=SelectMessage(
-                    declarations={"num_1": Expression(VariableRef("num"), "number")},
-                    selectors=(VariableRef("num_1"),),
+                    declarations={"num": Expression(VariableRef("num"), "number")},
+                    selectors=(VariableRef("num"),),
                     variants={
                         ("one",): ["Delete this download?"],
                         (CatchallKey("other"),): [
@@ -688,8 +697,8 @@ class TestFluent(TestCase):
             Entry(
                 id=("delete-all-message-special-cases",),
                 value=SelectMessage(
-                    declarations={"num_1": Expression(VariableRef("num"), "number")},
-                    selectors=(VariableRef("num_1"),),
+                    declarations={"num": Expression(VariableRef("num"), "number")},
+                    selectors=(VariableRef("num"),),
                     variants={
                         ("12",): ["Delete this dozen of downloads?"],
                         ("2",): ["Delete this pair of downloads?"],
@@ -712,6 +721,7 @@ class TestFluent(TestCase):
                             VariableRef("date"),
                             "datetime",
                             {"month": "long", "year": "numeric", "day": "numeric"},
+                            {"fluent-fn": "DATETIME"},
                         ),
                     ],
                 ),
@@ -730,8 +740,12 @@ class TestFluent(TestCase):
             Entry(
                 id=("platform",),
                 value=SelectMessage(
-                    declarations={"_1": Expression(None, "platform")},
-                    selectors=(VariableRef("_1"),),
+                    declarations={
+                        "sel_1": Expression(
+                            None, "platform", attributes={"fluent-fn": "PLATFORM"}
+                        )
+                    },
+                    selectors=(VariableRef("sel_1"),),
                     variants={
                         ("win",): ["Options"],
                         (CatchallKey("other"),): ["Preferences"],
@@ -744,7 +758,10 @@ class TestFluent(TestCase):
                 value=SelectMessage(
                     declarations={
                         "var_1": Expression(
-                            VariableRef("var"), "number", {"type": "ordinal"}
+                            VariableRef("var"),
+                            "number",
+                            {"type": "ordinal"},
+                            {"fluent-fn": "NUMBER"},
                         )
                     },
                     selectors=(VariableRef("var_1"),),
@@ -761,8 +778,12 @@ class TestFluent(TestCase):
                 value=PatternMessage([]),
                 properties={
                     "title": SelectMessage(
-                        declarations={"_1": Expression(None, "platform")},
-                        selectors=(VariableRef("_1"),),
+                        declarations={
+                            "sel_1": Expression(
+                                None, "platform", attributes={"fluent-fn": "PLATFORM"}
+                            )
+                        },
+                        selectors=(VariableRef("sel_1"),),
                         variants={
                             ("win",): ["Options"],
                             (CatchallKey("other"),): ["Preferences"],
@@ -776,16 +797,24 @@ class TestFluent(TestCase):
                 value=PatternMessage([]),
                 properties={
                     "label": SelectMessage(
-                        declarations={"_1": Expression(None, "platform")},
-                        selectors=(VariableRef("_1"),),
+                        declarations={
+                            "sel_1": Expression(
+                                None, "platform", attributes={"fluent-fn": "PLATFORM"}
+                            )
+                        },
+                        selectors=(VariableRef("sel_1"),),
                         variants={
                             ("macos",): ["Choose…"],
                             (CatchallKey("other"),): ["Browse…"],
                         },
                     ),
                     "accesskey": SelectMessage(
-                        declarations={"_1": Expression(None, "platform")},
-                        selectors=(VariableRef("_1"),),
+                        declarations={
+                            "sel_1": Expression(
+                                None, "platform", attributes={"fluent-fn": "PLATFORM"}
+                            )
+                        },
+                        selectors=(VariableRef("sel_1"),),
                         variants={("macos",): ["e"], (CatchallKey("other"),): ["o"]},
                     ),
                 },
