@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from re import compile, fullmatch
-from typing import Any
+from typing import Any, cast
 
 from fluent.syntax import FluentSerializer
 from fluent.syntax import ast as ftl
@@ -53,8 +53,9 @@ def fluent_serialize(
 
     Section identifiers and multi-part message identifiers are not supported.
 
-    Function names are upper-cased, and expressions using the `message` function
-    are mapped to message and term references.
+    Expressions using the `:message` function are mapped to message and term references.
+    Except for `:datetime` and `:number`, expressions using other functions
+    must have a `@fluent-fn` attribute indicating their corresponding Fluent function name.
 
     If `escape_syntax` is set to `False`,
     syntax characters such as { and } in text elements are not escaped.
@@ -89,8 +90,9 @@ def fluent_astify(
 
     Section identifiers and multi-part message identifiers are not supported.
 
-    Function names are upper-cased, and annotations with the `message` function
-    are mapped to message and term references.
+    Expressions using the `:message` function are mapped to message and term references.
+    Except for `:datetime` and `:number`, expressions using other functions
+    must have a `@fluent-fn` attribute indicating their corresponding Fluent function name.
 
     If `escape_syntax` is set to `False`,
     syntax characters such as { and } in text elements are not escaped.
@@ -163,8 +165,9 @@ def fluent_serialize_entry(
     """
     Serialize an Entry as a Fluent FTL message or term.
 
-    Function names are upper-cased, and expressions using the `message` function
-    are mapped to message and term references.
+    Expressions using the `:message` function are mapped to message and term references.
+    Except for `:datetime` and `:number`, expressions using other functions
+    must have a `@fluent-fn` attribute indicating their corresponding Fluent function name.
 
     If `escape_syntax` is set to `False`,
     syntax characters such as { and } in text elements are not escaped.
@@ -184,8 +187,9 @@ def fluent_astify_entry(
     """
     Transform an Entry into a corresponding Fluent AST message or term.
 
-    Function names are upper-cased, and expressions using the `message` function
-    are mapped to message and term references.
+    Expressions using the `:message` function are mapped to message and term references.
+    Except for `:datetime` and `:number`, expressions using other functions
+    must have a `@fluent-fn` attribute indicating their corresponding Fluent function name.
 
     If `escape_syntax` is set to `False`,
     syntax characters such as { and } in text elements are not escaped.
@@ -231,8 +235,9 @@ def fluent_serialize_message(
     """
     Serialize a message as a Fluent pattern.
 
-    Function names are upper-cased, and expressions using the `message` function
-    are mapped to message and term references.
+    Expressions using the `:message` function are mapped to message and term references.
+    Except for `:datetime` and `:number`, expressions using other functions
+    must have a `@fluent-fn` attribute indicating their corresponding Fluent function name.
 
     If `escape_empty` is set to `True`, a message that would serialize as an empty string
     will instead be serialized as `{ "" }`.
@@ -262,8 +267,9 @@ def fluent_astify_message(
     """
     Transform a message into a corresponding Fluent AST pattern.
 
-    Function names are upper-cased, and expressions using the `message` function
-    are mapped to message and term references.
+    Expressions using the `:message` function are mapped to message and term references.
+    Except for `:datetime` and `:number`, expressions using other functions
+    must have a `@fluent-fn` attribute indicating their corresponding Fluent function name.
 
     If `escape_empty` is set to `True`, a Pattern that would serialize as an empty string
     will instead be escaped as a StringLiteral.
@@ -431,9 +437,7 @@ def expression(
 ) -> ftl.InlineExpression:
     arg = value(decl, expr.arg, decl_name) if expr.arg is not None else None
     if expr.function:
-        return function_ref(decl, arg, expr.function, expr.options)
-    elif expr.function:
-        raise ValueError("Unsupported annotations are not supported")
+        return function_ref(decl, arg, expr)
     if arg:
         return arg
     raise ValueError("Invalid empty expression")
@@ -442,25 +446,39 @@ def expression(
 def function_ref(
     decl: dict[str, Expression],
     arg: ftl.InlineExpression | None,
-    function: str,
-    options: dict[str, str | VariableRef],
+    expr: Expression,
 ) -> ftl.InlineExpression:
     named: list[ftl.NamedArgument] = []
-    for name, val in options.items():
+    for name, val in expr.options.items():
         ftl_val = value(decl, val)
         if isinstance(ftl_val, ftl.Literal):
             named.append(ftl.NamedArgument(ftl.Identifier(name), ftl_val))
         else:
-            raise ValueError(f"Fluent option value not literal for {name}: {ftl_val}")
+            raise ValueError(
+                f"Fluent option value must be literal for {name}: {ftl_val}"
+            )
 
+    function = cast(str, expr.function)
+    ftl_name = expr.attributes.get("fluent-fn", None)
     if function == "string":
         if not arg:
             raise ValueError("Argument required for :string")
         if named:
             raise ValueError("Options on :string are not supported")
         return arg
-    if function == "number" and isinstance(arg, ftl.NumberLiteral) and not named:
-        return arg
+    if function == "datetime":
+        if not arg:
+            raise ValueError("Argument required for :datetime")
+        if not ftl_name:
+            ftl_name = "DATETIME"
+    if function == "number":
+        if not arg:
+            raise ValueError("Argument required for :number")
+        if not ftl_name:
+            if named:
+                ftl_name = "NUMBER"
+            else:
+                return arg
     if function == "message":
         if not isinstance(arg, ftl.Literal):
             raise ValueError(
@@ -480,8 +498,11 @@ def function_ref(
         else:
             return ftl.MessageReference(ftl.Identifier(msg_id), attr)
 
+    if not ftl_name or not isinstance(ftl_name, str):
+        raise ValueError(f"A @fluent-fn attribute is required for :{function}")
+
     args = ftl.CallArguments([arg] if arg else None, named)
-    return ftl.FunctionReference(ftl.Identifier(function.upper()), args)
+    return ftl.FunctionReference(ftl.Identifier(ftl_name), args)
 
 
 # Non-printable ASCII C0 & C1 / Unicode Cc characters

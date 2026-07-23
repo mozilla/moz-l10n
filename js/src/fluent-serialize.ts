@@ -202,7 +202,7 @@ function expression(
   if (declarations && expr.$) {
     let decl = declarations[expr.$]
     while (decl) {
-      if (decl.fn && expr.fn) {
+      if (decl.fn && expr.fn && decl.fn !== expr.fn) {
         const error = `fluent: Unsupported placeholder ${JSON.stringify(expr)} with declaration ${JSON.stringify(decl)}`
         throw new SerializeError(error)
       }
@@ -213,6 +213,11 @@ function expression(
       else decl = declarations[v1]
     }
   }
+
+  let arg: string | undefined
+  if ('_' in expr && expr._ !== undefined) arg = literal(expr._)
+  else if ('$' in expr && isIdentifier(expr.$)) arg = '$' + expr.$
+
   if ('fn' in expr && isIdentifier(expr.fn)) {
     const options: string[] = []
     if (expr.opt) {
@@ -224,6 +229,7 @@ function expression(
         options.push(`${name}: ${literal(value)}`)
       }
     }
+    let ftlName
     switch (expr.fn) {
       case 'message': {
         if (expr._ !== undefined) {
@@ -249,28 +255,52 @@ function expression(
         const error = 'fluent: Unsupported message or term reference'
         throw new SerializeError(error)
       }
-      case 'number':
-        if (options.length === 0 && isNumber(expr._)) return expr._!
-      // fallthrough
-      default: {
-        if ('_' in expr && expr._ !== undefined) {
-          options.unshift(literal(expr._))
-        } else if ('$' in expr && isIdentifier(expr.$)) {
-          options.unshift('$' + expr.$)
+
+      case 'string':
+        if (!arg) {
+          throw new SerializeError('fluent: Argument required for :string')
         }
-        return expr.fn.toUpperCase() + '(' + options.join(', ') + ')'
+        if (options.length) {
+          const error = 'fluent: Options on :string are not supported'
+          throw new SerializeError(error)
+        }
+        return arg
+
+      case 'datetime':
+      case 'number':
+        if (!arg) {
+          throw new SerializeError(`fluent: Argument required for :${expr.fn}`)
+        }
+        ftlName = expr.attr?.['fluent-fn']
+        if (!ftlName) {
+          if (expr.fn === 'number') {
+            if (options.length === 0) return arg
+            ftlName = 'NUMBER'
+          } else {
+            ftlName = 'DATETIME'
+          }
+        }
+      // fallthrough
+
+      default: {
+        ftlName ??= expr.attr?.['fluent-fn']
+        if (!ftlName || typeof ftlName !== 'string') {
+          const error = `fluent: A @fluent-fn attribute is required for :${expr.fn}`
+          throw new SerializeError(error)
+        }
+        if (arg) options.unshift(arg)
+        return ftlName + '(' + options.join(', ') + ')'
       }
     }
   }
-  if ('_' in expr && expr._ !== undefined) return literal(expr._)
-  if ('$' in expr && isIdentifier(expr.$)) return '$' + expr.$
+  if (arg) return arg
   const error = `fluent: Unsupported pattern part ${JSON.stringify(expr)}`
   throw new SerializeError(error)
 }
 
 function literal(value: string | undefined): string {
   if (!value) return '""'
-  if (isNumber(value)) return value
+  if (/^-?\d+(\.\d*)?$/.test(value)) return value
   const escStr = value
     // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x1F\\"\x7F-\x9F]/g, (ch) => {
@@ -286,6 +316,3 @@ const isIdentifier = (value: string | undefined): value is string =>
 
 const isIdWithAttr = (value: string): boolean =>
   /^[A-Za-z][-0-9A-Z_a-z]*\.[A-Za-z][-0-9A-Z_a-z]*$/.test(value)
-
-const isNumber = (value: string | undefined): boolean =>
-  /^-?\d+(\.\d*)?$/.test(value ?? '')
