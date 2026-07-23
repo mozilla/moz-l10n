@@ -214,12 +214,9 @@ function expression(
     }
   }
 
-  const arg =
-    '_' in expr && expr._ !== undefined
-      ? literal(expr._)
-      : '$' in expr && isIdentifier(expr.$)
-        ? '$' + expr.$
-        : null
+  let arg: string | undefined
+  if ('_' in expr && expr._ !== undefined) arg = literal(expr._)
+  else if ('$' in expr && isIdentifier(expr.$)) arg = '$' + expr.$
 
   if ('fn' in expr && isIdentifier(expr.fn)) {
     const options: string[] = []
