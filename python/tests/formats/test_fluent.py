@@ -194,6 +194,45 @@ class TestFluent(TestCase):
             """
         )
 
+    def test_function_refs(self):
+        msg = PatternMessage([Expression(VariableRef("x"), "foo")])
+        with self.assertRaises(ValueError):
+            fluent_serialize_message(msg)
+
+        msg = fluent_parse_message(
+            """
+            { $num ->
+                [one] { NUMBER($num) } item
+               *[other] { NUMBER($num) } items
+            }
+            """
+        )
+        assert msg == SelectMessage(
+            declarations={"num": Expression(VariableRef("num"), function="number")},
+            selectors=(VariableRef("num"),),
+            variants={
+                ("one",): [
+                    Expression(
+                        VariableRef("num"), "number", attributes={"fluent-fn": "NUMBER"}
+                    ),
+                    " item",
+                ],
+                (CatchallKey("other"),): [
+                    Expression(
+                        VariableRef("num"), "number", attributes={"fluent-fn": "NUMBER"}
+                    ),
+                    " items",
+                ],
+            },
+        )
+        assert fluent_serialize_message(msg) == dedent(
+            """\
+            { $num ->
+                [one] { NUMBER($num) } item
+               *[other] { NUMBER($num) } items
+            }"""
+        )
+
     def test_resource(self):
         res = fluent_parse(
             dedent(

@@ -210,6 +210,34 @@ describe('entry', () => {
   )
 
   ok(
+    'num-wrapped-placeholder',
+    ftl`
+    num-wrapped-placeholder =
+        { $num ->
+            [one] One { NUMBER($num) }
+           *[other] Other
+        }
+
+    `,
+    {
+      '=': {
+        decl: { num: { $: 'num', fn: 'number' } },
+        sel: ['num'],
+        alt: [
+          {
+            keys: ['one'],
+            pat: [
+              'One ',
+              { $: 'num', fn: 'number', attr: { 'fluent-fn': 'NUMBER' } }
+            ]
+          },
+          { keys: [{ '*': 'other' }], pat: ['Other'] }
+        ]
+      }
+    }
+  )
+
+  ok(
     'ordinal-selector',
     ftl`
     ordinal-selector =

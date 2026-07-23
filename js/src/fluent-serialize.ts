@@ -202,7 +202,7 @@ function expression(
   if (declarations && expr.$) {
     let decl = declarations[expr.$]
     while (decl) {
-      if (decl.fn && expr.fn) {
+      if (decl.fn && expr.fn && decl.fn !== expr.fn) {
         const error = `fluent: Unsupported placeholder ${JSON.stringify(expr)} with declaration ${JSON.stringify(decl)}`
         throw new SerializeError(error)
       }
