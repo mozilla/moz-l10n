@@ -20,7 +20,7 @@
     "happy-dom": "^20.0.0",
     "prettier": "^3.4.2",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.22.0",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^4.0.18"
   },
   "prettier": {
