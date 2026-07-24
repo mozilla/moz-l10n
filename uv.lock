@@ -376,7 +376,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -397,11 +397,11 @@ wheels = [
 
 [[package]]
 name = "gitignorant"
-version = "0.3.1"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b0/3e/c789602feb9a5edf75b296305fd7b25d2b6e44f3abba565374683c8cf0ad/gitignorant-0.3.1.tar.gz", hash = "sha256:eb51b3421761e41f594758ef1f93aa438f94856da8beea44ccd043f9c2373442", size = 4425, upload-time = "2023-08-23T11:19:12.069Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/c6/4795d97963f9a23b3eb3567ed5eb91a49691a9d20913336caf3fde2e7fd9/gitignorant-0.4.0.tar.gz", hash = "sha256:cdf3f91d3c99929068cb3e84d64c1df2f06473252b5de6927314e8a7fcffc9ca", size = 4457, upload-time = "2024-11-01T08:14:17.476Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5b/e0/8594e6d99c89c40010d572687d709d345061ff66583d51d443d4a74b472f/gitignorant-0.3.1-py3-none-any.whl", hash = "sha256:d2b96ffe90eaf4fa2e1d68ad4e3f807213c8ec1e54a943a9e7105a9f7aaa4232", size = 5064, upload-time = "2023-08-23T11:19:11.038Z" },
+    { url = "https://files.pythonhosted.org/packages/25/8a/e4bffa10a5ee312bbcbe43491ea6f72ab1389832f6cf867291a0bdbb0cdb/gitignorant-0.4.0-py3-none-any.whl", hash = "sha256:c237cd7525aa692014571a9be345173f2330545ce28790c2dc870dc2d79c96cc", size = 5093, upload-time = "2024-11-01T08:14:15.752Z" },
 ]
 
 [[package]]
@@ -785,7 +785,7 @@ xml = [
 requires-dist = [
     { name = "click", specifier = "~=8.1" },
     { name = "fluent-syntax", specifier = "~=0.19.0" },
-    { name = "gitignorant", specifier = "~=0.3.1" },
+    { name = "gitignorant", specifier = "~=0.4.0" },
     { name = "iniparse", specifier = "~=0.5" },
     { name = "lxml", marker = "extra == 'xml'", specifier = ">=6.0.0,<7.0.0" },
     { name = "polib", specifier = "~=1.2" },
