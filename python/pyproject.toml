@@ -7,7 +7,8 @@ name = "moz.l10n"
 version = "0.12.0"
 description = "Mozilla tools for localization"
 readme = "README.md"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
   { name = "Mozilla", email = "l10n-drivers@mozilla.org" },
   { name = "Eemeli Aro", email = "eemeli@mozilla.com" },
