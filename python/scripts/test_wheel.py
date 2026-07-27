@@ -31,21 +31,28 @@ import click
 ROOT = Path(__file__).parent.parent.parent
 BIN_DIR = "Scripts" if sys.platform == "win32" else "bin"
 EXE = ".exe" if sys.platform == "win32" else ""
+VERBOSITY_MAP = {0: "--quiet", 1: "--verbose", 2: "-vv"}
 
 
-def run(*args: str | Path, cwd: Path | None = None) -> None:
+def run(*args: str | Path, cwd: Path | None = None, verbose: int = 0) -> None:
     """Compact `subprocess.run` with `check=True` and logging."""
     cmd_list = [str(arg) for arg in args]
-    click.echo(f"\nRunning: {' '.join(cmd_list)}")
+    if verbose != 0:
+        click.echo(f"\nRunning: {' '.join(cmd_list)}")
     subprocess.run(cmd_list, cwd=cwd, check=True)
 
 
-def check_wheel(wheel: Path | None, dist: Path) -> Path:
+def check_wheel(wheel: Path | None, dist: Path, verbose: int = 0) -> Path:
     """Pass wheel location if existing, build in place if not and pass path."""
     if wheel is not None and wheel.is_file():
         return wheel.resolve()
-
-    run("uv", "build", "--project", ROOT / "python", "--wheel", "-o", dist)
+    # fmt: off
+    run("uv", "build", VERBOSITY_MAP[verbose],
+        "--project", ROOT / "python",
+        "--wheel", "-o", dist,
+        verbose=verbose,
+    )
+    # fmt: on
     wheels = list(dist.glob("*.whl"))
     if len(wheels) != 1:
         raise SystemExit(f"Expected exactly ONE wheel in {dist}, found {len(wheels)}")
@@ -74,7 +81,13 @@ def stage_tests(dest: Path) -> Path:
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help="Wheel to test, Default: building one in place.",
 )
-def cli(python_version: str | None, wheel: Path | None) -> None:
+@click.option(
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase logging verbosity. (Default --quiet).",
+)
+def cli(python_version: str | None, wheel: Path | None, verbose: int) -> None:
     """
     Run our Python test suite against a built moz.l10n wheel.
 
@@ -91,25 +104,34 @@ def cli(python_version: str | None, wheel: Path | None) -> None:
     if python_version is None:
         python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
+    verbosity = VERBOSITY_MAP[verbose]
+
     with TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
-        wheel = wheel.resolve() if wheel else check_wheel(wheel, tmp_dir / "dist")
+        wheel = check_wheel(wheel, tmp_dir / "dist", verbose)
         cwd = stage_tests(tmp_dir / "repo")
 
         venv = tmp_dir / "venv"
         python_path = venv / BIN_DIR / f"python{EXE}"
-        run("uv", "venv", "--python", python_version, venv)
+        run("uv", "venv", "--python", python_version, verbosity, venv, verbose=verbose)
 
-        pip_install = ("uv", "pip", "install", "--python", python_path)
-        run(*pip_install, wheel, "pytest", "jsonschema", "pytest-subtests")
-        run(python_path, "-m", "pytest", "-vv", cwd=cwd)
-        run(venv / BIN_DIR / f"moz-l10n{EXE}", "--help")
+        pip_install = ("uv", "pip", "install", verbosity, "--python", python_path)
+        # fmt: off
+        run(
+            *pip_install, wheel, "pytest", "jsonschema", "pytest-subtests",
+            verbose=verbose,
+        )
+        # fmt: off
+        run(python_path, "-m", "pytest", verbosity, cwd=cwd, verbose=verbose)
+        if verbose != 0:
+            run(venv / BIN_DIR / f"moz-l10n{EXE}", "--help", verbose=verbose)
 
         # Test again with XML support installed
-        run(*pip_install, f"{wheel}[xml]")
-        run(python_path, "-m", "pytest", "-vv", cwd=cwd)
+        run(*pip_install, f"{wheel}[xml]", verbose=verbose)
+        run(python_path, "-m", "pytest", verbosity, cwd=cwd, verbose=verbose)
 
-    click.echo("\nThe built package passes its test suite.")
+    if verbose != 0:
+        click.echo("\nThe built package passes its test suite.")
 
 
 if __name__ == "__main__":
