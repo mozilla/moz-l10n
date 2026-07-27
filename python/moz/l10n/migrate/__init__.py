@@ -162,7 +162,7 @@ class Migrate:
 
 
 def copy(
-    ref_path: None | str,
+    ref_path: str | None,
     id: tuple[str, ...] | str,
     *,
     property: str | None = None,
