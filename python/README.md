@@ -101,7 +101,7 @@ from moz.l10n.formats.mf2 import (
     mf2_serialize_message,  # Serialize a Message using MF2 syntax
     mf2_from_json,          # Marshal a MF2 data model JSON Schema object into a Message
     mf2_to_json,            # Represent a Message using the MF2 data model JSON Schema
-    mf2_validate_message    # Validate that a Message meets all of the MF2 validity constraints
+    mf2_validate_message,   # Validate that a Message meets all of the MF2 validity constraints
 )
 ```
 
@@ -329,7 +329,7 @@ from moz.l10n.model import (
     Pattern,  # type alias for list[str | Expression | Markup]
     Expression,
     Markup,
-    VariableRef
+    VariableRef,
 )
 ```
 

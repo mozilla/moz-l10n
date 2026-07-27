@@ -28,6 +28,9 @@ strict = true
 module = "translate.storage.properties"
 ignore_missing_imports = true
 
+[tool.ruff.format]
+exclude = ["python/README.md"]
+
 [tool.ruff.lint]
 allowed-confusables = [" "]
 select = [
