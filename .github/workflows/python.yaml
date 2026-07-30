@@ -29,7 +29,7 @@ jobs:
       - run: uv sync --all-packages --all-extras
       - run: uv run pytest -vv
 
-  package:
+  build-package:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -38,7 +38,17 @@ jobs:
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           python-version: "3.12"
-      - run: uv run python/scripts/test_wheel.py
+      - run: uv build --project python --wheel -o python/dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-wheel-artifact
+          path: python/dist/*.whl
+
+  test-package:
+    needs: build-package
+    uses: ./.github/workflows/test-wheel.yml
+    with:
+      artifact-name: python-wheel-artifact
 
   lint:
     runs-on: ubuntu-latest
