@@ -1,4 +1,4 @@
-name: Test Wheel
+name: Python Wheel Test
 
 on:
   workflow_call:
@@ -7,16 +7,16 @@ on:
         required: true
         type: string
 
-env:
-  STAGE_DIR: ${{ runner.temp }}/staged_test
-  TEST_DIR: ${{ runner.temp }}/staged_test/python
-
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    env:
+      STAGE_DIR: ${{ runner.temp }}/staged_test
+      TEST_DIR: ${{ runner.temp }}/staged_test/python
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
