@@ -54,5 +54,6 @@ jobs:
         working-directory: ${{ env.TEST_DIR }}
         run: |
           source .venv/bin/activate
-          uv pip install "${{ github.workspace }}/dist/"*.whl[xml]
+          WHEEL=$(echo "${{ github.workspace }}/dist/"*.whl)
+          uv pip install "${WHEEL}[xml]"
           pytest -vv
