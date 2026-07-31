@@ -1,0 +1,54 @@
+name: Test Wheel
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        required: true
+        type: string
+
+env:
+  STAGE_DIR: ${{ runner.temp }}/staged_test
+  TEST_DIR: ${{ runner.temp }}/staged_test/python
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download built wheel artifact
+        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: dist
+
+      - name: Stage tests outside repository
+        run: |
+          mkdir -p ${{ env.TEST_DIR }}
+          cp -r python/tests ${{ env.TEST_DIR }}/
+          cp -r schemas ${{ env.STAGE_DIR }}/
+
+      - name: Test base wheel & CLI entry point
+        working-directory: ${{ env.TEST_DIR }}
+        run: |
+          uv venv .venv --python ${{ matrix.python-version }}
+          source .venv/bin/activate
+          uv pip install "${{ github.workspace }}/dist/"*.whl pytest jsonschema pytest-subtests
+          pytest -vv
+          moz-l10n --help
+
+      - name: Test wheel with [xml] extra
+        working-directory: ${{ env.TEST_DIR }}
+        run: |
+          source .venv/bin/activate
+          uv pip install "${{ github.workspace }}/dist/"*.whl[xml]
+          pytest -vv
