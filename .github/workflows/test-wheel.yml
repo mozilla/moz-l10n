@@ -1,0 +1,52 @@
+name: Python Wheel Test
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.14"]
+
+    steps:
+      - name: Set path environment variables
+        run: |
+          echo "STAGE_DIR=${{ runner.temp }}/staged_test" >> $GITHUB_ENV
+          echo "TEST_DIR=${{ runner.temp }}/staged_test/python" >> $GITHUB_ENV
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download built wheel artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: dist
+
+      - name: Stage tests outside repository
+        run: |
+          mkdir -p ${{ env.TEST_DIR }}
+          cp -r python/tests ${{ env.TEST_DIR }}/
+          cp -r schemas ${{ env.STAGE_DIR }}/
+
+      - name: Prep environment & install wheel
+        working-directory: ${{ env.TEST_DIR }}
+        run: |
+          uv venv .venv --python ${{ matrix.python-version }}
+          WHEEL=$(echo "${{ github.workspace }}/dist/"*.whl)
+          uv pip install "${WHEEL}[xml]"
+          uv pip install pytest jsonschema pytest-subtests
+
+      - name: Run Test
+        working-directory: ${{ env.TEST_DIR }}
+        run: uv run pytest -vv
