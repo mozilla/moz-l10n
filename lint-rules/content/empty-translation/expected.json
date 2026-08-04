@@ -1,0 +1,12 @@
+{
+  "rule": "M201 empty-translation",
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "message": "Empty translation",
+      "resource": "example.ftl",
+      "key": "key",
+      "line": 1
+    }
+  ]
+}

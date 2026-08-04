@@ -1,0 +1,10 @@
+id = "M302"
+name = "placeholder-not-in-translation"
+family = "placeholders"
+summary = "A source placeholder or markup element is missing from the translation."
+default_severity = "warning"
+enabled_by_default = true
+fixable = false
+file_types = [".xml", ".strings", ".xcstrings"]
+tags = ["recommended", "correctness"]
+since = "0.1.0"

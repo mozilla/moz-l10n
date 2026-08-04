@@ -1,0 +1,12 @@
+{
+  "rule": "M002 source-parse-error",
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "message": "Source parse error: Unclosed expression",
+      "resource": "source.xml",
+      "key": "greeting",
+      "line": 1
+    }
+  ]
+}

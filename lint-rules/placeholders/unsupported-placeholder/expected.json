@@ -1,0 +1,11 @@
+{
+  "rule": "placeholder-unsupported",
+  "diagnostics": [
+    {
+      "severity": "error",
+      "message": "Unsupported placeholder: <expression>",
+      "resource": "example.messages.json",
+      "key": "greeting"
+    }
+  ]
+}

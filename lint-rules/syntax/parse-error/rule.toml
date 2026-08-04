@@ -1,0 +1,10 @@
+id = "M001"
+name = "parse-error"
+family = "syntax"
+summary = "The translation cannot be parsed in its target format."
+default_severity = "error"
+enabled_by_default = true
+fixable = false
+file_types = [".ftl", ".po", ".xml", ".strings", ".xcstrings", "messages.json"]
+tags = ["recommended", "correctness"]
+since = "0.1.0"

@@ -1,0 +1,10 @@
+{
+  "rule": "M401 trailing-newline-mismatch",
+  "diagnostics": [
+    {
+      "severity": "error",
+      "message": "Ending newline mismatch",
+      "resource": "example.po"
+    }
+  ]
+}

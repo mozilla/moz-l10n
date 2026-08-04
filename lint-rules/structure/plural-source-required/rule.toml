@@ -1,0 +1,10 @@
+id = "M101"
+name = "plural-source-required"
+family = "structure"
+summary = "A pluralized (select) translation requires a pluralized source."
+default_severity = "error"
+enabled_by_default = true
+fixable = false
+file_types = [".po", ".xml", ".strings", ".xcstrings"]
+tags = ["recommended", "correctness"]
+since = "0.1.0"

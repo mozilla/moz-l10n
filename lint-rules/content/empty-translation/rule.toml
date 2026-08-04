@@ -1,0 +1,16 @@
+id = "M201"
+name = "empty-translation"
+family = "content"
+summary = "The translation has no visible content."
+default_severity = "error"
+enabled_by_default = true
+fixable = false
+file_types = [".ftl", ".po", ".xml", ".strings", ".xcstrings", "messages.json"]
+tags = ["recommended", "correctness"]
+since = "0.1.0"
+
+# When a resource opts in (Pontoon's `allows_empty_translations`), an empty
+# translation is permitted but still reported at this lower severity instead of
+# being blocked as an error.
+[options]
+allowed_severity = "warning"

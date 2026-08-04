@@ -1,0 +1,10 @@
+{
+  "rule": "M101 plural-source-required",
+  "diagnostics": [
+    {
+      "severity": "error",
+      "message": "Plural translation requires plural source",
+      "resource": "example.po"
+    }
+  ]
+}

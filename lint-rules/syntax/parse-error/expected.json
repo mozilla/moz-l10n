@@ -1,0 +1,12 @@
+{
+  "rule": "M001 parse-error",
+  "diagnostics": [
+    {
+      "severity": "error",
+      "message": "Expected message \"key\" to have a value or attributes",
+      "resource": "example.ftl",
+      "key": "key",
+      "line": 1
+    }
+  ]
+}
