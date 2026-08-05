@@ -22,7 +22,12 @@ import { ParseError, SerializeError } from './errors.ts'
 import { xliffParsePattern } from './xliff-parse.ts'
 
 describe('success', () => {
-  const ok = (name: string, pattern: Pattern, exp: string, xliffIsXcode: boolean = false) =>
+  const ok = (
+    name: string,
+    pattern: Pattern,
+    exp: string,
+    xliffIsXcode: boolean = false
+  ) =>
     test(name, () => {
       const src = xliffSerializePattern(pattern)
       expect(src).toBe(exp)

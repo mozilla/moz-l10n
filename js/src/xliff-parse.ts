@@ -14,15 +14,12 @@
  */
 
 import { ParseError } from './errors.ts'
+import { ParseOptions } from './index.ts'
 import type { Expression, Markup, Pattern } from './model.ts'
-
-export interface XliffParseOptions {
-  xliffIsXcode?: boolean
-}
 
 export function xliffParsePattern(
   src: string,
-  options?: XliffParseOptions
+  options?: ParseOptions
 ): Pattern {
   const doc = new DOMParser().parseFromString(
     `<target>${src}</target>`,
@@ -43,7 +40,7 @@ const printf =
 
 function* parseElement(
   el: Element,
-  { xliffIsXcode = false }: XliffParseOptions = {}
+  { xliffIsXcode = false }: ParseOptions = {}
 ): Iterable<string | Expression | Markup> {
   for (const node of el.childNodes as Iterable<ChildNode>) {
     if (node instanceof Text) {
