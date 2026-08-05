@@ -16,7 +16,14 @@
 import { ParseError } from './errors.ts'
 import type { Expression, Markup, Pattern } from './model.ts'
 
-export function xliffParsePattern(src: string): Pattern {
+export interface XliffParseOptions {
+  xliffIsXcode?: boolean
+}
+
+export function xliffParsePattern(
+  src: string,
+  options?: XliffParseOptions
+): Pattern {
   const doc = new DOMParser().parseFromString(
     `<target>${src}</target>`,
     'text/xml'
@@ -27,17 +34,24 @@ export function xliffParsePattern(src: string): Pattern {
     const errMsg = 'xliff: ' + (error?.textContent ?? 'XML parser error')
     throw new ParseError(errMsg)
   }
-  return Array.from(parseElement(root))
+  return Array.from(parseElement(root, options))
 }
 
 // # https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Strings/Articles/formatSpecifiers.html
 const printf =
   /%([1-9]\$)?[-#+ 0,]?[0-9.]*(?:(?:hh?|ll?|qztj)[douxX]|L[aAeEfFgG]|[@%aAcCdDeEfFgGoOspSuUxX])/g
 
-function* parseElement(el: Element): Iterable<string | Expression | Markup> {
+function* parseElement(
+  el: Element,
+  { xliffIsXcode = false }: XliffParseOptions = {}
+): Iterable<string | Expression | Markup> {
   for (const node of el.childNodes as Iterable<ChildNode>) {
     if (node instanceof Text) {
       const src = node.data
+      if (!xliffIsXcode) {
+        yield src
+        continue
+      }
       let pos = 0
       for (const m of src.matchAll(printf)) {
         if (m.index > pos) yield src.substring(pos, m.index)
@@ -94,7 +108,7 @@ function* parseElement(el: Element): Iterable<string | Expression | Markup> {
         yield { elem: name, opt }
       } else {
         yield { open: name, opt }
-        yield* parseElement(node)
+        yield* parseElement(node, { xliffIsXcode })
         yield { close: name }
       }
     }

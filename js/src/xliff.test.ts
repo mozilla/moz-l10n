@@ -22,12 +22,11 @@ import { ParseError, SerializeError } from './errors.ts'
 import { xliffParsePattern } from './xliff-parse.ts'
 
 describe('success', () => {
-  const ok = (name: string, pattern: Pattern, exp: string) =>
+  const ok = (name: string, pattern: Pattern, exp: string, xliffIsXcode: boolean = false) =>
     test(name, () => {
       const src = xliffSerializePattern(pattern)
       expect(src).toBe(exp)
-
-      const res = xliffParsePattern(src)
+      const res = xliffParsePattern(src, { xliffIsXcode })
       expect(res).toEqual(pattern)
     })
 
@@ -42,7 +41,8 @@ describe('success', () => {
       { $: 'int2', fn: 'integer', attr: { source: '%2$d' } },
       '!'
     ],
-    'Hello, %s and %2$d!'
+    'Hello, %s and %2$d!',
+    true
   )
   ok('html elements', [{ open: 'b' }, 'bold', { close: 'b' }], '<b>bold</b>')
   ok(
@@ -64,6 +64,7 @@ describe('success', () => {
     ],
     'Go to <a href="open-account">Create password</a> in settings.'
   )
+  ok('non-xcode printf pattern', ['Hallo %@'], 'Hallo %@')
 })
 
 describe('parse errors', () => {
