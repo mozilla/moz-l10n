@@ -116,8 +116,8 @@ describe('options bag', () => {
     expect(xcode).toEqual(['Hello ', { $: 'arg', attr: { source: '%@' } }])
   })
 
-  test('webext with baseMsg option', () => {
-    const baseMsg = {
+  test('webext with webextBaseMsg option', () => {
+    const webextBaseMsg = {
       declarations: {},
       selectors: [],
       variants: {},
@@ -127,13 +127,17 @@ describe('options bag', () => {
     }
 
     const optsPattern = parsePattern('webext', 'Hello $USER$', {
-      baseMsg: baseMsg as any
+      webextBaseMsg: webextBaseMsg as any
     })
     expect(optsPattern).toEqual([
       'Hello ',
       { $: 'USER', attr: { source: '$USER$' } }
     ])
-    const legacyPattern = parsePattern('webext', 'Hello $USER$', baseMsg as any)
+    const legacyPattern = parsePattern(
+      'webext',
+      'Hello $USER$',
+      webextBaseMsg as any
+    )
     expect(legacyPattern).toEqual([
       'Hello ',
       { $: 'USER', attr: { source: '$USER$' } }
