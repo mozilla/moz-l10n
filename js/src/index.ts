@@ -110,16 +110,10 @@ export function parsePattern(
       return mf2ParsePattern(src)
     case 'properties':
       return propertiesParsePattern(src)
-    case 'webext': {
-      // Normalize `options` if legacy `baseMsg` was passed as string directly.
-      let opts: ParseOptions = (options as ParseOptions) ?? {}
-      if (Array.isArray(options) || (options && 'declarations' in options)) {
-        opts = { webextBaseMsg: options as Message }
-      }
-      return webextParsePattern(opts.webextBaseMsg ?? [], src)
-    }
+    case 'webext':
+      return webextParsePattern(options?.webextBaseMsg ?? [], src)
     case 'xliff':
-      return xliffParsePattern(src, options)
+      return xliffParsePattern(src, options?.xliffIsXcode)
     case 'plain':
       return src ? [src] : []
     default:

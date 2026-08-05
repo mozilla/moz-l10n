@@ -31,7 +31,7 @@ describe('success', () => {
     test(name, () => {
       const src = xliffSerializePattern(pattern)
       expect(src).toBe(exp)
-      const res = xliffParsePattern(src, { xliffIsXcode })
+      const res = xliffParsePattern(src, xliffIsXcode)
       expect(res).toEqual(pattern)
     })
 

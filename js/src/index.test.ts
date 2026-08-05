@@ -133,14 +133,5 @@ describe('options bag', () => {
       'Hello ',
       { $: 'USER', attr: { source: '$USER$' } }
     ])
-    const legacyPattern = parsePattern(
-      'webext',
-      'Hello $USER$',
-      webextBaseMsg as any
-    )
-    expect(legacyPattern).toEqual([
-      'Hello ',
-      { $: 'USER', attr: { source: '$USER$' } }
-    ])
   })
 })
