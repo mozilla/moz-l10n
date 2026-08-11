@@ -209,6 +209,7 @@ def fluent_astify_entry(
         )
         for key, val in entry.properties.items()
     )
+    # Use lexicographic order, with accesskeys last.
     attributes.sort(
         key=lambda a: a.id.name.lower().replace("accesskey", "\uffffaccesskey")
     )

@@ -49,6 +49,7 @@ export function fluentSerializeEntry(
   }
   str += '\n'
   if (entry['+']) {
+    // Use lexicographic order, with accesskeys last.
     const properties = Object.entries(entry['+']).sort((a, b) => {
       const an = a[0].toLowerCase().replace('accesskey', '\uFFFFaccesskey')
       const bn = b[0].toLowerCase().replace('accesskey', '\uFFFFaccesskey')
