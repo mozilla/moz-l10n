@@ -153,4 +153,4 @@ def webext_serialize_message(
                 msgstr += arg_name if arg_name.startswith("$") else f"${arg_name}"
         else:
             raise ValueError(f"Unsupported message part: {part}")
-    return msgstr, placeholders
+    return msgstr, dict(sorted(placeholders.items()))
