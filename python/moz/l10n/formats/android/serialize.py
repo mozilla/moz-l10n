@@ -261,10 +261,14 @@ def set_plural_message(plurals: etree._Element, msg: SelectMessage) -> None:
     if len(msg.declarations) != 1 or not sel or sel.function != "number":
         raise ValueError(f"Unsupported message: {msg}")
     item: etree._Element | None = None
+    # Some Slavic languages use `many` as the fallback plural case,
+    # and translations may exclude a literal `other` case.
+    # However, the Android <plurals> handling hard-codes `other` as the fallback.
+    has_other = any(keys == ("other",) for keys in msg.variants)
     for keys, value in msg.variants.items():
         key = keys[0] if len(keys) == 1 else None
         if isinstance(key, CatchallKey):
-            key = key.value or "other"
+            key = key.value if has_other else "other"
         if key not in plural_categories:
             raise ValueError(f"Unsupported plural variant key: {keys}")
         item = etree.SubElement(plurals, "item", attrib={"quantity": key})
