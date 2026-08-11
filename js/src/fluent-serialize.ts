@@ -49,7 +49,12 @@ export function fluentSerializeEntry(
   }
   str += '\n'
   if (entry['+']) {
-    for (const [name, value] of Object.entries(entry['+'])) {
+    const properties = Object.entries(entry['+']).sort((a, b) => {
+      const an = a[0].toLowerCase().replace('accesskey', '\uFFFFaccesskey')
+      const bn = b[0].toLowerCase().replace('accesskey', '\uFFFFaccesskey')
+      return an < bn ? -1 : an > bn ? 1 : 0
+    })
+    for (const [name, value] of properties) {
       str += `    .${name} =`
       const attrStr = fluentSerializeMessage(value, options) || '{ "" }'
       str += attrStr.includes('\n')
@@ -229,6 +234,7 @@ function expression(
         options.push(`${name}: ${literal(value)}`)
       }
     }
+    options.sort()
     let ftlName
     switch (expr.fn) {
       case 'message': {

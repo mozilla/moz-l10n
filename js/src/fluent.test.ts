@@ -384,6 +384,38 @@ describe('entry', () => {
   )
 
   ok(
+    'sort',
+    ftl`
+    sort =
+        .accesskey = Accesskey
+        .foo = Foo { NUMBER(42, c: "C", a: "A", b: "B") }
+        .bar = Bar
+    `,
+    {
+      '+': {
+        accesskey: ['Accesskey'],
+        foo: [
+          'Foo ',
+          {
+            _: '42',
+            fn: 'number',
+            opt: { a: 'A', b: 'B', c: 'C' },
+            attr: { 'fluent-fn': 'NUMBER' }
+          }
+        ],
+        bar: ['Bar']
+      }
+    },
+    ftl`
+    sort =
+        .bar = Bar
+        .foo = Foo { NUMBER(42, a: "A", b: "B", c: "C") }
+        .accesskey = Accesskey
+
+    `
+  )
+
+  ok(
     'term-attr-sel',
     ftl`
     term-attr-sel =

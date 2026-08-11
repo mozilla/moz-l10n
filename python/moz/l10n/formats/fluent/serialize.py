@@ -209,6 +209,9 @@ def fluent_astify_entry(
         )
         for key, val in entry.properties.items()
     )
+    attributes.sort(
+        key=lambda a: a.id.name.lower().replace("accesskey", "\uffffaccesskey")
+    )
     if comment_str is None:
         if entry.meta:
             raise ValueError("Metadata requires custom serializer")
@@ -457,6 +460,7 @@ def function_ref(
             raise ValueError(
                 f"Fluent option value must be literal for {name}: {ftl_val}"
             )
+    named.sort(key=lambda a: a.name.name)
 
     function = cast(str, expr.function)
     ftl_name = expr.attributes.get("fluent-fn", None)
