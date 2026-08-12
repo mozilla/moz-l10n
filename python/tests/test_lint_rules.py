@@ -96,7 +96,9 @@ def test_rule_meta(rule_family: str, subtests: pytest.Subtests):
             )
 
 
-@pytest.mark.parametrize("l10n_extension", moz.l10n.formats.l10n_extensions, ids=lambda p: f"type: {p}")
+@pytest.mark.parametrize(
+    "l10n_extension", moz.l10n.formats.l10n_extensions, ids=lambda p: f"type: {p}"
+)
 def test_parse_rules(l10n_extension: str, snapshot: Snapshot):
     common_dir = moz.l10n.lint.PARSE_COMMON / source_error.NAME
     source_test_file = common_dir / f"source{l10n_extension}"
@@ -119,7 +121,9 @@ def test_parse_rules(l10n_extension: str, snapshot: Snapshot):
     snapshot.assert_match(diagnostics_json, f"expected{l10n_extension}.json")
 
 
-@pytest.mark.parametrize("rule_family", moz.l10n.lint.FAMILIES, ids=lambda p: f"rule family: {p}")
+@pytest.mark.parametrize(
+    "rule_family", moz.l10n.lint.FAMILIES, ids=lambda p: f"rule family: {p}"
+)
 def test_rules(rule_family: str, subtests: pytest.Subtests):
     for rule_name in moz.l10n.lint.RULES[rule_family]:
         module_name = moz.l10n.lint.get_module_name(rule_family, rule_name)
