@@ -983,7 +983,7 @@ class TestFluent(TestCase):
                    *[other] Delete { $num } downloads?
                 }
             # DATETIME Built-in function
-            today-is = Today is { DATETIME($date, month: "long", year: "numeric", day: "numeric") }
+            today-is = Today is { DATETIME($date, day: "numeric", month: "long", year: "numeric") }
             # Soft Launch
             default-content-process-count =
                 .label = { $num } (default)
