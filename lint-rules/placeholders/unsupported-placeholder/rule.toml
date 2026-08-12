@@ -1,9 +1,0 @@
-name = "placeholder-unsupported"
-family = "placeholders"
-summary = "The translation contains a placeholder that cannot be serialized."
-default_severity = "error"
-enabled_by_default = true
-fixable = false
-file_types = ["messages.json"]
-tags = ["correctness"]
-since = "0.1.0"

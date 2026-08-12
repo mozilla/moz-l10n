@@ -1,0 +1,10 @@
+[
+  {
+    "rule_name": "source-error",
+    "message": "MF2 Source parse error: Expected }\n<!ENTITY greeting \"Hello {$name\">\u00b6\n                               ^",
+    "severity": "warning",
+    "key": null,
+    "line": 1,
+    "column": 32
+  }
+]

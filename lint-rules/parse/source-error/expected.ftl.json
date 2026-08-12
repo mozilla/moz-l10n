@@ -1,0 +1,10 @@
+[
+  {
+    "rule_name": "source-error",
+    "message": "Expected token: \"}\"",
+    "severity": "warning",
+    "key": null,
+    "line": 1,
+    "column": 1
+  }
+]

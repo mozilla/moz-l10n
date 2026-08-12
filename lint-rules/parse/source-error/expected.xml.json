@@ -1,0 +1,10 @@
+[
+  {
+    "rule_name": "source-error",
+    "message": "MF2 Source parse error: Expected }\n<resources>\u00b6<string name=\"greeting\">Hello {$name</string>\u00b6</resources>\n                                                ^",
+    "severity": "warning",
+    "key": null,
+    "line": 2,
+    "column": 37
+  }
+]

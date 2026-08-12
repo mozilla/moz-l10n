@@ -1,0 +1,10 @@
+[
+  {
+    "rule_name": "source-error",
+    "message": "MF2 Source parse error: Expected }\ngreeting = Hello {$name\u00b6\n                        ^",
+    "severity": "warning",
+    "key": null,
+    "line": 2,
+    "column": 1
+  }
+]

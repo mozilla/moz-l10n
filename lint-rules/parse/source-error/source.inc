@@ -1,0 +1,1 @@
+#define greeting Hello {$name
