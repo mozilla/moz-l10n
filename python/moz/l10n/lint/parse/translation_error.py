@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from moz.l10n.lint.model import SEVERITY, Diagnostic, LintContext, Rule, TargetType
 
 from ._common import parse_fluent, parse_mf2
@@ -34,9 +36,13 @@ def parse_check(context: LintContext) -> tuple[TargetType, list[Diagnostic]]:
         return None, []
 
     if context.is_fluent:
-        target, diagnostic = parse_fluent(context.raw_translation, context, RULE, "translation")
+        target, diagnostic = parse_fluent(
+            context.raw_translation, context, RULE, "translation"
+        )
     else:
-        target, diagnostic = parse_mf2(context.raw_translation, context, RULE, "translation")
+        target, diagnostic = cast(
+            Any, parse_mf2(context.raw_translation, context, RULE, "translation")
+        )
     if diagnostic:
         # Translation parse failure is terminal! Pass nothing downstream!
         return None, [diagnostic]

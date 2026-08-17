@@ -168,10 +168,9 @@ def check_rules(
                 raise RuntimeError(
                     f'Error running rule "{rule_module.__name__}":\n'
                     f'  file: "{rule_module.__file__}"\n'
-                    f'  translation: {translation}\n'
-                    f'  source: {source}\n',
-                    f'  context: {context}\n'
-                    f'  error: {error}'
+                    f"  translation: {translation}\n"
+                    f"  source: {source}\n",
+                    f"  context: {context}\n  error: {error}",
                 )
     return diagnostics
 
@@ -190,7 +189,7 @@ def get_rule_module(part_one: str, part_two: str | None = None) -> RuleModule:
     else:
         module_name = get_full_name(part_one, part_two)
 
-    module_name = module_name.replace('-', '_')
+    module_name = module_name.replace("-", "_")
     if module_name in _RULE_MODULES:
         return _RULE_MODULES[module_name]
 

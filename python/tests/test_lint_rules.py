@@ -43,7 +43,7 @@ PARSE_RULES = (
 @pytest.mark.parametrize(
     "rule_family", moz.l10n.lint.FAMILIES, ids=lambda p: f"rule family: {p}"
 )
-def test_rule_meta(rule_family: str, subtests: pytest.Subtests):
+def test_rule_meta(rule_family: str, subtests):
     family_common_dir: Path = moz.l10n.lint.RULES_COMMON / rule_family
     assert family_common_dir.is_dir(), f'No such rule family in common "{rule_family}"!'
 
@@ -119,6 +119,7 @@ def test_parse_rules(
     raw = test_file.read_text()
     raw_src, raw_trg = (raw, None) if fixture_stem == "source" else (None, raw)
     resource_format = moz.l10n.formats.detect_format(test_file.name, raw)
+    assert resource_format is not None
     assert isinstance(resource_format, moz.l10n.formats.Format)
     context = moz.l10n.lint.LintContext(
         resource_format=resource_format,
@@ -144,7 +145,7 @@ def test_parse_rules(
 @pytest.mark.parametrize(
     "rule_family", moz.l10n.lint.FAMILIES, ids=lambda p: f"rule family: {p}"
 )
-def test_rules(rule_family: str, subtests: pytest.Subtests):
+def test_rules(rule_family: str, subtests):
     for rule_name in moz.l10n.lint.RULES[rule_family]:
         module_name = moz.l10n.lint.get_full_name(rule_family, rule_name)
         with subtests.test(module_name):

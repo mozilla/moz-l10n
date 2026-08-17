@@ -27,7 +27,7 @@ from moz.l10n.lint.model import (
     SourceType,
     TargetType,
 )
-from moz.l10n.model import Message
+from moz.l10n.model import Message, PatternMessage, SelectMessage
 
 from .._preview import get_patterns
 
@@ -50,9 +50,9 @@ def check(
     Resources that opt in keep the empty translation but still get told about
     it, so this downgrades to a warning rather than disappearing.
     """
-    if isinstance(translation, Message):
+    if isinstance(translation, (PatternMessage, SelectMessage)):
         return check_message(translation, context)
-    if isinstance(translation, ftl.Message | ftl.Term | ftl.Junk):
+    if isinstance(translation, (ftl.Message, ftl.Term, ftl.Junk)):
         return check_fluent_entry(translation, context)
     return [_report(context)]
 
@@ -95,7 +95,9 @@ def check_fluent_entry(
     syntax but leaves the UI with nothing to show, so it is always reported
     at the opted-in severity rather than blocking the submission.
     """
-    if isinstance(entry, ftl.Junk) or not any(_ftl_is_empty(pattern) for pattern in _ftl_leaf_patterns(entry)):
+    if isinstance(entry, ftl.Junk) or not any(
+        _ftl_is_empty(pattern) for pattern in _ftl_leaf_patterns(entry)
+    ):
         return []
     diagnostic = RULE.diagnostic(
         ALLOWED_MESSAGE, severity=ALLOWED_SEVERITY, key=context.key or entry.id.name

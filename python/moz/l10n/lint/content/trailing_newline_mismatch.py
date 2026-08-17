@@ -55,11 +55,14 @@ def fix(source: str, translation: str) -> str:
     if source_newlines == _count_trailing_newlines(translation):
         return translation
 
-    return f"{translation.rstrip('\n')}{'\n' * source_newlines}"
+    new_line = "\n"
+    return f"{translation.rstrip(new_line)}{new_line * source_newlines}"
 
 
 def _get_str(s: str | SourceType, raw: str | None) -> str:
-    check_string = (s.pattern[-1] if s.pattern else '') if isinstance(s, PatternMessage) else s
+    check_string = (
+        (s.pattern[-1] if s.pattern else "") if isinstance(s, PatternMessage) else s
+    )
     if not isinstance(check_string, str):
         if raw is None:
             raise NotImplementedError(

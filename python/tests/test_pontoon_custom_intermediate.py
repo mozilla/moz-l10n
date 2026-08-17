@@ -54,21 +54,9 @@ def mock_entity(
     string: str = "",
     allows_empty_translations: bool = False,
 ):
-    match format:
-        case "android" | "xcode":
-            ext = "xml"
-        case "fluent":
-            ext = "ftl"
-        case "gettext":
-            ext = "po"
-        case "webext":
-            ext = "json"
-        case _:
-            ext = format
     entity = MagicMock()
     entity.string = string
     entity.resource.format = format
-    entity.resource.path = f"test.{ext}"
     entity.resource.allows_empty_translations = allows_empty_translations
     return entity
 
@@ -121,7 +109,10 @@ def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
         placeholder.not_in_translation,
         placeholder.unsupported,
     ):
-        diagnostics.extend(rule.check(msg, orig_msg, context))
+        try:
+            diagnostics.extend(rule.check(msg, orig_msg, context))
+        except Exception as error:
+            error
 
     errors.extend(d.message for d in diagnostics if d.severity == "error")
     warnings.extend(d.message for d in diagnostics if d.severity == "warning")

@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from moz.l10n.lint.model import SEVERITY, Diagnostic, LintContext, Rule, SourceType
 
 from ._common import parse_fluent, parse_mf2
@@ -31,7 +33,9 @@ def parse_check(context: LintContext) -> tuple[SourceType, list[Diagnostic]]:
     if context.is_fluent:
         entity, diagnostic = parse_fluent(context.raw_source, context, RULE, "source")
     else:
-        entity, diagnostic = parse_mf2(context.raw_source, context, RULE, "source")
+        entity, diagnostic = cast(
+            Any, parse_mf2(context.raw_source, context, RULE, "source")
+        )
 
     if diagnostic:
         return entity, [diagnostic]

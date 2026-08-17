@@ -62,14 +62,12 @@ def mock_entity():
 def run_custom_checks(
     entity: MockEntity,
     string: str,
-    enabled_rules: set[str] | None = None,
 ) -> dict[str, list[str]]:
     context = moz.l10n.lint.LintContext(
         resource_format=entity.resource.format,
         allows_empty_translations=entity.resource.allows_empty_translations,
         raw_source=entity.string,
         raw_translation=string,
-        enabled_rules=enabled_rules,
     )
 
     diagnostics = moz.l10n.lint.check(context)
@@ -96,18 +94,17 @@ def test_ending_newline(mock_entity):
     Original and translation in a PO file must either both end
     in a newline, or none of them should.
     """
-    enabled = {"content.trailing-newline-mismatch"}
     po_entity = mock_entity("gettext", string="Original")
-    assert run_custom_checks(po_entity, "Translation\n", enabled) == {
+    assert run_custom_checks(po_entity, "Translation\n") == {
         "pErrors": ["Ending newline mismatch"]
     }
-    assert run_custom_checks(po_entity, "Translation", enabled) == {}
+    assert run_custom_checks(po_entity, "Translation") == {}
 
     po_entity.string = "Original\n"
-    assert run_custom_checks(po_entity, "Translation", enabled) == {
+    assert run_custom_checks(po_entity, "Translation") == {
         "pErrors": ["Ending newline mismatch"]
     }
-    assert run_custom_checks(po_entity, "Translation\n", enabled) == {}
+    assert run_custom_checks(po_entity, "Translation\n") == {}
 
 
 def test_empty_translations_allowed(mock_entity):
@@ -115,9 +112,7 @@ def test_empty_translations_allowed(mock_entity):
     Empty translations should be allowed but noted for some extensions.
     """
     assert run_custom_checks(
-        mock_entity("properties", allows_empty_translations=True),
-        "",
-        {"content.empty-translation"},
+        mock_entity("properties", allows_empty_translations=True), ""
     ) == {"pndbWarnings": ["Empty translation"]}
 
 
@@ -126,26 +121,22 @@ def test_empty_translations_not_allowed(mock_entity):
     Empty translations shouldn't be allowed for some extensions.
     """
     po_entity = mock_entity("gettext")
-    enabled = {"content.empty-translation"}
-    enabled_plural = enabled.union({"structure.plural-source-required"})
-    assert run_custom_checks(po_entity, "", enabled) == {"pErrors": empty_error}
-    assert run_custom_checks(po_entity, "{{}}", enabled) == {"pErrors": empty_error}
+    assert run_custom_checks(po_entity, "") == {"pErrors": empty_error}
+    assert run_custom_checks(po_entity, "{{}}") == {"pErrors": empty_error}
+    assert run_custom_checks(po_entity, ".input {$n :number} .match $n * {{}}") == {
+        "pErrors": empty_error + plural_error
+    }
     assert run_custom_checks(
-        po_entity, ".input {$n :number} .match $n * {{}}", enabled_plural
+        po_entity, ".input {$n :number} .match $n 1 {{}} * {{other}}"
     ) == {"pErrors": empty_error + plural_error}
-    assert run_custom_checks(
-        po_entity, ".input {$n :number} .match $n 1 {{}} * {{other}}", enabled_plural
-    ) == {"pErrors": empty_error + plural_error}
-    assert run_custom_checks(po_entity, "{{{||}}}", enabled) == {}
+    assert run_custom_checks(po_entity, "{{{||}}}") == {}
 
     assert run_custom_checks(
-        mock_entity("fluent", string="key = value"), 'key = { "" }', enabled
+        mock_entity("fluent", string="key = value"), 'key = { "" }'
     ) == {"pndbWarnings": ["Empty translation"]}
 
     assert (
-        run_custom_checks(
-            mock_entity("fluent", string="key = value"), 'key = { "x" }', enabled
-        )
+        run_custom_checks(mock_entity("fluent", string="key = value"), 'key = { "x" }')
         == {}
     )
 
@@ -158,7 +149,6 @@ def test_empty_translations_not_allowed(mock_entity):
               }
               .attr = { "" }
             """,
-        enabled,
     ) == {"pndbWarnings": ["Empty translation"]}
 
     assert run_custom_checks(
@@ -170,7 +160,6 @@ def test_empty_translations_not_allowed(mock_entity):
               }
               .attr = { "" }
             """,
-        enabled,
     ) == {"pndbWarnings": ["Empty translation"]}
 
     assert run_custom_checks(
@@ -182,7 +171,6 @@ def test_empty_translations_not_allowed(mock_entity):
               }
               .attr = { "y" }
             """,
-        enabled,
     ) == {"pndbWarnings": ["Empty translation"]}
 
     assert (
@@ -195,7 +183,6 @@ def test_empty_translations_not_allowed(mock_entity):
               }
               .attr = { "z" }
             """,
-            enabled,
         )
         == {}
     )
