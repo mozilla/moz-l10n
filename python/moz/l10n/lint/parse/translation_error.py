@@ -16,16 +16,29 @@
 
 from __future__ import annotations
 
-from fluent.syntax import ast as ftl
+from moz.l10n.lint.model import SEVERITY, Diagnostic, LintContext, Rule, TargetType
 
-from ...formats.mf2 import mf2_parse_message
-from ...model import Message
-from ..model import Diagnostic, LintContext, Rule, TargetType, line_col
+from ._common import parse_fluent, parse_mf2
 
-NAME = "parse-error"
-RULE = Rule(name=NAME, family="syntax", default_severity="error")
+NAME = "translation-error"
+RULE = Rule(name=NAME, family="parse", default_severity=SEVERITY.error)
 
 
-def parse_check(raw: str, context: LintContext) -> tuple[TargetType, list[Diagnostic]]:
-    return None, []
+def parse_check(context: LintContext) -> tuple[TargetType, list[Diagnostic]]:
+    """Try parsing the raw translation according to context.
+    Returned parsed resource if succeeded. Otherwise:
+    Translation parse failure is terminal! Pass `None` downstream.
+    """
+    # Emptiness is content.empty-translation's call, not a parse error.
+    if context.raw_translation is None:
+        return None, []
 
+    if context.is_fluent:
+        target, diagnostic = parse_fluent(context.raw_translation, context, RULE, "translation")
+    else:
+        target, diagnostic = parse_mf2(context.raw_translation, context, RULE, "translation")
+    if diagnostic:
+        # Translation parse failure is terminal! Pass nothing downstream!
+        return None, [diagnostic]
+
+    return target, []

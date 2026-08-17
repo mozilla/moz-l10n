@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Callable, Literal, Protocol
+from xmlrpc.client import boolean
 
 from fluent.syntax import ast as ftl
 from moz.l10n.formats import Format
@@ -33,15 +34,18 @@ class SEVERITY:
 """How a rule violation is reported."""
 
 
-TargetType = Message | ftl.EntryType
+TargetType = Message | ftl.EntryType | None
 SourceType = Message | ftl.EntryType | None
 
 
 class RuleModule(Protocol):
     """Dedicated rule validation module. Must have a `check` function."""
+
     check: Callable[[TargetType, SourceType, LintContext], list[Diagnostic]]
     NAME: str
+    RULE: Rule
     __file__: str
+    __name__: str
 
 
 @dataclass
@@ -111,6 +115,8 @@ class LintContext:
     """
     Everything a rule or eventually a diagnostic needs to know about a resource being checked.
     * `resource_format` - A `moz.l10n.formats.Format`, or its name as a string.
+    * `raw_source` - The original unparsed source string.
+    * `raw_translation` - The original unparsed translation string.
     * `path` - Path to the resource being checked, if known.
     * `key` - The message id/key of the resource being checked, if known.
     * `severity` - Per-rule severity overrides, keyed by rule name.
@@ -127,6 +133,12 @@ class LintContext:
     moz.l10n does not parse itself (such as Pontoon's `xcode`) may be used.
     """
 
+    raw_source: str | None = None
+    """Unparsed source string."""
+
+    raw_translation: str | None = None
+    """Unparsed translation string."""
+
     path: str | None = None
     """Path to the resource being checked, if known."""
 
@@ -136,6 +148,12 @@ class LintContext:
     severity: dict[str, Severity] = field(default_factory=dict)
     """Per-rule severity overrides, keyed by rule name."""
 
+    is_fluent: boolean = False
+    """Simple boolean. Is this Fluent True/False."""
+
+    format_name: str = ""
+    """The resource format as a lower-case string."""
+
     # global context:
     enabled_rules: set[str] | None = None
     """Collection of enabled rules where `None` means ALL rules."""
@@ -143,26 +161,30 @@ class LintContext:
     allows_empty_translations: bool = False
     """If set, an empty translation is reported as a warning rather than an error."""
 
-    def format_name(self) -> str:
-        """The resource format as a lower-case string."""
-        if isinstance(self.resource_format, Format):
-            return self.resource_format.name
-        # Unwrap Pontoon's `Resource.Format`, a `TextChoices` str enum.
-        value = getattr(self.resource_format, "value", self.resource_format)
-        return str(value).lower()
-
     def severity_of(self, rule: Rule) -> Severity:
         """The effective severity of `rule`, applying any override."""
         return self.severity.get(rule.name, rule.default_severity)
 
-    def enabled(self, rule: Rule) -> bool:
-        return self.severity_of(rule) != "off"
+    def __post_init__(self):
+        if isinstance(self.resource_format, Format):
+            self.format_name = self.resource_format.name
+            self.is_fluent = self.resource_format == Format.fluent
+        else:
+            # Unwrap Pontoon's `Resource.Format` TextChoices str enum.
+            self.format_name = str(
+                getattr(self.resource_format, "value", self.resource_format)
+            ).lower()
+            self.is_fluent = self.format_name == Format.fluent.name.lower()
 
 
-def line_col(source: str, offset: int) -> tuple[int, int]:
-    """The 1-based line and column of a character `offset` into `source`."""
-    if offset <= 0:
+def get_line_col(text: str | None, offset: int) -> tuple[int, int]:
+    """Calculate 1-based line and column of a character `offset` or position in `text`."""
+    if not text or offset <= 0:
         return 1, 1
-    head = source[:offset]
+    head = text[:offset]
     line = head.count("\n") + 1
     return line, offset - (head.rfind("\n") + 1) + 1
+
+
+if __name__ == "__main__":
+    pass

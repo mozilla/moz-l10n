@@ -89,7 +89,9 @@ _RULE_MODULES: dict[str, RuleModule] = {}
 
 
 def check(
-    raw_translation: str, raw_source: str, context: LintContext
+    context: LintContext,
+    raw_translation: str | None = None,
+    raw_source: str | None = None,
 ) -> list[Diagnostic]:
     """
     Check a translation against its source.
@@ -103,11 +105,19 @@ def check(
     Diagnostics come back in the order the rules ran, each carrying its own
     resolved severity.
     """
+    if context.raw_translation is None:
+        if raw_translation is None:
+            raise RuntimeError("We need raw translation data to check!")
+        context.raw_translation = raw_translation
+
+    if raw_source is not None:
+        context.raw_source = raw_source
+
     diagnostics = []
-    translation, source, parse_diagnostics = check_parse(
-        raw_translation, raw_source, context
-    )
+    translation, source, parse_diagnostics = check_parse(context)
     diagnostics.extend(parse_diagnostics)
+    if translation is None:
+        return diagnostics
 
     diagnostics.extend(check_rules(translation, source, context))
 
@@ -115,17 +125,23 @@ def check(
 
 
 def check_parse(
-    raw_translation: str, raw_source: str, context: LintContext
+    context: LintContext,
 ) -> tuple[TargetType, SourceType, list[Diagnostic]]:
+    """
+    Perform `parse_check` on the contexts `raw_translation` and `raw_source`.
+    Return 3 part tuple of parsed types and list of diagnostics.
+    """
     diagnostics = []
-    if raw_source:
-        source, source_diagnostics = source_error.parse_check(raw_source, context)
+    if context.raw_source:
+        source, source_diagnostics = source_error.parse_check(context)
         diagnostics.extend(source_diagnostics)
+    else:
+        source = None
 
-    translation, translation_diagnostics = translation_error.parse_check(
-        raw_translation, context
-    )
-    diagnostics.extend(translation_diagnostics)
+    translation, translation_diagnostics = translation_error.parse_check(context)
+    if translation_diagnostics:
+        diagnostics.extend(translation_diagnostics)
+        translation = None
 
     return translation, source, diagnostics
 
@@ -133,25 +149,52 @@ def check_parse(
 def check_rules(
     translation: TargetType, source: SourceType, context: LintContext
 ) -> list[Diagnostic]:
+    """
+    Perform `check` of enabled rules on parsed `translation` and `source` resources.
+    Return list of diagnostics.
+    """
     diagnostics = []
-    for family_name, rules in RULES.items():
+    for rule_family, rules in RULES.items():
         for rule_name in rules:
-            rule_module = get_rule_module(family_name, rule_name)
-            diagnostics.extend(rule_module.check(translation, source, context))
+            full_name = get_full_name(rule_family, rule_name)
+            if context.enabled_rules and full_name not in context.enabled_rules:
+                continue
+
+            rule_module = get_rule_module(full_name)
+
+            try:
+                diagnostics.extend(rule_module.check(translation, source, context))
+            except Exception as error:
+                raise RuntimeError(
+                    f'Error running rule "{rule_module.__name__}":\n'
+                    f'  file: "{rule_module.__file__}"\n'
+                    f'  translation: {translation}\n'
+                    f'  source: {source}\n',
+                    f'  context: {context}\n'
+                    f'  error: {error}'
+                )
     return diagnostics
 
 
-def get_module_name(family_name: str, rule_name: str) -> str:
+def get_full_name(rule_family: str, rule_name: str) -> str:
     """Given rule family and rule name strings produce a module name string.
     Concatenating with a dot and replacing any `-` with `_`.
     """
-    return NAME_PATTERN.format(family_name, rule_name).replace("-", "_")
+    return NAME_PATTERN.format(rule_family, rule_name)
 
 
-def get_rule_module(family_name: str, rule_name: str) -> RuleModule:
-    module_name = get_module_name(family_name, rule_name)
+def get_rule_module(part_one: str, part_two: str | None = None) -> RuleModule:
+    """Given `rule_family` and `rule_name` strings import according rule module."""
+    if part_two is None:
+        module_name = part_one
+    else:
+        module_name = get_full_name(part_one, part_two)
+
+    module_name = module_name.replace('-', '_')
     if module_name in _RULE_MODULES:
         return _RULE_MODULES[module_name]
-    module = typing.cast(RuleModule, import_module(f'{LINT_PACKAGE}.{module_name}'))
+
+    module = typing.cast(RuleModule, import_module(f"{LINT_PACKAGE}.{module_name}"))
     _RULE_MODULES[module_name] = module
+
     return module
