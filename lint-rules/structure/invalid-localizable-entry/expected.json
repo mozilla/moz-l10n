@@ -1,5 +1,5 @@
 {
-  "rule": "M103 invalid-localizable-entry",
+  "rule": "invalid-localizable-entry",
   "diagnostics": [
     {
       "severity": "error",

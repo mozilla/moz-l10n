@@ -1,0 +1,10 @@
+[
+  {
+    "rule_name": "translation-error",
+    "message": "translation parse error: Expected }\n<!ENTITY greeting \"Hola {$name\">\u00b6\n                              ^",
+    "severity": "error",
+    "key": null,
+    "line": 1,
+    "column": 31
+  }
+]

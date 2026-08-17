@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import json
+import typing
 from dataclasses import asdict
+from pathlib import Path
 
 import moz.l10n.formats
 import moz.l10n.lint
 import pytest
-from moz.l10n.lint.model import SEVERITY, Diagnostic
+from moz.l10n.lint.model import SEVERITY, Diagnostic, Rule
 from moz.l10n.lint.parse import source_error, translation_error
 from pytest_snapshot.plugin import Snapshot
 
@@ -36,6 +38,70 @@ PARSE_RULES = (
         id=f"rule: {translation_error.NAME}",
     ),
 )
+
+
+@pytest.mark.parametrize(
+    "rule_family", moz.l10n.lint.FAMILIES, ids=lambda p: f"rule family: {p}"
+)
+def test_rule_meta(rule_family: str, subtests: pytest.Subtests):
+    family_common_dir: Path = moz.l10n.lint.RULES_COMMON / rule_family
+    assert family_common_dir.is_dir(), f'No such rule family in common "{rule_family}"!'
+
+    for rule_name in moz.l10n.lint.RULES[rule_family]:
+        full_name = f"{rule_family}/{rule_name}"
+        rule_common_dir: Path = family_common_dir / rule_name
+        with subtests.test(f"test_{full_name}", rule_name=rule_name):
+            assert rule_common_dir.is_dir(), (
+                f'No such rule dir in common "{full_name}"!'
+            )
+
+            for name in moz.l10n.lint.DOCS_NAME, moz.l10n.lint.RULE_CONFIG_NAME:
+                path = rule_common_dir / name
+                assert path.is_file(), f'"{full_name}" has no "{name}" file!'
+
+            module = moz.l10n.lint.get_rule_module(rule_family, rule_name)
+            assert module.__file__ is not None
+
+            name = getattr(module, "NAME", None)
+            assert name is not None, (
+                f'No "NAME" in "{full_name}" rule module!\n'
+                f" {Path(module.__file__).relative_to(moz.l10n.lint.ROOT)}"
+            )
+            assert isinstance(name, str)
+            assert name == rule_name
+
+            rule = getattr(module, "RULE", None)
+            assert rule is not None, (
+                f'No "RULE" in "{full_name}" rule module!\n'
+                f" {Path(module.__file__).relative_to(moz.l10n.lint.ROOT)}"
+            )
+            assert isinstance(rule, Rule)
+            assert rule.name == rule_name
+
+            check_func = getattr(module, "check", None)
+            assert check_func is not None, (
+                f'No "check" function in "{full_name}" rule module!\n'
+                f" {Path(module.__file__).relative_to(moz.l10n.lint.ROOT)}"
+            )
+            assert isinstance(check_func, typing.Callable)
+
+    for common_dir in moz.l10n.lint.RULES_COMMON.glob("*"):
+        if (
+            not common_dir.is_dir()
+            or common_dir.name.startswith("_")
+            or common_dir.name == moz.l10n.lint.PARSE_FAMILY
+        ):
+            continue
+
+        assert common_dir.name in moz.l10n.lint.FAMILIES, (
+            f'Common rule family "{common_dir.name}" is not in implementation directory!'
+        )
+        for common_rule_dir in common_dir.glob("*"):
+            if not common_rule_dir.is_dir() or common_rule_dir.name.startswith("_"):
+                continue
+            assert common_rule_dir.name in moz.l10n.lint.RULES[common_dir.name], (
+                f'Rule "{common_rule_dir.name}" is not implemented!'
+            )
 
 
 @pytest.mark.parametrize("rule_module, fixture_stem, expect_severity", PARSE_RULES)

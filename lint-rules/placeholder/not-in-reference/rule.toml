@@ -1,0 +1,9 @@
+name = "not-in-reference"
+family = "placeholder"
+summary = "The translation uses a placeholder or markup element absent from the source."
+default_severity = "error"
+enabled_by_default = true
+fixable = false
+file_types = [".xml", ".strings", ".xcstrings", "messages.json"]
+tags = ["recommended", "correctness"]
+since = "0.1.0"

@@ -1,0 +1,10 @@
+[
+  {
+    "rule_name": "translation-error",
+    "message": "Expected message \"key\" to have a value or attributes",
+    "severity": "error",
+    "key": null,
+    "line": 1,
+    "column": 1
+  }
+]

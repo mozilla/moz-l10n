@@ -1,0 +1,10 @@
+[
+  {
+    "rule_name": "translation-error",
+    "message": "translation parse error: Expected }\n<resources>\u00b6<string name=\"greeting\">Hola {$name</string>\u00b6</resources>\u00b6\n                                               ^",
+    "severity": "error",
+    "key": null,
+    "line": 2,
+    "column": 36
+  }
+]

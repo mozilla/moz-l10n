@@ -1,0 +1,10 @@
+[
+  {
+    "rule_name": "translation-error",
+    "message": "translation parse error: Expected }\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\u00b6<xliff xmlns=\"urn:oasis:names:tc:xliff:document:1.2\" version=\"1.2\">\u00b6  <file source-language=\"en\" target-language=\"es\" datatype=\"plaintext\" original=\"messages\">\u00b6    <body>\u00b6      <trans-unit id=\"greeting\">\u00b6        <source>Hello {$name}</source>\u00b6        <target>Hola {$name</target>\u00b6      </trans-unit>\u00b6    </body>\u00b6  </file>\u00b6</xliff>\u00b6\n                                                                                                                                                                                                                                                                                                                     ^",
+    "severity": "error",
+    "key": null,
+    "line": 7,
+    "column": 28
+  }
+]

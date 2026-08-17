@@ -5,7 +5,7 @@
 Source and the translation must **both** end with a newline or **neither** of them should!
 A mismatch in the trailing newline is not allowed.
 
-Tracked historically as [Bug 1599056](https://bugzilla.mozilla.org/show_bug.cgi?id=1599056).
+Historically from as [Bug 1599056](https://bugzilla.mozilla.org/show_bug.cgi?id=1599056).
 
 ## Why is this bad?
 
