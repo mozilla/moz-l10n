@@ -15,10 +15,10 @@
 from dataclasses import dataclass
 from unittest.mock import MagicMock
 
-import moz.l10n.lint
 from fluent.syntax import FluentParser, ast
 from moz.l10n.formats.mf2 import mf2_parse_message
 from moz.l10n.lint import content, placeholder, structure
+from moz.l10n.lint.model import Diagnostic, LintContext
 
 ftl_parser = FluentParser()
 
@@ -77,14 +77,14 @@ def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
     """
     Group all checks related to the base UI that get stored in the DB
     """
-    context = moz.l10n.lint.LintContext(
+    context = LintContext(
         resource_format=entity.resource.format,
         allows_empty_translations=entity.resource.allows_empty_translations,
         raw_source=entity.string,
         raw_translation=string,
     )
 
-    diagnostics: list[moz.l10n.lint.Diagnostic] = []
+    diagnostics: list[Diagnostic] = []
     errors: list[str] = []
     warnings: list[str] = []
     if context.is_fluent:
