@@ -21,7 +21,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from json import dumps
-from typing import cast
 
 from moz.l10n.formats.mf2 import mf2_serialize_message
 from moz.l10n.model import (
@@ -31,6 +30,7 @@ from moz.l10n.model import (
     Message,
     Pattern,
     PatternMessage,
+    SelectMessage,
     VariableRef,
 )
 
@@ -42,15 +42,15 @@ def get_patterns(msg: Message) -> Iterable[Pattern]:
 
 def as_simple_pattern(msg: Message | Pattern) -> Pattern:
     """The single pattern of `msg`, selecting the fallback variant if it has several."""
-    if isinstance(msg, list):
-        return cast(Pattern, msg)
     if isinstance(msg, PatternMessage):
         return msg.pattern
-    return next(
-        pattern
-        for keys, pattern in msg.variants.items()
-        if all(isinstance(key, CatchallKey) for key in keys)
-    )
+    if isinstance(msg, SelectMessage):
+        return next(
+            pattern
+            for keys, pattern in msg.variants.items()
+            if all(isinstance(key, CatchallKey) for key in keys)
+        )
+    return msg
 
 
 def get_simple_preview(msg: Message | Pattern) -> str:

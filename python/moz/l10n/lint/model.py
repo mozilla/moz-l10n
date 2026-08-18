@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Literal, Protocol
+from typing import Callable, Literal, Protocol, Union
 from xmlrpc.client import boolean
 
 from fluent.syntax import ast as ftl
@@ -34,8 +34,8 @@ class SEVERITY:
 """How a rule violation is reported."""
 
 
-TargetType = Message | ftl.EntryType | None
-SourceType = Message | ftl.EntryType | None
+TargetType = Union[Message, ftl.EntryType, None]
+SourceType = Union[Message, ftl.EntryType, None]
 
 
 class RuleModule(Protocol):
@@ -165,7 +165,7 @@ class LintContext:
         """The effective severity of `rule`, applying any override."""
         return self.severity.get(rule.name, rule.default_severity)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if isinstance(self.resource_format, Format):
             self.format_name = self.resource_format.name
             self.is_fluent = self.resource_format == Format.fluent
