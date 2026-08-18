@@ -286,44 +286,44 @@ def test_firefox_plural_properties() -> None:
                 # Shows a summary of the number of matches for autocomplete
                 source-search-results-summary =
                     { $n ->
-                        [one] { NUMBER($n) } résultat
-                       *[other] { NUMBER($n) } résultats
+                        [one] { $n } résultat
+                       *[other] { $n } résultats
                     }
                 # Editor Search bar message to summarize the selected search result. e.g. 5 of 10 results.
                 editor-search-results =
                     { $n ->
-                        [one] Résultat { $x } sur { NUMBER($n) }
-                       *[other] Résultat { $x } sur { NUMBER($n) }
+                        [one] Résultat { $x } sur { $n }
+                       *[other] Résultat { $x } sur { $n }
                     }
             """)
         with open(join(root, "lt", "debugger.ftl"), encoding="utf-8") as file:
             assert file.read() == dedent("""\
                 source-search-results-summary =
                     { $n ->
-                        [one] { NUMBER($n) } rezultatas
-                        [few] { NUMBER($n) } rezultatai
-                       *[other] { NUMBER($n) } rezultatų
+                        [one] { $n } rezultatas
+                        [few] { $n } rezultatai
+                       *[other] { $n } rezultatų
                     }
                 editor-search-results =
                     { $n ->
-                        [one] { $x } iš { NUMBER($n) } rezultato
-                        [few] { $x } iš { NUMBER($n) } rezultatų
-                       *[other] { $x } iš { NUMBER($n) } rezultatų
+                        [one] { $x } iš { $n } rezultato
+                        [few] { $x } iš { $n } rezultatų
+                       *[other] { $x } iš { $n } rezultatų
                     }
             """)
         with open(join(root, "uk", "debugger.ftl"), encoding="utf-8") as file:
             assert file.read() == dedent("""\
                 source-search-results-summary =
                     { $n ->
-                        [one] { NUMBER($n) } результат
-                        [few] { NUMBER($n) } результати
-                       *[many] { NUMBER($n) } результатів
+                        [one] { $n } результат
+                        [few] { $n } результати
+                       *[many] { $n } результатів
                     }
                 editor-search-results =
                     { $n ->
-                        [one] { $x } результат з { NUMBER($n) }
-                        [few] { $x } результати з { NUMBER($n) }
-                       *[many] { $x } результатів з { NUMBER($n) }
+                        [one] { $x } результат з { $n }
+                        [few] { $x } результати з { $n }
+                       *[many] { $x } результатів з { $n }
                     }
             """)
         with open(join(root, "ar", "debugger.ftl"), encoding="utf-8") as file:
@@ -333,18 +333,18 @@ def test_firefox_plural_properties() -> None:
                         [zero] لا نتائج
                         [one] نتيجة واحدة
                         [two] نتيجتان
-                        [few] { NUMBER($n) } نتائج
-                        [many] { NUMBER($n) } نتيجة
-                       *[other] { NUMBER($n) } نتيجة
+                        [few] { $n } نتائج
+                        [many] { $n } نتيجة
+                       *[other] { $n } نتيجة
                     }
                 editor-search-results =
                     { $n ->
                         [zero] لا نتائج
                         [one] نتيجة واحدة
                         [two] { $x } من أصل نتيجتين
-                        [few] { $x } من أصل { NUMBER($n) } نتائج
-                        [many] { $x } من أصل { NUMBER($n) } نتيجة
-                       *[other] { $x } من أصل { NUMBER($n) } نتيجة
+                        [few] { $x } من أصل { $n } نتائج
+                        [many] { $x } من أصل { $n } نتيجة
+                       *[other] { $x } من أصل { $n } نتيجة
                     }
             """)
 

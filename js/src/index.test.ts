@@ -107,3 +107,31 @@ describe('serializePattern', () => {
     })
   }
 })
+
+describe('options bag', () => {
+  test('xliff with xliffIsXcode option', () => {
+    const plain = parsePattern('xliff', 'Hello %@')
+    expect(plain).toEqual(['Hello %@'])
+    const xcode = parsePattern('xliff', 'Hello %@', { xliffIsXcode: true })
+    expect(xcode).toEqual(['Hello ', { $: 'arg', attr: { source: '%@' } }])
+  })
+
+  test('webext with webextBaseMsg option', () => {
+    const webextBaseMsg = {
+      declarations: {},
+      selectors: [],
+      variants: {},
+      decl: {
+        USER: { $: 'USER', attr: { source: '$USER$' } }
+      }
+    }
+
+    const optsPattern = parsePattern('webext', 'Hello $USER$', {
+      webextBaseMsg: webextBaseMsg as any
+    })
+    expect(optsPattern).toEqual([
+      'Hello ',
+      { $: 'USER', attr: { source: '$USER$' } }
+    ])
+  })
+})

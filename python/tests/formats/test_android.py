@@ -878,3 +878,36 @@ class TestAndroid(TestCase):
         )
         ser = "".join(android_serialize(res))
         assert ser == src
+
+    def test_serialize_plural_many_fallback(self):
+        arg1 = Expression(VariableRef("arg1"), "integer", attributes={"source": "%1$d"})
+        entry = Entry(
+            ("trackers_blocked_this_week_uk",),
+            SelectMessage(
+                declarations={
+                    "quantity": Expression(VariableRef("quantity"), "number")
+                },
+                selectors=(VariableRef("quantity"),),
+                variants={
+                    ("one",): ["Цього тижня заблоковано ", arg1, " вистежувач"],
+                    ("few",): ["Цього тижня заблоковано ", arg1, " вистежувачі"],
+                    (CatchallKey("many"),): [
+                        "Цього тижня заблоковано ",
+                        arg1,
+                        " вистежувачів",
+                    ],
+                },
+            ),
+        )
+        res = Resource(Format.android, [Section((), [entry])])
+        ser = "".join(android_serialize(res))
+        assert ser == dedent("""\
+            <?xml version="1.0" encoding="utf-8"?>
+            <resources>
+              <plurals name="trackers_blocked_this_week_uk">
+                <item quantity="one">Цього тижня заблоковано %1$d вистежувач</item>
+                <item quantity="few">Цього тижня заблоковано %1$d вистежувачі</item>
+                <item quantity="other">Цього тижня заблоковано %1$d вистежувачів</item>
+              </plurals>
+            </resources>
+            """)

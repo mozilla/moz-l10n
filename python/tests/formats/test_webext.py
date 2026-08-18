@@ -212,6 +212,28 @@ class TestWebext(TestCase):
             """
         )
 
+    def test_serialized_placeholder_order(self):
+        res = webext_parse(
+            '{ "key": { "message": "Hello $foo$ and $bar$", '
+            '"placeholders": { "foo": { "content": "x" }, "bar": { "content": "y" } } } }'
+        )
+        ser = "".join(webext_serialize(res))
+        assert ser == dedent("""\
+            {
+              "key": {
+                "message": "Hello $foo$ and $bar$",
+                "placeholders": {
+                  "bar": {
+                    "content": "y"
+                  },
+                  "foo": {
+                    "content": "x"
+                  }
+                }
+              }
+            }
+            """)
+
     def test_trim_comments(self):
         res = webext_parse(source)
         ser = "".join(webext_serialize(res, trim_comments=True))

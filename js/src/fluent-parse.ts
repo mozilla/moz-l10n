@@ -166,12 +166,13 @@ function message(ftlPattern: FTL.Pattern): Message {
     const decl: Record<string, Expression> = {}
     const sel: string[] = []
     for (const expr of selExpressions) {
-      const stem = expr.$ ?? ''
-      let i = 0
-      let name = stem
-      while (!name || varNames.has(name)) {
-        i += 1
-        name = `${stem}_${i}`
+      let name = expr.$
+      if (!name || expr.attr?.['fluent-fn']) {
+        const stem = name || 'sel'
+        let i = 0
+        do {
+          name = `${stem}_${++i}`
+        } while (varNames.has(name))
       }
       decl[name] = expr
       sel.push(name)
@@ -348,7 +349,8 @@ function expression(
     return expr
   }
   if (fe instanceof FTL.FunctionReference) {
-    const name = fe.id.name.toLowerCase()
+    const ftlName = fe.id.name
+    const name = ftlName.toLowerCase()
     const arg = fe.arguments.positional[0]
     let expr: Expression
     if (arg instanceof FTL.BaseLiteral) {
@@ -364,6 +366,7 @@ function expression(
         expr.opt[arg.name.name] = arg.value.value
       }
     }
+    expr.attr = { 'fluent-fn': ftlName }
     return expr
   }
   throw new FluentError('E0028')

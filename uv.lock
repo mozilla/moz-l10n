@@ -860,14 +860,14 @@ dev = [
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "pytest-subtests", marker = "python_full_version < '3.10'" },
-    { name = "ruff", specifier = ">=0.9.10" },
+    { name = "ruff", specifier = ">=0.16.0" },
     { name = "types-lxml", specifier = ">=2024.9.16" },
     { name = "types-polib", specifier = ">=1.2.0.20240811" },
 ]
 
 [[package]]
 name = "moz-l10n"
-version = "0.12.0"
+version = "0.14.1"
 source = { editable = "python" }
 dependencies = [
     { name = "click", version = "8.1.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
