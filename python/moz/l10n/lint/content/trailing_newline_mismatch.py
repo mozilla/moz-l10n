@@ -47,18 +47,6 @@ def check(
     ]
 
 
-def fix(source: str, translation: str) -> str:
-    """
-    Match translations trailing newline to source.
-    """
-    source_newlines = _count_trailing_newlines(source)
-    if source_newlines == _count_trailing_newlines(translation):
-        return translation
-
-    new_line = "\n"
-    return f"{translation.rstrip(new_line)}{new_line * source_newlines}"
-
-
 def _get_str(s: str | SourceType, raw: str | None) -> str:
     check_string = (
         (s.pattern[-1] if s.pattern else "") if isinstance(s, PatternMessage) else s
