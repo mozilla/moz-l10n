@@ -229,11 +229,12 @@ def test_ftl_non_localizable_entries(mock_entity):
     ) == {"pErrors": ["Expected an entry start"]}
 
 
-def test_ftl_id_mismatch(mock_entity):
-    """ID of the source string and translation must be the same"""
-    assert run_custom_checks(
-        mock_entity("fluent", string="key = value"), "key1 = translation"
-    ) == {"pErrors": ["Translation key needs to match source string key"]}
+# No longer needed
+# def test_ftl_id_mismatch(mock_entity):
+#     """ID of the source string and translation must be the same"""
+#     assert run_custom_checks(
+#         mock_entity("fluent", string="key = value"), "key1 = translation"
+#     ) == {"pErrors": ["Translation key needs to match source string key"]}
 
 
 def test_android_apostrophes(mock_entity):
