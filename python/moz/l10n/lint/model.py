@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Callable, Literal, Protocol, Union
-from xmlrpc.client import boolean
 
 from fluent.syntax import ast as ftl
 from moz.l10n.formats import Format
@@ -148,7 +147,7 @@ class LintContext:
     severity: dict[str, Severity] = field(default_factory=dict)
     """Per-rule severity overrides, keyed by rule name."""
 
-    is_fluent: boolean = False
+    is_fluent: bool = False
     """Simple boolean. Is this Fluent True/False."""
 
     format_name: str = ""
