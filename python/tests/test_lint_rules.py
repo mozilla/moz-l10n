@@ -20,7 +20,7 @@ from pathlib import Path
 import moz.l10n.formats
 import moz.l10n.lint
 import pytest
-from moz.l10n.lint.model import SEVERITY, Diagnostic, Rule
+from moz.l10n.lint.model import Diagnostic, Rule, Severity
 from moz.l10n.lint.parse import source_error, translation_error
 from pytest_snapshot.plugin import Snapshot
 
@@ -28,13 +28,13 @@ PARSE_RULES = (
     pytest.param(
         source_error,
         "source",
-        SEVERITY.warning,
+        Severity.WARNING,
         id=f"rule: {source_error.NAME}",
     ),
     pytest.param(
         translation_error,
         "example",
-        SEVERITY.error,
+        Severity.ERROR,
         id=f"rule: {translation_error.NAME}",
     ),
 )

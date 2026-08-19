@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock
 
 from fluent.syntax import FluentParser, ast
+from moz.l10n.formats.fluent import fluent_parse_message
 from moz.l10n.formats.mf2 import mf2_parse_message
 from moz.l10n.lint import content, placeholder, structure
 from moz.l10n.lint.model import Diagnostic, LintContext
@@ -61,7 +62,12 @@ def mock_entity(
     return entity
 
 
-def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
+def run_custom_checks(
+    entity: Entity,
+    string: str,
+    *,
+    enabled_rules: set | None = None,
+) -> dict[str, list[str]]:
     """
     Group all checks related to the base UI that get stored in the DB
     """
@@ -70,6 +76,7 @@ def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
         allows_empty_translations=entity.resource.allows_empty_translations,
         raw_source=entity.string,
         raw_translation=string,
+        enabled_rules=enabled_rules,
     )
 
     diagnostics: list[Diagnostic] = []
@@ -78,6 +85,8 @@ def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
     if context.is_fluent:
         msg = ftl_parser.parse_entry(string)
         orig_msg = ftl_parser.parse_entry(entity.string)
+        # msg = fluent_parse_message(string)
+        # orig_msg = fluent_parse_message(entity.string)
 
         # Parse error
         if (
@@ -100,7 +109,8 @@ def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
             warnings.append(f"Source parse error: {e}")
 
     for rule in (
-        content.trailing_newline_mismatch,
+        content.leading_whitespace_mismatch,
+        content.trailing_whitespace_mismatch,
         content.empty_translation,
         structure.plural_source_required,
         # structure.invalid_localizable_entry, # Untested in Pontoon's `test_custom`
@@ -134,13 +144,13 @@ def test_ending_newline():
     """
     po_entity = mock_entity("gettext", string="Original")
     assert run_custom_checks(po_entity, "Translation\n") == {
-        "pErrors": ["Ending newline mismatch"]
+        "pErrors": ["Ending whitespace mismatch"]
     }
     assert run_custom_checks(po_entity, "Translation") == {}
 
     po_entity.string = "Original\n"
     assert run_custom_checks(po_entity, "Translation") == {
-        "pErrors": ["Ending newline mismatch"]
+        "pErrors": ["Ending whitespace mismatch"]
     }
     assert run_custom_checks(po_entity, "Translation\n") == {}
 
@@ -190,7 +200,9 @@ def test_empty_translations_not_allowed():
     ) == {"pndbWarnings": ["Empty translation"]}
 
     assert run_custom_checks(
-        mock_entity("fluent", string="key =\n  .attr = value"),
+        mock_entity(
+            "fluent", string="key =\n  .attr = value", allows_empty_translations=True
+        ),
         """key =
               { $var ->
                   [a] { "x" }
@@ -201,7 +213,9 @@ def test_empty_translations_not_allowed():
     ) == {"pndbWarnings": ["Empty translation"]}
 
     assert run_custom_checks(
-        mock_entity("fluent", string="key =\n  .attr = value"),
+        mock_entity(
+            "fluent", string="key =\n  .attr = value", allows_empty_translations=True
+        ),
         """key =
               { $var ->
                   [a] { "x" }
@@ -209,6 +223,7 @@ def test_empty_translations_not_allowed():
               }
               .attr = { "y" }
             """,
+        enabled_rules={content.empty_translation.NAME},
     ) == {"pndbWarnings": ["Empty translation"]}
 
     assert (
