@@ -1,0 +1,10 @@
+{
+  "rule": "trailing-whitespace-mismatch",
+  "diagnostics": [
+    {
+      "severity": "error",
+      "message": "Trailing whitespace mismatch",
+      "resource": "example.po"
+    }
+  ]
+}

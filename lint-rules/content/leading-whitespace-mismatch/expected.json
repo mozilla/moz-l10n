@@ -1,9 +1,9 @@
 {
-  "rule": "M401 trailing-newline-mismatch",
+  "rule": "leading-whitespace-mismatch",
   "diagnostics": [
     {
       "severity": "error",
-      "message": "Ending newline mismatch",
+      "message": "Leading whitespace mismatch",
       "resource": "example.po"
     }
   ]

@@ -1,0 +1,9 @@
+name = "leading-whitespace-mismatch"
+family = "content"
+summary = "Source and translation must agree on leading whitespace."
+default_severity = "error"
+enabled_by_default = true
+fixable = true
+formats = ["gettext"]
+tags = ["recommended", "correctness"]
+since = "0.1.0"
