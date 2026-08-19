@@ -138,9 +138,6 @@ class LintContext:
     raw_translation: str | None = None
     """Unparsed translation string."""
 
-    path: str | None = None
-    """Path to the resource being checked, if known."""
-
     key: str | None = None
     """The message id/key of the resource being checked, if known."""
 
