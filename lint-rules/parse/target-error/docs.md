@@ -1,16 +1,16 @@
-# `parse.translation-error`
+# `parse.target-error`
 
 ## Description
 
-The translation could not be parsed from its resource format.
-Any translation that reaches this state cannot be serialized back into the resource.
+The target could not be parsed from its resource format.
+Any target that reaches this state cannot be serialized back into the resource.
 
 In Pontoon this surfaces as `Parse error: <detail>` for the MF2-backed formats
 and as the underlying parser's annotation message for Fluent (`ast.Junk`).
 
 ## Why is this bad?
 
-An un-parseable translation is unusable: it cannot be written to the resource
+An un-parseable translation target is unusable: it cannot be written to the resource
 file and would break the build or the running product. This is the most severe
 class of problem a linter can catch and must always block submission.
 

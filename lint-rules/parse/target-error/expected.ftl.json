@@ -1,6 +1,6 @@
 [
   {
-    "rule_name": "translation-error",
+    "rule_name": "parse.target-error",
     "message": "Expected message \"key\" to have a value or attributes",
     "severity": "error",
     "key": null,

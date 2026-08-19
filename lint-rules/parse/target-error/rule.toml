@@ -1,0 +1,8 @@
+name = "parse.target-error"
+family = "parse"
+summary = "The translation target cannot be parsed in its target format."
+default_severity = "error"
+enabled_by_default = true
+fixable = false
+tags = ["recommended", "correctness"]
+since = "0.1.0"
