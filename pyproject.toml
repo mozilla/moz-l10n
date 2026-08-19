@@ -2,6 +2,9 @@
 name = "monorepo"
 version = "0.0.0"
 description = "Mozilla tools for localization"
+dependencies = [
+    "pytest-snapshot>=0.9.0",
+]
 
 [dependency-groups]
 dev = [
@@ -53,3 +56,6 @@ python = ".venv"
 omit = ["tests/*", "**/tests/*"]
 [tool.coverage.report]
 skip_empty = true
+
+[tool.ruff]
+extend-exclude = ["*.md"]
