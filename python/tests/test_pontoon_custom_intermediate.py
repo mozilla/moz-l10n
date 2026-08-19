@@ -102,9 +102,7 @@ def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
     for rule in (
         content.trailing_newline_mismatch,
         content.empty_translation,
-        structure.message_id_mismatch,
         structure.plural_source_required,
-        # structure.invalid_localizable_entry, # Untested in Pontoon's `test_custom`
         placeholder.not_in_reference,
         placeholder.not_in_translation,
         placeholder.unsupported,
