@@ -28,15 +28,7 @@ import typing
 from importlib import import_module
 from pathlib import Path
 
-from moz.l10n.lint.model import (
-    Diagnostic,
-    LintContext,
-    Rule,
-    RuleModule,
-    Severity,
-    SourceType,
-    TargetType,
-)
+from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
 from moz.l10n.lint.parse import source_error, translation_error
 
 __all__ = ["Diagnostic", "LintContext", "Rule", "Severity", "check"]
