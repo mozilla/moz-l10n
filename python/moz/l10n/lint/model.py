@@ -15,45 +15,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Literal, Protocol, Union
-from xmlrpc.client import boolean
+from enum import Enum
+from typing import Iterator
 
-from fluent.syntax import ast as ftl
 from moz.l10n.formats import Format
-from moz.l10n.model import Message
+from moz.l10n.model import Id, Message
 
-Severity = Literal["error", "warning", "info"]
-
-
-class SEVERITY:
-    error: Severity = "error"
-    warning: Severity = "warning"
-    info: Severity = "info"
-
-
-"""How a rule violation is reported."""
-
-
-TargetType = Union[Message, ftl.EntryType, None]
-SourceType = Union[Message, ftl.EntryType, None]
-
-
-class RuleModule(Protocol):
-    """Dedicated rule validation module. Must have a `check` function."""
-
-    check: Callable[[TargetType, SourceType, LintContext], list[Diagnostic]]
-    NAME: str
-    RULE: Rule
-    __file__: str
-    __name__: str
+Severity = Enum("Severity", ("ERROR", "WARNING"))
 
 
 @dataclass
 class Diagnostic:
     """A single rule violation."""
-
-    # rule_id: str
-    # """The rule's stable numeric identifier, e.g. `"M001"`. May be empty."""
 
     rule_name: str
     """The rule's short descriptive name, e.g. `parse-error`."""
@@ -61,20 +34,19 @@ class Diagnostic:
     message: str = ""
     """Human-readable description of the violation."""
 
-    severity: Severity = "error"
+    severity: Severity = Severity.ERROR
     """Resolved severity, which may differ from the rule's default."""
 
-    key: str | None = None
-    """The message id/key the diagnostic points at, if the format has one."""
+    message_id: Id | None = None
+    """The message id the diagnostic points at, if the format has one."""
 
-    line: int = 1
+    line: int | None = None
     """1-based line within the checked string."""
 
-    column: int = 1
+    column: int | None = None
     """1-based column within the checked string."""
 
 
-@dataclass(frozen=True)
 class Rule:
     """
     Implementation-side metadata for a lint rule.
@@ -86,6 +58,15 @@ class Rule:
     name: str
     family: str
     default_severity: Severity
+    format_severities: dict[Format, Severity]
+
+    def check(
+        self,
+        target: Message | None,
+        source: Message | None,
+        context: LintContext,
+    ) -> Iterator[Diagnostic]:
+        raise NotImplementedError
 
     def __str__(self) -> str:
         return f"{self.family}::{self.name}"
@@ -95,16 +76,15 @@ class Rule:
         message: str,
         *,
         severity: Severity | None = None,
-        key: str | None = None,
-        line: int = 1,
-        column: int = 1,
+        message_id: Id | None = None,
+        line: int | None = None,
+        column: int | None = None,
     ) -> Diagnostic:
         return Diagnostic(
-            # rule_id=self.id,
             rule_name=self.name,
             message=message,
             severity=severity or self.default_severity,
-            key=key,
+            message_id=message_id,
             line=line,
             column=column,
         )
@@ -125,13 +105,14 @@ class LintContext:
     """
 
     # local, per resource context:
-    resource_format: Format | str
-    """
-    A `moz.l10n.formats.Format`, or its name as a string.
+    resource_format: Format
+    """The `moz.l10n.formats.Format`."""
 
-    Values not matching a known format are accepted, so that formats which
-    moz.l10n does not parse itself (such as Pontoon's `xcode`) may be used.
-    """
+    id: Id | None = None
+    """The message id/key of the resource being checked, if known."""
+
+    severity: dict[str, Severity] = field(default_factory=dict)
+    """Per-rule severity overrides, keyed by rule name."""
 
     raw_source: str | None = None
     """Unparsed source string."""
@@ -142,39 +123,17 @@ class LintContext:
     path: str | None = None
     """Path to the resource being checked, if known."""
 
-    key: str | None = None
-    """The message id/key of the resource being checked, if known."""
-
-    severity: dict[str, Severity] = field(default_factory=dict)
-    """Per-rule severity overrides, keyed by rule name."""
-
-    is_fluent: boolean = False
-    """Simple boolean. Is this Fluent True/False."""
-
-    format_name: str = ""
-    """The resource format as a lower-case string."""
-
     # global context:
     enabled_rules: set[str] | None = None
     """Collection of enabled rules where `None` means ALL rules."""
 
-    allows_empty_translations: bool = False
-    """If set, an empty translation is reported as a warning rather than an error."""
-
     def severity_of(self, rule: Rule) -> Severity:
         """The effective severity of `rule`, applying any override."""
-        return self.severity.get(rule.name, rule.default_severity)
-
-    def __post_init__(self) -> None:
-        if isinstance(self.resource_format, Format):
-            self.format_name = self.resource_format.name
-            self.is_fluent = self.resource_format == Format.fluent
-        else:
-            # Unwrap Pontoon's `Resource.Format` TextChoices str enum.
-            self.format_name = str(
-                getattr(self.resource_format, "value", self.resource_format)
-            ).lower()
-            self.is_fluent = self.format_name == Format.fluent.name.lower()
+        if rule.name in self.severity:
+            return self.severity[rule.name]
+        if self.resource_format in rule.format_severities:
+            return rule.format_severities[self.resource_format]
+        return rule.default_severity
 
 
 def get_line_col(text: str | None, offset: int) -> tuple[int, int]:
