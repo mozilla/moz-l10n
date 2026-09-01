@@ -20,6 +20,11 @@ export function appendText(el: Element, str: string) {
   else el.appendChild(new Text(str))
 }
 
+/** Escape `&` and `<` if they don't look like they're XML syntax */
+export function escapeNonSyntaxChars(str: string) {
+  return str.replace(/&(?!#?\w+;)/g, '&amp;').replace(/<(?=[^>]*$)/g, '&lt;')
+}
+
 export function serialize(root: Element) {
   const name = root.tagName
   const str = new XMLSerializer().serializeToString(root)

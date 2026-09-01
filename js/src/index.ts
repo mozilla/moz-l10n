@@ -121,7 +121,10 @@ export function parsePattern(
     case 'webext':
       return webextParsePattern(options?.webextBaseMsg ?? [], src)
     case 'xliff':
-      return xliffParsePattern(src, options?.xliffIsXcode)
+      return xliffParsePattern(src, {
+        editable: options?.editable,
+        isXcode: options?.xliffIsXcode
+      })
     case 'plain':
       return src ? [src] : []
     default:

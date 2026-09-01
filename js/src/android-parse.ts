@@ -20,6 +20,7 @@ import {
   type Markup,
   type Pattern
 } from './model.ts'
+import { escapeNonSyntaxChars } from './xml-utils.ts'
 
 export const resoureRef = /^@(?:\w+:)?\w+\/\w+|\?(?:\w+:)?(\w+\/)?\w+$/
 
@@ -47,12 +48,7 @@ export function androidParsePattern(
     entities[key] = name
     return key
   })
-  if (editable) {
-    // Escape & and < if they don't look like they're XML syntax
-    safe = safe
-      .replace(/&(?![a-z]+;)/g, '&amp;')
-      .replace(/<(?=[^>]*$)/g, '&lt;')
-  }
+  if (editable) safe = escapeNonSyntaxChars(safe)
   const doc = new DOMParser().parseFromString(
     `<string xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">${safe}</string>`,
     'text/xml'

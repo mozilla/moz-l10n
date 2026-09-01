@@ -26,12 +26,12 @@ describe('success', () => {
     name: string,
     pattern: Pattern,
     exp: string,
-    xliffIsXcode: boolean = false
+    isXcode: boolean = false
   ) =>
     test(name, () => {
       const src = xliffSerializePattern(pattern)
       expect(src).toBe(exp)
-      const res = xliffParsePattern(src, xliffIsXcode)
+      const res = xliffParsePattern(src, { isXcode })
       expect(res).toEqual(pattern)
     })
 
@@ -70,6 +70,14 @@ describe('success', () => {
     'Go to <a href="open-account">Create password</a> in settings.'
   )
   ok('non-xcode printf pattern', ['Hallo %@'], 'Hallo %@')
+
+  test('editable option', () => {
+    // This fails without `editable: true` in real browsers,
+    // but happy-dom's XMLParser does not catch the error.
+    // https://github.com/capricorn86/happy-dom/issues/2338
+    const res = xliffParsePattern('foo < bar & baz', { editable: true })
+    expect(res).toEqual(['foo < bar & baz'])
+  })
 })
 
 describe('parse errors', () => {
