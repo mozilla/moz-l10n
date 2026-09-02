@@ -15,13 +15,22 @@
 
 import { ParseError } from './errors.ts'
 import type { Expression, Markup, Pattern } from './model.ts'
+import { escapeNonSyntaxChars } from './xml-utils.ts'
 
+/**
+ * @param src
+ * @param options
+ * @param options.editable - Consider the source to come from an editor,
+ *     where the XML parsing considerations are relaxed.
+ * @param options.isXcode - Parse Xcode-ish placeholders from the pattern.
+ */
 export function xliffParsePattern(
   src: string,
-  isXcode: boolean = false
+  { editable = false, isXcode = false } = {}
 ): Pattern {
+  const src_ = editable ? escapeNonSyntaxChars(src) : src
   const doc = new DOMParser().parseFromString(
-    `<target>${src}</target>`,
+    `<target>${src_}</target>`,
     'text/xml'
   )
   const root = doc.querySelector('target')
