@@ -101,24 +101,6 @@ class Rule:
             column=column,
         )
 
-    def get_module(self) -> ModuleType | None:
-        """Get the rule's module object."""
-        return sys.modules.get(self.__class__.__module__)
-
-    def get_path(self) -> str:
-        """Get the string path to where to the rule implementation."""
-        module = self.get_module()
-        if module is None or module.__file__ is None:
-            return ""
-        return module.__file__
-
-    @classmethod
-    def get_full_name(cls) -> str:
-        """Build rule full_name family+rule-name.
-        Works when not yet instantiated. Use `.full_name` otherwise.
-        """
-        return NAME_PATTERN.format(cls.family, cls.name)
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.full_name = NAME_PATTERN.format(self.family, self.name)
 
@@ -131,12 +113,7 @@ class Rule:
 
 @dataclass
 class LintContext:
-    """
-    Everything a rule or eventually a diagnostic needs to know about a resource being checked.
-    * `resource_format` - A `moz.l10n.formats.Format`, or its name as a string.
-    * `id` - The message id of the resource being checked, if known.
-    * `severity` - Per-rule severity overrides, keyed by rule name.
-    """
+    """Everything a rule or a diagnostic needs to know about a resource being checked."""
 
     # local, per resource context:
     resource_format: Format
