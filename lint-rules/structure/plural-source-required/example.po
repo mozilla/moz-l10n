@@ -1,4 +1,1 @@
-.input {$n :number}
-.match $n
-one {{t1}}
-* {{t*}}
+Sinulla on uusi viesti.

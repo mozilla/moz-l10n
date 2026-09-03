@@ -1,1 +1,1 @@
-key = value
+some value

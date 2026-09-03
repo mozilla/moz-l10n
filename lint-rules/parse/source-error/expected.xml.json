@@ -1,10 +1,11 @@
 [
   {
     "rule_name": "source-error",
-    "message": "source parse error: Expected }\n<resources>\u00b6<string name=\"greeting\">Hello {$name</string>\u00b6</resources>\n                                                ^",
+    "rule_family": "parse",
+    "message": "Source message parse error: Expected }\nHello {$name\n            ^",
     "severity": "warning",
-    "key": null,
-    "line": 2,
-    "column": 37
+    "id": null,
+    "line": 1,
+    "column": 13
   }
 ]

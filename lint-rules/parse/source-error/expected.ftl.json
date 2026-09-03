@@ -1,9 +1,10 @@
 [
   {
     "rule_name": "source-error",
-    "message": "Expected token: \"}\"",
+    "rule_family": "parse",
+    "message": "Source message parse error: Expected token: \"=\"",
     "severity": "warning",
-    "key": null,
+    "id": null,
     "line": 1,
     "column": 1
   }

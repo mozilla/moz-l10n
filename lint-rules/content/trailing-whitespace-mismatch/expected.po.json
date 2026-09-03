@@ -1,0 +1,11 @@
+[
+  {
+    "rule_name": "trailing-whitespace-mismatch",
+    "rule_family": "content",
+    "message": "Trailing whitespace mismatch (expected '\\n', got '')",
+    "severity": "error",
+    "id": null,
+    "line": null,
+    "column": null
+  }
+]

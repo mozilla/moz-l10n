@@ -1,9 +1,10 @@
 [
   {
     "rule_name": "target-error",
-    "message": "target parse error: Expected }\n<!ENTITY greeting \"Hola {$name\">\u00b6\n                              ^",
+    "rule_family": "parse",
+    "message": "Target message parse error: Expected }\n<!ENTITY greeting \"Hola {$name\">\u00b6\n                              ^",
     "severity": "error",
-    "key": null,
+    "id": null,
     "line": 1,
     "column": 31
   }

@@ -17,15 +17,18 @@ structurally inconsistent with what the product will render.
 ## Example
 
 ```
-# source.po — a non-plural source
-Source string
+# source.webext — a non-plural source
+You have new mail.
 
-# example.po — translation that adds plural variants anyway
+# example.webext — translation that adds plural variants anyway
 .input {$n :number}
 .match $n
-one {{t1}}
-* {{t*}}
+one {{Sinulla on {$n} uusi viesti.}}
+* {{Sinulla on {$n} uutta viestiä.}}
 ```
+
+The `.po` fixture pair is the negative case: a plain source with a plain
+translation reports nothing.
 
 ## How to fix?
 

@@ -1,9 +1,10 @@
 [
   {
-    "rule_name": "parse.target-error",
-    "message": "Expected message \"key\" to have a value or attributes",
+    "rule_name": "target-error",
+    "rule_family": "parse",
+    "message": "Target message parse error: Expected an entry start",
     "severity": "error",
-    "key": null,
+    "id": null,
     "line": 1,
     "column": 1
   }

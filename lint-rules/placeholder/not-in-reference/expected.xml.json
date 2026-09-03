@@ -1,0 +1,11 @@
+[
+  {
+    "rule_name": "not-in-reference",
+    "rule_family": "placeholder",
+    "message": "Placeholder %1$s not found in reference",
+    "severity": "error",
+    "id": null,
+    "line": null,
+    "column": null
+  }
+]

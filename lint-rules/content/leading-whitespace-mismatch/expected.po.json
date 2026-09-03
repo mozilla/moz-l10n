@@ -1,0 +1,11 @@
+[
+  {
+    "rule_name": "leading-whitespace-mismatch",
+    "rule_family": "content",
+    "message": "Leading whitespace mismatch (expected '\\n', got '')",
+    "severity": "warning",
+    "id": null,
+    "line": null,
+    "column": null
+  }
+]

@@ -1,9 +1,10 @@
 [
   {
     "rule_name": "source-error",
-    "message": "source parse error: Expected }\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\u00b6<xliff xmlns=\"urn:oasis:names:tc:xliff:document:1.2\" version=\"1.2\">\u00b6  <file source-language=\"en\" datatype=\"plaintext\" original=\"messages\">\u00b6    <body>\u00b6      <trans-unit id=\"greeting\">\u00b6        <source>Hello {$name</source>\u00b6      </trans-unit>\u00b6    </body>\u00b6  </file>\u00b6</xliff>\u00b6\n                                                                                                                                                                                                                                                          ^",
+    "rule_family": "parse",
+    "message": "Source message parse error: Expected }\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\u00b6<xliff xmlns=\"urn:oasis:names:tc:xliff:document:1.2\" version=\"1.2\">\u00b6  <file source-language=\"en\" datatype=\"plaintext\" original=\"messages\">\u00b6    <body>\u00b6      <trans-unit id=\"greeting\">\u00b6        <source>Hello {$name</source>\u00b6      </trans-unit>\u00b6    </body>\u00b6  </file>\u00b6</xliff>\u00b6\n                                                                                                                                                                                                                                                          ^",
     "severity": "warning",
-    "key": null,
+    "id": null,
     "line": 6,
     "column": 29
   }

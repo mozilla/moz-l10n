@@ -2,10 +2,11 @@
 
 ## Description
 
-The translation contains no visible content. This covers a genuinely empty
+The source does contain content but not the translation. This covers a genuinely empty
 string as well as messages whose pattern resolves to nothing — for example a
 Fluent value of `{ "" }`, an MF2 message of `{{}}`, or a plural message all of
 whose variants are empty.
+Note: Whitespace such as ` ` or `\n` is NOT considered empty!
 
 ## Why is this bad?
 

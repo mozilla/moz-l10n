@@ -1,9 +1,10 @@
 [
   {
-    "rule_name": "translation-error",
-    "message": "translation parse error: Expected }\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\u00b6<xliff xmlns=\"urn:oasis:names:tc:xliff:document:2.0\" version=\"2.0\" srcLang=\"en\" trgLang=\"es\">\u00b6  <file id=\"messages\">\u00b6    <unit id=\"greeting\">\u00b6      <segment>\u00b6        <source>Hello {$name}</source>\u00b6        <target>Hola {$name</target>\u00b6      </segment>\u00b6    </unit>\u00b6  </file>\u00b6</xliff>\u00b6\n                                                                                                                                                                                                                                                                       ^",
+    "rule_name": "target-error",
+    "rule_family": "parse",
+    "message": "Target message parse error: Expected }\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\u00b6<xliff xmlns=\"urn:oasis:names:tc:xliff:document:2.0\" version=\"2.0\" srcLang=\"en\" trgLang=\"es\">\u00b6  <file id=\"messages\">\u00b6    <unit id=\"greeting\">\u00b6      <segment>\u00b6        <source>Hello {$name}</source>\u00b6        <target>Hola {$name</target>\u00b6      </segment>\u00b6    </unit>\u00b6  </file>\u00b6</xliff>\u00b6\n                                                                                                                                                                                                                                                                       ^",
     "severity": "error",
-    "key": null,
+    "id": null,
     "line": 7,
     "column": 28
   }

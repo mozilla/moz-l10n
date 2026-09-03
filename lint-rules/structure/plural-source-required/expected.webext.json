@@ -1,0 +1,11 @@
+[
+  {
+    "rule_name": "plural-source-required",
+    "rule_family": "structure",
+    "message": "Plural translation requires plural source",
+    "severity": "error",
+    "id": null,
+    "line": null,
+    "column": null
+  }
+]

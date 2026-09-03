@@ -1,0 +1,11 @@
+[
+  {
+    "rule_name": "not-in-translation",
+    "rule_family": "placeholder",
+    "message": "Placeholder %1$s not found in translation",
+    "severity": "warning",
+    "id": null,
+    "line": null,
+    "column": null
+  }
+]

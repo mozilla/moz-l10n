@@ -1,10 +1,11 @@
 [
   {
-    "rule_name": "translation-error",
-    "message": "translation parse error: Expected }\n<resources>\u00b6<string name=\"greeting\">Hola {$name</string>\u00b6</resources>\u00b6\n                                               ^",
+    "rule_name": "target-error",
+    "rule_family": "parse",
+    "message": "Target message parse error: Expected }\nHola {$name\n           ^",
     "severity": "error",
-    "key": null,
-    "line": 2,
-    "column": 36
+    "id": null,
+    "line": 1,
+    "column": 12
   }
 ]

@@ -1,0 +1,11 @@
+[
+  {
+    "rule_name": "unsupported",
+    "rule_family": "placeholder",
+    "message": "Unsupported placeholder: Expression(VariableRef('user'))",
+    "severity": "error",
+    "id": null,
+    "line": null,
+    "column": null
+  }
+]

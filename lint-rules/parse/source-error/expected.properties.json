@@ -1,9 +1,10 @@
 [
   {
     "rule_name": "source-error",
-    "message": "source parse error: Expected }\ngreeting = Hello {$name\u00b6\n                        ^",
+    "rule_family": "parse",
+    "message": "Source message parse error: Expected }\ngreeting = Hello {$name\u00b6\n                        ^",
     "severity": "warning",
-    "key": null,
+    "id": null,
     "line": 2,
     "column": 1
   }

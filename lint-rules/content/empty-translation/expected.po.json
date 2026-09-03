@@ -1,0 +1,11 @@
+[
+  {
+    "rule_name": "empty-translation",
+    "rule_family": "content",
+    "message": "Empty translations are not allowed",
+    "severity": "error",
+    "id": null,
+    "line": null,
+    "column": null
+  }
+]
