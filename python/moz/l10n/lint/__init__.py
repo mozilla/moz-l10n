@@ -139,7 +139,7 @@ def check_rules(
     Perform `check` of enabled rules on parsed `target` and `source` resources.
     Return list of diagnostics.
     """
-    diagnostics = []
+    diagnostics: list[Diagnostic] = []
     for rule_family, rules in RULES.items():
         for rule_name in rules:
             full_name = get_full_name(rule_family, rule_name)

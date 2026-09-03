@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 from typing import Iterator
@@ -19,9 +21,9 @@ from typing import Iterator
 import moz.l10n.formats
 import moz.l10n.lint
 import pytest
-from moz.l10n.formats import mf2
+from moz.l10n.formats import Format, mf2
 from moz.l10n.message import parse_message
-from moz.l10n.model import Format, Message
+from moz.l10n.model import Message
 
 # from moz.l10n.lint.tools import iter_placeholders
 
@@ -30,7 +32,7 @@ TARGET_NAME = "example"
 TEST_EXTENSIONS = moz.l10n.formats.l10n_extensions.union({".webext"})
 
 
-def run_from_main():
+def run_from_main() -> None:
     template = (
         f"{moz.l10n.lint.PY_ROOT / 'tests' / 'test_lint_rules.py'}::test_rule[{{}}]"
     )

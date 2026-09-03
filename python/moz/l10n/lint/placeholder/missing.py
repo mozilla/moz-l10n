@@ -130,13 +130,12 @@ def match_placeholders(
     placeholder typed out literally by the translator matches a source
     placeholder carrying the same `@source` attribute.
     """
-    this_ids = id(target), id(source)
-    if _PatternCache.last_ids == this_ids:
-        return _PatternCache.last_match
+    if cached := _PatternCache.get(target, source):
+        return cached
 
     source_placeholders = _source_placeholders(source)
     if source_placeholders is None:
-        return _PatternCache.set(this_ids, _PatternCache.no_match)
+        return _PatternCache.set(target, source, _PatternCache.no_match)
 
     extra: list[str] = []
     found: set[str] = set()
@@ -152,7 +151,8 @@ def match_placeholders(
                     extra.append(match[0])
 
     return _PatternCache.set(
-        this_ids,
+        target,
+        source,
         PlaceholderMatch(extra=extra, missing=sorted(source_placeholders - found)),
     )
 
@@ -180,19 +180,32 @@ def _source_placeholders(source: Message) -> set[str] | None:
 
 
 class _PatternCache:
-    """Holds match for 1 set of given message ids.
+    """Holds match for 1 set of given messages.
     To keep us from re-scanning the same messages on the very next check.
     """
 
-    last_ids: tuple[int, int] = 0, 0
+    last_target: Message | None = None
+    last_source: Message | None = None
     last_match: PlaceholderMatch = PlaceholderMatch()
-    no_match: PlaceholderMatch = PlaceholderMatch()
+    no_match: PlaceholderMatch = last_match
+
+    @classmethod
+    def get(
+        cls, target: Message | None, source: Message | None
+    ) -> PlaceholderMatch | None:
+        if cls.last_target is target and cls.last_source is source:
+            return cls.last_match
+        return None
 
     @classmethod
     def set(
-        cls, last_ids: tuple[int, int], last_match: PlaceholderMatch
+        cls,
+        last_target: Message | None,
+        last_source: Message | None,
+        last_match: PlaceholderMatch,
     ) -> PlaceholderMatch:
-        cls.last_ids = last_ids
+        cls.last_target = last_target
+        cls.last_source = last_source
         cls.last_match = last_match
         return last_match
 

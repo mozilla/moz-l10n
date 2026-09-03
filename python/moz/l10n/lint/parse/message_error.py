@@ -15,11 +15,10 @@
 from __future__ import annotations
 
 from fluent.syntax import FluentParser, ast
-from moz.l10n.formats.fluent import fluent_parse
-from moz.l10n.formats.mf2 import mf2_parse_message
+from moz.l10n.formats import Format, fluent, mf2
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
 from moz.l10n.lint.tools import get_line_column
-from moz.l10n.model import Format, Message
+from moz.l10n.model import Message
 
 ftl_parser = FluentParser()
 
@@ -89,7 +88,7 @@ def parse_message_mf2(
 ) -> tuple[Message | None, Diagnostic | None]:
     """Try parsing a raw string as MF2."""
     try:
-        return mf2_parse_message(raw), None
+        return mf2.mf2_parse_message(raw), None
     except ValueError as error:
         line, column = get_line_column(raw, getattr(error, "pos", 0))
         diagnostic = rule.diagnostic(
@@ -107,7 +106,7 @@ def parse_message_ftl(
 ) -> tuple[Message | None, Diagnostic | None]:
     # msg = ftl_parser.parse_entry(raw)
     try:
-        msg = next(fluent_parse(raw).all_entries()).value
+        msg = next(fluent.fluent_parse(raw).all_entries()).value
     except ValueError as error:
         line, column = get_line_column(raw, getattr(error, "pos", 0))
         diagnostic = rule.diagnostic(

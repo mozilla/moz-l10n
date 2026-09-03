@@ -15,13 +15,13 @@
 from __future__ import annotations
 
 import re
-from typing import Iterator
+from typing import Any, Iterator
 
+from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
 from moz.l10n.lint.tools import get_simple_preview
 from moz.l10n.model import (
     CatchallKey,
-    Format,
     Message,
     Pattern,
     PatternMessage,
@@ -37,7 +37,7 @@ class _WhitespaceMismatch(Rule):
     family: str = "content"
     message: str = ""
     default_severity: Severity = Severity.WARNING
-    _whitespace_regex: re.Pattern
+    _whitespace_regex: re.Pattern[str]
 
     def _get_whitespaces(self, *messages: Message | Pattern) -> list[str]:
         results = []
@@ -117,7 +117,7 @@ class TrailingWhitespaceMismatch(_WhitespaceMismatch):
     message = f"Trailing{_MESSAGE}"
     _whitespace_regex = _RE_TRAILING_WHITESPACE
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.format_severities: dict[Format, Severity] = {
             Format.gettext: Severity.ERROR

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Callable, Iterator
 from unittest.mock import MagicMock
@@ -19,7 +21,7 @@ from unittest.mock import MagicMock
 from moz.l10n.formats import Format, fluent, mf2
 from moz.l10n.lint import content, placeholder, structure
 from moz.l10n.lint.model import Diagnostic, LintContext, Severity
-from moz.l10n.model import Entry, Message
+from moz.l10n.model import Entry, Message, PatternMessage, SelectMessage
 
 RULES = (
     content.LeadingWhitespaceMismatch(),
@@ -485,7 +487,9 @@ def test_xcode_extra_placeholder():
 
 
 def _parse_custom(
-    raw_target: str, raw_source: str, resource_format: Format
+    raw_target: str,
+    raw_source: str,
+    resource_format: Format,
 ) -> tuple[Entry | Message | None, Entry | Message | None, list[str], list[str]]:
     """Parse raw inputs according to `resource_format`.
     Get `Entry` from fluent and `Message` from others.
@@ -526,7 +530,8 @@ def _iter_target_source(
     We have fluent examples like `key = something` which is more than a `Message`!
     Messages don't have `id`.
     """
-    if isinstance(target, Message) and isinstance(source, Message):
+    message_types = PatternMessage, SelectMessage
+    if isinstance(target, message_types) and isinstance(source, message_types):
         yield target, source, None
         return
 

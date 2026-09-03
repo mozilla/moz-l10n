@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import Any
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
@@ -81,7 +82,7 @@ class EmptyTranslation(Rule):
             return
         yield self._report(context)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._severity = None
         self.format_severities: dict[Format, Severity] = {

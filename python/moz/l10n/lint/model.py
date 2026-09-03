@@ -18,7 +18,7 @@ import sys
 from dataclasses import dataclass, field
 from enum import Enum
 from types import ModuleType
-from typing import Iterator
+from typing import Any, Iterator
 
 from moz.l10n.formats import Format
 from moz.l10n.model import Id, Message
@@ -119,7 +119,7 @@ class Rule:
         """
         return NAME_PATTERN.format(cls.family, cls.name)
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.full_name = NAME_PATTERN.format(self.family, self.name)
 
     def __str__(self) -> str:

@@ -16,8 +16,9 @@ from __future__ import annotations
 
 from typing import Iterator
 
+from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
-from moz.l10n.model import Format, Message, PatternMessage, SelectMessage
+from moz.l10n.model import Message, PatternMessage, SelectMessage
 
 MESSAGE = "Plural translation requires plural source"
 
