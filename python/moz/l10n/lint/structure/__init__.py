@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import plural_source_required
+from .plural_source_required import PluralSourceRequired
 
-__all__ = ["plural_source_required"]
+__all__ = ["PluralSourceRequired"]

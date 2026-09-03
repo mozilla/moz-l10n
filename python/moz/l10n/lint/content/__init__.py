@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import empty_translation, trailing_newline_mismatch
+from .empty_translation import EmptyTranslation
+from .whitespace_mismatch import LeadingWhitespaceMismatch, TrailingWhitespaceMismatch
 
-__all__ = ["empty_translation", "trailing_newline_mismatch"]
+__all__ = [
+    "EmptyTranslation",
+    "LeadingWhitespaceMismatch",
+    "TrailingWhitespaceMismatch",
+]

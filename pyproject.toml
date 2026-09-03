@@ -2,9 +2,6 @@
 name = "monorepo"
 version = "0.0.0"
 description = "Mozilla tools for localization"
-dependencies = [
-    "pytest-snapshot>=0.9.0",
-]
 
 [dependency-groups]
 dev = [
@@ -12,6 +9,7 @@ dev = [
   "mypy>=1.11.2",
   "pytest>=8.3.3",
   "pytest-cov>=7.1.0",
+  "pytest-snapshot>=0.9.0",
   "pytest-subtests; python_version < '3.10'",
   "ruff>=0.16.0",
   "types-lxml>=2024.9.16",

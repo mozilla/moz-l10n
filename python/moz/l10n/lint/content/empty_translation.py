@@ -12,147 +12,96 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""empty-translation - translation has no visible content."""
-
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import Any
 
-from fluent.syntax import ast as ftl
-from moz.l10n.lint.model import (
-    Diagnostic,
-    LintContext,
-    Rule,
-    Severity,
-    SourceType,
-    TargetType,
-)
-from moz.l10n.model import Message, PatternMessage, SelectMessage
+from moz.l10n.formats import Format
+from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
+from moz.l10n.lint.tools import get_patterns
+from moz.l10n.model import Expression, Message
 
-from .._preview import get_patterns
-
-NAME = "empty-translation"
-RULE = Rule(name=NAME, family="content", default_severity="error")
-
-ALLOWED_SEVERITY: Severity = "warning"
+ALLOWED_SEVERITY: Severity = Severity.WARNING
 """Severity used when the resource opts in via `allows_empty_translations`."""
-
 NOT_ALLOWED_MESSAGE = "Empty translations are not allowed"
 ALLOWED_MESSAGE = "Empty translation"
 
 
-def check(
-    translation: TargetType, source: SourceType, context: LintContext
-) -> list[Diagnostic]:
-    """
-    Report a wholly empty translation string.
+class EmptyTranslation(Rule):
+    name: str = "empty-translation"
+    family: str = "content"
+    default_severity: Severity = Severity.ERROR
 
-    Resources that opt in keep the empty translation but still get told about
-    it, so this downgrades to a warning rather than disappearing.
-    """
-    if isinstance(translation, (PatternMessage, SelectMessage)):
-        return check_message(translation, context)
-    if isinstance(translation, (ftl.Message, ftl.Term, ftl.Junk)):
-        return check_fluent_entry(translation, context)
-    return [_report(context)]
+    def check(
+        self, target: Message | None, source: Message | None, context: LintContext
+    ) -> Iterator[Diagnostic]:
+        """
+        Report a wholly empty translation string.
 
+        Resources that opt in keep the empty translation but still get told about
+        it, so this downgrades to a warning rather than disappearing.
+        This downgrades also applies when the source is already empty.
+        """
+        if context.resource_format not in self.format_severities:
+            self._severity = (
+                ALLOWED_SEVERITY if source is None or source.is_empty() else None
+            )
 
-def check_message(translation: Message, context: LintContext) -> list[Diagnostic]:
-    """
-    Report a parsed translation whose patterns are all empty.
+        if target is None or target.is_empty():
+            yield self._report(context)
+            return
 
-    Only literal text counts as content here; a pattern consisting solely of
-    placeholders is still considered to say something.
-    """
-    if context.format_name == "gettext":
-        return check_any_variant(translation, context)
-    if not translation.is_empty():
-        return []
-    return [_report(context)]
+        if context.resource_format is Format.gettext:
+            yield from self._check_any_variant(target, context)
+            return
 
+        if _has_empty_expressions(target):
+            yield self._report(context)
 
-def check_any_variant(translation: Message, context: LintContext) -> list[Diagnostic]:
-    """
-    Report a parsed translation with at least one empty pattern.
-
-    Stricter than `check_message`: for gettext every plural form ends up in
-    the same file and an empty one reads as untranslated, so a single blank
-    variant is enough to flag.
-    """
-    patterns = get_patterns(translation)
-    if not any(all(el == "" for el in pattern) for pattern in patterns):
-        return []
-    return [_report(context)]
-
-
-def check_fluent_entry(
-    entry: ftl.Message | ftl.Term | ftl.Junk, context: LintContext
-) -> list[Diagnostic]:
-    """
-    Report a Fluent entry with an empty value, attribute, or select variant.
-
-    Fluent spells a deliberately blank pattern as `{ "" }`, which is valid
-    syntax but leaves the UI with nothing to show, so it is always reported
-    at the opted-in severity rather than blocking the submission.
-    """
-    if isinstance(entry, ftl.Junk) or not any(
-        _ftl_is_empty(pattern) for pattern in _ftl_leaf_patterns(entry)
-    ):
-        return []
-    diagnostic = RULE.diagnostic(
-        ALLOWED_MESSAGE, severity=ALLOWED_SEVERITY, key=context.key or entry.id.name
-    )
-    return [diagnostic]
-
-
-def _report(context: LintContext) -> Diagnostic:
-    if context.allows_empty_translations:
-        return RULE.diagnostic(
-            ALLOWED_MESSAGE, severity=ALLOWED_SEVERITY, key=context.key
+    def _report(self, context: LintContext) -> Diagnostic:
+        severity = context.severity_of(self, self._severity)
+        message = NOT_ALLOWED_MESSAGE if severity is Severity.ERROR else ALLOWED_MESSAGE
+        return self.diagnostic(
+            message=message,
+            severity=severity,
+            id=context.id,
         )
-    return RULE.diagnostic(
-        NOT_ALLOWED_MESSAGE, severity=context.severity_of(RULE), key=context.key
-    )
+
+    def _check_any_variant(
+        self, target: Message, context: LintContext
+    ) -> Iterator[Diagnostic]:
+        """
+        Report a parsed translation with at least one empty pattern.
+
+        Stricter than `check_message`: for gettext every plural form ends up in
+        the same file and an empty one reads as untranslated, so a single blank
+        variant is enough to flag.
+        """
+        if not any(all(el == "" for el in pattern) for pattern in get_patterns(target)):
+            return
+        yield self._report(context)
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._severity = None
+        self.format_severities: dict[Format, Severity] = {
+            Format.fluent: Severity.WARNING,
+            Format.gettext: Severity.ERROR,
+        }
 
 
-def _ftl_leaf_patterns(entry: ftl.Message | ftl.Term) -> Iterator[ftl.Pattern]:
-    """
-    Every pattern of `entry` that can be rendered on its own.
-
-    A pattern holding a selector contributes its variants instead of itself,
-    since only one of them is ever shown.
-    """
-    values = [entry.value, *(attribute.value for attribute in entry.attributes)]
-    for value in values:
-        if value is not None:
-            yield from _ftl_leaves(value)
-
-
-def _ftl_leaves(pattern: ftl.Pattern) -> Iterator[ftl.Pattern]:
-    selects = [
-        element.expression
-        for element in pattern.elements
-        if isinstance(element, ftl.Placeable)
-        and isinstance(element.expression, ftl.SelectExpression)
-    ]
-    if not selects:
-        yield pattern
-        return
-    for select in selects:
-        for variant in select.variants:
-            yield from _ftl_leaves(variant.value)
-
-
-def _ftl_is_empty(pattern: ftl.Pattern) -> bool:
-    return all(_ftl_element_is_empty(element) for element in pattern.elements)
-
-
-def _ftl_element_is_empty(element: ftl.PatternElement) -> bool:
-    if isinstance(element, ftl.TextElement):
-        return not element.value
-    if isinstance(element, ftl.Placeable) and isinstance(
-        element.expression, ftl.Literal
-    ):
-        # `{ "" }` is empty, `{ 0 }` is not.
-        return not element.expression.parse()["value"]
+def _has_empty_expressions(msg: Message) -> bool:
+    """Return `True` if a Message contains any empty expressions."""
+    for pattern in get_patterns(msg):
+        for elem in pattern:
+            if isinstance(elem, str) and elem == "":
+                return True
+            if not isinstance(elem, Expression):
+                continue
+            # in case elem.arg is str or VariableRef:
+            if getattr(elem.arg, "name", elem.arg):
+                continue
+            if not any(elem.variable_refs()):
+                return True
     return False

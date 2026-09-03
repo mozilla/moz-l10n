@@ -12,55 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""placeholder.unsupported -- the translation holds a placeholder that cannot be serialized."""
-
 from __future__ import annotations
 
-from moz.l10n.lint.model import Diagnostic, LintContext, Rule, SourceType, TargetType
+from typing import Iterator
 
-from ...model import PatternMessage
-
-NAME = "unsupported"
-RULE = Rule(
-    name=NAME,
-    family="placeholder",
-    default_severity="error",
-)
+from moz.l10n.formats import Format
+from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
+from moz.l10n.model import Message, PatternMessage
 
 
-def check(
-    translation: TargetType, source: SourceType, context: LintContext
-) -> list[Diagnostic]:
-    return []
+class Unsupported(Rule):
+    name = "unsupported"
+    family = "placeholder"
+    default_severity = Severity.ERROR
 
+    def check(
+        self, target: Message | None, source: Message | None, context: LintContext
+    ) -> Iterator[Diagnostic]:
+        if context.resource_format is not Format.webext or not isinstance(
+            target, PatternMessage
+        ):
+            return
 
-def webext_source(
-    translation: PatternMessage, context: LintContext
-) -> tuple[str, list[Diagnostic]]:
-    """
-    Rebuild the messages.json source text of `translation`, reporting any
-    placeholder that has no original spelling to fall back on.
+        for part in target.pattern:
+            if isinstance(part, str):
+                continue
 
-    Serializing through moz.l10n would escape `$` in literal content, which
-    would hide exactly the placeholder typos this family is looking for, so
-    each part contributes its recorded `source` attribute verbatim instead.
-    A part without one cannot be written back to messages.json at all.
-    """
-    diagnostics: list[Diagnostic] = []
-    source = ""
-    for part in translation.pattern:
-        if isinstance(part, str):
-            source += part
-            continue
-        part_source = part.attributes.get("source", None)
-        if isinstance(part_source, str):
-            source += part_source
+            part_source = part.attributes.get("source", None)
+            if isinstance(part_source, str):
+                continue
 
-        diagnostics.append(
-            RULE.diagnostic(
+            yield self.diagnostic(
                 f"Unsupported placeholder: {part}",
-                severity=context.severity_of(RULE),
-                key=context.key,
+                severity=context.severity_of(self),
+                id=context.id,
             )
-        )
-    return source, diagnostics
