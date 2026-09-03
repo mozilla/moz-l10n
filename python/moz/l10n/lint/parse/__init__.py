@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .error import SourceError, TargetError
+from .message_error import SourceMessageError, TargetMessageError
 
-__all__ = ["SourceError", "TargetError"]
+__all__ = ["SourceMessageError", "TargetMessageError"]

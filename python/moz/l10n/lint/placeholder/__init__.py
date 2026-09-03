@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import not_in_reference, not_in_translation, unsupported
+from .missing import NotInSource, NotInTarget
+from .unsupported import Unsupported
 
-__all__ = ["not_in_reference", "not_in_translation", "unsupported"]
+__all__ = ["NotInSource", "NotInTarget", "Unsupported"]

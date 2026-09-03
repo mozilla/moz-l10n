@@ -18,18 +18,38 @@ import re
 from typing import Iterator
 
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
-from moz.l10n.model import Format, Message
+from moz.l10n.lint.tools import get_simple_preview
+from moz.l10n.model import (
+    CatchallKey,
+    Format,
+    Message,
+    Pattern,
+    PatternMessage,
+    SelectMessage,
+)
 
 _MESSAGE = " whitespace mismatch"
 _RE_LEADING_WHITESPACE = re.compile(r"^\s+")
 _RE_TRAILING_WHITESPACE = re.compile(r"\s+$")
 
 
-class LeadingWhitespaceMismatch(Rule):
-    name: str = "leading-whitespace-mismatch"
+class _WhitespaceMismatch(Rule):
     family: str = "content"
+    message: str = ""
     default_severity: Severity = Severity.WARNING
-    message = f"Leading {_MESSAGE}"
+    _whitespace_regex: re.Pattern
+
+    def _get_whitespaces(self, *messages: Message | Pattern) -> list[str]:
+        results = []
+        for msg in messages:
+            preview = get_simple_preview(msg)
+            # don't try to match "only whitespace"
+            if not preview or not preview.strip():
+                results.append("")
+                continue
+            match = self._whitespace_regex.search(preview)
+            results.append(match.group(0) if match else "")
+        return results
 
     def check(
         self, target: Message | None, source: Message | None, context: LintContext
@@ -37,70 +57,84 @@ class LeadingWhitespaceMismatch(Rule):
         if source is None or target is None:
             return
 
-        source_left = self._get_leading_whitespaces(source)
-        target_left = self._get_leading_whitespaces(target)
-        if source_left == target_left:
+        if isinstance(target, PatternMessage) and isinstance(source, PatternMessage):
+            trg_whitespace, src_whitespace = self._get_whitespaces(target, source)
+            if trg_whitespace == src_whitespace:
+                return
+            yield self._report(trg_whitespace, src_whitespace, context)
             return
 
-        yield self.diagnostic(
-            self.message,
+        if isinstance(target, SelectMessage) and isinstance(source, PatternMessage):
+            src_whitespace = self._get_whitespaces(source)[0]
+            for keys, tgt_pattern in target.variants.items():
+                trg_whitespace = self._get_whitespaces(tgt_pattern)[0]
+                if src_whitespace == trg_whitespace:
+                    continue
+                yield self._report(
+                    src_whitespace, trg_whitespace, context, _format_variant_keys(keys)
+                )
+            return
+
+        if isinstance(target, SelectMessage) and isinstance(source, SelectMessage):
+            source_variants_by_key = {
+                _format_variant_keys(keys): pattern
+                for keys, pattern in source.variants.items()
+            }
+            default_source_pattern = next(iter(source.variants.values()))
+            for keys, tgt_pattern in target.variants.items():
+                label = _format_variant_keys(keys)
+                src_pattern = source_variants_by_key.get(label, default_source_pattern)
+                trg_whitespace, src_whitespace = self._get_whitespaces(
+                    tgt_pattern, src_pattern
+                )
+                if trg_whitespace == src_whitespace:
+                    continue
+                yield self._report(trg_whitespace, src_whitespace, context, label)
+
+    def _report(
+        self,
+        trg_whitespace: str,
+        src_whitespace: str,
+        context: LintContext,
+        label: str | None = None,
+    ) -> Diagnostic:
+        prefix = f"Variant [{label}]: " if label else ""
+        return self.diagnostic(
+            f"{prefix}{self.message} (expected {trg_whitespace!r}, got {src_whitespace!r})",
             severity=context.severity_of(self),
-            message_id=context.id,
-            line=1,
-            column=1,
+            id=context.id,
         )
 
-    @staticmethod
-    def _get_leading_whitespaces(msg: Message) -> str:
-        left_match = _RE_LEADING_WHITESPACE.search(msg)
-        return left_match.group(0) if left_match else ""
+
+class LeadingWhitespaceMismatch(_WhitespaceMismatch):
+    name: str = "leading-whitespace-mismatch"
+    message = f"Leading{_MESSAGE}"
+    _whitespace_regex = _RE_LEADING_WHITESPACE
 
 
-class TrailingWhitespaceMismatch(Rule):
+class TrailingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "trailing-whitespace-mismatch"
-    family: str = "content"
-    default_severity: Severity = Severity.WARNING
-    message = f"Trailing {_MESSAGE}"
+    message = f"Trailing{_MESSAGE}"
+    _whitespace_regex = _RE_TRAILING_WHITESPACE
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.format_severities: dict[Format, Severity] = {
             Format.gettext: Severity.ERROR
         }
 
-    def check(
-        self, target: Message | None, source: Message | None, context: LintContext
-    ) -> Iterator[Diagnostic]:
-        if source is None or target is None:
-            return
 
-        source_left = self._get_trailing_whitespaces(source)
-        target_left = self._get_trailing_whitespaces(target)
-        if source_left == target_left:
-            return
-
-        yield self.diagnostic(
-            self.message,
-            severity=context.severity_of(self),
-            message_id=context.id,
-            line=1,
-            column=1,
-        )
-
-    @staticmethod
-    def _get_trailing_whitespaces(msg: Message) -> str:
-        left_match = _RE_TRAILING_WHITESPACE.search(msg)
-        return left_match.group(0) if left_match else ""
+def _format_variant_keys(keys: tuple[str | CatchallKey, ...]) -> str:
+    parts = []
+    for k in keys:
+        if isinstance(k, CatchallKey):
+            parts.append(k.value if k.value is not None else "*")
+        else:
+            parts.append(k)
+    return ", ".join(parts)
 
 
-# def _get_first_str(s: str | SourceType, raw: str | None) -> str:
-#     """TODO: This can probably go as soon as Pontoon no longer deals us fluent."""
-#     check_string = (
-#         (s.pattern[0] if s.pattern else "") if isinstance(s, PatternMessage) else s
-#     )
-#     if not isinstance(check_string, str):
-#         if raw is None:
-#             raise NotImplementedError(
-#                 f'TODO: Implement this for format "{type(check_string)}"'
-#             )
-#         return raw
-#     return check_string
+if __name__ == "__main__":
+    import moz.l10n.lint.testing
+
+    moz.l10n.lint.testing.run_from_main()

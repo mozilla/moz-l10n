@@ -12,48 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""plural-source-required -- a pluralized translation needs a pluralized source."""
-
 from __future__ import annotations
 
-from moz.l10n.lint.model import Diagnostic, LintContext, Rule, SourceType, TargetType
-from moz.l10n.model import PatternMessage, SelectMessage
+from typing import Iterator
 
-NAME = "plural-source-required"
-RULE = Rule(
-    name=NAME,
-    family="structure",
-    default_severity="error",
-)
+from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
+from moz.l10n.model import Format, Message, PatternMessage, SelectMessage
 
 MESSAGE = "Plural translation requires plural source"
 
 
-def check(
-    translation: TargetType, source: SourceType, context: LintContext
-) -> list[Diagnostic]:
-    """
-    Report a translation that selects on a plural category
-    while its source is a single pattern.
+class PluralSourceRequired(Rule):
+    name = "plural-source-required"
+    family = "structure"
+    default_severity = Severity.ERROR
 
-    A source that could not be parsed counts as non-plural, matching the
-    conservative behavior of Pontoon's checks.
+    def check(
+        self, target: Message | None, source: Message | None, context: LintContext
+    ) -> Iterator[Diagnostic]:
+        """
+        Report a translation that selects on a plural category
+        while its source is a single pattern.
 
-    gettext : source: SelectMessage trans: PatternMessage(Pattern?) is fine
-    fluent + mf2: anything goes
-    ini:
-    """
-    if context.resource_format in ("fluent", "mf2"):
-        return []
-    if context.resource_format == "gettext" and (
-        isinstance(translation, PatternMessage) and isinstance(source, SelectMessage)
-    ):
-        return []
+        A source that could not be parsed counts as non-plural, matching the
+        conservative behavior of Pontoon's checks.
 
-    if isinstance(translation, SelectMessage) != isinstance(source, SelectMessage):
-        return [
-            RULE.diagnostic(
-                MESSAGE, severity=context.severity_of(RULE), key=context.key
+        gettext : source: SelectMessage trans: PatternMessage(Pattern) is fine
+        fluent + mf2: anything goes
+        ini:
+        """
+        if context.resource_format in (Format.fluent, Format.mf2):
+            return
+
+        if context.resource_format is Format.gettext and (
+            isinstance(target, PatternMessage) and isinstance(source, SelectMessage)
+        ):
+            return
+
+        if isinstance(target, SelectMessage) != isinstance(source, SelectMessage):
+            yield self.diagnostic(
+                MESSAGE, severity=context.severity_of(self), id=context.id
             )
-        ]
-    return []
+
+        return

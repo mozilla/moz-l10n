@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import invalid_localizable_entry, plural_source_required
+from .plural_source_required import PluralSourceRequired
 
-__all__ = ["invalid_localizable_entry", "plural_source_required"]
+__all__ = ["PluralSourceRequired"]
