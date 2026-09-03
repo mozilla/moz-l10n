@@ -144,7 +144,9 @@ def test_rule(rule_family: str, rule_name: str, snapshot: Snapshot, subtests):
         ):
             snapshot_name = f"expected{test_file.suffix}.json"
             if not (rule_common / snapshot_name).is_file():
-                pytest.skip(f"No snapshot file for {test_file.name} for {rule.full_name}")
+                pytest.skip(
+                    f"No snapshot file for {test_file.name} for {rule.full_name}"
+                )
 
             context = LintContext(resource_format=this_format, path=str(test_file))
             diagnostics = list(rule.check(target, source, context))

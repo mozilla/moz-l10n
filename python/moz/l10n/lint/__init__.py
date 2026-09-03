@@ -197,7 +197,7 @@ def iter_rule_classes(rule_module: ModuleType) -> Iterator[type[Rule]]:
     for _, object in inspect.getmembers(rule_module):
         if not isinstance(object, type):
             continue
-        if not issubclass(object, Rule) or not hasattr(object, 'name'):
+        if not issubclass(object, Rule) or not hasattr(object, "name"):
             continue
         if object is Rule:
             continue

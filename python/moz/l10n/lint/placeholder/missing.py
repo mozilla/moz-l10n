@@ -99,6 +99,7 @@ class NotInTarget(Rule):
                 id=context.id,
             )
 
+
 ignored_placeholders = {"%%", "%n"}
 """printf escapes that carry no argument, so need no counterpart in the source."""
 

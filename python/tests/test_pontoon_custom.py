@@ -220,7 +220,9 @@ def test_ftl_parse_error(mock_entity):
     """Invalid FTL strings are not allowed"""
     ftl_entity = mock_entity("fluent", string="key = value")
     assert run_custom_checks(ftl_entity, "key =") == {
-        "pErrors": ['Target message parse error: Expected message "key" to have a value or attributes']
+        "pErrors": [
+            'Target message parse error: Expected message "key" to have a value or attributes'
+        ]
     }
     assert run_custom_checks(ftl_entity, "key = translation") == {}
 
