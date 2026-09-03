@@ -39,17 +39,13 @@ class _WhitespaceMismatch(Rule):
     default_severity: Severity = Severity.WARNING
     _whitespace_regex: re.Pattern[str]
 
-    def _get_whitespaces(self, *messages: Message | Pattern) -> list[str]:
-        results = []
-        for msg in messages:
-            preview = get_simple_preview(msg)
-            # don't try to match "only whitespace"
-            if not preview or not preview.strip():
-                results.append("")
-                continue
-            match = self._whitespace_regex.search(preview)
-            results.append(match.group(0) if match else "")
-        return results
+    def _get_whitespace(self, msg: Message | Pattern) -> str:
+        preview = get_simple_preview(msg)
+        # don't try to match "only whitespace"
+        if not preview or not preview.strip():
+            return ""
+        match = self._whitespace_regex.search(preview)
+        return match.group(0) if match else ""
 
     def check(
         self, target: Message | None, source: Message | None, context: LintContext
@@ -58,16 +54,17 @@ class _WhitespaceMismatch(Rule):
             return
 
         if isinstance(target, PatternMessage) and isinstance(source, PatternMessage):
-            trg_whitespace, src_whitespace = self._get_whitespaces(target, source)
+            trg_whitespace = self._get_whitespace(target)
+            src_whitespace = self._get_whitespace(source)
             if trg_whitespace == src_whitespace:
                 return
             yield self._report(trg_whitespace, src_whitespace, context)
             return
 
         if isinstance(target, SelectMessage) and isinstance(source, PatternMessage):
-            src_whitespace = self._get_whitespaces(source)[0]
+            src_whitespace = self._get_whitespace(source)
             for keys, tgt_pattern in target.variants.items():
-                trg_whitespace = self._get_whitespaces(tgt_pattern)[0]
+                trg_whitespace = self._get_whitespace(tgt_pattern)
                 if src_whitespace == trg_whitespace:
                     continue
                 yield self._report(
@@ -84,9 +81,8 @@ class _WhitespaceMismatch(Rule):
             for keys, tgt_pattern in target.variants.items():
                 label = _format_variant_keys(keys)
                 src_pattern = source_variants_by_key.get(label, default_source_pattern)
-                trg_whitespace, src_whitespace = self._get_whitespaces(
-                    tgt_pattern, src_pattern
-                )
+                trg_whitespace = self._get_whitespace(tgt_pattern)
+                src_whitespace = self._get_whitespace(src_pattern)
                 if trg_whitespace == src_whitespace:
                     continue
                 yield self._report(trg_whitespace, src_whitespace, context, label)
