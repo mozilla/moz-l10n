@@ -45,5 +45,4 @@ class Unsupported(Rule):
             yield self.diagnostic(
                 f"Unsupported placeholder: {part}",
                 severity=context.severity_of(self),
-                id=context.id,
             )

@@ -102,7 +102,6 @@ class _WhitespaceMismatch(Rule):
         return self.diagnostic(
             f"{prefix}{self.message} (expected {trg_whitespace!r}, got {src_whitespace!r})",
             severity=context.severity_of(self),
-            id=context.id,
         )
 
 

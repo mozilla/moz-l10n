@@ -52,7 +52,8 @@ class PluralSourceRequired(Rule):
 
         if isinstance(target, SelectMessage) != isinstance(source, SelectMessage):
             yield self.diagnostic(
-                MESSAGE, severity=context.severity_of(self), id=context.id
+                MESSAGE,
+                severity=context.severity_of(self),
             )
 
         return

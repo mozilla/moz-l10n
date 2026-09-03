@@ -75,7 +75,6 @@ class NotInSource(Rule):
             yield self.diagnostic(
                 message=f"{kind_of(placeholder)} {placeholder} not found in reference",
                 severity=context.severity_of(self),
-                id=context.id,
             )
 
 
@@ -96,7 +95,6 @@ class NotInTarget(Rule):
             yield self.diagnostic(
                 f"{kind_of(placeholder)} {placeholder} not found in translation",
                 severity=context.severity_of(self),
-                id=context.id,
             )
 
 

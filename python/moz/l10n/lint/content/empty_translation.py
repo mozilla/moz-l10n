@@ -65,7 +65,6 @@ class EmptyTranslation(Rule):
         return self.diagnostic(
             message=message,
             severity=severity,
-            id=context.id,
         )
 
     def _check_any_variant(

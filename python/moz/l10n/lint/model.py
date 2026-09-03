@@ -136,32 +136,14 @@ class LintContext:
     * `resource_format` - A `moz.l10n.formats.Format`, or its name as a string.
     * `id` - The message id of the resource being checked, if known.
     * `severity` - Per-rule severity overrides, keyed by rule name.
-    * `path` - Path to the resource being checked, if known.
-    * `enabled_rules` - Collection of enabled rules where `None` means ALL rules.
     """
 
     # local, per resource context:
     resource_format: Format
     """The `moz.l10n.formats.Format`."""
 
-    id: Id | None = None
-    """The resource id/key of the entry being checked, if known."""
-
     severity: dict[str, Severity] = field(default_factory=dict)
     """Per-rule severity overrides, keyed by rule name."""
-
-    path: str | None = None
-    """Path to the resource being checked, if known."""
-
-    # global context:
-    enabled_rules: set[str] | None = None
-    """Collection of enabled rules where `None` means ALL rules."""
-
-    target_locale: str | None = None
-    """Source locale BCP-47 language code (e.g., "de", "en-US")."""
-
-    source_locale: str | None = None
-    """Source locale BCP-47 language code (e.g., "de", "en-US")."""
 
     def severity_of(self, rule: Rule, fallback: Severity | None = None) -> Severity:
         """The effective severity of `rule`, applying any override.
