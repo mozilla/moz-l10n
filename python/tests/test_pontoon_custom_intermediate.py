@@ -13,15 +13,23 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from typing import Callable, Iterator
 from unittest.mock import MagicMock
 
-from fluent.syntax import FluentParser, ast
-from moz.l10n.formats.fluent import fluent_parse_message
-from moz.l10n.formats.mf2 import mf2_parse_message
+from moz.l10n.formats import Format, fluent, mf2
 from moz.l10n.lint import content, placeholder, structure
-from moz.l10n.lint.model import Diagnostic, LintContext
+from moz.l10n.lint.model import Diagnostic, LintContext, Severity
+from moz.l10n.model import Entry, Message
 
-ftl_parser = FluentParser()
+RULES = (
+    content.LeadingWhitespaceMismatch(),
+    content.TrailingWhitespaceMismatch(),
+    content.EmptyTranslation(),
+    structure.PluralSourceRequired(),
+    placeholder.NotInSource(),
+    placeholder.NotInTarget(),
+    placeholder.Unsupported(),
+)
 
 
 @dataclass
@@ -29,18 +37,6 @@ class Resource:
     format: str
     path: str
     allows_empty_translations: bool = False
-
-    class Format:
-        ANDROID = "android"
-        DTD = "dtd"
-        FLUENT = "fluent"
-        GETTEXT = "gettext"
-        INI = "ini"
-        PLAIN_JSON = "plain_json"
-        PROPERTIES = "properties"
-        WEBEXT = "webext"
-        XCODE = "xcode"
-        XLIFF = "xliff"
 
 
 @dataclass
@@ -62,78 +58,35 @@ def mock_entity(
     return entity
 
 
-def run_custom_checks(
-    entity: Entity,
-    string: str,
-    *,
-    enabled_rules: set | None = None,
-) -> dict[str, list[str]]:
+def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
     """
     Group all checks related to the base UI that get stored in the DB
     """
     context = LintContext(
-        resource_format=entity.resource.format,
-        allows_empty_translations=entity.resource.allows_empty_translations,
-        raw_source=entity.string,
-        raw_translation=string,
-        enabled_rules=enabled_rules,
+        resource_format=Format[entity.resource.format]
+        if entity.resource.format != "xcode"
+        else Format.xliff
     )
+    if entity.resource.allows_empty_translations:
+        context.severity["content.empty-translation"] = Severity.WARNING
 
-    diagnostics: list[Diagnostic] = []
-    errors: list[str] = []
-    warnings: list[str] = []
-    if context.is_fluent:
-        msg = ftl_parser.parse_entry(string)
-        orig_msg = ftl_parser.parse_entry(entity.string)
-        # msg = fluent_parse_message(string)
-        # orig_msg = fluent_parse_message(entity.string)
+    target, source, warnings, errors = _parse_custom(
+        string, entity.string, context.resource_format
+    )
+    if not errors:
+        diagnostics: list[Diagnostic] = []
+        for rule in RULES:
+            for msg, orig_msg, _attr_key in _iter_target_source(target, source):
+                diagnostics.extend(rule.check(msg, orig_msg, context))
 
-        # Parse error
-        if (
-            isinstance(msg, ast.Junk)
-            and msg.annotations
-            and msg.annotations[0].message is not None
-        ):
-            errors.append(msg.annotations[0].message)
+        errors.extend(d.message for d in diagnostics if d.severity == "error")
+        warnings.extend(d.message for d in diagnostics if d.severity == "warning")
 
-    else:
-        try:
-            msg = mf2_parse_message(string)
-        except ValueError as e:
-            msg = None
-            errors.append(f"Parse error: {e}")
-        try:
-            orig_msg = mf2_parse_message(entity.string)
-        except ValueError as e:
-            orig_msg = None
-            warnings.append(f"Source parse error: {e}")
-
-    for rule in (
-        content.leading_whitespace_mismatch,
-        content.trailing_whitespace_mismatch,
-        content.empty_translation,
-        structure.plural_source_required,
-        # structure.invalid_localizable_entry, # Untested in Pontoon's `test_custom`
-        placeholder.not_in_reference,
-        placeholder.not_in_translation,
-        placeholder.unsupported,
-    ):
-        try:
-            diagnostics.extend(rule.check(msg, orig_msg, context))
-        except Exception as error:
-            error
-
-    errors.extend(d.message for d in diagnostics if d.severity == "error")
-    warnings.extend(d.message for d in diagnostics if d.severity == "warning")
-    checks: dict[str, list[str]] = {}
-    if errors:
-        checks["pErrors"] = errors
-    if warnings:
-        checks["pndbWarnings"] = warnings
-    return checks
+    return {k: v for k, v in (("pErrors", errors), ("pndbWarnings", warnings)) if v}
 
 
 empty_error = ["Empty translations are not allowed"]
+empty_warning = "Empty translation"
 plural_error = ["Plural translation requires plural source"]
 
 
@@ -144,13 +97,13 @@ def test_ending_newline():
     """
     po_entity = mock_entity("gettext", string="Original")
     assert run_custom_checks(po_entity, "Translation\n") == {
-        "pErrors": ["Ending whitespace mismatch"]
+        "pErrors": ["Trailing whitespace mismatch (expected '\\n', got '')"]
     }
     assert run_custom_checks(po_entity, "Translation") == {}
 
     po_entity.string = "Original\n"
     assert run_custom_checks(po_entity, "Translation") == {
-        "pErrors": ["Ending whitespace mismatch"]
+        "pErrors": ["Trailing whitespace mismatch (expected '', got '\\n')"]
     }
     assert run_custom_checks(po_entity, "Translation\n") == {}
 
@@ -161,14 +114,14 @@ def test_empty_translations_allowed():
     """
     assert run_custom_checks(
         mock_entity("properties", allows_empty_translations=True), ""
-    ) == {"pndbWarnings": ["Empty translation"]}
+    ) == {"pndbWarnings": [empty_warning]}
 
 
 def test_empty_translations_not_allowed():
     """
     Empty translations shouldn't be allowed for some extensions.
     """
-    po_entity = mock_entity("gettext")
+    po_entity = mock_entity("gettext", string=" ")
     assert run_custom_checks(po_entity, "") == {"pErrors": empty_error}
     assert run_custom_checks(po_entity, "{{}}") == {"pErrors": empty_error}
     assert run_custom_checks(po_entity, ".input {$n :number} .match $n * {{}}") == {
@@ -180,8 +133,9 @@ def test_empty_translations_not_allowed():
     assert run_custom_checks(po_entity, "{{{||}}}") == {}
 
     assert run_custom_checks(
-        mock_entity("fluent", string="key = value"), 'key = { "" }'
-    ) == {"pndbWarnings": ["Empty translation"]}
+        mock_entity("fluent", string="key = value", allows_empty_translations=True),
+        'key = { "" }',
+    ) == {"pndbWarnings": [empty_warning]}
 
     assert (
         run_custom_checks(mock_entity("fluent", string="key = value"), 'key = { "x" }')
@@ -189,7 +143,9 @@ def test_empty_translations_not_allowed():
     )
 
     assert run_custom_checks(
-        mock_entity("fluent", string="key =\n  .attr = value"),
+        mock_entity(
+            "fluent", string="key =\n  .attr = value", allows_empty_translations=True
+        ),
         """key =
               { $var ->
                   [a] { "" }
@@ -197,7 +153,7 @@ def test_empty_translations_not_allowed():
               }
               .attr = { "" }
             """,
-    ) == {"pndbWarnings": ["Empty translation"]}
+    ) == {"pndbWarnings": [empty_warning, empty_warning]}
 
     assert run_custom_checks(
         mock_entity(
@@ -210,7 +166,7 @@ def test_empty_translations_not_allowed():
               }
               .attr = { "" }
             """,
-    ) == {"pndbWarnings": ["Empty translation"]}
+    ) == {"pndbWarnings": [empty_warning]}
 
     assert run_custom_checks(
         mock_entity(
@@ -223,8 +179,7 @@ def test_empty_translations_not_allowed():
               }
               .attr = { "y" }
             """,
-        enabled_rules={content.empty_translation.NAME},
-    ) == {"pndbWarnings": ["Empty translation"]}
+    ) == {"pndbWarnings": [empty_warning]}
 
     assert (
         run_custom_checks(
@@ -270,7 +225,7 @@ def test_ftl_parse_error():
     """Invalid FTL strings are not allowed"""
     ftl_entity = mock_entity("fluent", string="key = value")
     assert run_custom_checks(ftl_entity, "key =") == {
-        "pErrors": ['Expected message "key" to have a value or attributes']
+        "pErrors": ['Parse error: Expected message "key" to have a value or attributes']
     }
     assert run_custom_checks(ftl_entity, "key = translation") == {}
 
@@ -279,15 +234,7 @@ def test_ftl_non_localizable_entries():
     """Non-localizable entries are not allowed"""
     assert run_custom_checks(
         mock_entity("fluent", string="key = value"), "[[foo]]"
-    ) == {"pErrors": ["Expected an entry start"]}
-
-
-# No longer needed
-# def test_ftl_id_mismatch():
-#     """ID of the source string and translation must be the same"""
-#     assert run_custom_checks(
-#         mock_entity("fluent", string="key = value"), "key1 = translation"
-#     ) == {"pErrors": ["Translation key needs to match source string key"]}
+    ) == {"pErrors": ["Parse error: Expected an entry start"]}
 
 
 def test_android_apostrophes():
@@ -535,3 +482,60 @@ def test_xcode_extra_placeholder():
     assert run_custom_checks(entity, translation) == {
         "pErrors": ["Placeholder %@ not found in reference"]
     }
+
+
+def _parse_custom(
+    raw_target: str, raw_source: str, resource_format: Format
+) -> tuple[Entry | Message | None, Entry | Message | None, list[str], list[str]]:
+    """Parse raw inputs according to `resource_format`.
+    Get `Entry` from fluent and `Message` from others.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    def catch_parse(
+        raw_string: str, parse_func: Callable, collection: list, label: str
+    ) -> Entry | Message | None:
+        try:
+            result = parse_func(raw_string)
+        except ValueError as error:
+            collection.append(f"{label} error: {error}")
+            result = None
+        return result
+
+    if resource_format is Format.fluent:
+
+        def ftl_parse(raw_string) -> Entry:
+            return next(fluent.fluent_parse(raw_string).all_entries())
+
+        target = catch_parse(raw_target, ftl_parse, errors, "Parse")
+        source = catch_parse(raw_source, ftl_parse, warnings, "Source parse")
+    else:
+        target = catch_parse(raw_target, mf2.mf2_parse_message, errors, "Parse")
+        source = catch_parse(
+            raw_source, mf2.mf2_parse_message, warnings, "Source parse"
+        )
+
+    return target, source, warnings, errors
+
+
+def _iter_target_source(
+    target: Entry | Message | None, source: Entry | Message | None
+) -> Iterator[tuple[Message | None, Message | None, str | None]]:
+    """Yield tuples of Message from Message or Entry pairs.
+    We have fluent examples like `key = something` which is more than a `Message`!
+    Messages don't have `id`.
+    """
+    if isinstance(target, Message) and isinstance(source, Message):
+        yield target, source, None
+        return
+
+    trg_val = target.value if isinstance(target, Entry) else None
+    src_val = source.value if isinstance(source, Entry) else None
+    if trg_val is not None or src_val is not None:
+        yield trg_val, src_val, None
+
+    trg_props = target.properties if isinstance(target, Entry) else {}
+    src_props = source.properties if isinstance(source, Entry) else {}
+    for attr_key in dict.fromkeys(list(trg_props) + list(src_props)):
+        yield (trg_props.get(attr_key), src_props.get(attr_key), attr_key)

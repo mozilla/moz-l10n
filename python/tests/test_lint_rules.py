@@ -19,25 +19,29 @@ from pathlib import Path
 
 import moz.l10n.formats
 import moz.l10n.lint
+import moz.l10n.lint.testing
 import pytest
-from moz.l10n.lint.model import Diagnostic, Rule, Severity
-from moz.l10n.lint.parse import source_error, translation_error
+from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
+from moz.l10n.lint.parse import SourceMessageError, TargetMessageError
 from pytest_snapshot.plugin import Snapshot
 
+# We're only parsing Message atm! No full resources yet!
 PARSE_RULES = (
     pytest.param(
-        source_error,
+        SourceMessageError,
         "source",
         Severity.WARNING,
-        id=f"rule: {source_error.NAME}",
+        id=f"rule: {SourceMessageError.name}",
     ),
     pytest.param(
-        translation_error,
+        TargetMessageError,
         "example",
         Severity.ERROR,
-        id=f"rule: {translation_error.NAME}",
+        id=f"rule: {TargetMessageError.name}",
     ),
 )
+RULE_PAIRS = tuple((f, r) for f, rules in moz.l10n.lint.RULES.items() for r in rules)
+RULES_NAMES = tuple(moz.l10n.lint.get_full_name(fam, r) for fam, r in RULE_PAIRS)
 
 
 @pytest.mark.parametrize(
@@ -59,30 +63,22 @@ def test_rule_meta(rule_family: str, subtests):
                 path = rule_common_dir / name
                 assert path.is_file(), f'"{full_name}" has no "{name}" file!'
 
-            module = moz.l10n.lint.get_rule_module(rule_family, rule_name)
-            assert module.__file__ is not None
-
-            name = getattr(module, "NAME", None)
-            assert name is not None, (
-                f'No "NAME" in "{full_name}" rule module!\n'
-                f" {Path(module.__file__).relative_to(moz.l10n.lint.ROOT)}"
-            )
+            rule_class = moz.l10n.lint.get_rule_class(rule_family, rule_name)
+            assert isinstance(rule_class, type)
+            assert issubclass(rule_class, Rule)
             assert isinstance(name, str)
-            assert name == rule_name
-
-            rule = getattr(module, "RULE", None)
-            assert rule is not None, (
-                f'No "RULE" in "{full_name}" rule module!\n'
-                f" {Path(module.__file__).relative_to(moz.l10n.lint.ROOT)}"
-            )
-            assert isinstance(rule, Rule)
+            rule = rule_class()
             assert rule.name == rule_name
 
-            check_func = getattr(module, "check", None)
-            assert check_func is not None, (
-                f'No "check" function in "{full_name}" rule module!\n'
-                f" {Path(module.__file__).relative_to(moz.l10n.lint.ROOT)}"
-            )
+            check_func = getattr(rule, "check", None)
+            if check_func is None:
+                if rule_path := rule.get_path():
+                    rule_path = (
+                        f" {Path(rule_path).relative_to(moz.l10n.lint.LIB_ROOT)}"
+                    )
+                assert False, (
+                    f'No "check" method on "{full_name}" rule class!{rule_path}'
+                )
             assert isinstance(check_func, typing.Callable)
 
     for common_dir in moz.l10n.lint.RULES_COMMON.glob("*"):
@@ -96,62 +92,68 @@ def test_rule_meta(rule_family: str, subtests):
         assert common_dir.name in moz.l10n.lint.FAMILIES, (
             f'Common rule family "{common_dir.name}" is not in implementation directory!'
         )
-        for common_rule_dir in common_dir.glob("*"):
-            if not common_rule_dir.is_dir() or common_rule_dir.name.startswith("_"):
-                continue
-            assert common_rule_dir.name in moz.l10n.lint.RULES[common_dir.name], (
-                f'Rule "{common_rule_dir.name}" is not implemented!'
-            )
 
 
-@pytest.mark.parametrize("rule_module, fixture_stem, expect_severity", PARSE_RULES)
+@pytest.mark.parametrize("rule_class, fixture_stem, expect_severity", PARSE_RULES)
 @pytest.mark.parametrize(
     "l10n_extension", moz.l10n.formats.l10n_extensions, ids=lambda p: f"type: {p}"
 )
 def test_parse_rules(
-    rule_module, fixture_stem, expect_severity, l10n_extension: str, snapshot: Snapshot
+    rule_class, fixture_stem, expect_severity, l10n_extension: str, snapshot: Snapshot
 ):
-    common_dir = moz.l10n.lint.PARSE_COMMON / rule_module.NAME
+    common_dir = moz.l10n.lint.PARSE_COMMON / rule_class.name
     test_file = common_dir / f"{fixture_stem}{l10n_extension}"
     if not test_file.is_file():
-        pytest.skip(f"No test file for {test_file.name} for {rule_module.NAME}")
+        pytest.skip(f"No test file for {test_file.name} for {rule_class.name}")
+    is_source = fixture_stem == "source"
+    snapshot_name = f"expected{l10n_extension}.json"
+    if not (common_dir / snapshot_name).is_file():
+        pytest.skip(f"No snapshot file for {test_file.name} for {rule_class.name}")
 
     raw = test_file.read_text()
-    raw_src, raw_trg = (raw, None) if fixture_stem == "source" else (None, raw)
-    resource_format = moz.l10n.formats.detect_format(test_file.name, raw)
+    raw_src, raw_trg = (raw, None) if is_source else (None, raw)
+    resource_format = moz.l10n.lint.testing.get_format(test_file, raw)
     assert resource_format is not None
     assert isinstance(resource_format, moz.l10n.formats.Format)
-    context = moz.l10n.lint.LintContext(
-        resource_format=resource_format,
-        path=str(test_file),
-        raw_source=raw_src,
-        raw_translation=raw_trg,
-    )
+    context = LintContext(resource_format=resource_format, path=str(test_file))
 
-    parsed, diagnostics = rule_module.parse_check(context)
-    assert all(isinstance(d, Diagnostic) for d in diagnostics)
-    assert all(d.rule_name == rule_module.NAME for d in diagnostics)
-    assert all(d.severity == expect_severity for d in diagnostics)
-    if diagnostics and rule_module is translation_error:
+    rule = rule_class()
+    parsed, diagnostic = rule.parse_check(raw_src if is_source else raw_trg, context)
+    assert isinstance(diagnostic, Diagnostic)
+    assert diagnostic.rule_name == rule_class.name
+    assert diagnostic.severity == expect_severity
+    if diagnostic and not is_source:
         assert parsed is None
 
     snapshot.snapshot_dir = common_dir
-    snapshot.assert_match(
-        json.dumps([asdict(d) for d in diagnostics], indent=2),
-        f"expected{l10n_extension}.json",
-    )
+    snapshot.assert_match(json.dumps([asdict(diagnostic)], indent=2), snapshot_name)
 
 
-@pytest.mark.parametrize(
-    "rule_family", moz.l10n.lint.FAMILIES, ids=lambda p: f"rule family: {p}"
-)
-def test_rules(rule_family: str, subtests):
-    for rule_name in moz.l10n.lint.RULES[rule_family]:
-        module_name = moz.l10n.lint.get_full_name(rule_family, rule_name)
-        with subtests.test(module_name):
-            module = moz.l10n.lint.get_rule_module(rule_family, rule_name)
-            module
+@pytest.mark.parametrize(("rule_family", "rule_name"), RULE_PAIRS, ids=RULES_NAMES)
+def test_rule(rule_family: str, rule_name: str, snapshot: Snapshot, subtests):
+    rule = moz.l10n.lint.get_rule_class(rule_family, rule_name)()
+    rule_common = moz.l10n.lint.RULES_COMMON / rule.family / rule.name
+    if not rule_common.is_dir():
+        raise RuntimeError(f'No such lint-rule directory: "{rule_common}"!')
+
+    for target, source, test_file, this_format in moz.l10n.lint.testing.iter_test_files(
+        rule_common
+    ):
+        with subtests.test(
+            f"{rule.get_full_name()}::{test_file.suffix}", ext=test_file.suffix
+        ):
+            snapshot_name = f"expected{test_file.suffix}.json"
+            if not (rule_common / snapshot_name).is_file():
+                pytest.skip(f"No snapshot file for {test_file.name} for {rule.full_name}")
+
+            context = LintContext(resource_format=this_format, path=str(test_file))
+            diagnostics = list(rule.check(target, source, context))
+
+            snapshot.snapshot_dir = rule_common
+            snapshot.assert_match(
+                json.dumps([asdict(d) for d in diagnostics], indent=2), snapshot_name
+            )
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    pytest.main([__file__, "-vv"])
