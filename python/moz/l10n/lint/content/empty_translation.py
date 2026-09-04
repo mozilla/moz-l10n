@@ -94,11 +94,14 @@ class EmptyTranslation(Rule):
 
 
 def _has_empty_expressions(msg: Message) -> bool:
-    """Return `True` if a Message contains any empty expressions."""
+    """Return `True` if ALL elements in a pattern are empty.
+    Empty expressions elements are considered empty as well.
+    `PatternMessages` have only one pattern and `SelectMessages` may have multiple.
+    """
     for pattern in get_patterns(msg):
         for elem in pattern:
-            if isinstance(elem, str) and elem == "":
-                return True
+            if isinstance(elem, str) and elem != "":
+                continue
             if not isinstance(elem, Expression):
                 continue
             # in case elem.arg is str or VariableRef:
