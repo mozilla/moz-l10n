@@ -19,7 +19,7 @@ from enum import Enum
 from typing import Any, Iterator
 
 from moz.l10n.formats import Format
-from moz.l10n.model import Id, Message
+from moz.l10n.model import Message
 
 
 class Severity(str, Enum):

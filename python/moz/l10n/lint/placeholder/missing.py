@@ -41,7 +41,7 @@ Now `match_placeholders` tries to get from last match first only then orders a n
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Iterator
+from typing import Any, Iterator
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
@@ -59,7 +59,7 @@ class _NotIn(Rule):
     _message_suffix = ""
 
     def report(
-        self, message: str = "", context: LintContext | None = None, **kwargs
+        self, message: str = "", context: LintContext | None = None, **kwargs: Any
     ) -> Diagnostic:
         return super().report(
             f"{kind_of(message)} {message} not found in {self._message_suffix}", context

@@ -60,7 +60,7 @@ class EmptyTranslation(Rule):
             yield self.report(context=context)
 
     def report(
-        self, message: str = "", context: LintContext | None = None, **kwargs
+        self, message: str = "", context: LintContext | None = None, **kwargs: Any
     ) -> Diagnostic:
         severity = (
             context.severity_of(self, self._severity)

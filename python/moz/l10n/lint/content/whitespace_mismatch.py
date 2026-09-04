@@ -92,7 +92,9 @@ class _WhitespaceMismatch(Rule):
                     self._make_msg(trg_whitespace, src_whitespace, label), context
                 )
 
-    def _make_msg(self, trg_whitespace: str, src_whitespace: str, label: str = ""):
+    def _make_msg(
+        self, trg_whitespace: str, src_whitespace: str, label: str = ""
+    ) -> str:
         prefix = f"Variant [{label}]: " if label else ""
         return f"{prefix}{self._message} (expected {trg_whitespace!r}, got {src_whitespace!r})"
 
