@@ -116,6 +116,73 @@ class TestWhitespace:
         entity = mock_entity("android", string=original)
         assert run_custom_checks(entity, translation) == {}
 
+    def test_leading_whitespace_mismatch(self):
+        entity = mock_entity("gettext", string="  Source string")
+        assert run_custom_checks(entity, "Translation") == {
+            "pndbWarnings": ["Leading whitespace mismatch (expected '  ', got '')"]
+        }
+
+        entity.string = "Source string"
+        assert run_custom_checks(entity, "  Translation") == {
+            "pndbWarnings": ["Leading whitespace mismatch (expected '', got '  ')"]
+        }
+
+        entity.string = "  \n Source string"
+        assert run_custom_checks(entity, "  \n Translation") == {}
+
+    def test_leading_and_trailing_simultaneous_mismatch(self):
+        entity = mock_entity("gettext", string="  Source string\n")
+        result = run_custom_checks(entity, "Translation")
+        assert result["pndbWarnings"] == [
+            "Leading whitespace mismatch (expected '  ', got '')"
+        ]
+        assert result["pErrors"] == [
+            "Trailing whitespace mismatch (expected '\\n', got '')"
+        ]
+
+    def test_pure_whitespace_source_bypassed(self):
+        entity = mock_entity("gettext", string="   \n")
+        assert run_custom_checks(entity, "Translation") == {}
+
+    def test_trailing_whitespace_with_expression(self):
+        assert run_custom_checks(
+            mock_entity("gettext", string="Welcome back %s"), "Welcome %s "
+        ) == {"pErrors": ["Trailing whitespace mismatch (expected '', got ' ')"]}
+
+        entity_with_space = mock_entity("gettext", string="  Welcome back %s")
+        assert run_custom_checks(entity_with_space, "  Welcome %s") == {}
+
+    def test_leading_whitespace_with_expression(self):
+        original = "%s says Hello!"
+        entity = mock_entity("gettext", string=original)
+        assert run_custom_checks(entity, " %s sagt Hallo!") == {
+            "pndbWarnings": ["Leading whitespace mismatch (expected '', got ' ')"]
+        }
+        assert run_custom_checks(entity, "%s sagt Hallo!") == {}
+
+    def test_select_message_leading_space_in_variant(self):
+        # SelectMessage variant starting with whitespace
+        original = """key =
+        { $category ->
+            [a] \tOption A
+           *[b] \tOption B
+        }"""
+        entity = mock_entity("fluent", string=original)
+
+        # Translation missing the 2 leading spaces inside the variant pattern
+        translation = """key =
+        { $category ->
+            [a] Option A
+           *[b] Option B
+        }"""
+
+        assert run_custom_checks(entity, translation) == {
+            "pndbWarnings": [
+                "Variant [a]: Leading whitespace mismatch (expected '\\t', got '')",
+                "Variant [b]: Leading whitespace mismatch (expected '\\t', got '')",
+            ]
+        }
+
 
 class TestEmpty:
     def test_empty_translations_allowed(self):
