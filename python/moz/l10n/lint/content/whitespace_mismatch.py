@@ -19,7 +19,6 @@ from typing import Any, Iterator
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
-from moz.l10n.lint.tools import get_simple_preview
 from moz.l10n.model import (
     CatchallKey,
     Message,
@@ -38,14 +37,42 @@ class _WhitespaceMismatch(Rule):
     default_severity: Severity = Severity.WARNING
     _message: str = ""
     _whitespace_regex: re.Pattern[str]
+    _pattern_index: int = 0
 
-    def _get_whitespace(self, msg: Message | Pattern) -> str:
-        preview = get_simple_preview(msg)
-        # don't try to match "only whitespace"
-        if not preview or not preview.strip():
+    def _get_whitespace(self, pattern: Pattern) -> str:
+        """Get leading or trailing whitespace.
+
+        Accumulates strings from pattern in according direction
+        until it finds a non whitespace string or non-string.
+
+        Whitespace ONLY strings return `""` by design.
+        If we'd pass `"   \\n"` a translator would need to make the counterpart
+        for instance `"   \\nLOL   \\n"` to satisfy both leading and trailing rules.
+        """
+        if not pattern:
             return ""
-        match = self._whitespace_regex.search(preview)
-        return match.group(0) if match else ""
+
+        string_stack: list[str] = []
+        # loop pattern forward or backward for leading/trailing
+        step = self._pattern_index or 1
+        for element in pattern[::step]:
+            # stop at Markup or Expression
+            if not isinstance(element, str):
+                break
+            # collect all whitespace
+            if not element.strip():
+                string_stack.append(element)
+                continue
+            # append last string that's not only whitespace
+            string_stack.append(element)
+            break
+        else:
+            # Loop exhausted: pattern has whitespace only
+            return ""
+
+        if match := self._whitespace_regex.search("".join(string_stack[::step])):
+            return match[0]
+        return ""
 
     def check(
         self, target: Message | None, source: Message | None, context: LintContext
@@ -54,15 +81,15 @@ class _WhitespaceMismatch(Rule):
             return
 
         if isinstance(target, PatternMessage) and isinstance(source, PatternMessage):
-            trg_whitespace = self._get_whitespace(target)
-            src_whitespace = self._get_whitespace(source)
+            trg_whitespace = self._get_whitespace(target.pattern)
+            src_whitespace = self._get_whitespace(source.pattern)
             if trg_whitespace == src_whitespace:
                 return
             yield self.report(self._make_msg(trg_whitespace, src_whitespace), context)
             return
 
         if isinstance(target, SelectMessage) and isinstance(source, PatternMessage):
-            src_whitespace = self._get_whitespace(source)
+            src_whitespace = self._get_whitespace(source.pattern)
             for keys, tgt_pattern in target.variants.items():
                 trg_whitespace = self._get_whitespace(tgt_pattern)
                 if src_whitespace == trg_whitespace:
@@ -103,12 +130,14 @@ class LeadingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "leading-whitespace-mismatch"
     _message = f"Leading{_MESSAGE}"
     _whitespace_regex = _RE_LEADING_WHITESPACE
+    _pattern_index = 0
 
 
 class TrailingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "trailing-whitespace-mismatch"
     _message = f"Trailing{_MESSAGE}"
     _whitespace_regex = _RE_TRAILING_WHITESPACE
+    _pattern_index = -1
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
