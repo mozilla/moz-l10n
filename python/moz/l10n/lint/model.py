@@ -14,10 +14,8 @@
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from types import ModuleType
 from typing import Any, Iterator
 
 from moz.l10n.formats import Format
@@ -51,15 +49,6 @@ class Diagnostic:
     severity: Severity = Severity.ERROR
     """Resolved severity, which may differ from the rule's default."""
 
-    id: Id | None = None
-    """The resource id or "key" the diagnostic points at, if there is one."""
-
-    line: int | None = None
-    """1-based line within the checked string."""
-
-    column: int | None = None
-    """1-based column within the checked string."""
-
 
 class Rule:
     """
@@ -81,24 +70,27 @@ class Rule:
     ) -> Iterator[Diagnostic]:
         raise NotImplementedError
 
-    def diagnostic(
-        self,
-        message: str,
-        *,
-        severity: Severity | None = None,
-        id: Id | None = None,
-        line: int | None = None,
-        column: int | None = None,
+    def report(
+        self, message: str = "", context: LintContext | None = None, **kwargs: Any
     ) -> Diagnostic:
-        """Build a diagnostic with incoming message, violation details plus what the rule itself knows."""
+        """Build a diagnostic with incoming message and context.
+        `message` can be empty to enable overrides that build it from context or other inputs.
+        Thus `context` needs to have a default as well otherwise we'd need to change the order.
+        """
+        if not message.strip():
+            raise ValueError("Diagnostic message cannot be empty!")
+
+        severity = kwargs.pop(
+            "severity",
+            context.severity_of(self) if context is not None else self.default_severity,
+        )
+
         return Diagnostic(
             rule_name=self.name,
             rule_family=self.family,
             message=message,
-            severity=severity or self.default_severity,
-            id=id,
-            line=line,
-            column=column,
+            severity=severity,
+            **kwargs,
         )
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

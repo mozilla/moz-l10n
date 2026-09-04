@@ -42,7 +42,4 @@ class Unsupported(Rule):
             if isinstance(part_source, str):
                 continue
 
-            yield self.diagnostic(
-                f"Unsupported placeholder: {part}",
-                severity=context.severity_of(self),
-            )
+            yield self.report(f"Unsupported placeholder: {part}", context)

@@ -35,8 +35,8 @@ _RE_TRAILING_WHITESPACE = re.compile(r"\s+$")
 
 class _WhitespaceMismatch(Rule):
     family: str = "content"
-    message: str = ""
     default_severity: Severity = Severity.WARNING
+    _message: str = ""
     _whitespace_regex: re.Pattern[str]
 
     def _get_whitespace(self, msg: Message | Pattern) -> str:
@@ -58,7 +58,7 @@ class _WhitespaceMismatch(Rule):
             src_whitespace = self._get_whitespace(source)
             if trg_whitespace == src_whitespace:
                 return
-            yield self._report(trg_whitespace, src_whitespace, context)
+            yield self.report(self._make_msg(trg_whitespace, src_whitespace), context)
             return
 
         if isinstance(target, SelectMessage) and isinstance(source, PatternMessage):
@@ -67,8 +67,11 @@ class _WhitespaceMismatch(Rule):
                 trg_whitespace = self._get_whitespace(tgt_pattern)
                 if src_whitespace == trg_whitespace:
                     continue
-                yield self._report(
-                    src_whitespace, trg_whitespace, context, _format_variant_keys(keys)
+                yield self.report(
+                    self._make_msg(
+                        src_whitespace, trg_whitespace, _format_variant_keys(keys)
+                    ),
+                    context,
                 )
             return
 
@@ -85,31 +88,24 @@ class _WhitespaceMismatch(Rule):
                 src_whitespace = self._get_whitespace(src_pattern)
                 if trg_whitespace == src_whitespace:
                     continue
-                yield self._report(trg_whitespace, src_whitespace, context, label)
+                yield self.report(
+                    self._make_msg(trg_whitespace, src_whitespace, label), context
+                )
 
-    def _report(
-        self,
-        trg_whitespace: str,
-        src_whitespace: str,
-        context: LintContext,
-        label: str | None = None,
-    ) -> Diagnostic:
+    def _make_msg(self, trg_whitespace: str, src_whitespace: str, label: str = ""):
         prefix = f"Variant [{label}]: " if label else ""
-        return self.diagnostic(
-            f"{prefix}{self.message} (expected {trg_whitespace!r}, got {src_whitespace!r})",
-            severity=context.severity_of(self),
-        )
+        return f"{prefix}{self._message} (expected {trg_whitespace!r}, got {src_whitespace!r})"
 
 
 class LeadingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "leading-whitespace-mismatch"
-    message = f"Leading{_MESSAGE}"
+    _message = f"Leading{_MESSAGE}"
     _whitespace_regex = _RE_LEADING_WHITESPACE
 
 
 class TrailingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "trailing-whitespace-mismatch"
-    message = f"Trailing{_MESSAGE}"
+    _message = f"Trailing{_MESSAGE}"
     _whitespace_regex = _RE_TRAILING_WHITESPACE
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

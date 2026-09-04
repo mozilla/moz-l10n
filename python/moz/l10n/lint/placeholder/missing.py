@@ -54,34 +54,38 @@ from moz.l10n.lint.tools import (
 from moz.l10n.model import Expression, Message
 
 
-class NotInSource(Rule):
-    name = "not-in-reference"
+class _NotIn(Rule):
     family = "placeholder"
+    _message_suffix = ""
+
+    def report(
+        self, message: str = "", context: LintContext | None = None, **kwargs
+    ) -> Diagnostic:
+        return super().report(
+            f"{kind_of(message)} {message} not found in {self._message_suffix}", context
+        )
+
+
+class NotInSource(_NotIn):
+    name = "not-in-reference"
     default_severity = Severity.ERROR
+    _message_suffix = "reference"
 
     def check(
         self, target: Message | None, source: Message | None, context: LintContext
     ) -> Iterator[Diagnostic]:
-        """
-        Report both:
-        * placeholders the translation uses that its source does not
-        * every source placeholder the translation leaves out.
-        """
         if target is None or source is None or context.resource_format is Format.fluent:
             return
 
         match = match_placeholders(target, source, context.resource_format)
         for placeholder in match.extra:
-            yield self.diagnostic(
-                message=f"{kind_of(placeholder)} {placeholder} not found in reference",
-                severity=context.severity_of(self),
-            )
+            yield self.report(placeholder, context)
 
 
-class NotInTarget(Rule):
+class NotInTarget(_NotIn):
     name = "not-in-translation"
-    family = "placeholder"
     default_severity = Severity.WARNING
+    _message_suffix = "translation"
 
     def check(
         self, target: Message | None, source: Message | None, context: LintContext
@@ -92,10 +96,7 @@ class NotInTarget(Rule):
 
         match = match_placeholders(target, source, context.resource_format)
         for placeholder in match.missing:
-            yield self.diagnostic(
-                f"{kind_of(placeholder)} {placeholder} not found in translation",
-                severity=context.severity_of(self),
-            )
+            yield self.report(placeholder, context)
 
 
 ignored_placeholders = {"%%", "%n"}

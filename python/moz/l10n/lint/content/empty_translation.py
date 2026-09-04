@@ -41,7 +41,7 @@ class EmptyTranslation(Rule):
 
         Resources that opt in keep the empty translation but still get told about
         it, so this downgrades to a warning rather than disappearing.
-        This downgrades also applies when the source is already empty.
+        This downgrades also applies when the source is empty!
         """
         if context.resource_format not in self.format_severities:
             self._severity = (
@@ -49,7 +49,7 @@ class EmptyTranslation(Rule):
             )
 
         if target is None or target.is_empty():
-            yield self._report(context)
+            yield self.report(context=context)
             return
 
         if context.resource_format is Format.gettext:
@@ -57,15 +57,18 @@ class EmptyTranslation(Rule):
             return
 
         if _has_empty_expressions(target):
-            yield self._report(context)
+            yield self.report(context=context)
 
-    def _report(self, context: LintContext) -> Diagnostic:
-        severity = context.severity_of(self, self._severity)
-        message = NOT_ALLOWED_MESSAGE if severity is Severity.ERROR else ALLOWED_MESSAGE
-        return self.diagnostic(
-            message=message,
-            severity=severity,
+    def report(
+        self, message: str = "", context: LintContext | None = None, **kwargs
+    ) -> Diagnostic:
+        severity = (
+            context.severity_of(self, self._severity)
+            if context is not None
+            else self.default_severity
         )
+        message = NOT_ALLOWED_MESSAGE if severity is Severity.ERROR else ALLOWED_MESSAGE
+        return super().report(message, context, severity=severity)
 
     def _check_any_variant(
         self, target: Message, context: LintContext
@@ -79,7 +82,7 @@ class EmptyTranslation(Rule):
         """
         if not any(all(el == "" for el in pattern) for pattern in get_patterns(target)):
             return
-        yield self._report(context)
+        yield self.report(context=context)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
