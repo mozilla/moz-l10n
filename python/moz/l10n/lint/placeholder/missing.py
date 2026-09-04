@@ -74,7 +74,7 @@ class NotInSource(_NotIn):
     def check(
         self, target: Message | None, source: Message | None, context: LintContext
     ) -> Iterator[Diagnostic]:
-        if target is None or source is None or context.resource_format is Format.fluent:
+        if target is None or source is None:
             return
 
         match = match_placeholders(target, source, context.resource_format)
