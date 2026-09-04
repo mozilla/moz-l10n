@@ -97,13 +97,13 @@ class TestWhitespace:
         """
         po_entity = mock_entity("gettext", string="Original")
         assert run_custom_checks(po_entity, "Translation\n") == {
-            "pErrors": ["Trailing whitespace mismatch (expected '\\n', got '')"]
+            "pErrors": ["Trailing whitespace mismatch (expected '', got '\\n')"]
         }
         assert run_custom_checks(po_entity, "Translation") == {}
 
         po_entity.string = "Original\n"
         assert run_custom_checks(po_entity, "Translation") == {
-            "pErrors": ["Trailing whitespace mismatch (expected '', got '\\n')"]
+            "pErrors": ["Trailing whitespace mismatch (expected '\\n', got '')"]
         }
         assert run_custom_checks(po_entity, "Translation\n") == {}
 

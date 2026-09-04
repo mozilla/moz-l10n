@@ -96,7 +96,7 @@ class _WhitespaceMismatch(Rule):
         self, trg_whitespace: str, src_whitespace: str, label: str = ""
     ) -> str:
         prefix = f"Variant [{label}]: " if label else ""
-        return f"{prefix}{self._message} (expected {trg_whitespace!r}, got {src_whitespace!r})"
+        return f"{prefix}{self._message} (expected {src_whitespace!r}, got {trg_whitespace!r})"
 
 
 class LeadingWhitespaceMismatch(_WhitespaceMismatch):
