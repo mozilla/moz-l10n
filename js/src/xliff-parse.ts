@@ -65,6 +65,7 @@ function* parseElement(
         const attr = Object.create(null)
         attr.source = ms
         const n = m[1]?.[0] ?? ''
+        if (n) attr.index = n
         switch (ms.at(-1)) {
           case '%':
             yield { _: '%', attr }

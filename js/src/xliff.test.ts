@@ -43,10 +43,20 @@ describe('success', () => {
       'Hello, ',
       { $: 'str', fn: 'string', attr: { source: '%s' } },
       ' and ',
-      { $: 'int2', fn: 'integer', attr: { source: '%2$d' } },
+      { $: 'int2', fn: 'integer', attr: { index: '2', source: '%2$d' } },
       '!'
     ],
     'Hello, %s and %2$d!',
+    true
+  )
+  ok(
+    'indexed variables',
+    [
+      { $: 'arg1', attr: { index: '1', source: '%1$@' } },
+      '/',
+      { $: 'arg2', attr: { index: '2', source: '%2$@' } }
+    ],
+    '%1$@/%2$@',
     true
   )
   ok('html elements', [{ open: 'b' }, 'bold', { close: 'b' }], '<b>bold</b>')
