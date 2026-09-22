@@ -34,7 +34,7 @@ class EmptyTranslation(Rule):
     default_severity: Severity = Severity.ERROR
 
     def check(
-        self, target: Message | None, source: Message | None, context: LintContext
+        self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
         """
         Report a wholly empty translation string.

@@ -29,7 +29,7 @@ class PluralSourceRequired(Rule):
     default_severity = Severity.ERROR
 
     def check(
-        self, target: Message | None, source: Message | None, context: LintContext
+        self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
         """
         Report a translation that selects on a plural category

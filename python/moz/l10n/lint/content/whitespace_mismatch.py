@@ -75,7 +75,7 @@ class _WhitespaceMismatch(Rule):
         return ""
 
     def check(
-        self, target: Message | None, source: Message | None, context: LintContext
+        self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
         if source is None or target is None:
             return

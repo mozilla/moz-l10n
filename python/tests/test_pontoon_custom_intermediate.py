@@ -362,23 +362,33 @@ def _parse_custom(
 
 
 def _iter_target_source(
-    target: Entry | Message | None, source: Entry | Message | None
-) -> Iterator[tuple[Message | None, Message | None, str | None]]:
+    target: Entry | Message, source: Entry | Message
+) -> Iterator[tuple[Message, Message, str | None]]:
     """Yield tuples of Message from Message or Entry pairs.
     We have fluent examples like `key = something` which is more than a `Message`!
-    Messages don't have `id`.
+    Messages don't have a key/`id`.
     """
+    # Cannot use `isinstance(target, Message)` because of Python 3.9 (rip)
+    # `TypeError: Subscripted generics cannot be used with class and instance checks`
     message_types = PatternMessage, SelectMessage
+
     if isinstance(target, message_types) and isinstance(source, message_types):
         yield target, source, None
         return
 
-    trg_val = target.value if isinstance(target, Entry) else None
-    src_val = source.value if isinstance(source, Entry) else None
-    if trg_val is not None or src_val is not None:
-        yield trg_val, src_val, None
+    if isinstance(target, Entry) and isinstance(source, Entry):
+        yield target.value, source.value, None
 
-    trg_props = target.properties if isinstance(target, Entry) else {}
-    src_props = source.properties if isinstance(source, Entry) else {}
-    for attr_key in dict.fromkeys(list(trg_props) + list(src_props)):
-        yield (trg_props.get(attr_key), src_props.get(attr_key), attr_key)
+        for attr_key in dict.fromkeys(
+            list(target.properties) + list(source.properties)
+        ):
+            trg, src = target.properties.get(attr_key), source.properties.get(attr_key)
+            if not isinstance(trg, message_types) or not isinstance(src, message_types):
+                continue
+            yield trg, src, attr_key
+        return
+
+    raise TypeError(
+        "Both target and source need to of the same type! Got:\n"
+        f" target: {type(target)}\n source: {type(source)}"
+    )

@@ -63,10 +63,7 @@ class Rule:
     format_severities: dict[Format, Severity]
 
     def check(
-        self,
-        target: Message | None,
-        source: Message | None,
-        context: LintContext,
+        self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
         raise NotImplementedError
 
