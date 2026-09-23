@@ -298,6 +298,7 @@ class TestFluent(TestCase):
                   }
                 """
             ),
+            with_linepos=False,
         )
         other = CatchallKey("other")
         entries = [
@@ -1059,3 +1060,29 @@ class TestFluent(TestCase):
                 }
             """
         )
+
+    def test_nested_variants(self):
+        original = dedent(
+            """\
+            error-title-429 =
+                { $retryAfter ->
+                    [0] You're going too fast. Please slow down and try again in a moment.
+                   *[other] You're going too fast. Please try again in { NUMBER($retryAfter) } { $retryAfter ->
+                        [one] second
+                       *[other] seconds
+                    }.
+                }
+            """
+        )
+
+        expected = dedent(
+            """\
+            error-title-429 =
+                { $retryAfter ->
+                    [0] You're going too fast. Please slow down and try again in a moment.
+                    [one] You're going too fast. Please try again in { NUMBER($retryAfter) } second.
+                   *[other] You're going too fast. Please try again in { NUMBER($retryAfter) } seconds.
+                }
+            """
+        )
+        assert "".join(fluent_serialize(fluent_parse(original))) == expected
