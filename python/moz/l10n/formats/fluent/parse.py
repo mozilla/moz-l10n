@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from itertools import product
 from re import finditer
-from typing import cast
+from typing import Iterator, Union, cast
 
 from fluent.syntax import FluentParser, ParseError
 from fluent.syntax import ast as ftl
@@ -217,7 +217,7 @@ def fluent_entry(
 def message(ftl_pattern: ftl.Pattern) -> Message:
     sel_data = find_selectors(ftl_pattern, [])
     sel_expressions = [sd[0] for sd in sel_data]
-    filter: list[Key | None] = [None] * len(sel_expressions)
+    filter: list[set[Key] | None] = [None] * len(sel_expressions)
     msg_variants: dict[tuple[Key, ...], Pattern]
     var_names: set[str] = set()
     if sel_expressions:
@@ -235,21 +235,32 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
             | ftl.InlineExpression
             | ftl.SelectExpression
         )
-        for el in ftl_pattern.elements:
-            while isinstance(el, ftl.Placeable):
-                el = el.expression
+        for el in unwrap_elements(ftl_pattern):
             if isinstance(el, ftl.SelectExpression):
-                msg_sel = next(sd[0] for sd in sel_data if el.selector in sd[1])
-                idx = sel_expressions.index(msg_sel)
+                el_data = next(sd for sd in sel_data if el.selector in sd[1])
+                idx = sel_expressions.index(el_data[0])
                 prev_filt = filter[idx]
-                for v in el.variants:
-                    filter[idx] = variant_key(v)
-                    add_pattern(v.value)
+                el_variants = tuple((variant_key(v)[0], v) for v in el.variants)
+                this_variant_keys = {v[0] for v in el_variants}
+                key_candidates = key_lists[idx] if prev_filt is None else prev_filt
+                for var_key, variant in el_variants:
+                    is_expandable_default = (
+                        variant.default
+                        and len(el_data[1]) > 1
+                        and contains_selector(variant.value, el_data[1])
+                    )
+                    filter[idx] = {
+                        key
+                        for key in key_candidates
+                        if key[0] == var_key
+                        or (is_expandable_default and key[0] not in this_variant_keys)
+                    }
+                    add_pattern(variant.value)
                 filter[idx] = prev_filt
             else:
                 for keys, msg_pattern in msg_variants.items():
                     if all(
-                        (filt is None or key == filt) for key, filt in zip(keys, filter)
+                        (filt is None or key in filt) for key, filt in zip(keys, filter)
                     ):
                         if isinstance(el, ftl.TextElement):
                             if msg_pattern and isinstance(msg_pattern[-1], str):
@@ -257,7 +268,7 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
                             else:
                                 msg_pattern.append(el.value)
                         else:
-                            expr = inline_expression(el)
+                            expr = inline_expression(cast(ftl.InlineExpression, el))
                             if isinstance(expr.arg, VariableRef):
                                 var_names.add(expr.arg.name)
                             msg_pattern.append(expr)
@@ -434,3 +445,28 @@ class LinePosMapper:
         value_line = key_line if value == key else self._get_line(value)
         end_line = self._get_line(end)
         return LinePos(start_line, key_line, value_line, end_line)
+
+
+def contains_selector(
+    pattern: ftl.Pattern, target_filters: list[ftl.InlineExpression]
+) -> bool:
+    """Check if a pattern contains a nested SelectExpression for a given selector"""
+    for el in unwrap_elements(pattern):
+        if not isinstance(el, ftl.SelectExpression):
+            continue
+        if el.selector in target_filters:
+            return True
+        for v in el.variants:
+            if contains_selector(v.value, target_filters):
+                return True
+    return False
+
+
+def unwrap_elements(
+    pattern: ftl.Pattern,
+) -> Iterator[ftl.TextElement | ftl.Placeable]:
+    """Iterate over pattern elements, unwrapping Placeable expressions."""
+    for element in pattern.elements:
+        while isinstance(element, ftl.Placeable):
+            element = cast(Union[ftl.TextElement, ftl.Placeable], element.expression)
+        yield element
