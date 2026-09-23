@@ -25,6 +25,7 @@ from moz.l10n.model import (
     Entry,
     Expression,
     Metadata,
+    Pattern,
     PatternMessage,
     Resource,
     Section,
@@ -129,6 +130,38 @@ class TestMessage(TestCase):
             selectors=(VariableRef("x"),),
             variants={("a",): [], (CatchallKey(),): [Expression(VariableRef("y"))]},
         )
+
+    def test_iteration(self):
+        p_msg = PatternMessage(["uno", "due", "tre"])
+        assert next(iter(p_msg)) == p_msg.pattern
+        for pattern in PatternMessage(["uno", "due", "tre"]):
+            assert all(isinstance(el, str) for el in pattern)
+            assert len(pattern) == 3
+
+        elements = Pattern(["hello", Expression(VariableRef("x"))])
+        p_msg = PatternMessage(elements)
+        assert next(iter(p_msg)) == elements
+
+        sel_msg = SelectMessage(
+            declarations={},
+            selectors=(),
+            variants={
+                ("x",): ["X"],
+                ("y",): ["Y"],
+                (CatchallKey(),): [Expression("")],
+            },
+        )
+        assert len(sel_msg) == 3
+        for variant in sel_msg:
+            for element in variant:
+                assert isinstance(element, (str, Expression))
+
+        for msg in (
+            PatternMessage([]),
+            SelectMessage(declarations={}, selectors=(), variants={("a",): []}),
+        ):
+            assert len(msg) == 1
+            assert list(msg) == [[]]
 
 
 class TestResource(TestCase):
