@@ -224,7 +224,15 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
     if sel_expressions:
         key_lists = [list(dict.fromkeys(sd[2])) for sd in sel_data]
         for keys in key_lists:
-            keys.sort(key=lambda k: (k[2], not k[1]))
+            # Selects sharing a selector may declare overlapping or differing keys,
+            # but each key name maps to one variant and only one may be the catch-all.
+            # Deduplicate by name, keeping the outermost default as the catch-all.
+            default_name = next((n for n, _, d in keys if d), None)
+            by_name: dict[str, Key] = {}
+            for name, is_numeric, _ in keys:
+                if name not in by_name:
+                    by_name[name] = (name, is_numeric, name == default_name)
+            keys[:] = sorted(by_name.values(), key=lambda k: (k[2], not k[1]))
         msg_variants = {key: [] for key in product(*key_lists)}
     else:
         msg_variants = {(): []}
