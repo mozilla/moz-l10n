@@ -229,9 +229,9 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
             # Deduplicate by name, keeping the outermost default as the catch-all.
             default_name = next((n for n, _, d in keys if d), None)
             by_name: dict[str, Key] = {}
-            for name, is_numeric, _ in keys:
-                if name not in by_name:
-                    by_name[name] = (name, is_numeric, name == default_name)
+            for key_name, is_numeric, _ in keys:
+                if key_name not in by_name:
+                    by_name[key_name] = (key_name, is_numeric, key_name == default_name)
             keys[:] = sorted(by_name.values(), key=lambda k: (k[2], not k[1]))
         msg_variants = {key: [] for key in product(*key_lists)}
     else:
