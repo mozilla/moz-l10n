@@ -15,17 +15,13 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Iterator
+from collections.abc import Iterator
+from os.path import commonprefix
+from typing import Any
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
-from moz.l10n.model import (
-    CatchallKey,
-    Message,
-    Pattern,
-    PatternMessage,
-    SelectMessage,
-)
+from moz.l10n.model import CatchallKey, Message, Pattern, PatternMessage, SelectMessage
 
 _MESSAGE = " whitespace mismatch"
 _RE_LEADING_WHITESPACE = re.compile(r"^\s+")
@@ -35,9 +31,12 @@ _RE_TRAILING_WHITESPACE = re.compile(r"\s+$")
 class _WhitespaceMismatch(Rule):
     family: str = "content"
     default_severity: Severity = Severity.WARNING
+
     _message: str = ""
     _whitespace_regex: re.Pattern[str]
-    _pattern_index: int = 0
+
+    def _iterate(self, object: list[Any]) -> Iterator[Any]:
+        raise NotImplementedError()
 
     def _get_whitespace(self, pattern: Pattern) -> str:
         """Get leading or trailing whitespace.
@@ -54,8 +53,7 @@ class _WhitespaceMismatch(Rule):
 
         string_stack: list[str] = []
         # loop pattern forward or backward for leading/trailing
-        step = self._pattern_index or 1
-        for element in pattern[::step]:
+        for element in self._iterate(pattern):
             # stop at Markup or Expression
             if not isinstance(element, str):
                 break
@@ -70,26 +68,39 @@ class _WhitespaceMismatch(Rule):
             # Loop exhausted: pattern has whitespace only
             return ""
 
-        if match := self._whitespace_regex.search("".join(string_stack[::step])):
+        if match := self._whitespace_regex.search("".join(self._iterate(string_stack))):
             return match[0]
+        return ""
+
+    def _get_common_whitespace(self, whitespace_list: list[str]) -> str:
+        """Calculate the longest common whitespace sequence across variants."""
+        raise NotImplementedError()
+
+    def _get_source_whitespace(self, source: Message) -> str:
+        """Determine expected source whitespace as single baseline value."""
+        if isinstance(source, PatternMessage):
+            return self._get_whitespace(source.pattern)
+
+        if isinstance(source, SelectMessage):
+            ws_list = [self._get_whitespace(p) for p in source.variants.values()]
+            if not ws_list:
+                return ""
+            return self._get_common_whitespace(ws_list)
         return ""
 
     def check(
         self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
-        if source is None or target is None:
-            return
+        src_whitespace = self._get_source_whitespace(source)
 
-        if isinstance(target, PatternMessage) and isinstance(source, PatternMessage):
+        if isinstance(target, PatternMessage):
             trg_whitespace = self._get_whitespace(target.pattern)
-            src_whitespace = self._get_whitespace(source.pattern)
             if trg_whitespace == src_whitespace:
                 return
             yield self.report(context, self._make_msg(trg_whitespace, src_whitespace))
             return
 
-        if isinstance(target, SelectMessage) and isinstance(source, PatternMessage):
-            src_whitespace = self._get_whitespace(source.pattern)
+        if isinstance(target, SelectMessage):
             for keys, tgt_pattern in target.variants.items():
                 trg_whitespace = self._get_whitespace(tgt_pattern)
                 if src_whitespace == trg_whitespace:
@@ -97,27 +108,10 @@ class _WhitespaceMismatch(Rule):
                 yield self.report(
                     context,
                     self._make_msg(
-                        src_whitespace, trg_whitespace, _format_variant_keys(keys)
+                        trg_whitespace, src_whitespace, _format_variant_keys(keys)
                     ),
                 )
             return
-
-        if isinstance(target, SelectMessage) and isinstance(source, SelectMessage):
-            source_variants_by_key = {
-                _format_variant_keys(keys): pattern
-                for keys, pattern in source.variants.items()
-            }
-            default_source_pattern = next(iter(source.variants.values()))
-            for keys, tgt_pattern in target.variants.items():
-                label = _format_variant_keys(keys)
-                src_pattern = source_variants_by_key.get(label, default_source_pattern)
-                trg_whitespace = self._get_whitespace(tgt_pattern)
-                src_whitespace = self._get_whitespace(src_pattern)
-                if trg_whitespace == src_whitespace:
-                    continue
-                yield self.report(
-                    context, self._make_msg(trg_whitespace, src_whitespace, label)
-                )
 
     def _make_msg(
         self, trg_whitespace: str, src_whitespace: str, label: str = ""
@@ -128,22 +122,39 @@ class _WhitespaceMismatch(Rule):
 
 class LeadingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "leading-whitespace-mismatch"
+
     _message = f"Leading{_MESSAGE}"
     _whitespace_regex = _RE_LEADING_WHITESPACE
-    _pattern_index = 0
+
+    def _iterate(self, object: list[Any]) -> Iterator[Any]:
+        """Iterate forward through given object."""
+        yield from object
+
+    def _get_common_whitespace(self, whitespace_list: list[str]) -> str:
+        """Longest common prefix for leading whitespace."""
+        return commonprefix(whitespace_list)
 
 
 class TrailingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "trailing-whitespace-mismatch"
+
     _message = f"Trailing{_MESSAGE}"
     _whitespace_regex = _RE_TRAILING_WHITESPACE
-    _pattern_index = -1
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.format_severities: dict[Format, Severity] = {
             Format.gettext: Severity.ERROR
         }
+
+    def _iterate(self, object: list[Any]) -> Iterator[Any]:
+        """Iterate backwards through given object."""
+        yield from reversed(object)
+
+    def _get_common_whitespace(self, whitespace_list: list[str]) -> str:
+        """Longest common suffix for trailing whitespace."""
+        reversed_ws = [ws[::-1] for ws in whitespace_list]
+        return commonprefix(reversed_ws)[::-1]
 
 
 def _format_variant_keys(keys: tuple[str | CatchallKey, ...]) -> str:
