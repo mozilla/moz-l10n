@@ -132,11 +132,12 @@ class TestMessage(TestCase):
         )
 
     def test_iteration(self):
-        p_msg = PatternMessage(["uno", "due", "tre"])
+        numbers = "uno", "due", "tre"
+        p_msg = PatternMessage([*numbers])
         assert next(iter(p_msg)) == p_msg.pattern
-        for pattern in PatternMessage(["uno", "due", "tre"]):
-            assert all(isinstance(el, str) for el in pattern)
-            assert len(pattern) == 3
+        for pattern in p_msg:
+            for i, element in enumerate(pattern):
+                assert element == numbers[i]
 
         elements = Pattern(["hello", Expression(VariableRef("x"))])
         p_msg = PatternMessage(elements)
