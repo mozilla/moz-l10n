@@ -14,8 +14,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from typing import Any, Iterable
+from collections.abc import Iterable, Iterator
+from typing import Any
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
