@@ -151,7 +151,6 @@ class TestMessage(TestCase):
                 (CatchallKey(),): [Expression("")],
             },
         )
-        assert len(sel_msg) == 3
         for variant in sel_msg:
             for element in variant:
                 assert isinstance(element, (str, Expression))
@@ -160,7 +159,6 @@ class TestMessage(TestCase):
             PatternMessage([]),
             SelectMessage(declarations={}, selectors=(), variants={("a",): []}),
         ):
-            assert len(msg) == 1
             assert list(msg) == [[]]
 
 

@@ -153,9 +153,6 @@ class PatternMessage:
     def __iter__(self) -> Iterator[Pattern]:
         yield self.pattern
 
-    def __len__(self) -> int:
-        return 1
-
 
 @dataclass
 class CatchallKey:
@@ -214,9 +211,6 @@ class SelectMessage:
 
     def __iter__(self) -> Iterator[Pattern]:
         yield from self.variants.values()
-
-    def __len__(self) -> int:
-        return len(self.variants)
 
 
 Message = Union[PatternMessage, SelectMessage]
