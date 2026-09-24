@@ -32,15 +32,10 @@ class PluralSourceRequired(Rule):
         self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
         """
-        Report a translation that selects on a plural category
-        while its source is a single pattern.
-
-        A source that could not be parsed counts as non-plural, matching the
-        conservative behavior of Pontoon's checks.
-
-        gettext : source: SelectMessage trans: PatternMessage(Pattern) is fine
-        fluent + mf2: anything goes
-        ini:
+        Report a translation that does not match its source message format.
+        format exceptions are:
+        * **Fluent** and **mf2** are not checked.
+        * For **gettext** it's OK to have a `PatternMessage` when the source is `SelectMessage`.
         """
         if context.resource_format in (Format.fluent, Format.mf2):
             return
@@ -51,6 +46,6 @@ class PluralSourceRequired(Rule):
             return
 
         if isinstance(target, SelectMessage) != isinstance(source, SelectMessage):
-            yield self.report(MESSAGE, context)
+            yield self.report(context, MESSAGE)
 
         return
