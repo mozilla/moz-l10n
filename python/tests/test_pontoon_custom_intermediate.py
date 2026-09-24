@@ -72,7 +72,7 @@ def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
     target, source, warnings, errors = _parse_custom(
         string, entity.string, context.resource_format
     )
-    if not errors:
+    if not errors and target is not None and source is not None:
         diagnostics: list[Diagnostic] = []
         for rule in RULES:
             for msg, orig_msg, _attr_key in _iter_target_source(target, source):
@@ -190,7 +190,10 @@ class TestEmpty:
         Empty translations should be allowed but noted for some extensions.
         """
         assert run_custom_checks(
-            mock_entity("properties", allows_empty_translations=True), ""
+            mock_entity(
+                "properties", string="not empty", allows_empty_translations=True
+            ),
+            "",
         ) == {"pndbWarnings": [empty_warning]}
 
     def test_empty_translations_not_allowed(self):
@@ -223,7 +226,7 @@ class TestEmpty:
         assert run_custom_checks(
             mock_entity(
                 "fluent",
-                string="key =\n  .attr = value",
+                string="key = not empty\n  .attr = value",
                 allows_empty_translations=True,
             ),
             """key =
@@ -238,7 +241,7 @@ class TestEmpty:
         assert run_custom_checks(
             mock_entity(
                 "fluent",
-                string="key =\n  .attr = value",
+                string="key = not empty\n  .attr = value",
                 allows_empty_translations=True,
             ),
             """key =
@@ -253,7 +256,7 @@ class TestEmpty:
         assert run_custom_checks(
             mock_entity(
                 "fluent",
-                string="key =\n  .attr = value",
+                string="key = not empty\n  .attr = value",
                 allows_empty_translations=True,
             ),
             """key =

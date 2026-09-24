@@ -23,7 +23,7 @@ from moz.l10n.lint.tools import get_patterns
 from moz.l10n.model import Expression, Message
 
 ALLOWED_SEVERITY: Severity = Severity.WARNING
-"""Severity used when the resource opts in via `allows_empty_translations`."""
+"""Severity used when translations may be empty."""
 NOT_ALLOWED_MESSAGE = "Empty translations are not allowed"
 ALLOWED_MESSAGE = "Empty translation"
 
@@ -39,16 +39,14 @@ class EmptyTranslation(Rule):
         """
         Report a wholly empty translation string.
 
-        Resources that opt in keep the empty translation but still get told about
-        it, so this downgrades to a warning rather than disappearing.
-        This downgrades also applies when the source is empty!
+        If `source` is empty nothing is reported here.
+        On `Format.gettext` this trips for any variant being empty.
+        If empty translation are allowed report downgrades to warning.
         """
-        if context.resource_format not in self.format_severities:
-            self._severity = (
-                ALLOWED_SEVERITY if source is None or source.is_empty() else None
-            )
+        if source.is_empty():
+            return
 
-        if target is None or target.is_empty():
+        if target.is_empty():
             yield self.report(context=context)
             return
 
@@ -63,9 +61,7 @@ class EmptyTranslation(Rule):
         self, context: LintContext | None = None, message: str = "", **kwargs: Any
     ) -> Diagnostic:
         severity = (
-            context.severity_of(self, self._severity)
-            if context is not None
-            else self.default_severity
+            context.severity_of(self) if context is not None else self.default_severity
         )
         message = NOT_ALLOWED_MESSAGE if severity is Severity.ERROR else ALLOWED_MESSAGE
         return super().report(context, message)
@@ -76,7 +72,7 @@ class EmptyTranslation(Rule):
         """
         Report a parsed translation with at least one empty pattern.
 
-        Stricter than `check_message`: for gettext every plural form ends up in
+        Stricter check for `Format.gettext`: every plural form ends up in
         the same file and an empty one reads as untranslated, so a single blank
         variant is enough to flag.
         """
@@ -86,7 +82,6 @@ class EmptyTranslation(Rule):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._severity = None
         self.format_severities: dict[Format, Severity] = {
             Format.fluent: Severity.WARNING,
             Format.gettext: Severity.ERROR,
