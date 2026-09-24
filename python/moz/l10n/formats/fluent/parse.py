@@ -14,9 +14,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from itertools import product
 from re import finditer
-from typing import Iterator, Union, cast
+from typing import cast
 
 from fluent.syntax import FluentParser, ParseError
 from fluent.syntax import ast as ftl
@@ -229,31 +230,31 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
         msg_variants = {(): []}
 
     def add_pattern(ftl_pattern: ftl.Pattern) -> None:
-        el: (
-            ftl.TextElement
-            | ftl.Placeable
-            | ftl.InlineExpression
-            | ftl.SelectExpression
-        )
         for el in unwrap_elements(ftl_pattern):
             if isinstance(el, ftl.SelectExpression):
-                el_data = next(sd for sd in sel_data if el.selector in sd[1])
-                idx = sel_expressions.index(el_data[0])
+                msg_sel, ftl_sels, _ = next(
+                    sd for sd in sel_data if el.selector in sd[1]
+                )
+                idx = sel_expressions.index(msg_sel)
                 prev_filt = filter[idx]
                 el_variants = tuple((variant_key(v)[0], v) for v in el.variants)
-                this_variant_keys = {v[0] for v in el_variants}
+                sel_keys = {v[0] for v in el_variants}
                 key_candidates = key_lists[idx] if prev_filt is None else prev_filt
                 for var_key, variant in el_variants:
-                    is_expandable_default = (
-                        variant.default
-                        and len(el_data[1]) > 1
-                        and contains_selector(variant.value, el_data[1])
+                    # A selector may be used by more than one select expression!
+                    # `key_candidates` may have keys that this expression doesn't declare.
+                    # The default variant applies for those, but only expand it to them if
+                    # it wraps a further select on this selector narrowing them down again.
+                    # Otherwise we'd duplicate default variant. CatchAll already covers it!
+                    is_expandable_default = variant.default and (
+                        prev_filt is not None
+                        or contains_selector(variant.value, ftl_sels)
                     )
                     filter[idx] = {
                         key
                         for key in key_candidates
                         if key[0] == var_key
-                        or (is_expandable_default and key[0] not in this_variant_keys)
+                        or (is_expandable_default and key[0] not in sel_keys)
                     }
                     add_pattern(variant.value)
                 filter[idx] = prev_filt
@@ -268,7 +269,7 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
                             else:
                                 msg_pattern.append(el.value)
                         else:
-                            expr = inline_expression(cast(ftl.InlineExpression, el))
+                            expr = inline_expression(el)
                             if isinstance(expr.arg, VariableRef):
                                 var_names.add(expr.arg.name)
                             msg_pattern.append(expr)
@@ -425,6 +426,37 @@ def literal_value(arg: ftl.NumberLiteral | ftl.StringLiteral) -> str:
     )
 
 
+def contains_selector(
+    pattern: ftl.Pattern, selector_expressions: list[ftl.InlineExpression]
+) -> bool:
+    """Check if a pattern contains a nested SelectExpression for a given selector."""
+    for el in unwrap_elements(pattern):
+        if not isinstance(el, ftl.SelectExpression):
+            continue
+        if el.selector in selector_expressions:
+            return True
+        for v in el.variants:
+            if contains_selector(v.value, selector_expressions):
+                return True
+    return False
+
+
+def unwrap_elements(
+    pattern: ftl.Pattern,
+) -> Iterator[ftl.TextElement | ftl.InlineExpression | ftl.SelectExpression]:
+    """Iterate over pattern elements, unwrapping Placeable expressions."""
+    for element in pattern.elements:
+        el: (
+            ftl.TextElement
+            | ftl.Placeable
+            | ftl.InlineExpression
+            | ftl.SelectExpression
+        ) = element
+        while isinstance(el, ftl.Placeable):
+            el = el.expression
+        yield el
+
+
 class LinePosMapper:
     def __init__(self, src: str) -> None:
         self._len = len(src)
@@ -445,28 +477,3 @@ class LinePosMapper:
         value_line = key_line if value == key else self._get_line(value)
         end_line = self._get_line(end)
         return LinePos(start_line, key_line, value_line, end_line)
-
-
-def contains_selector(
-    pattern: ftl.Pattern, target_filters: list[ftl.InlineExpression]
-) -> bool:
-    """Check if a pattern contains a nested SelectExpression for a given selector"""
-    for el in unwrap_elements(pattern):
-        if not isinstance(el, ftl.SelectExpression):
-            continue
-        if el.selector in target_filters:
-            return True
-        for v in el.variants:
-            if contains_selector(v.value, target_filters):
-                return True
-    return False
-
-
-def unwrap_elements(
-    pattern: ftl.Pattern,
-) -> Iterator[ftl.TextElement | ftl.Placeable]:
-    """Iterate over pattern elements, unwrapping Placeable expressions."""
-    for element in pattern.elements:
-        while isinstance(element, ftl.Placeable):
-            element = cast(Union[ftl.TextElement, ftl.Placeable], element.expression)
-        yield element
