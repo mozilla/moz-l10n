@@ -15,12 +15,11 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, Iterable
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
-from moz.l10n.lint.tools import get_patterns
-from moz.l10n.model import Expression, Message
+from moz.l10n.model import Expression, Message, Pattern, PatternMessage
 
 ALLOWED_SEVERITY: Severity = Severity.WARNING
 """Severity used when translations may be empty."""
@@ -95,13 +94,20 @@ def _has_empty_expressions(msg: Message) -> bool:
     """
     for pattern in get_patterns(msg):
         for elem in pattern:
-            if isinstance(elem, str) and elem != "":
-                continue
             if not isinstance(elem, Expression):
                 continue
-            # in case elem.arg is str or VariableRef:
+            # Skip in case elem.arg is valid str or VariableRef argument:
             if getattr(elem.arg, "name", elem.arg):
                 continue
             if not any(elem.variable_refs()):
                 return True
     return False
+
+
+def get_patterns(msg: Message) -> Iterable[Pattern]:
+    """Yield every pattern of `msg`;
+    * one for a `PatternMessage`
+    * all variants for `SelectMessage`.
+    TODO: Remove as soon as iterable Messages are in!
+    """
+    return (msg.pattern,) if isinstance(msg, PatternMessage) else msg.variants.values()
