@@ -297,8 +297,7 @@ class TestFluent(TestCase):
                     *[other] Other
                   }
                 """
-            ),
-            with_linepos=False,
+            )
         )
         other = CatchallKey("other")
         entries = [
