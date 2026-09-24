@@ -60,7 +60,7 @@ class EmptyTranslation(Rule):
             yield self.report(context=context)
 
     def report(
-        self, message: str = "", context: LintContext | None = None, **kwargs: Any
+        self, context: LintContext | None = None, message: str = "", **kwargs: Any
     ) -> Diagnostic:
         severity = (
             context.severity_of(self, self._severity)
@@ -68,7 +68,7 @@ class EmptyTranslation(Rule):
             else self.default_severity
         )
         message = NOT_ALLOWED_MESSAGE if severity is Severity.ERROR else ALLOWED_MESSAGE
-        return super().report(message, context, severity=severity)
+        return super().report(context, message)
 
     def _check_any_variant(
         self, target: Message, context: LintContext

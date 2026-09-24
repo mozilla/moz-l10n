@@ -85,7 +85,7 @@ class _WhitespaceMismatch(Rule):
             src_whitespace = self._get_whitespace(source.pattern)
             if trg_whitespace == src_whitespace:
                 return
-            yield self.report(self._make_msg(trg_whitespace, src_whitespace), context)
+            yield self.report(context, self._make_msg(trg_whitespace, src_whitespace))
             return
 
         if isinstance(target, SelectMessage) and isinstance(source, PatternMessage):
@@ -95,10 +95,10 @@ class _WhitespaceMismatch(Rule):
                 if src_whitespace == trg_whitespace:
                     continue
                 yield self.report(
+                    context,
                     self._make_msg(
                         src_whitespace, trg_whitespace, _format_variant_keys(keys)
                     ),
-                    context,
                 )
             return
 
@@ -116,7 +116,7 @@ class _WhitespaceMismatch(Rule):
                 if trg_whitespace == src_whitespace:
                     continue
                 yield self.report(
-                    self._make_msg(trg_whitespace, src_whitespace, label), context
+                    context, self._make_msg(trg_whitespace, src_whitespace, label)
                 )
 
     def _make_msg(

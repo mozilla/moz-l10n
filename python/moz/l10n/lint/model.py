@@ -68,12 +68,9 @@ class Rule:
         raise NotImplementedError
 
     def report(
-        self, message: str = "", context: LintContext | None = None, **kwargs: Any
+        self, context: LintContext | None = None, message: str = "", **kwargs: Any
     ) -> Diagnostic:
-        """Build a diagnostic with incoming message and context.
-        `message` can be empty to enable overrides that build it from context or other inputs.
-        Thus `context` needs to have a default as well otherwise we'd need to change the order.
-        """
+        """Build a diagnostic with incoming message and context."""
         if not message.strip():
             raise ValueError("Diagnostic message cannot be empty!")
 
@@ -104,12 +101,11 @@ class Rule:
 class LintContext:
     """Everything a rule or a diagnostic needs to know about a resource being checked."""
 
-    # local, per resource context:
     resource_format: Format
-    """The `moz.l10n.formats.Format`."""
+    """The `moz.l10n.formats.Format` enum like `Format.android` or `Format.fluent`."""
 
     severity: dict[str, Severity] = field(default_factory=dict)
-    """Per-rule severity overrides, keyed by rule name."""
+    """Per-rule severity overrides, keyed by rule full-name."""
 
     def severity_of(self, rule: Rule, fallback: Severity | None = None) -> Severity:
         """The effective severity of `rule`, applying any override.
