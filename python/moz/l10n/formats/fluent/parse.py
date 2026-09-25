@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from itertools import product
 from re import finditer
 from typing import cast
@@ -238,11 +237,17 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
         msg_variants = {(): []}
 
     def add_pattern(ftl_pattern: ftl.Pattern) -> None:
-        for el in unwrap_elements(ftl_pattern):
+        el: (
+            ftl.TextElement
+            | ftl.Placeable
+            | ftl.InlineExpression
+            | ftl.SelectExpression
+        )
+        for el in ftl_pattern.elements:
+            while isinstance(el, ftl.Placeable):
+                el = el.expression
             if isinstance(el, ftl.SelectExpression):
-                msg_sel, ftl_sels, _ = next(
-                    sd for sd in sel_data if el.selector in sd[1]
-                )
+                msg_sel = next(sd for sd in sel_data if el.selector in sd[1])[0]
                 idx = sel_expressions.index(msg_sel)
                 prev_filt = filter[idx]
                 el_variants = tuple((variant_key(v)[0], v) for v in el.variants)
@@ -250,19 +255,15 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
                 key_candidates = key_lists[idx] if prev_filt is None else prev_filt
                 for var_key, variant in el_variants:
                     # A selector may be used by more than one select expression!
-                    # `key_candidates` may have keys that this expression doesn't declare.
-                    # The default variant applies for those, but only expand it to them if
-                    # it wraps a further select on this selector narrowing them down again.
-                    # Otherwise we'd duplicate default variant. CatchAll already covers it!
-                    is_expandable_default = variant.default and (
-                        prev_filt is not None
-                        or contains_selector(variant.value, ftl_sels)
-                    )
+                    # `key_candidates` may contain keys this expression doesn't declare.
+                    # The default variant applies to those missing keys so they receive
+                    # surrounding pattern text.
+                    # Redundant rows will be pruned by `select_fallback` later!
                     filter[idx] = {
                         key
                         for key in key_candidates
                         if key[0] == var_key
-                        or (is_expandable_default and key[0] not in sel_keys)
+                        or (variant.default and key[0] not in sel_keys)
                     }
                     add_pattern(variant.value)
                 filter[idx] = prev_filt
@@ -299,10 +300,15 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
             declarations[name] = expr
             selectors.append(VariableRef(name))
             var_names.add(name)
+        rows = {keys_tuple: pat for keys_tuple, pat in msg_variants.items() if pat}
+        for keys_tuple in sorted(rows, key=lambda ks: sum(k[2] for k in ks)):
+            # Check rows for redundancies when identical fallbacks appear
+            fallback = select_fallback(keys_tuple, rows)
+            if fallback is not None and fallback == rows[keys_tuple]:
+                del rows[keys_tuple]
         variants = {
             tuple(map(message_key, keys)): msg_pattern
-            for keys, msg_pattern in msg_variants.items()
-            if msg_pattern
+            for keys, msg_pattern in rows.items()
         }
         return SelectMessage(declarations, tuple(selectors), variants)
     else:
@@ -434,37 +440,6 @@ def literal_value(arg: ftl.NumberLiteral | ftl.StringLiteral) -> str:
     )
 
 
-def contains_selector(
-    pattern: ftl.Pattern, selector_expressions: list[ftl.InlineExpression]
-) -> bool:
-    """Check if a pattern contains a nested SelectExpression for a given selector."""
-    for el in unwrap_elements(pattern):
-        if not isinstance(el, ftl.SelectExpression):
-            continue
-        if el.selector in selector_expressions:
-            return True
-        for v in el.variants:
-            if contains_selector(v.value, selector_expressions):
-                return True
-    return False
-
-
-def unwrap_elements(
-    pattern: ftl.Pattern,
-) -> Iterator[ftl.TextElement | ftl.InlineExpression | ftl.SelectExpression]:
-    """Iterate over pattern elements, unwrapping Placeable expressions."""
-    for element in pattern.elements:
-        el: (
-            ftl.TextElement
-            | ftl.Placeable
-            | ftl.InlineExpression
-            | ftl.SelectExpression
-        ) = element
-        while isinstance(el, ftl.Placeable):
-            el = el.expression
-        yield el
-
-
 class LinePosMapper:
     def __init__(self, src: str) -> None:
         self._len = len(src)
@@ -485,3 +460,21 @@ class LinePosMapper:
         value_line = key_line if value == key else self._get_line(value)
         end_line = self._get_line(end)
         return LinePos(start_line, key_line, value_line, end_line)
+
+
+def select_fallback(
+    keys: tuple[Key, ...], rows: dict[tuple[Key, ...], Pattern]
+) -> Pattern | None:
+    """Get pattern that would be selected for `keys` if its own row did not exist."""
+
+    def rank(other: tuple[Key, ...]) -> tuple[int, ...]:
+        return tuple(int(o[2]) for o in other)
+
+    best = None
+    for other, pat in rows.items():
+        if other == keys:
+            continue
+        if all(o == k or o[2] for o, k in zip(other, keys)):
+            if best is None or rank(other) < rank(best[0]):
+                best = (other, pat)
+    return best[1] if best else None

@@ -1166,3 +1166,50 @@ class TestFluent(TestCase):
             """
         )
         assert "".join(fluent_serialize(fluent_parse(original))) == expected
+
+    def test_nested_selector_prunes_redundant_fallback(self):
+        original = dedent(
+            """\
+            b = Prefix { $n ->
+                [0] A { $n ->
+                    [one] x
+                   *[other] y
+                }
+               *[other] B
+              }
+            """
+        )
+        expected = dedent(
+            """\
+            b =
+                { $n ->
+                    [0] Prefix A y
+                   *[other] Prefix B
+                }
+            """
+        )
+        assert "".join(fluent_serialize(fluent_parse(original))) == expected
+
+    def test_multi_selects_same_selector(self):
+        original = dedent(
+            """\
+            a = { $n ->
+                [one] x
+               *[other] y
+              } and { $n ->
+                [0] z
+               *[other] w
+              }
+            """
+        )
+        expected = dedent(
+            """\
+            a =
+                { $n ->
+                    [0] y and z
+                    [one] x and w
+                   *[other] y and w
+                }
+            """
+        )
+        assert "".join(fluent_serialize(fluent_parse(original))) == expected
