@@ -217,13 +217,21 @@ def fluent_entry(
 def message(ftl_pattern: ftl.Pattern) -> Message:
     sel_data = find_selectors(ftl_pattern, [])
     sel_expressions = [sd[0] for sd in sel_data]
-    filter: list[Key | None] = [None] * len(sel_expressions)
+    filter: list[set[Key] | None] = [None] * len(sel_expressions)
     msg_variants: dict[tuple[Key, ...], Pattern]
     var_names: set[str] = set()
     if sel_expressions:
         key_lists = [list(dict.fromkeys(sd[2])) for sd in sel_data]
         for keys in key_lists:
-            keys.sort(key=lambda k: (k[2], not k[1]))
+            # Selects sharing a selector may declare overlapping or differing keys,
+            # but each key name maps to one variant and only one may be the catch-all.
+            # Deduplicate by name, keeping the outermost default as the catch-all.
+            default_name = next((n for n, _, d in keys if d), None)
+            by_name: dict[str, Key] = {}
+            for key_name, is_numeric, _ in keys:
+                if key_name not in by_name:
+                    by_name[key_name] = (key_name, is_numeric, key_name == default_name)
+            keys[:] = sorted(by_name.values(), key=lambda k: (k[2], not k[1]))
         msg_variants = {key: [] for key in product(*key_lists)}
     else:
         msg_variants = {(): []}
@@ -239,17 +247,30 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
             while isinstance(el, ftl.Placeable):
                 el = el.expression
             if isinstance(el, ftl.SelectExpression):
-                msg_sel = next(sd[0] for sd in sel_data if el.selector in sd[1])
+                msg_sel = next(sd for sd in sel_data if el.selector in sd[1])[0]
                 idx = sel_expressions.index(msg_sel)
                 prev_filt = filter[idx]
-                for v in el.variants:
-                    filter[idx] = variant_key(v)
-                    add_pattern(v.value)
+                el_variants = tuple((variant_key(v)[0], v) for v in el.variants)
+                sel_keys = {v[0] for v in el_variants}
+                key_candidates = key_lists[idx] if prev_filt is None else prev_filt
+                for var_key, variant in el_variants:
+                    # A selector may be used by more than one select expression!
+                    # `key_candidates` may contain keys this expression doesn't declare.
+                    # The default variant applies to those missing keys so they receive
+                    # surrounding pattern text.
+                    # Redundant rows will be pruned by `select_fallback` later!
+                    filter[idx] = {
+                        key
+                        for key in key_candidates
+                        if key[0] == var_key
+                        or (variant.default and key[0] not in sel_keys)
+                    }
+                    add_pattern(variant.value)
                 filter[idx] = prev_filt
             else:
                 for keys, msg_pattern in msg_variants.items():
                     if all(
-                        (filt is None or key == filt) for key, filt in zip(keys, filter)
+                        (filt is None or key in filt) for key, filt in zip(keys, filter)
                     ):
                         if isinstance(el, ftl.TextElement):
                             if msg_pattern and isinstance(msg_pattern[-1], str):
@@ -279,10 +300,15 @@ def message(ftl_pattern: ftl.Pattern) -> Message:
             declarations[name] = expr
             selectors.append(VariableRef(name))
             var_names.add(name)
+        rows = {keys_tuple: pat for keys_tuple, pat in msg_variants.items() if pat}
+        for keys_tuple in sorted(rows, key=lambda ks: sum(k[2] for k in ks)):
+            # Check rows for redundancies when identical fallbacks appear
+            fallback = select_fallback(keys_tuple, rows)
+            if fallback is not None and fallback == rows[keys_tuple]:
+                del rows[keys_tuple]
         variants = {
             tuple(map(message_key, keys)): msg_pattern
-            for keys, msg_pattern in msg_variants.items()
-            if msg_pattern
+            for keys, msg_pattern in rows.items()
         }
         return SelectMessage(declarations, tuple(selectors), variants)
     else:
@@ -434,3 +460,21 @@ class LinePosMapper:
         value_line = key_line if value == key else self._get_line(value)
         end_line = self._get_line(end)
         return LinePos(start_line, key_line, value_line, end_line)
+
+
+def select_fallback(
+    keys: tuple[Key, ...], rows: dict[tuple[Key, ...], Pattern]
+) -> Pattern | None:
+    """Get pattern that would be selected for `keys` if its own row did not exist."""
+
+    def rank(other: tuple[Key, ...]) -> tuple[int, ...]:
+        return tuple(int(o[2]) for o in other)
+
+    best = None
+    for other, pat in rows.items():
+        if other == keys:
+            continue
+        if all(o == k or o[2] for o, k in zip(other, keys)):
+            if best is None or rank(other) < rank(best[0]):
+                best = (other, pat)
+    return best[1] if best else None
