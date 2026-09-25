@@ -15,9 +15,9 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from os.path import commonprefix
-from typing import Any
+from typing import Any, Iterable
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
@@ -35,7 +35,7 @@ class _WhitespaceMismatch(Rule):
     _message: str = ""
     _whitespace_regex: re.Pattern[str]
 
-    def _iterate(self, object: list[Any]) -> Iterator[Any]:
+    def _iterate(self, list_object: Sequence[Any]) -> Iterator[Any]:
         raise NotImplementedError()
 
     def _get_whitespace(self, pattern: Pattern) -> str:
@@ -91,27 +91,24 @@ class _WhitespaceMismatch(Rule):
     def check(
         self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
-        src_whitespace = self._get_source_whitespace(source)
-
+        variants: Iterable[tuple[tuple[str | CatchallKey, ...], Pattern]]
         if isinstance(target, PatternMessage):
-            trg_whitespace = self._get_whitespace(target.pattern)
-            if trg_whitespace == src_whitespace:
-                return
-            yield self.report(context, self._make_msg(trg_whitespace, src_whitespace))
-            return
+            variants = [((), target.pattern)]
+        else:
+            variants = target.variants.items()
 
-        if isinstance(target, SelectMessage):
-            for keys, tgt_pattern in target.variants.items():
-                trg_whitespace = self._get_whitespace(tgt_pattern)
-                if src_whitespace == trg_whitespace:
-                    continue
-                yield self.report(
-                    context,
-                    self._make_msg(
-                        trg_whitespace, src_whitespace, _format_variant_keys(keys)
-                    ),
-                )
-            return
+        src_whitespace = self._get_source_whitespace(source)
+        for keys, trg_pattern in variants:
+            trg_whitespace = self._get_whitespace(trg_pattern)
+            if trg_whitespace == src_whitespace:
+                continue
+            yield self.report(
+                context,
+                self._make_msg(
+                    trg_whitespace, src_whitespace, _format_variant_keys(keys)
+                ),
+            )
+        return
 
     def _make_msg(
         self, trg_whitespace: str, src_whitespace: str, label: str = ""
@@ -126,9 +123,9 @@ class LeadingWhitespaceMismatch(_WhitespaceMismatch):
     _message = f"Leading{_MESSAGE}"
     _whitespace_regex = _RE_LEADING_WHITESPACE
 
-    def _iterate(self, object: list[Any]) -> Iterator[Any]:
-        """Iterate forward through given object."""
-        yield from object
+    def _iterate(self, list_object: Sequence[Any]) -> Iterator[Any]:
+        """Iterate forward through given `list_object`."""
+        yield from list_object
 
     def _get_common_whitespace(self, whitespace_list: list[str]) -> str:
         """Longest common prefix for leading whitespace."""
@@ -147,9 +144,9 @@ class TrailingWhitespaceMismatch(_WhitespaceMismatch):
             Format.gettext: Severity.ERROR
         }
 
-    def _iterate(self, object: list[Any]) -> Iterator[Any]:
-        """Iterate backwards through given object."""
-        yield from reversed(object)
+    def _iterate(self, list_object: Sequence[Any]) -> Iterator[Any]:
+        """Iterate backwards through given `list_object`."""
+        yield from reversed(list_object)
 
     def _get_common_whitespace(self, whitespace_list: list[str]) -> str:
         """Longest common suffix for trailing whitespace."""
