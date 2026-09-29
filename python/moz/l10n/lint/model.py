@@ -29,10 +29,6 @@ class Severity(str, Enum):
     WARNING = "warning"
 
 
-NAME_PATTERN = "{}.{}"
-"""To string together family and rule name this is the recommended format."""
-
-
 @dataclass
 class Diagnostic:
     """A single rule violation."""
@@ -88,7 +84,7 @@ class Rule:
         )
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.full_name = NAME_PATTERN.format(self.family, self.name)
+        self.full_name = f"{self.family}.{self.name}"
 
     def __str__(self) -> str:
         return self.full_name
