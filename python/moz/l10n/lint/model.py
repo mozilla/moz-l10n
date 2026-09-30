@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Iterator
+from typing import Any, ClassVar, Iterator
 
 from moz.l10n.formats import Format
 from moz.l10n.model import Message
@@ -56,7 +56,7 @@ class Rule:
     family: str
     full_name: str
     default_severity: Severity
-    format_severities: dict[Format, Severity]
+    format_severities: ClassVar[dict[Format, Severity]]
 
     def check(
         self, target: Message, source: Message, context: LintContext

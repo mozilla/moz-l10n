@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
-from typing import Any
+from typing import Any, ClassVar
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
@@ -31,6 +31,10 @@ class EmptyTranslation(Rule):
     name: str = "empty-translation"
     family: str = "content"
     default_severity: Severity = Severity.ERROR
+    format_severities: ClassVar[dict[Format, Severity]] = {
+        Format.fluent: Severity.WARNING,
+        Format.gettext: Severity.ERROR,
+    }
 
     def check(
         self, target: Message, source: Message, context: LintContext
@@ -78,13 +82,6 @@ class EmptyTranslation(Rule):
         if not any(all(el == "" for el in pattern) for pattern in get_patterns(target)):
             return
         yield self.report(context=context)
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.format_severities: dict[Format, Severity] = {
-            Format.fluent: Severity.WARNING,
-            Format.gettext: Severity.ERROR,
-        }
 
 
 def _has_empty_expressions(msg: Message) -> bool:
