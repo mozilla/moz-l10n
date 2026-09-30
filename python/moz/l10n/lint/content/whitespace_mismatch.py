@@ -17,7 +17,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterator, Sequence
 from os.path import commonprefix
-from typing import Any, Iterable
+from typing import Any, ClassVar, Iterable
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
@@ -134,15 +134,12 @@ class LeadingWhitespaceMismatch(_WhitespaceMismatch):
 
 class TrailingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "trailing-whitespace-mismatch"
+    format_severities: ClassVar[dict[Format, Severity]] = {
+        Format.gettext: Severity.ERROR
+    }
 
     _message = f"Trailing{_MESSAGE}"
     _whitespace_regex = _RE_TRAILING_WHITESPACE
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.format_severities: dict[Format, Severity] = {
-            Format.gettext: Severity.ERROR
-        }
 
     def _iterate(self, list_object: Sequence[Any]) -> Iterator[Any]:
         """Iterate backwards through given `list_object`."""
