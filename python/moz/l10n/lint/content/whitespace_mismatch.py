@@ -17,7 +17,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterator, Sequence
 from os.path import commonprefix
-from typing import Any, ClassVar, Iterable
+from typing import Any, ClassVar
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
@@ -36,15 +36,8 @@ class _WhitespaceMismatch(Rule):
     def check(
         self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
-        # TODO: This needs dissolving when iterable Messages arrive!
-        variants: Iterable[tuple[tuple[str | CatchallKey, ...], Pattern]]
-        if isinstance(target, PatternMessage):
-            variants = [((), target.pattern)]
-        else:
-            variants = target.variants.items()
-
         src_whitespace = self._get_source_whitespace(source)
-        for keys, trg_pattern in variants:
+        for keys, trg_pattern in target:
             trg_whitespace = self._get_whitespace(trg_pattern)
             if trg_whitespace == src_whitespace:
                 continue
@@ -56,9 +49,6 @@ class _WhitespaceMismatch(Rule):
     def _iterate(self, list_object: Sequence[Any]) -> Iterator[str]:
         """Iterate forward or backward depending on Rule implementation."""
         raise NotImplementedError()
-
-    # def _get_whitespace(self, pattern: Pattern) -> str:
-    #     raise NotImplementedError()
 
     def _get_whitespace(self, pattern: Pattern) -> str:
         """Get leading or trailing whitespace.
@@ -110,13 +100,17 @@ class _WhitespaceMismatch(Rule):
         src_whitespace: str,
         keys: tuple[str | CatchallKey, ...],
     ) -> str:
-        label = ", ".join(
-            (k.value if k.value is not None else "*")
-            if isinstance(k, CatchallKey)
-            else k
-            for k in keys
-        )
-        prefix = f"Variant [{label}]: " if label else ""
+        """Make a whitespace violation report saying under what variant it happened."""
+        if not keys:
+            prefix = ""
+        else:
+            label = ", ".join(
+                (k.value if k.value is not None else "*")
+                if isinstance(k, CatchallKey)
+                else k
+                for k in keys
+            )
+            prefix = f"Variant [{label}]: "
         return f"{prefix}{self._message} (expected {src_whitespace!r}, got {trg_whitespace!r})"
 
 
@@ -129,19 +123,6 @@ class LeadingWhitespaceMismatch(_WhitespaceMismatch):
     def _iterate(self, list_object: Sequence[Any]) -> Iterator[str]:
         """Iterate forward through given `list_object`."""
         yield from list_object
-
-    # def _get_whitespace(self, pattern: Pattern) -> str:
-    #     res = ""
-    #     for part in pattern:
-    #         if not isinstance(part, str) or (part and not part[0].isspace()):
-    #             break
-    #         res += part
-
-    #     if res and (match := self._whitespace_regex.search(res)):
-    #         if match[0] == res:
-    #             return ""
-    #         return match[0]
-    #     return ""
 
 
 class TrailingWhitespaceMismatch(_WhitespaceMismatch):
@@ -156,15 +137,3 @@ class TrailingWhitespaceMismatch(_WhitespaceMismatch):
     def _iterate(self, list_object: Sequence[Any]) -> Iterator[str]:
         """Iterate backwards through given `list_object`."""
         yield from reversed(list_object)
-
-    # def _get_whitespace(self, pattern: Pattern) -> str:
-    #     res = ""
-    #     for part in reversed(pattern):
-    #         if not isinstance(part, str) or (part and not part[-1].isspace()):
-    #             break
-    #         res = part + res
-    #     if res and (match := self._whitespace_regex.search(res)):
-    #         if match[0] == res:
-    #             return ""
-    #         return match[0]
-    #     return ""
