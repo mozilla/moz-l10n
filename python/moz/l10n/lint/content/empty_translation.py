@@ -14,12 +14,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterator
 from typing import Any, ClassVar
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
-from moz.l10n.model import Expression, Message, Pattern, PatternMessage
+from moz.l10n.model import Expression, Message
 
 ALLOWED_SEVERITY: Severity = Severity.WARNING
 """Severity used when translations may be empty."""
@@ -49,16 +49,8 @@ class EmptyTranslation(Rule):
         if source.is_empty():
             return
 
-        if target.is_empty():
-            yield self.report(context=context)
-            return
-
-        if context.resource_format is Format.gettext:
-            yield from self._check_any_variant(target, context)
-            return
-
-        if _has_empty_expressions(target):
-            yield self.report(context=context)
+        if _has_all_empty_pattern(target):
+            yield self.report(context)
 
     def report(
         self, context: LintContext | None = None, message: str = "", **kwargs: Any
@@ -69,42 +61,30 @@ class EmptyTranslation(Rule):
         message = NOT_ALLOWED_MESSAGE if severity is Severity.ERROR else ALLOWED_MESSAGE
         return super().report(context, message)
 
-    def _check_any_variant(
-        self, target: Message, context: LintContext
-    ) -> Iterator[Diagnostic]:
-        """
-        Report a parsed translation with at least one empty pattern.
 
-        Stricter check for `Format.gettext`: every plural form ends up in
-        the same file and an empty one reads as untranslated, so a single blank
-        variant is enough to flag.
-        """
-        if not any(all(el == "" for el in pattern) for pattern in get_patterns(target)):
-            return
-        yield self.report(context=context)
+def _has_all_empty_pattern(msg: Message) -> bool:
+    """Return `True` if ALL elements in ANY of the patterns are empty.
+    "Empty" is str == "" and empty expressions.
 
-
-def _has_empty_expressions(msg: Message) -> bool:
-    """Return `True` if ALL elements in a pattern are empty.
-    Empty expressions elements are considered empty as well.
-    `PatternMessages` have only one pattern and `SelectMessages` may have multiple.
+    Looping over the elements of a pattern:
+    * break the loop as soon as a non-empty was found
+    * else: not breaking : all elements were empty in THIS pattern!
+    * not returned already : all patterns were not entirely empty.
     """
-    for pattern in get_patterns(msg):
+    for _, pattern in msg:
+        if not pattern:
+            return True
+
         for elem in pattern:
+            if isinstance(elem, str) and elem != "":
+                break
             if not isinstance(elem, Expression):
                 continue
             # Skip in case elem.arg is valid str or VariableRef argument:
             if getattr(elem.arg, "name", elem.arg):
-                continue
-            if not any(elem.variable_refs()):
-                return True
+                break
+            if any(elem.variable_refs()):
+                break
+        else:
+            return True
     return False
-
-
-def get_patterns(msg: Message) -> Iterable[Pattern]:
-    """Yield every pattern of `msg`;
-    * one for a `PatternMessage`
-    * all variants for `SelectMessage`.
-    TODO: Remove as soon as iterable Messages are in!
-    """
-    return (msg.pattern,) if isinstance(msg, PatternMessage) else msg.variants.values()

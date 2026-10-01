@@ -209,7 +209,7 @@ class TestEmpty:
         assert run_custom_checks(
             po_entity, ".input {$n :number} .match $n 1 {{}} * {{other}}"
         ) == {"pErrors": empty_error + plural_error}
-        assert run_custom_checks(po_entity, "{{{||}}}") == {}
+        assert run_custom_checks(po_entity, "{{{||}}}") == {"pErrors": empty_error}
 
         assert run_custom_checks(
             mock_entity("fluent", string="key = value", allows_empty_translations=True),
