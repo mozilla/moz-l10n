@@ -486,6 +486,172 @@ describe('entry', () => {
   fail('missing expression end', 'key = missing {', 'E0028')
   fail('missing expression body', 'key = missing {}\n', 'E0028')
 
+  ok(
+    'nested-variants',
+    ftl`
+    nested-variants =
+        { $retryAfter ->
+            [0] Slow down.
+           *[other] Try again in { NUMBER($retryAfter) } { $retryAfter ->
+                [one] second
+               *[other] seconds
+            }.
+        }
+
+    `,
+    {
+      '=': {
+        decl: { retryAfter: { $: 'retryAfter', fn: 'number' } },
+        sel: ['retryAfter'],
+        alt: [
+          { keys: ['0'], pat: ['Slow down.'] },
+          {
+            keys: [{ '*': 'other' }],
+            pat: [
+              'Try again in ',
+              {
+                $: 'retryAfter',
+                fn: 'number',
+                attr: { 'fluent-fn': 'NUMBER' }
+              },
+              ' seconds.'
+            ]
+          },
+          {
+            keys: ['one'],
+            pat: [
+              'Try again in ',
+              {
+                $: 'retryAfter',
+                fn: 'number',
+                attr: { 'fluent-fn': 'NUMBER' }
+              },
+              ' second.'
+            ]
+          }
+        ]
+      }
+    },
+    ftl`
+    nested-variants =
+        { $retryAfter ->
+            [0] Slow down.
+           *[other] Try again in { NUMBER($retryAfter) } seconds.
+            [one] Try again in { NUMBER($retryAfter) } second.
+        }
+
+    `
+  )
+
+  ok(
+    'nested-in-non-default',
+    ftl`
+    nested-in-non-default =
+        { $retryAfter ->
+            [one] Wait { $retryAfter ->
+                [0] no time at all
+               *[other] a moment
+            }, please.
+           *[other] Please wait.
+        }
+
+    `,
+    {
+      '=': {
+        decl: { retryAfter: { $: 'retryAfter', fn: 'number' } },
+        sel: ['retryAfter'],
+        alt: [
+          { keys: ['one'], pat: ['Wait a moment, please.'] },
+          { keys: [{ '*': 'other' }], pat: ['Please wait.'] }
+        ]
+      }
+    },
+    ftl`
+    nested-in-non-default =
+        { $retryAfter ->
+            [one] Wait a moment, please.
+           *[other] Please wait.
+        }
+
+    `
+  )
+
+  ok(
+    'nested-siblings',
+    ftl`
+    nested-siblings =
+        { $count ->
+            [0] No items.
+           *[other] { $count ->
+                [one] One item
+               *[other] { $count } items
+            } found in { $count ->
+                [one] one folder
+               *[other] several folders
+            }.
+        }
+
+    `,
+    {
+      '=': {
+        decl: { count: { $: 'count', fn: 'number' } },
+        sel: ['count'],
+        alt: [
+          { keys: ['0'], pat: ['No items.'] },
+          {
+            keys: [{ '*': 'other' }],
+            pat: [{ $: 'count' }, ' items found in several folders.']
+          },
+          { keys: ['one'], pat: ['One item found in one folder.'] }
+        ]
+      }
+    },
+    ftl`
+    nested-siblings =
+        { $count ->
+            [0] No items.
+           *[other] { $count } items found in several folders.
+            [one] One item found in one folder.
+        }
+
+    `
+  )
+
+  // The outer *[1] is the only catch-all: its pattern must survive,
+  // even though the inner select declares a different default key.
+  ok(
+    'differing-defaults',
+    ftl`
+    differing-defaults =
+        { $n ->
+            [one] One { $n ->
+                [two] Two
+               *[one] Nested one
+            }
+           *[1] Fallback
+        }
+
+    `,
+    {
+      '=': {
+        decl: { n: { $: 'n', fn: 'number' } },
+        sel: ['n'],
+        alt: [
+          { keys: ['one'], pat: ['One Nested one'] },
+          { keys: [{ '*': '1' }], pat: ['Fallback'] }
+        ]
+      }
+    },
+    ftl`
+    differing-defaults =
+        { $n ->
+            [one] One Nested one
+           *[1] Fallback
+        }
+
+    `
+  )
+
   test('serialize variable reference to declaration', () => {
     const msg: Message = {
       decl: {

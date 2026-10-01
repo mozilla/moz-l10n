@@ -94,56 +94,70 @@ type SelectorResultRow = {
 function message(ftlPattern: FTL.Pattern): Message {
   const selData = findSelectors(ftlPattern, [])
   const selExpressions = selData.map((row) => row.msgSel)
+  const keyLists = selData.map(uniqueKeys)
   let msgVariants: [Key[], Pattern][]
   const varNames = new Set<string>()
-  switch (selExpressions.length) {
+  switch (keyLists.length) {
     case 0:
       msgVariants = [[[], []]]
       break
     case 1:
-      msgVariants = uniqueKeys(selData[0]).map((key) => [[key], []])
+      msgVariants = keyLists[0].map((key) => [[key], []])
       break
     default: {
       // With multiple selectors, for each selector,
       // ensure that a row of keys exists with each of its values in its key column,
       // combined with each value of all other selectors.
       // Effectively this involves a cross product of two vectors.
-      const selKeyValues = selData.map(uniqueKeys)
       // @ts-expect-error TS doesn't support this (valid) reduce variant
-      const keyMatrix = selKeyValues.reduce((res: Key[] | Key[][], selKeys) =>
+      const keyMatrix = keyLists.reduce((res: Key[] | Key[][], selKeys) =>
         res.flatMap((prev) => selKeys.map((key) => [prev, key].flat()))
       ) as Key[][]
       msgVariants = keyMatrix.map((keys) => [keys, []])
     }
   }
 
-  const filter: (Key | undefined)[] = new Array(selExpressions.length)
+  const filter: (Set<Key> | undefined)[] = new Array(selExpressions.length)
 
   function addPattern(ftlPattern: FTL.Pattern) {
-    let el:
-      | FTL.TextElement
-      | FTL.Placeable
-      | FTL.InlineExpression
-      | FTL.SelectExpression
-    for (el of ftlPattern.elements) {
-      while (el instanceof FTL.Placeable) el = el.expression
+    for (const el of unwrapElements(ftlPattern)) {
       if (el instanceof FTL.SelectExpression) {
         const ftlSel = el.selector
-        const msgSel = selData.find((row) =>
+        const { msgSel, ftlSelectors } = selData.find((row) =>
           row.ftlSelectors.includes(ftlSel)
-        )!.msgSel
+        )!
         const idx = selExpressions.indexOf(msgSel)
         const prevFilt = filter[idx]
-        for (const v of el.variants) {
-          filter[idx] = variantKey(v)
-          addPattern(v.value)
+        const elVariants = el.variants.map(
+          (v) => [variantKey(v).name, v] as const
+        )
+        const selKeys = new Set(elVariants.map(([name]) => name))
+        const keyCandidates = prevFilt ?? keyLists[idx]
+        for (const [varKey, variant] of elVariants) {
+          // A selector may be used by more than one select expression!
+          // `keyCandidates` may have keys that this expression doesn't declare.
+          // The default variant applies for those, but only expand it to them if
+          // it wraps a further select on this selector narrowing them down again.
+          // Otherwise we'd duplicate default variant. CatchAll already covers it!
+          const isExpandableDefault =
+            variant.default &&
+            (prevFilt !== undefined ||
+              containsSelector(variant.value, ftlSelectors))
+          filter[idx] = new Set(
+            Array.from(keyCandidates).filter(
+              (key) =>
+                key.name === varKey ||
+                (isExpandableDefault && !selKeys.has(key.name))
+            )
+          )
+          addPattern(variant.value)
         }
         filter[idx] = prevFilt
       } else {
         for (const [keys, pat] of msgVariants) {
           if (
             filter.every(
-              (filt, idx) => filt === undefined || keysEqual(filt, keys[idx])
+              (filt, idx) => filt === undefined || filt.has(keys[idx])
             )
           ) {
             if (el instanceof FTL.TextElement) {
@@ -222,17 +236,51 @@ function findSelectors(
 }
 
 function uniqueKeys({ keys }: SelectorResultRow): Key[] {
-  const res: Key[] = []
-  for (const key of keys) {
-    if (res.every((prev) => !keysEqual(prev, key))) res.push(key)
+  // Selects sharing a selector may declare overlapping or differing keys,
+  // but each key name maps to one variant and only one may be the catch-all.
+  // Deduplicate by name, keeping the outermost default as the catch-all.
+  const defaultName = keys.find((key) => key.isDefault)?.name
+  const byName = new Map<string, Key>()
+  for (const { name, isNumeric } of keys) {
+    if (!byName.has(name)) {
+      byName.set(name, { name, isNumeric, isDefault: name === defaultName })
+    }
   }
-  return res
+  return Array.from(byName.values())
 }
 
-const keysEqual = (a: Key, b: Key) =>
-  a.name === b.name &&
-  a.isDefault === b.isDefault &&
-  a.isNumeric === b.isNumeric
+/** Check if a pattern contains a nested SelectExpression for a given selector. */
+function containsSelector(
+  pattern: FTL.Pattern,
+  selectorExpressions: FTL.InlineExpression[]
+): boolean {
+  for (const el of unwrapElements(pattern)) {
+    if (!(el instanceof FTL.SelectExpression)) continue
+    if (selectorExpressions.includes(el.selector)) return true
+    for (const v of el.variants) {
+      if (containsSelector(v.value, selectorExpressions)) return true
+    }
+  }
+  return false
+}
+
+/** Iterate over pattern elements, unwrapping Placeable expressions. */
+function* unwrapElements(
+  pattern: FTL.Pattern
+): Generator<
+  FTL.TextElement | FTL.InlineExpression | FTL.SelectExpression,
+  void
+> {
+  for (const element of pattern.elements) {
+    let el:
+      | FTL.TextElement
+      | FTL.Placeable
+      | FTL.InlineExpression
+      | FTL.SelectExpression = element
+    while (el instanceof FTL.Placeable) el = el.expression
+    yield el
+  }
+}
 
 const exprEqual = (a: Expression, b: Expression) =>
   a.$ === b.$ &&
