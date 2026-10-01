@@ -47,5 +47,3 @@ class PluralSourceRequired(Rule):
 
         if isinstance(target, SelectMessage) != isinstance(source, SelectMessage):
             yield self.report(context, MESSAGE)
-
-        return
