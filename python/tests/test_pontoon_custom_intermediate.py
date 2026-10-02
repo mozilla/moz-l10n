@@ -24,8 +24,7 @@ from moz.l10n.lint.model import Diagnostic, LintContext, Severity
 from moz.l10n.model import Entry, Message, PatternMessage, SelectMessage
 
 RULES = (
-    content.LeadingWhitespaceMismatch(),
-    content.TrailingWhitespaceMismatch(),
+    content.WhitespaceMismatch(),
     content.EmptyTranslation(),
     structure.PluralSourceRequired(),
 )
