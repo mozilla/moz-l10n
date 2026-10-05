@@ -44,9 +44,8 @@ class EmptyTranslation(Rule):
 
         If `source` is empty nothing is reported here.
         On `Format.gettext` this trips for any variant being empty.
-        If empty translation are allowed report downgrades to warning.
         """
-        if source.is_empty():
+        if _has_all_empty_pattern(source):
             return
 
         if _has_all_empty_pattern(target):
@@ -72,9 +71,6 @@ def _has_all_empty_pattern(msg: Message) -> bool:
     * not returned already : all patterns were not entirely empty.
     """
     for _, pattern in msg:
-        if not pattern:
-            return True
-
         for elem in pattern:
             if isinstance(elem, str) and elem != "":
                 break

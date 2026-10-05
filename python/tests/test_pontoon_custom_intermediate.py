@@ -282,6 +282,58 @@ class TestEmpty:
             == {}
         )
 
+    def test_empty_source(self):
+        """Test properly exiting check source having empty patterns
+        when target should yield a report.
+        """
+        target = 'key = {""}\n  .attr = value'
+        source = """key =
+        { $var ->
+            [a] { "" }
+            *[b] { "" }
+        }
+        .attr = { "" }
+        """
+        assert (
+            run_custom_checks(mock_entity("fluent", string=source), target) == {}
+        )
+
+        target = 'key = NotEmpty\n  .attr = { "" }'
+        source = """key =
+        { $var ->
+            [a] { "x" }
+            *[b] { "y" }
+        }
+        .attr = { "" }
+        """
+        assert (
+            run_custom_checks(mock_entity("fluent", string=source), target) == {}
+        )
+
+        target = 'key = { "" }\n  .attr = value'
+        source = """key =
+        { $var ->
+            [a] { "x" }
+            *[b] { "" }
+        }
+        .attr = { "y" }
+        """
+        assert (
+            run_custom_checks(mock_entity("fluent", string=source), target) == {}
+        )
+
+        target = 'key = NotEmpty\n  .attr = value'
+        source = """key =
+        { $var ->
+            [a] { "x" }
+            *[b] { "y" }
+        }
+        .attr = { "z" }
+        """
+        assert (
+            run_custom_checks(mock_entity("fluent", string=source), target) == {}
+        )
+
 
 def test_android_simple():
     assert run_custom_checks(mock_entity("android", string="source"), "target") == {}
