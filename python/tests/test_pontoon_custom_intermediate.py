@@ -294,9 +294,7 @@ class TestEmpty:
         }
         .attr = { "" }
         """
-        assert (
-            run_custom_checks(mock_entity("fluent", string=source), target) == {}
-        )
+        assert run_custom_checks(mock_entity("fluent", string=source), target) == {}
 
         target = 'key = NotEmpty\n  .attr = { "" }'
         source = """key =
@@ -306,9 +304,7 @@ class TestEmpty:
         }
         .attr = { "" }
         """
-        assert (
-            run_custom_checks(mock_entity("fluent", string=source), target) == {}
-        )
+        assert run_custom_checks(mock_entity("fluent", string=source), target) == {}
 
         target = 'key = { "" }\n  .attr = value'
         source = """key =
@@ -318,11 +314,9 @@ class TestEmpty:
         }
         .attr = { "y" }
         """
-        assert (
-            run_custom_checks(mock_entity("fluent", string=source), target) == {}
-        )
+        assert run_custom_checks(mock_entity("fluent", string=source), target) == {}
 
-        target = 'key = NotEmpty\n  .attr = value'
+        target = "key = NotEmpty\n  .attr = value"
         source = """key =
         { $var ->
             [a] { "x" }
@@ -330,9 +324,7 @@ class TestEmpty:
         }
         .attr = { "z" }
         """
-        assert (
-            run_custom_checks(mock_entity("fluent", string=source), target) == {}
-        )
+        assert run_custom_checks(mock_entity("fluent", string=source), target) == {}
 
 
 def test_android_simple():
