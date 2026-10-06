@@ -37,6 +37,7 @@ class PluralSourceRequired(Rule):
         * **Fluent** and **mf2** are not checked.
         * For **gettext** it's OK to have a `PatternMessage` when the source is `SelectMessage`.
         """
+        # TODO post-py39: should be a match
         if context.resource_format in (Format.fluent, Format.mf2):
             return
 
