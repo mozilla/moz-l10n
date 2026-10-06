@@ -53,24 +53,33 @@ def parse_message(
 
     To parse an `xliff` message with XCode customizations, enable `xliff_is_xcode`.
     """
-    # TODO post-py38: should be a match
-    if format == Format.properties:
-        return properties_parse_message(source, printf_placeholders=printf_placeholders)
-    elif format == Format.webext:
-        return webext_parse_message(source, webext_placeholders)
-    elif format == Format.android:
-        if android_parse_message is None:
-            raise UnsupportedFormat("Parsing Android messages requires [xml] extra")
-        return android_parse_message(source, ascii_spaces=android_ascii_spaces)
-    elif format == Format.xliff:
-        if xliff_parse_message is None:
-            raise UnsupportedFormat("Parsing XLIFF messages requires [xml] extra")
-        return xliff_parse_message(source, is_xcode=xliff_is_xcode)
-    elif format == Format.mf2:
-        return mf2_parse_message(source)
-    elif format == Format.fluent:
-        return fluent_parse_message(source)
-    elif printf_placeholders:
-        return PatternMessage(list(parse_printf_pattern(source)))
-    else:
-        return PatternMessage([source] if source else [])
+    match format:
+        case Format.properties:
+            return properties_parse_message(
+                source, printf_placeholders=printf_placeholders
+            )
+
+        case Format.webext:
+            return webext_parse_message(source, webext_placeholders)
+
+        case Format.android:
+            if android_parse_message is None:
+                raise UnsupportedFormat("Parsing Android messages requires [xml] extra")
+            return android_parse_message(source, ascii_spaces=android_ascii_spaces)
+
+        case Format.xliff:
+            if xliff_parse_message is None:
+                raise UnsupportedFormat("Parsing XLIFF messages requires [xml] extra")
+            return xliff_parse_message(source, is_xcode=xliff_is_xcode)
+
+        case Format.mf2:
+            return mf2_parse_message(source)
+
+        case Format.fluent:
+            return fluent_parse_message(source)
+
+        case _ if printf_placeholders:
+            return PatternMessage(list(parse_printf_pattern(source)))
+
+        case _:
+            return PatternMessage([source] if source else [])

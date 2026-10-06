@@ -49,37 +49,50 @@ def serialize_message(
     """
     if isinstance(msg, list):
         msg = PatternMessage(msg)
-    # TODO post-py38: should be a match
-    if format == Format.properties:
-        return properties_serialize_message(msg)
-    elif format == Format.webext:
-        # Placeholders are discarded
-        return webext_serialize_message(msg)[0]
-    elif format == Format.android:
-        if android_serialize_message is None:
-            raise UnsupportedFormat("Serializing Android messages requires [xml] extra")
-        return android_serialize_message(msg)
-    elif format == Format.xliff:
-        if xliff_serialize_message is None:
-            raise UnsupportedFormat("Serializing XLIFF messages requires [xml] extra")
-        return xliff_serialize_message(msg)
-    elif format == Format.mf2:
-        return mf2_serialize_message(msg)
-    elif format == Format.fluent:
-        return fluent_serialize_message(
-            msg, escape_empty=fluent_escape_empty, escape_syntax=fluent_escape_syntax
-        )
-    elif not isinstance(msg, PatternMessage) or msg.declarations:
-        raise ValueError(f"Unsupported message: {msg}")
-    else:
-        res = ""
-        for part in msg.pattern:
-            if isinstance(part, str):
-                res += part
-            else:
-                part_source = part.attributes.get("source", None)
-                if isinstance(part_source, str):
-                    res += part_source
+    match format:
+        case Format.properties:
+            return properties_serialize_message(msg)
+
+        case Format.webext:
+            # Placeholders are discarded
+            return webext_serialize_message(msg)[0]
+
+        case Format.android:
+            if android_serialize_message is None:
+                raise UnsupportedFormat(
+                    "Serializing Android messages requires [xml] extra"
+                )
+            return android_serialize_message(msg)
+
+        case Format.xliff:
+            if xliff_serialize_message is None:
+                raise UnsupportedFormat(
+                    "Serializing XLIFF messages requires [xml] extra"
+                )
+            return xliff_serialize_message(msg)
+
+        case Format.mf2:
+            return mf2_serialize_message(msg)
+
+        case Format.fluent:
+            return fluent_serialize_message(
+                msg,
+                escape_empty=fluent_escape_empty,
+                escape_syntax=fluent_escape_syntax,
+            )
+
+        case _ if not isinstance(msg, PatternMessage) or msg.declarations:
+            raise ValueError(f"Unsupported message: {msg}")
+
+        case _:
+            res = ""
+            for part in msg.pattern:
+                if isinstance(part, str):
+                    res += part
                 else:
-                    raise ValueError(f"Unsupported placeholder: {part}")
-        return res
+                    part_source = part.attributes.get("source", None)
+                    if isinstance(part_source, str):
+                        res += part_source
+                    else:
+                        raise ValueError(f"Unsupported placeholder: {part}")
+            return res
