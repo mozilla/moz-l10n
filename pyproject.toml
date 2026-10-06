@@ -31,7 +31,7 @@ ignore_missing_imports = true
 exclude = ["python/README.md"]
 
 [tool.ruff.lint]
-allowed-confusables = ["\u00a0"]
+allowed-confusables = [" "]
 select = [
   "E",   # pycodestyle errors
   "W",   # pycodestyle warnings

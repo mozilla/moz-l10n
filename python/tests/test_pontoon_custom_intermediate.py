@@ -21,7 +21,7 @@ from unittest.mock import MagicMock
 from moz.l10n.formats import Format, fluent, mf2
 from moz.l10n.lint import content, structure
 from moz.l10n.lint.model import Diagnostic, LintContext, Severity
-from moz.l10n.model import Entry, Message, PatternMessage, SelectMessage
+from moz.l10n.model import Entry, Message
 
 RULES = (
     content.EmptyTranslation(),
@@ -349,11 +349,7 @@ def _iter_target_source(
     We have fluent examples like `key = something` which is more than a `Message`!
     Messages don't have a key/`id`.
     """
-    # Cannot use `isinstance(target, Message)` because of Python 3.9 (rip)
-    # `TypeError: Subscripted generics cannot be used with class and instance checks`
-    message_types = PatternMessage, SelectMessage
-
-    if isinstance(target, message_types) and isinstance(source, message_types):
+    if isinstance(target, Message) and isinstance(source, Message):
         yield target, source, None
         return
 
@@ -364,7 +360,7 @@ def _iter_target_source(
             list(target.properties) + list(source.properties)
         ):
             trg, src = target.properties.get(attr_key), source.properties.get(attr_key)
-            if not isinstance(trg, message_types) or not isinstance(src, message_types):
+            if not isinstance(trg, Message) or not isinstance(src, Message):
                 continue
             yield trg, src, attr_key
         return
