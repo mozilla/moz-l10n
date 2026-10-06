@@ -232,7 +232,7 @@ class TestEmpty:
             """key =
                 { $var ->
                     [a] { "" }
-                    *[b] { "" }
+                   *[b] { "" }
                 }
                 .attr = { "" }
                 """,
@@ -247,7 +247,7 @@ class TestEmpty:
             """key =
                 { $var ->
                     [a] { "x" }
-                    *[b] { "y" }
+                   *[b] { "y" }
                 }
                 .attr = { "" }
                 """,
@@ -262,7 +262,7 @@ class TestEmpty:
             """key =
                 { $var ->
                     [a] { "x" }
-                    *[b] { "" }
+                   *[b] { "" }
                 }
                 .attr = { "y" }
                 """,
@@ -274,7 +274,7 @@ class TestEmpty:
                 """key =
                 { $var ->
                     [a] { "x" }
-                    *[b] { "y" }
+                   *[b] { "y" }
                 }
                 .attr = { "z" }
                 """,
@@ -290,7 +290,7 @@ class TestEmpty:
         source = """key =
         { $var ->
             [a] { "" }
-            *[b] { "" }
+           *[b] { "" }
         }
         .attr = { "" }
         """
@@ -300,7 +300,7 @@ class TestEmpty:
         source = """key =
         { $var ->
             [a] { "x" }
-            *[b] { "y" }
+           *[b] { "y" }
         }
         .attr = { "" }
         """
@@ -310,7 +310,7 @@ class TestEmpty:
         source = """key =
         { $var ->
             [a] { "x" }
-            *[b] { "" }
+           *[b] { "" }
         }
         .attr = { "y" }
         """
@@ -320,11 +320,42 @@ class TestEmpty:
         source = """key =
         { $var ->
             [a] { "x" }
-            *[b] { "y" }
+           *[b] { "y" }
         }
         .attr = { "z" }
         """
         assert run_custom_checks(mock_entity("fluent", string=source), target) == {}
+
+    def test_empty_markup(self):
+        assert (
+            run_custom_checks(mock_entity("mf2", string="not empty"), "{#b}{/b}") == {}
+        )
+
+    def test_non_empty_expressions(self):
+        assert (
+            run_custom_checks(mock_entity("mf2", string="Source text"), "{$user}") == {}
+        )
+
+        assert (
+            run_custom_checks(mock_entity("mf2", string="Source text"), "{:datetime}")
+            == {}
+        )
+
+        assert (
+            run_custom_checks(
+                mock_entity("fluent", string="key = Source text"),
+                "key = { NUMBER($count, minimumFractionDigits: 2) }",
+            )
+            == {}
+        )
+
+        assert (
+            run_custom_checks(
+                mock_entity("fluent", string="key = Source text"),
+                'key = {"valid content"}',
+            )
+            == {}
+        )
 
 
 def test_android_simple():

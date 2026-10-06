@@ -19,7 +19,7 @@ from typing import Any, ClassVar
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
-from moz.l10n.model import Expression, Message
+from moz.l10n.model import Expression, Markup, Message
 
 ALLOWED_SEVERITY: Severity = Severity.WARNING
 """Severity used when translations may be empty."""
@@ -62,25 +62,25 @@ class EmptyTranslation(Rule):
 
 
 def _has_all_empty_pattern(msg: Message) -> bool:
-    """Return `True` if ALL elements in ANY of the patterns are empty.
-    "Empty" is str == "" and empty expressions.
+    """Return `True` if ALL elements in ANY of the patterns are empty."""
+    return any(all(_is_empty_element(el) for el in pattern) for _, pattern in msg)
 
-    Looping over the elements of a pattern:
-    * break the loop as soon as a non-empty was found
-    * else: not breaking : all elements were empty in THIS pattern!
-    * not returned already : all patterns were not entirely empty.
+
+def _is_empty_element(element: str | Expression | Markup) -> bool:
+    """Report `True`/`False` for empty pattern element.
+    "Empty" are strings == "" and empty expressions.
+    Only whitespace strings are NOT considered empty as well as
+    `Expression` with any function or non empty arg.
     """
-    for _, pattern in msg:
-        for elem in pattern:
-            if isinstance(elem, str) and elem != "":
-                break
-            if not isinstance(elem, Expression):
-                continue
-            # Skip in case elem.arg is valid str or VariableRef argument:
-            if getattr(elem.arg, "name", elem.arg):
-                break
-            if any(elem.variable_refs()):
-                break
-        else:
-            return True
+    if isinstance(element, str):
+        return element == ""
+    if isinstance(element, Expression):
+        # No need to check Expression.options or .attributes explicitly!
+        # They'd be covered here already.
+        if element.function is not None:
+            return False
+        if element.arg is not None and element.arg != "":
+            return False
+        return True
+    # Any other i.e. `Markup` is not empty.
     return False
