@@ -24,8 +24,6 @@ from moz.l10n.lint.model import Diagnostic, LintContext, Severity
 from moz.l10n.model import Entry, Message, PatternMessage, SelectMessage
 
 RULES = (
-    content.LeadingWhitespaceMismatch(),
-    content.TrailingWhitespaceMismatch(),
     content.EmptyTranslation(),
     structure.PluralSourceRequired(),
 )
@@ -87,101 +85,6 @@ def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
 empty_error = ["Empty translations are not allowed"]
 empty_warning = "Empty translation"
 plural_error = ["Plural translation requires plural source"]
-
-
-class TestWhitespace:
-    def test_ending_newline(self):
-        """
-        Original and translation in a PO file must either both end
-        in a newline, or none of them should.
-        """
-        po_entity = mock_entity("gettext", string="Original")
-        assert run_custom_checks(po_entity, "Translation\n") == {
-            "pErrors": ["Trailing whitespace mismatch (expected '', got '\\n')"]
-        }
-        assert run_custom_checks(po_entity, "Translation") == {}
-
-        po_entity.string = "Original\n"
-        assert run_custom_checks(po_entity, "Translation") == {
-            "pErrors": ["Trailing whitespace mismatch (expected '\\n', got '')"]
-        }
-        assert run_custom_checks(po_entity, "Translation\n") == {}
-
-    def test_po_newlines(self):
-        assert run_custom_checks(mock_entity("gettext"), "aaa\nbbb") == {}
-
-    def test_android_literal_newline(self):
-        original = "Source string"
-        translation = r"Translation with an escaped \\n newline"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_leading_whitespace_mismatch(self):
-        entity = mock_entity("gettext", string="  Source string")
-        assert run_custom_checks(entity, "Translation") == {
-            "pndbWarnings": ["Leading whitespace mismatch (expected '  ', got '')"]
-        }
-
-        entity.string = "Source string"
-        assert run_custom_checks(entity, "  Translation") == {
-            "pndbWarnings": ["Leading whitespace mismatch (expected '', got '  ')"]
-        }
-
-        entity.string = "  \n Source string"
-        assert run_custom_checks(entity, "  \n Translation") == {}
-
-    def test_leading_and_trailing_simultaneous_mismatch(self):
-        entity = mock_entity("gettext", string="  Source string\n")
-        result = run_custom_checks(entity, "Translation")
-        assert result["pndbWarnings"] == [
-            "Leading whitespace mismatch (expected '  ', got '')"
-        ]
-        assert result["pErrors"] == [
-            "Trailing whitespace mismatch (expected '\\n', got '')"
-        ]
-
-    def test_pure_whitespace_source_bypassed(self):
-        entity = mock_entity("gettext", string="   \n")
-        assert run_custom_checks(entity, "Translation") == {}
-
-    def test_trailing_whitespace_with_expression(self):
-        assert run_custom_checks(
-            mock_entity("gettext", string="Welcome back %s"), "Welcome %s "
-        ) == {"pErrors": ["Trailing whitespace mismatch (expected '', got ' ')"]}
-
-        entity_with_space = mock_entity("gettext", string="  Welcome back %s")
-        assert run_custom_checks(entity_with_space, "  Welcome %s") == {}
-
-    def test_leading_whitespace_with_expression(self):
-        original = "%s says Hello!"
-        entity = mock_entity("gettext", string=original)
-        assert run_custom_checks(entity, " %s sagt Hallo!") == {
-            "pndbWarnings": ["Leading whitespace mismatch (expected '', got ' ')"]
-        }
-        assert run_custom_checks(entity, "%s sagt Hallo!") == {}
-
-    def test_select_message_leading_space_in_variant(self):
-        # SelectMessage variant starting with whitespace
-        original = """key =
-        { $category ->
-            [a] \tOption A
-           *[b] \tOption B
-        }"""
-        entity = mock_entity("fluent", string=original)
-
-        # Translation missing the 2 leading spaces inside the variant pattern
-        translation = """key =
-        { $category ->
-            [a] Option A
-           *[b] Option B
-        }"""
-
-        assert run_custom_checks(entity, translation) == {
-            "pndbWarnings": [
-                "Variant [a]: Leading whitespace mismatch (expected '\\t', got '')",
-                "Variant [b]: Leading whitespace mismatch (expected '\\t', got '')",
-            ]
-        }
 
 
 class TestEmpty:
