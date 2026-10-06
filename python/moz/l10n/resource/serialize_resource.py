@@ -57,34 +57,47 @@ def serialize_resource(
     With `trim_comments`,
     all standalone and attached comments are left out of the serialization.
     """
-    # TODO post-py38: should be a match
     if not format:
         format = resource.format
-    if format == Format.dtd:
-        return dtd_serialize(resource, trim_comments=trim_comments)
-    elif format == Format.fluent:
-        return fluent_serialize(
-            resource, escape_syntax=fluent_escape_syntax, trim_comments=trim_comments
-        )
-    elif format == Format.gettext:
-        return gettext_serialize(
-            resource, plurals=gettext_plurals, trim_comments=trim_comments
-        )
-    elif format == Format.inc:
-        return inc_serialize(resource, trim_comments=trim_comments)
-    elif format == Format.ini:
-        return ini_serialize(resource, trim_comments=trim_comments)
-    elif format == Format.plain_json:
-        return plain_json_serialize(resource, trim_comments=trim_comments)
-    elif format == Format.properties:
-        return properties_serialize(resource, trim_comments=trim_comments)
-    elif format == Format.webext:
-        return webext_serialize(resource, trim_comments=trim_comments)
-    elif format == Format.android and android_serialize is not None:
-        return android_serialize(resource, trim_comments)
-    elif format == Format.xliff and xliff_serialize is not None:
-        return xliff_serialize(
-            resource, trim_comments, source_entries=xliff_source_entries
-        )
-    else:
-        raise ValueError(f"Unsupported resource format: {format or resource.format}")
+
+    match format:
+        case Format.dtd:
+            return dtd_serialize(resource, trim_comments=trim_comments)
+
+        case Format.fluent:
+            return fluent_serialize(
+                resource,
+                escape_syntax=fluent_escape_syntax,
+                trim_comments=trim_comments,
+            )
+
+        case Format.gettext:
+            return gettext_serialize(
+                resource, plurals=gettext_plurals, trim_comments=trim_comments
+            )
+
+        case Format.inc:
+            return inc_serialize(resource, trim_comments=trim_comments)
+
+        case Format.ini:
+            return ini_serialize(resource, trim_comments=trim_comments)
+
+        case Format.plain_json:
+            return plain_json_serialize(resource, trim_comments=trim_comments)
+
+        case Format.properties:
+            return properties_serialize(resource, trim_comments=trim_comments)
+
+        case Format.webext:
+            return webext_serialize(resource, trim_comments=trim_comments)
+
+        case Format.android if android_serialize is not None:
+            return android_serialize(resource, trim_comments)
+
+        case Format.xliff if xliff_serialize is not None:
+            return xliff_serialize(
+                resource, trim_comments, source_entries=xliff_source_entries
+            )
+
+        case _:
+            raise ValueError(f"Unsupported resource format: {format}")
