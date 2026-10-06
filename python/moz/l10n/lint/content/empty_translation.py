@@ -67,20 +67,13 @@ def _has_all_empty_pattern(msg: Message) -> bool:
 
 
 def _is_empty_element(element: str | Expression | Markup) -> bool:
-    """Report `True`/`False` for empty pattern element.
-    "Empty" are strings == "" and empty expressions.
-    Only whitespace strings are NOT considered empty as well as
-    `Expression` with any function or non empty arg.
-    """
     if isinstance(element, str):
         return element == ""
     if isinstance(element, Expression):
-        # No need to check Expression.options or .attributes explicitly!
-        # They'd be covered here already.
+        # `Expression.attributes` is ignored by design.
         if element.function is not None:
             return False
-        if element.arg is not None and element.arg != "":
+        if element.arg != "":
             return False
         return True
-    # Any other i.e. `Markup` is not empty.
     return False
