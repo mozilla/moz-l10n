@@ -71,9 +71,5 @@ def _is_empty_element(element: str | Expression | Markup) -> bool:
         return element == ""
     if isinstance(element, Expression):
         # `Expression.attributes` is ignored by design.
-        if element.function is not None:
-            return False
-        if element.arg != "":
-            return False
-        return True
+        return element.arg == "" and element.function is None
     return False
