@@ -71,34 +71,31 @@ class Rule:
     family: str
     full_name: str
     default_severity: Severity
-    format_severities: dict[Format, Severity]
+    format_severities: ClassVar[dict[Format, Severity]]
 
     def check(
-        self,
-        target: Message | None,
-        source: Message | None,
-        context: LintContext,
+        self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
         raise NotImplementedError
 
-    def diagnostic(
-        self,
-        message: str,
-        *,
-        severity: Severity | None = None,
-        id: Id | None = None,
-        line: int | None = None,
-        column: int | None = None,
+    def report(
+        self, context: LintContext | None = None, message: str = "", **kwargs: Any
     ) -> Diagnostic:
-        """Build a diagnostic with incoming message, violation details plus what the rule itself knows."""
+        """Build a diagnostic with incoming message and context."""
+        if not message.strip():
+            raise ValueError("Diagnostic message cannot be empty!")
+
+        severity = kwargs.pop(
+            "severity",
+            context.severity_of(self) if context is not None else self.default_severity,
+        )
+
         return Diagnostic(
             rule_name=self.name,
             rule_family=self.family,
             message=message,
-            severity=severity or self.default_severity,
-            id=id,
-            line=line,
-            column=column,
+            severity=severity,
+            **kwargs,
         )
 
     def get_module(self) -> ModuleType | None:
@@ -120,7 +117,7 @@ class Rule:
         return NAME_PATTERN.format(cls.family, cls.name)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.full_name = NAME_PATTERN.format(self.family, self.name)
+        self.full_name = f"{self.family}.{self.name}"
 
     def __str__(self) -> str:
         return self.full_name
@@ -131,24 +128,16 @@ class Rule:
 
 @dataclass
 class LintContext:
-    """
-    Everything a rule or eventually a diagnostic needs to know about a resource being checked.
-    * `resource_format` - A `moz.l10n.formats.Format`, or its name as a string.
-    * `id` - The message id of the resource being checked, if known.
-    * `severity` - Per-rule severity overrides, keyed by rule name.
-    * `path` - Path to the resource being checked, if known.
-    * `enabled_rules` - Collection of enabled rules where `None` means ALL rules.
-    """
+    """Everything a rule or a diagnostic needs to know about a resource being checked."""
 
     # local, per resource context:
     resource_format: Format
-    """The `moz.l10n.formats.Format`."""
 
     id: Id | None = None
     """The resource id/key of the entry being checked, if known."""
+    """The `moz.l10n.formats.Format` enum like `Format.android` or `Format.fluent`."""
 
     severity: dict[str, Severity] = field(default_factory=dict)
-    """Per-rule severity overrides, keyed by rule name."""
 
     path: str | None = None
     """Path to the resource being checked, if known."""
@@ -162,6 +151,7 @@ class LintContext:
 
     source_locale: str | None = None
     """Source locale BCP-47 language code (e.g., "de", "en-US")."""
+    """Per-rule severity overrides, keyed by rule full-name."""
 
     def severity_of(self, rule: Rule, fallback: Severity | None = None) -> Severity:
         """The effective severity of `rule`, applying any override.

@@ -15,123 +15,128 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Iterator
+from collections.abc import Iterator, Sequence
+from os.path import commonprefix
+from typing import Any, ClassVar
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
-from moz.l10n.lint.tools import get_simple_preview
-from moz.l10n.model import (
-    CatchallKey,
-    Message,
-    Pattern,
-    PatternMessage,
-    SelectMessage,
-)
+from moz.l10n.model import CatchallKey, Message, Pattern, PatternMessage
 
 _MESSAGE = " whitespace mismatch"
-_RE_LEADING_WHITESPACE = re.compile(r"^\s+")
-_RE_TRAILING_WHITESPACE = re.compile(r"\s+$")
 
 
 class _WhitespaceMismatch(Rule):
     family: str = "content"
-    message: str = ""
     default_severity: Severity = Severity.WARNING
+
+    _message: str = ""
     _whitespace_regex: re.Pattern[str]
 
-    def _get_whitespaces(self, *messages: Message | Pattern) -> list[str]:
-        results = []
-        for msg in messages:
-            preview = get_simple_preview(msg)
-            # don't try to match "only whitespace"
-            if not preview or not preview.strip():
-                results.append("")
-                continue
-            match = self._whitespace_regex.search(preview)
-            results.append(match.group(0) if match else "")
-        return results
-
     def check(
-        self, target: Message | None, source: Message | None, context: LintContext
+        self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
-        if source is None or target is None:
-            return
-
-        if isinstance(target, PatternMessage) and isinstance(source, PatternMessage):
-            trg_whitespace, src_whitespace = self._get_whitespaces(target, source)
+        src_whitespace = self._get_source_whitespace(source)
+        for keys, trg_pattern in target:
+            trg_whitespace = self._get_whitespace(trg_pattern)
             if trg_whitespace == src_whitespace:
-                return
-            yield self._report(trg_whitespace, src_whitespace, context)
-            return
+                continue
+            yield self.report(
+                context, self._make_msg(trg_whitespace, src_whitespace, keys)
+            )
+        return
 
-        if isinstance(target, SelectMessage) and isinstance(source, PatternMessage):
-            src_whitespace = self._get_whitespaces(source)[0]
-            for keys, tgt_pattern in target.variants.items():
-                trg_whitespace = self._get_whitespaces(tgt_pattern)[0]
-                if src_whitespace == trg_whitespace:
-                    continue
-                yield self._report(
-                    src_whitespace, trg_whitespace, context, _format_variant_keys(keys)
-                )
-            return
+    def _iterate(self, list_object: Sequence[Any]) -> Iterator[str]:
+        """Iterate forward or backward depending on Rule implementation."""
+        raise NotImplementedError()
 
-        if isinstance(target, SelectMessage) and isinstance(source, SelectMessage):
-            source_variants_by_key = {
-                _format_variant_keys(keys): pattern
-                for keys, pattern in source.variants.items()
-            }
-            default_source_pattern = next(iter(source.variants.values()))
-            for keys, tgt_pattern in target.variants.items():
-                label = _format_variant_keys(keys)
-                src_pattern = source_variants_by_key.get(label, default_source_pattern)
-                trg_whitespace, src_whitespace = self._get_whitespaces(
-                    tgt_pattern, src_pattern
-                )
-                if trg_whitespace == src_whitespace:
-                    continue
-                yield self._report(trg_whitespace, src_whitespace, context, label)
+    def _get_whitespace(self, pattern: Pattern) -> str:
+        """Get leading or trailing whitespace.
 
-    def _report(
+        Accumulates strings from pattern in according direction
+        until it finds a non whitespace string or non-string.
+
+        Whitespace ONLY strings return `""` by design.
+        If we'd pass `"   \\n"` a translator would need to make the counterpart
+        for instance `"   \\nLOL   \\n"` to satisfy both leading and trailing rules.
+        """
+        if not pattern:
+            return ""
+
+        string_stack: list[str] = []
+        # loop pattern forward or backward for leading/trailing
+        for element in self._iterate(pattern):
+            # stop at Markup or Expression
+            if not isinstance(element, str):
+                break
+            # collect elements that are ALL whitespace
+            if not element.strip():
+                string_stack.append(element)
+                continue
+            # append last string that's not only whitespace
+            string_stack.append(element)
+            break
+        else:
+            # Loop exhausted: pattern has whitespace only
+            return ""
+
+        if match := self._whitespace_regex.search("".join(self._iterate(string_stack))):
+            return match[0]
+        return ""
+
+    def _get_source_whitespace(self, source: Message) -> str:
+        """Determine expected source whitespace as **single** baseline value from any variant."""
+        if isinstance(source, PatternMessage):
+            return self._get_whitespace(source.pattern)
+
+        ws_list = [self._get_whitespace(p) for p in source.variants.values()]
+        if not ws_list:
+            return ""
+        return commonprefix(list(self._iterate(ws_list)))
+
+    def _make_msg(
         self,
         trg_whitespace: str,
         src_whitespace: str,
-        context: LintContext,
-        label: str | None = None,
-    ) -> Diagnostic:
-        prefix = f"Variant [{label}]: " if label else ""
-        return self.diagnostic(
-            f"{prefix}{self.message} (expected {trg_whitespace!r}, got {src_whitespace!r})",
-            severity=context.severity_of(self),
-            id=context.id,
-        )
+        keys: tuple[str | CatchallKey, ...],
+    ) -> str:
+        """Make a whitespace violation report saying under what variant it happened."""
+        if not keys:
+            prefix = ""
+        else:
+            label = ", ".join(
+                (k.value if k.value is not None else "*")
+                if isinstance(k, CatchallKey)
+                else k
+                for k in keys
+            )
+            prefix = f"Variant [{label}]: "
+        return f"{prefix}{self._message} (expected {src_whitespace!r}, got {trg_whitespace!r})"
 
 
 class LeadingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "leading-whitespace-mismatch"
-    message = f"Leading{_MESSAGE}"
-    _whitespace_regex = _RE_LEADING_WHITESPACE
+
+    _message = f"Leading{_MESSAGE}"
+    _whitespace_regex = re.compile(r"\s*")
+
+    def _iterate(self, list_object: Sequence[Any]) -> Iterator[str]:
+        """Iterate forward through given `list_object`."""
+        yield from list_object
 
 
 class TrailingWhitespaceMismatch(_WhitespaceMismatch):
     name: str = "trailing-whitespace-mismatch"
-    message = f"Trailing{_MESSAGE}"
-    _whitespace_regex = _RE_TRAILING_WHITESPACE
+    format_severities: ClassVar[dict[Format, Severity]] = {
+        Format.gettext: Severity.ERROR
+    }
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.format_severities: dict[Format, Severity] = {
-            Format.gettext: Severity.ERROR
-        }
+    _message = f"Trailing{_MESSAGE}"
+    _whitespace_regex = re.compile(r"\s*$")
 
-
-def _format_variant_keys(keys: tuple[str | CatchallKey, ...]) -> str:
-    parts = []
-    for k in keys:
-        if isinstance(k, CatchallKey):
-            parts.append(k.value if k.value is not None else "*")
-        else:
-            parts.append(k)
-    return ", ".join(parts)
+    def _iterate(self, list_object: Sequence[Any]) -> Iterator[str]:
+        """Iterate backwards through given `list_object`."""
+        yield from reversed(list_object)
 
 
 if __name__ == "__main__":
