@@ -14,8 +14,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
-from typing import Callable
+from collections.abc import Callable, Iterator, Sequence
 
 from ..formats import Format
 from ..formats.dtd.serialize import dtd_serialize
