@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from ..formats import Format, UnsupportedFormat
 from ..formats.fluent.parse import fluent_parse_message
