@@ -14,8 +14,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Callable, Iterator
+from dataclasses import dataclass
 from unittest.mock import MagicMock
 
 from moz.l10n.formats import Format, fluent, mf2
