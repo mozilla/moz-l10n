@@ -41,8 +41,19 @@ const pluralCategories = new Set(['zero', 'one', 'two', 'few', 'many', 'other'])
 export function fluentParseEntry(src: string): [string, Entry] {
   let id = ''
   let attrId = ''
-  const entry = new FluentParser().parseEntry(src)
+  const parser = new FluentParser()
+  const entry = parser.parseEntry(src)
   if (entry instanceof FTL.Message || entry instanceof FTL.Term) {
+    const [, next] = parser
+      .parse(src)
+      .body.filter((e) => !(e instanceof FTL.BaseComment))
+    if (next) {
+      const ch = next instanceof FTL.Junk ? next.content.trimStart()[0] : ''
+      const msg = ['[', '*', '}'].includes(ch)
+        ? `fluent: A line cannot start with "${ch}". Use { "${ch}" } to write it as text.`
+        : 'fluent: Unexpected text after the end of the message'
+      throw new ParseError(msg, next.span?.start, next.span?.end)
+    }
     try {
       id = entry.id.name
       if (entry instanceof FTL.Term) id = '-' + id

@@ -149,8 +149,20 @@ def fluent_parse_entry(
     Original Fluent function names are stored as `@fluent-fn` expression attributes.
     """
     if isinstance(source, str):
-        ftl_entry = FluentParser(with_spans=with_linepos).parse_entry(source)
+        parser = FluentParser(with_spans=with_linepos)
+        ftl_entry = parser.parse_entry(source)
         lpm = LinePosMapper(source) if with_linepos else None
+        if isinstance(ftl_entry, (ftl.Message, ftl.Term)):
+            body = parser.parse(source).body
+            extra = [e for e in body if not isinstance(e, ftl.BaseComment)][1:]
+            if extra:
+                content = extra[0].content if isinstance(extra[0], ftl.Junk) else ""
+                ch = (content or "").lstrip()[:1]
+                if ch in ("[", "*", "}"):
+                    raise ValueError(
+                        f'A line cannot start with "{ch}". Use {{ "{ch}" }} to write it as text.'
+                    )
+                raise ValueError("Unexpected text after the end of the message")
     else:
         ftl_entry = source
         lpm = None  # Source is required for line positions
