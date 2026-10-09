@@ -149,20 +149,10 @@ def fluent_parse_entry(
     Original Fluent function names are stored as `@fluent-fn` expression attributes.
     """
     if isinstance(source, str):
-        parser = FluentParser(with_spans=with_linepos)
-        ftl_entry = parser.parse_entry(source)
+        ftl_entry = FluentParser().parse_entry(source)
         lpm = LinePosMapper(source) if with_linepos else None
-        if isinstance(ftl_entry, (ftl.Message, ftl.Term)):
-            body = parser.parse(source).body
-            extra = [e for e in body if not isinstance(e, ftl.BaseComment)][1:]
-            if extra:
-                content = extra[0].content if isinstance(extra[0], ftl.Junk) else ""
-                ch = (content or "").lstrip()[:1]
-                if ch in ("[", "*", "}"):
-                    raise ValueError(
-                        f'A line cannot start with "{ch}". Use {{ "{ch}" }} to write it as text.'
-                    )
-                raise ValueError("Unexpected text after the end of the message")
+        if isinstance(ftl_entry, (ftl.Message, ftl.Term)) and ftl_entry.span:
+            check_end(source[ftl_entry.span.end :])
     else:
         ftl_entry = source
         lpm = None  # Source is required for line positions
@@ -187,7 +177,19 @@ def fluent_parse_message(source: str) -> Message:
         ftl_pattern = parser.get_pattern(ps, is_block=False)
     except ParseError as err:
         raise ValueError(err.message or "Fluent parser error") from err
+    check_end(source[ps.index :])
     return message(ftl_pattern)
+
+
+def check_end(rest: str) -> None:
+    extra = rest.lstrip()
+    if extra:
+        ch = extra[0]
+        if ch in "[*.}":
+            raise ValueError(
+                f'A line cannot start with "{ch}". Use {{ "{ch}" }} to write it as text.'
+            )
+        raise ValueError("Unexpected text after the end of the message")
 
 
 def fluent_entry(
