@@ -498,19 +498,19 @@ def parse_inline(
                     else:
                         # Placeholder
                         func: str | None
-                        # TODO post-py38: should be a match
-                        if conversion in {"b", "B"}:
-                            func = "boolean"
-                        elif conversion in {"c", "C", "s", "S"}:
-                            func = "string"
-                        elif conversion in {"d", "h", "H", "o", "x", "X"}:
-                            func = "integer"
-                        elif conversion in {"a", "A", "e", "E", "f", "g", "G"}:
-                            func = "number"
-                        elif len(conversion) == 2 and conversion[0] in {"t", "T"}:
-                            func = "datetime"
-                        else:
-                            func = None
+                        match conversion:
+                            case "b" | "B":
+                                func = "boolean"
+                            case "c" | "C" | "s" | "S":
+                                func = "string"
+                            case "d" | "h" | "H" | "o" | "x" | "X":
+                                func = "integer"
+                            case "a" | "A" | "e" | "E" | "f" | "g" | "G":
+                                func = "number"
+                            case dt if len(dt) == 2 and dt[0] in {"t", "T"}:
+                                func = "datetime"
+                            case _:
+                                func = None
                         source = m[0]
                         if source.startswith("%<"):
                             # https://developer.android.com/reference/java/util/Formatter#argument-index
