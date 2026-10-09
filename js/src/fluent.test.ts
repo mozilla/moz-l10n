@@ -481,6 +481,23 @@ describe('entry', () => {
     'skip-comment = value\n'
   )
   fail('standalone comment', '# comment\n', 'E0002')
+  test('line starting with [ after entry', () => {
+    expect(() =>
+      fluentParseEntry('key =\n    <b>[x]</b>\n    [y]</b>\n')
+    ).toThrow(
+      'fluent: A line cannot start with "[". Use { "[" } to write it as text.'
+    )
+  })
+  test('second entry', () => {
+    expect(() => fluentParseEntry('key = value\nother = value\n')).toThrow(
+      'fluent: Unexpected text after the end of the message'
+    )
+  })
+  test('trailing comment', () => {
+    expect(() => fluentParseEntry('key = value\n# comment\n')).toThrow(
+      'fluent: Unexpected text after the end of the message'
+    )
+  })
 
   fail('missing key', 'value\n', 'E0003')
   fail('missing expression end', 'key = missing {', 'E0028')
