@@ -1,4 +1,4 @@
-# `trailing-whitespace-mismatch`
+# `content.trailing-whitespace-mismatch`
 
 ## Description
 
