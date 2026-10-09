@@ -3,14 +3,12 @@
 ## Description
 
 The translation contains a placeholder (e.g. `%1$s`, `%@`, `$FOO$`) or a markup
-element (e.g. `<b>`, `<br>`) that does not appear in the source string. This
-holds whether the item is written as a real placeholder/expression or as
-literal text in the translation.
+element (e.g. `<b>`, `<br>`) that does not appear in the source string.
 
 The diagnostic wording follows the item kind:
 
-- `Placeholder <x> not found in reference` for printf-style placeholders
-- `Element <x> not found in reference` for HTML/XML markup
+- `Placeholder <x> not found in reference`
+- `Element <x> not found in reference`
 
 ## Why is this bad?
 
@@ -31,5 +29,5 @@ Translation with a %1$s
 
 ## How to fix?
 
-Remove the placeholder/element that has no counterpart in the source, or — if it
-is genuinely needed — correct the source so it declares it.
+Remove the placeholder/element that has no counterpart in the source, or if it
+is genuinely needed, care for correction of the source so it declares it.
