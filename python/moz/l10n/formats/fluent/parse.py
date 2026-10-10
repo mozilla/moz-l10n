@@ -182,7 +182,7 @@ def fluent_parse_message(source: str) -> Message:
 
 
 def check_end(rest: str) -> None:
-    extra = rest.lstrip()
+    extra = rest.lstrip(" \r\n")
     if extra:
         ch = extra[0]
         if ch in "[*.}":

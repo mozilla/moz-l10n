@@ -43,7 +43,9 @@ export function fluentParseEntry(src: string): [string, Entry] {
   let attrId = ''
   const entry = new FluentParser().parseEntry(src)
   if (entry instanceof FTL.Message || entry instanceof FTL.Term) {
-    const extra = src.slice(entry.span?.end ?? src.length).trimStart()
+    const extra = src
+      .slice(entry.span?.end ?? src.length)
+      .replace(/^[ \r\n]+/, '')
     if (extra) {
       const ch = extra[0]
       const msg = ['[', '*', '.', '}'].includes(ch)
