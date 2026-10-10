@@ -498,6 +498,22 @@ describe('entry', () => {
       'fluent: Unexpected text after the end of the message'
     )
   })
+  test('trailing blank lines', () => {
+    expect(fluentParseEntry('key = value\r\n  \r\n\n ')).toEqual([
+      'key',
+      { '=': ['value'] }
+    ])
+  })
+  test('trailing tab', () => {
+    expect(() => fluentParseEntry('key = value\n\t\n')).toThrow(
+      'fluent: Unexpected text after the end of the message'
+    )
+  })
+  test('trailing no-break space', () => {
+    expect(() => fluentParseEntry('key = value\n\u00a0\n')).toThrow(
+      'fluent: Unexpected text after the end of the message'
+    )
+  })
 
   fail('missing key', 'value\n', 'E0003')
   fail('missing expression end', 'key = missing {', 'E0028')

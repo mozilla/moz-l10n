@@ -139,6 +139,17 @@ class TestFluent(TestCase):
             fluent_parse_entry("msg = body\n# comment\n")
         assert str(cm.exception) == "Unexpected text after the end of the message"
 
+        entry = fluent_parse_entry("msg = body\r\n  \r\n\n ", with_linepos=False)
+        assert entry == Entry(("msg",), PatternMessage(["body"]))
+
+        with self.assertRaises(ValueError) as cm:
+            fluent_parse_entry("msg = body\n\t\n")
+        assert str(cm.exception) == "Unexpected text after the end of the message"
+
+        with self.assertRaises(ValueError) as cm:
+            fluent_parse_entry("msg = body\n\u00a0\n")
+        assert str(cm.exception) == "Unexpected text after the end of the message"
+
     def test_messages(self):
         msg = fluent_parse_message("body")
         assert msg == PatternMessage(["body"])
