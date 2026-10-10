@@ -43,6 +43,16 @@ export function fluentParseEntry(src: string): [string, Entry] {
   let attrId = ''
   const entry = new FluentParser().parseEntry(src)
   if (entry instanceof FTL.Message || entry instanceof FTL.Term) {
+    const extra = src
+      .slice(entry.span?.end ?? src.length)
+      .replace(/^[ \r\n]+/, '')
+    if (extra) {
+      const ch = extra[0]
+      const msg = ['[', '*', '.', '}'].includes(ch)
+        ? `fluent: A line cannot start with "${ch}". Use { "${ch}" } to write it as text.`
+        : 'fluent: Unexpected text after the end of the message'
+      throw new ParseError(msg, src.length - extra.length, src.length)
+    }
     try {
       id = entry.id.name
       if (entry instanceof FTL.Term) id = '-' + id
