@@ -20,21 +20,35 @@ import {
   type Markup,
   type Pattern
 } from './model.ts'
+import { escapeNonSyntaxChars } from './xml-utils.ts'
 
 export const resoureRef = /^@(?:\w+:)?\w+\/\w+|\?(?:\w+:)?(\w+\/)?\w+$/
 
 const _xmlEntities = new Set(['amp', 'lt', 'gt', 'apos', 'quot'])
 let _xmlEntityKey = Math.floor(Math.random() * 1e9)
 
-/** Matches `parse_pattern()` in `moz.l10n.formats.android.parse`. */
-export function androidParsePattern(src: string): Pattern {
+/**
+ * Matches `parse_pattern()` in `moz.l10n.formats.android.parse`.
+ *
+ * @param src
+ * @param options
+ * @param options.editable - Consider the source to come from an editor,
+ *     where the XML parsing considerations are relaxed
+ *     and all whitespace is presumed to be literal.
+ *     If enabled, Android "quoting" is also not parsed.
+ */
+export function androidParsePattern(
+  src: string,
+  { editable = false } = {}
+): Pattern {
   const entities: Record<string, string> = {}
-  const safe = src.replace(/&([a-z][a-z0-9_]*);/gi, (match, name) => {
+  let safe = src.replace(/&([a-z][a-z0-9_]*);/gi, (match, name) => {
     if (_xmlEntities.has(name)) return match
     const key = `_entity_${++_xmlEntityKey}_`
     entities[key] = name
     return key
   })
+  if (editable) safe = escapeNonSyntaxChars(safe)
   const doc = new DOMParser().parseFromString(
     `<string xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">${safe}</string>`,
     'text/xml'
@@ -52,7 +66,7 @@ export function androidParsePattern(src: string): Pattern {
   }
 
   const pattern = Array.from(flattenElements(root))
-  if (pattern.length > 0) {
+  if (!editable && pattern.length > 0) {
     const part0 = pattern[0]
     if (typeof part0 === 'string') pattern[0] = part0.trimStart()
     const part1 = pattern.at(-1)
@@ -60,7 +74,7 @@ export function androidParsePattern(src: string): Pattern {
     // We're presuming that this never happens intentionally.
     if (typeof part1 === 'string') pattern[pattern.length - 1] = part1.trimEnd()
   }
-  const spaced = parseQuotes(pattern)
+  const spaced = editable ? pattern : parseQuotes(pattern)
   return Array.from(parseInline(spaced, entities))
 }
 

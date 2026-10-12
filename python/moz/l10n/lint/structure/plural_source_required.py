@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
@@ -29,30 +29,21 @@ class PluralSourceRequired(Rule):
     default_severity = Severity.ERROR
 
     def check(
-        self, target: Message | None, source: Message | None, context: LintContext
+        self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
         """
-        Report a translation that selects on a plural category
-        while its source is a single pattern.
-
-        A source that could not be parsed counts as non-plural, matching the
-        conservative behavior of Pontoon's checks.
-
-        gettext : source: SelectMessage trans: PatternMessage(Pattern) is fine
-        fluent + mf2: anything goes
-        ini:
+        Report a translation that does not match its source message format.
+        format exceptions are:
+        * **Fluent** and **mf2** are not checked.
+        * For **gettext** it's OK to have a `PatternMessage` when the source is `SelectMessage`.
         """
-        if context.resource_format in (Format.fluent, Format.mf2):
-            return
-
-        if context.resource_format is Format.gettext and (
-            isinstance(target, PatternMessage) and isinstance(source, SelectMessage)
-        ):
-            return
+        match context.resource_format:
+            case Format.fluent | Format.mf2:
+                return
+            case Format.gettext if isinstance(target, PatternMessage) and isinstance(
+                source, SelectMessage
+            ):
+                return
 
         if isinstance(target, SelectMessage) != isinstance(source, SelectMessage):
-            yield self.diagnostic(
-                MESSAGE, severity=context.severity_of(self), id=context.id
-            )
-
-        return
+            yield self.report(context, MESSAGE)

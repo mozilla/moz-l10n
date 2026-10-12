@@ -150,6 +150,10 @@ class PatternMessage:
         )
         return f"PatternMessage({body})"
 
+    def __iter__(self) -> Iterator[tuple[tuple[str | CatchallKey, ...], Pattern]]:
+        """Yield empty key tuple and the single pattern."""
+        yield (), self.pattern
+
 
 @dataclass
 class CatchallKey:
@@ -205,6 +209,10 @@ class SelectMessage:
 
     def selector_expressions(self) -> tuple[Expression, ...]:
         return tuple(self.declarations[var.name] for var in self.selectors)
+
+    def __iter__(self) -> Iterator[tuple[tuple[str | CatchallKey, ...], Pattern]]:
+        """Yield key tuple and pattern per variant."""
+        yield from self.variants.items()
 
 
 Message = Union[PatternMessage, SelectMessage]

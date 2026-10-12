@@ -14,14 +14,12 @@
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from types import ModuleType
-from typing import Any, Iterator
+from typing import Any, ClassVar, Iterator
 
 from moz.l10n.formats import Format
-from moz.l10n.model import Id, Message
+from moz.l10n.model import Message
 
 
 class Severity(str, Enum):
@@ -29,10 +27,6 @@ class Severity(str, Enum):
 
     ERROR = "error"
     WARNING = "warning"
-
-
-NAME_PATTERN = "{}.{}"
-"""To string together family and rule name this is the recommended format."""
 
 
 @dataclass
@@ -50,15 +44,6 @@ class Diagnostic:
 
     severity: Severity = Severity.ERROR
     """Resolved severity, which may differ from the rule's default."""
-
-    id: Id | None = None
-    """The resource id or "key" the diagnostic points at, if there is one."""
-
-    line: int | None = None
-    """1-based line within the checked string."""
-
-    column: int | None = None
-    """1-based column within the checked string."""
 
 
 class Rule:
@@ -98,24 +83,6 @@ class Rule:
             **kwargs,
         )
 
-    def get_module(self) -> ModuleType | None:
-        """Get the rule's module object."""
-        return sys.modules.get(self.__class__.__module__)
-
-    def get_path(self) -> str:
-        """Get the string path to where to the rule implementation."""
-        module = self.get_module()
-        if module is None or module.__file__ is None:
-            return ""
-        return module.__file__
-
-    @classmethod
-    def get_full_name(cls) -> str:
-        """Build rule full_name family+rule-name.
-        Works when not yet instantiated. Use `.full_name` otherwise.
-        """
-        return NAME_PATTERN.format(cls.family, cls.name)
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.full_name = f"{self.family}.{self.name}"
 
@@ -130,27 +97,10 @@ class Rule:
 class LintContext:
     """Everything a rule or a diagnostic needs to know about a resource being checked."""
 
-    # local, per resource context:
     resource_format: Format
-
-    id: Id | None = None
-    """The resource id/key of the entry being checked, if known."""
     """The `moz.l10n.formats.Format` enum like `Format.android` or `Format.fluent`."""
 
     severity: dict[str, Severity] = field(default_factory=dict)
-
-    path: str | None = None
-    """Path to the resource being checked, if known."""
-
-    # global context:
-    enabled_rules: set[str] | None = None
-    """Collection of enabled rules where `None` means ALL rules."""
-
-    target_locale: str | None = None
-    """Source locale BCP-47 language code (e.g., "de", "en-US")."""
-
-    source_locale: str | None = None
-    """Source locale BCP-47 language code (e.g., "de", "en-US")."""
     """Per-rule severity overrides, keyed by rule full-name."""
 
     def severity_of(self, rule: Rule, fallback: Severity | None = None) -> Severity:

@@ -14,14 +14,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
-from typing import Callable, Iterator
 from unittest.mock import MagicMock
 
 from moz.l10n.formats import Format, fluent, mf2
 from moz.l10n.lint import content, placeholder, structure
 from moz.l10n.lint.model import Diagnostic, LintContext, Severity
-from moz.l10n.model import Entry, Message, PatternMessage, SelectMessage
+from moz.l10n.model import Entry, Message
 
 RULES = (
     content.LeadingWhitespaceMismatch(),
@@ -75,7 +75,7 @@ def run_custom_checks(entity: Entity, string: str) -> dict[str, list[str]]:
     target, source, warnings, errors = _parse_custom(
         string, entity.string, context.resource_format
     )
-    if not errors:
+    if not errors and target is not None and source is not None:
         diagnostics: list[Diagnostic] = []
         for rule in RULES:
             for msg, orig_msg, _attr_key in _iter_target_source(target, source):
@@ -92,110 +92,198 @@ empty_warning = "Empty translation"
 plural_error = ["Plural translation requires plural source"]
 
 
-def test_ending_newline():
-    """
-    Original and translation in a PO file must either both end
-    in a newline, or none of them should.
-    """
-    po_entity = mock_entity("gettext", string="Original")
-    assert run_custom_checks(po_entity, "Translation\n") == {
-        "pErrors": ["Trailing whitespace mismatch (expected '\\n', got '')"]
-    }
-    assert run_custom_checks(po_entity, "Translation") == {}
+class TestEmpty:
+    def test_ending_newline(self):
+        """
+        Original and translation in a PO file must either both end
+        in a newline, or none of them should.
+        """
+        po_entity = mock_entity("gettext", string="Original")
+        assert run_custom_checks(po_entity, "Translation\n") == {
+            "pErrors": ["Trailing whitespace mismatch (expected '\\n', got '')"]
+        }
+        assert run_custom_checks(po_entity, "Translation") == {}
 
-    po_entity.string = "Original\n"
-    assert run_custom_checks(po_entity, "Translation") == {
-        "pErrors": ["Trailing whitespace mismatch (expected '', got '\\n')"]
-    }
-    assert run_custom_checks(po_entity, "Translation\n") == {}
+        po_entity.string = "Original\n"
+        assert run_custom_checks(po_entity, "Translation") == {
+            "pErrors": ["Trailing whitespace mismatch (expected '', got '\\n')"]
+        }
+        assert run_custom_checks(po_entity, "Translation\n") == {}
 
+    def test_po_newlines(self):
+        assert run_custom_checks(mock_entity("gettext"), "aaa\nbbb") == {}
 
-def test_empty_translations_allowed():
-    """
-    Empty translations should be allowed but noted for some extensions.
-    """
-    assert run_custom_checks(
-        mock_entity("properties", allows_empty_translations=True), ""
-    ) == {"pndbWarnings": [empty_warning]}
+    def test_empty_translations_allowed(self):
+        """
+        Empty translations should be allowed but noted for some extensions.
+        """
+        assert run_custom_checks(
+            mock_entity(
+                "properties", string="not empty", allows_empty_translations=True
+            ),
+            "",
+        ) == {"pndbWarnings": [empty_warning]}
 
+    def test_empty_translations_not_allowed(self):
+        """
+        Empty translations shouldn't be allowed for some extensions.
+        """
+        po_entity = mock_entity("gettext", string=" ")
+        assert run_custom_checks(po_entity, "") == {"pErrors": empty_error}
+        assert run_custom_checks(po_entity, "{{}}") == {"pErrors": empty_error}
+        assert run_custom_checks(po_entity, ".input {$n :number} .match $n * {{}}") == {
+            "pErrors": empty_error + plural_error
+        }
+        assert run_custom_checks(
+            po_entity, ".input {$n :number} .match $n 1 {{}} * {{other}}"
+        ) == {"pErrors": empty_error + plural_error}
+        assert run_custom_checks(po_entity, "{{{||}}}") == {"pErrors": empty_error}
 
-def test_empty_translations_not_allowed():
-    """
-    Empty translations shouldn't be allowed for some extensions.
-    """
-    po_entity = mock_entity("gettext", string=" ")
-    assert run_custom_checks(po_entity, "") == {"pErrors": empty_error}
-    assert run_custom_checks(po_entity, "{{}}") == {"pErrors": empty_error}
-    assert run_custom_checks(po_entity, ".input {$n :number} .match $n * {{}}") == {
-        "pErrors": empty_error + plural_error
-    }
-    assert run_custom_checks(
-        po_entity, ".input {$n :number} .match $n 1 {{}} * {{other}}"
-    ) == {"pErrors": empty_error + plural_error}
-    assert run_custom_checks(po_entity, "{{{||}}}") == {}
+        assert run_custom_checks(
+            mock_entity("fluent", string="key = value", allows_empty_translations=True),
+            'key = { "" }',
+        ) == {"pndbWarnings": [empty_warning]}
 
-    assert run_custom_checks(
-        mock_entity("fluent", string="key = value", allows_empty_translations=True),
-        'key = { "" }',
-    ) == {"pndbWarnings": [empty_warning]}
-
-    assert (
-        run_custom_checks(mock_entity("fluent", string="key = value"), 'key = { "x" }')
-        == {}
-    )
-
-    assert run_custom_checks(
-        mock_entity(
-            "fluent", string="key =\n  .attr = value", allows_empty_translations=True
-        ),
-        """key =
-              { $var ->
-                  [a] { "" }
-                 *[b] { "" }
-              }
-              .attr = { "" }
-            """,
-    ) == {"pndbWarnings": [empty_warning, empty_warning]}
-
-    assert run_custom_checks(
-        mock_entity(
-            "fluent", string="key =\n  .attr = value", allows_empty_translations=True
-        ),
-        """key =
-              { $var ->
-                  [a] { "x" }
-                 *[b] { "y" }
-              }
-              .attr = { "" }
-            """,
-    ) == {"pndbWarnings": [empty_warning]}
-
-    assert run_custom_checks(
-        mock_entity(
-            "fluent", string="key =\n  .attr = value", allows_empty_translations=True
-        ),
-        """key =
-              { $var ->
-                  [a] { "x" }
-                 *[b] { "" }
-              }
-              .attr = { "y" }
-            """,
-    ) == {"pndbWarnings": [empty_warning]}
-
-    assert (
-        run_custom_checks(
-            mock_entity("fluent", string="key =\n  .attr = value"),
-            """key =
-              { $var ->
-                  [a] { "x" }
-                 *[b] { "y" }
-              }
-              .attr = { "z" }
-            """,
+        assert (
+            run_custom_checks(
+                mock_entity("fluent", string="key = value"), 'key = { "x" }'
+            )
+            == {}
         )
-        == {}
-    )
+
+        assert run_custom_checks(
+            mock_entity(
+                "fluent",
+                string="key = not empty\n  .attr = value",
+                allows_empty_translations=True,
+            ),
+            """key =
+                { $var ->
+                    [a] { "" }
+                   *[b] { "" }
+                }
+                .attr = { "" }
+                """,
+        ) == {"pndbWarnings": [empty_warning, empty_warning]}
+
+        assert run_custom_checks(
+            mock_entity(
+                "fluent",
+                string="key = not empty\n  .attr = value",
+                allows_empty_translations=True,
+            ),
+            """key =
+                { $var ->
+                    [a] { "x" }
+                   *[b] { "y" }
+                }
+                .attr = { "" }
+                """,
+        ) == {"pndbWarnings": [empty_warning]}
+
+        assert run_custom_checks(
+            mock_entity(
+                "fluent",
+                string="key = not empty\n  .attr = value",
+                allows_empty_translations=True,
+            ),
+            """key =
+                { $var ->
+                    [a] { "x" }
+                   *[b] { "" }
+                }
+                .attr = { "y" }
+                """,
+        ) == {"pndbWarnings": [empty_warning]}
+
+        assert (
+            run_custom_checks(
+                mock_entity("fluent", string="key =\n  .attr = value"),
+                """key =
+                { $var ->
+                    [a] { "x" }
+                   *[b] { "y" }
+                }
+                .attr = { "z" }
+                """,
+            )
+            == {}
+        )
+
+    def test_empty_source(self):
+        """Test properly exiting check source having empty patterns
+        when target should yield a report.
+        """
+        target = 'key = {""}\n  .attr = value'
+        source = """key =
+        { $var ->
+            [a] { "" }
+           *[b] { "" }
+        }
+        .attr = { "" }
+        """
+        assert run_custom_checks(mock_entity("fluent", string=source), target) == {}
+
+        target = 'key = NotEmpty\n  .attr = { "" }'
+        source = """key =
+        { $var ->
+            [a] { "x" }
+           *[b] { "y" }
+        }
+        .attr = { "" }
+        """
+        assert run_custom_checks(mock_entity("fluent", string=source), target) == {}
+
+        target = 'key = { "" }\n  .attr = value'
+        source = """key =
+        { $var ->
+            [a] { "x" }
+           *[b] { "" }
+        }
+        .attr = { "y" }
+        """
+        assert run_custom_checks(mock_entity("fluent", string=source), target) == {}
+
+        target = "key = NotEmpty\n  .attr = value"
+        source = """key =
+        { $var ->
+            [a] { "x" }
+           *[b] { "y" }
+        }
+        .attr = { "z" }
+        """
+        assert run_custom_checks(mock_entity("fluent", string=source), target) == {}
+
+    def test_empty_markup(self):
+        assert (
+            run_custom_checks(mock_entity("mf2", string="not empty"), "{#b}{/b}") == {}
+        )
+
+    def test_non_empty_expressions(self):
+        assert (
+            run_custom_checks(mock_entity("mf2", string="Source text"), "{$user}") == {}
+        )
+
+        assert (
+            run_custom_checks(mock_entity("mf2", string="Source text"), "{:datetime}")
+            == {}
+        )
+
+        assert (
+            run_custom_checks(
+                mock_entity("fluent", string="key = Source text"),
+                "key = { NUMBER($count, minimumFractionDigits: 2) }",
+            )
+            == {}
+        )
+
+        assert (
+            run_custom_checks(
+                mock_entity("fluent", string="key = Source text"),
+                'key = {"valid content"}',
+            )
+            == {}
+        )
 
 
 def test_android_simple():
@@ -217,10 +305,6 @@ def test_android_plural():
         mock_entity("android", string="source"),
         ".input {$n :number} .match $n one {{t1}} * {{t*}}",
     ) == {"pErrors": plural_error}
-
-
-def test_po_newlines():
-    assert run_custom_checks(mock_entity("gettext"), "aaa\nbbb") == {}
 
 
 def test_ftl_parse_error():
@@ -267,223 +351,202 @@ def test_android_literal_newline():
     assert run_custom_checks(entity, translation) == {}
 
 
-def test_android_same_placeholder():
-    original = "Source string with a {$arg1 :string @source=|%1$s|}"
-    translation = "Translation with a {$arg1 :string @source=|%1$s|}"
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {}
+class TestPlaceholders:
+    def test_android_same_placeholder(self):
+        original = "Source string with a {$arg1 :string @source=|%1$s|}"
+        translation = "Translation with a {$arg1 :string @source=|%1$s|}"
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
+    def test_android_plural_placeholders(self):
+        original = """
+            .input {$n :number}
+            .match $n
+            one {{One item}}
+            * {{{$arg1 :number @source=|%1$d|} items}}
+        """
+        translation = """
+            .input {$n :number}
+            .match $n
+            one {{{$arg1 :number @source=|%1$d|} item}}
+            many {{{$arg1 :number @source=|%1$d|} items}}
+            * {{{$arg1 :number @source=|%1$d|} items}}
+        """
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
-def test_android_plural_placeholders():
-    original = """
-        .input {$n :number}
-        .match $n
-        one {{One item}}
-        * {{{$arg1 :number @source=|%1$d|} items}}
-    """
-    translation = """
-        .input {$n :number}
-        .match $n
-        one {{{$arg1 :number @source=|%1$d|} item}}
-        many {{{$arg1 :number @source=|%1$d|} items}}
-        * {{{$arg1 :number @source=|%1$d|} items}}
-    """
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {}
+    def test_android_missing_placeholder(self):
+        original = "Source string with a {$arg1 :string @source=|%1$s|}"
+        translation = "Translation"
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pndbWarnings": ["Placeholder %1$s not found in translation"]
+        }
 
+    def test_android_mistyped_placeholder(self):
+        original = "Source string with a {$arg1 :string @source=|%1$s|}"
+        translation = "Translation %1"
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Placeholder %1 not found in reference"],
+            "pndbWarnings": ["Placeholder %1$s not found in translation"],
+        }
 
-def test_android_missing_placeholder():
-    original = "Source string with a {$arg1 :string @source=|%1$s|}"
-    translation = "Translation"
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pndbWarnings": ["Placeholder %1$s not found in translation"]
-    }
+    def test_android_extra_placeholder(self):
+        original = "Source string"
+        translation = "Translation with a {$arg1 :string @source=|%1$s|}"
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Placeholder %1$s not found in reference"]
+        }
 
+    def test_android_extra_placeholder_as_literal(self):
+        original = "Source string"
+        translation = "Translation with a %1$s"
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Placeholder %1$s not found in reference"]
+        }
 
-def test_android_mistyped_placeholder():
-    original = "Source string with a {$arg1 :string @source=|%1$s|}"
-    translation = "Translation %1"
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Placeholder %1 not found in reference"],
-        "pndbWarnings": ["Placeholder %1$s not found in translation"],
-    }
+    def test_android_changed_placeholder(self):
+        original = (
+            "New! {$arg :string @source=|%s|} email masks are now available on mobile."
+        )
+        translation = "Нав! Акнун ниқобҳои почтаи электронии «{$arg1 :string @source=|%@|}» дар дастгоҳҳои мобилӣ дастрасанд."
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Placeholder %@ not found in reference"],
+            "pndbWarnings": ["Placeholder %s not found in translation"],
+        }
 
+    def test_android_protections(self):
+        original = "Source {$string :xliff:g id=string @translate=no @source=String} with {$variable :xliff:g id=variable example=5 @translate=no @source=|%1$s|}"
+        translation = "Translation String with %1$s"
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pndbWarnings": ["Placeholder String not found in translation"]
+        }
 
-def test_android_extra_placeholder():
-    original = "Source string"
-    translation = "Translation with a {$arg1 :string @source=|%1$s|}"
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Placeholder %1$s not found in reference"]
-    }
+    def test_android_good_html(self):
+        original = "Source with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}"
+        translation = (
+            "Translation with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}"
+        )
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
+    def test_android_good_html_as_literal(self):
+        original = "Source with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}"
+        translation = "Translation with a <b>line<br>break</b>"
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
-def test_android_extra_placeholder_as_literal():
-    original = "Source string"
-    translation = "Translation with a %1$s"
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Placeholder %1$s not found in reference"]
-    }
+    def test_android_bad_html(self):
+        original = "Source {|<b>| :html}string{|</b>| :html}"
+        translation = "Translation with a <a>tag mismatch{|</b>| :html}"
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Element <a> not found in reference"],
+            "pndbWarnings": ["Element <b> not found in translation"],
+        }
 
+    def test_android_extra_percent(self):
+        original = "Source percent"
+        translation = "Translation {|%| @source=|%%|}"
+        entity = mock_entity("android", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
-def test_android_changed_placeholder():
-    original = (
-        "New! {$arg :string @source=|%s|} email masks are now available on mobile."
-    )
-    translation = "Нав! Акнун ниқобҳои почтаи электронии «{$arg1 :string @source=|%@|}» дар дастгоҳҳои мобилӣ дастрасанд."
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Placeholder %@ not found in reference"],
-        "pndbWarnings": ["Placeholder %s not found in translation"],
-    }
+    def test_webext_literal_index_placeholder_as_placeholder(self):
+        original = "Source string with a {$arg1 @source=|$1|}"
+        translation = "Translation with a {$arg1 @source=|$1|}"
+        entity = mock_entity("webext", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
+    def test_webext_literal_index_placeholder_as_literal(self):
+        original = "Source string with a {$arg1 @source=|$1|}"
+        translation = "Translation with a $1"
+        entity = mock_entity("webext", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
-def test_android_protections():
-    original = "Source {$string :xliff:g id=string @translate=no @source=String} with {$variable :xliff:g id=variable example=5 @translate=no @source=|%1$s|}"
-    translation = "Translation String with %1$s"
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pndbWarnings": ["Placeholder String not found in translation"]
-    }
+    def test_webext_literal_named_placeholder_as_placeholder(self):
+        original = (
+            ".local $FOO = {$arg1 @source=|$1|}\n"
+            + "{{Source string with a {$FOO @source=|$FOO$|}}}"
+        )
+        translation = (
+            ".local $FOO = {$arg1 @source=|$1|}\n"
+            + "{{Translation with a {$FOO @source=|$FOO$|}}}"
+        )
+        entity = mock_entity("webext", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
+    def test_webext_literal_named_placeholder_as_literal(self):
+        original = (
+            ".local $FOO = {$arg1 @source=|$1|}\n"
+            + "{{Source string with a {$FOO @source=|$FOO$|}}}"
+        )
+        translation = "Translation with a $FOO$"
+        entity = mock_entity("webext", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
-def test_android_good_html():
-    original = "Source with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}"
-    translation = (
-        "Translation with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}"
-    )
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {}
+    def test_webext_extra_index_placeholder(self):
+        original = "Source string"
+        translation = "Translation with a $1"
+        entity = mock_entity("webext", string=original)
+        # This should probably also be caught!! Eeh YES!!?!
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Placeholder $1 not found in reference"]
+        }
 
+    def test_webext_extra_named_placeholder_as_literal(self):
+        original = "Source string"
+        translation = "Translation with a $FOO$"
+        entity = mock_entity("webext", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Placeholder $FOO$ not found in reference"]
+        }
 
-def test_android_good_html_as_literal():
-    original = "Source with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}"
-    translation = "Translation with a <b>line<br>break</b>"
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {}
+    def test_webext_extra_named_placeholder_as_placeholder(self):
+        original = "Source string"
+        translation = (
+            ".local $FOO = {$arg1 @source=|$1|}\n"
+            + "{{Translation with a {$FOO @source=|$FOO$|}}}"
+        )
+        entity = mock_entity("webext", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Placeholder $FOO$ not found in reference"]
+        }
 
+    def test_xcode_same_placeholder(self):
+        original = "Source string with a {$arg1 :string @source=|%1$@|}"
+        translation = "Translation with a {$arg1 :string @source=|%1$@|}"
+        entity = mock_entity("xcode", string=original)
+        assert run_custom_checks(entity, translation) == {}
 
-def test_android_bad_html():
-    original = "Source {|<b>| :html}string{|</b>| :html}"
-    translation = "Translation with a <a>tag mismatch{|</b>| :html}"
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Element <a> not found in reference"],
-        "pndbWarnings": ["Element <b> not found in translation"],
-    }
+    def test_xcode_missing_placeholder(self):
+        original = "Source string with a {$arg :string @source=|%@|}"
+        translation = "Translation"
+        entity = mock_entity("xcode", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pndbWarnings": ["Placeholder %@ not found in translation"]
+        }
 
+    def test_xcode_mistyped_placeholder(self):
+        original = "Source string with a {$arg :string @source=|%@|}"
+        translation = "Translation % @"
+        entity = mock_entity("xcode", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Placeholder % @ not found in reference"],
+            "pndbWarnings": ["Placeholder %@ not found in translation"],
+        }
 
-def test_android_extra_percent():
-    original = "Source percent"
-    translation = "Translation {|%| @source=|%%|}"
-    entity = mock_entity("android", string=original)
-    assert run_custom_checks(entity, translation) == {}
-
-
-def test_webext_literal_index_placeholder_as_placeholder():
-    original = "Source string with a {$arg1 @source=|$1|}"
-    translation = "Translation with a {$arg1 @source=|$1|}"
-    entity = mock_entity("webext", string=original)
-    assert run_custom_checks(entity, translation) == {}
-
-
-def test_webext_literal_index_placeholder_as_literal():
-    original = "Source string with a {$arg1 @source=|$1|}"
-    translation = "Translation with a $1"
-    entity = mock_entity("webext", string=original)
-    assert run_custom_checks(entity, translation) == {}
-
-
-def test_webext_literal_named_placeholder_as_placeholder():
-    original = (
-        ".local $FOO = {$arg1 @source=|$1|}\n"
-        + "{{Source string with a {$FOO @source=|$FOO$|}}}"
-    )
-    translation = (
-        ".local $FOO = {$arg1 @source=|$1|}\n"
-        + "{{Translation with a {$FOO @source=|$FOO$|}}}"
-    )
-    entity = mock_entity("webext", string=original)
-    assert run_custom_checks(entity, translation) == {}
-
-
-def test_webext_literal_named_placeholder_as_literal():
-    original = (
-        ".local $FOO = {$arg1 @source=|$1|}\n"
-        + "{{Source string with a {$FOO @source=|$FOO$|}}}"
-    )
-    translation = "Translation with a $FOO$"
-    entity = mock_entity("webext", string=original)
-    assert run_custom_checks(entity, translation) == {}
-
-
-def test_webext_extra_index_placeholder():
-    original = "Source string"
-    translation = "Translation with a $1"
-    entity = mock_entity("webext", string=original)
-    # This should probably also be caught!! Eeh YES!!?!
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Placeholder $1 not found in reference"]
-    }
-
-
-def test_webext_extra_named_placeholder_as_literal():
-    original = "Source string"
-    translation = "Translation with a $FOO$"
-    entity = mock_entity("webext", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Placeholder $FOO$ not found in reference"]
-    }
-
-
-def test_webext_extra_named_placeholder_as_placeholder():
-    original = "Source string"
-    translation = (
-        ".local $FOO = {$arg1 @source=|$1|}\n"
-        + "{{Translation with a {$FOO @source=|$FOO$|}}}"
-    )
-    entity = mock_entity("webext", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Placeholder $FOO$ not found in reference"]
-    }
-
-
-def test_xcode_same_placeholder():
-    original = "Source string with a {$arg1 :string @source=|%1$@|}"
-    translation = "Translation with a {$arg1 :string @source=|%1$@|}"
-    entity = mock_entity("xcode", string=original)
-    assert run_custom_checks(entity, translation) == {}
-
-
-def test_xcode_missing_placeholder():
-    original = "Source string with a {$arg :string @source=|%@|}"
-    translation = "Translation"
-    entity = mock_entity("xcode", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pndbWarnings": ["Placeholder %@ not found in translation"]
-    }
-
-
-def test_xcode_mistyped_placeholder():
-    original = "Source string with a {$arg :string @source=|%@|}"
-    translation = "Translation % @"
-    entity = mock_entity("xcode", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Placeholder % @ not found in reference"],
-        "pndbWarnings": ["Placeholder %@ not found in translation"],
-    }
-
-
-def test_xcode_extra_placeholder():
-    original = "Source string"
-    translation = "Translation with a {$arg :string @source=|%@|}"
-    entity = mock_entity("xcode", string=original)
-    assert run_custom_checks(entity, translation) == {
-        "pErrors": ["Placeholder %@ not found in reference"]
-    }
+    def test_xcode_extra_placeholder(self):
+        original = "Source string"
+        translation = "Translation with a {$arg :string @source=|%@|}"
+        entity = mock_entity("xcode", string=original)
+        assert run_custom_checks(entity, translation) == {
+            "pErrors": ["Placeholder %@ not found in reference"]
+        }
 
 
 def _parse_custom(
@@ -524,23 +587,29 @@ def _parse_custom(
 
 
 def _iter_target_source(
-    target: Entry | Message | None, source: Entry | Message | None
-) -> Iterator[tuple[Message | None, Message | None, str | None]]:
+    target: Entry | Message, source: Entry | Message
+) -> Iterator[tuple[Message, Message, str | None]]:
     """Yield tuples of Message from Message or Entry pairs.
     We have fluent examples like `key = something` which is more than a `Message`!
-    Messages don't have `id`.
+    Messages don't have a key/`id`.
     """
-    message_types = PatternMessage, SelectMessage
-    if isinstance(target, message_types) and isinstance(source, message_types):
+    if isinstance(target, Message) and isinstance(source, Message):
         yield target, source, None
         return
 
-    trg_val = target.value if isinstance(target, Entry) else None
-    src_val = source.value if isinstance(source, Entry) else None
-    if trg_val is not None or src_val is not None:
-        yield trg_val, src_val, None
+    if isinstance(target, Entry) and isinstance(source, Entry):
+        yield target.value, source.value, None
 
-    trg_props = target.properties if isinstance(target, Entry) else {}
-    src_props = source.properties if isinstance(source, Entry) else {}
-    for attr_key in dict.fromkeys(list(trg_props) + list(src_props)):
-        yield (trg_props.get(attr_key), src_props.get(attr_key), attr_key)
+        for attr_key in dict.fromkeys(
+            list(target.properties) + list(source.properties)
+        ):
+            trg, src = target.properties.get(attr_key), source.properties.get(attr_key)
+            if not isinstance(trg, Message) or not isinstance(src, Message):
+                continue
+            yield trg, src, attr_key
+        return
+
+    raise TypeError(
+        "Both target and source need to of the same type! Got:\n"
+        f" target: {type(target)}\n source: {type(source)}"
+    )

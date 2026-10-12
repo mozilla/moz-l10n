@@ -120,6 +120,48 @@ describe('success', () => {
   })
 })
 
+describe('editable', () => {
+  const ok = (name: string, source: string, exp: Pattern) =>
+    test(name, () => {
+      const res = androidParsePattern(source, { editable: true })
+      expect(res).toEqual(exp)
+    })
+
+  ok('bare whitespace', 'Hello\nthe\n\n  \tworld', ['Hello\nthe\n\n  \tworld'])
+  ok('escaped whitespace', 'Hello\\nthe\\n\\n \\u0020\\tworld', [
+    'Hello\nthe\n\n  \tworld'
+  ])
+
+  ok('html elements', '<b>bold</b>', [{ open: 'b' }, 'bold', { close: 'b' }])
+  ok('escaped html', '&lt;b&gt;bold&lt;/b&gt;', [
+    { _: '<b>', fn: 'html' },
+    'bold',
+    { _: '</b>', fn: 'html' }
+  ])
+
+  // This fails without `editable: true` in real browsers,
+  // but happy-dom's XMLParser does not catch the error.
+  // https://github.com/capricorn86/happy-dom/issues/2338
+  ok('standalone & and <', 'foo < bar & baz', ['foo < bar & baz'])
+
+  ok('entity reference', 'Welcome to <b>&foo;</b>!', [
+    'Welcome to ',
+    { open: 'b' },
+    { $: 'foo', fn: 'entity' },
+    { close: 'b' },
+    '!'
+  ])
+
+  ok('inline previous variable references', 'Birthday: %1$tm %<te,%<tY', [
+    'Birthday: ',
+    { $: 'arg1', fn: 'datetime', attr: { source: '%1$tm' } },
+    ' ',
+    { $: 'arg1', fn: 'datetime', attr: { source: '%1$te' } },
+    ',',
+    { $: 'arg1', fn: 'datetime', attr: { source: '%1$tY' } }
+  ])
+})
+
 describe('newlines', () => {
   test('breaks', () => {
     const res = androidParsePattern(

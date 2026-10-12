@@ -514,19 +514,19 @@ def parse_xcode_pattern(src: str | None) -> Iterator[str | Expression]:
             else:
                 name: str
                 func: str | None
-                # TODO post-py38: should be a match
-                if format in {"c", "C", "s", "S"}:
-                    name = "str"
-                    func = "string"
-                elif format in {"d", "D", "o", "O", "p", "u", "U", "x", "X"}:
-                    name = "int"
-                    func = "integer"
-                elif format in {"a", "A", "e", "E", "f", "g", "G"}:
-                    name = "num"
-                    func = "number"
-                else:
-                    name = "arg"
-                    func = None
+                match format:
+                    case "c" | "C" | "s" | "S":
+                        name = "str"
+                        func = "string"
+                    case "d" | "D" | "o" | "O" | "p" | "u" | "U" | "x" | "X":
+                        name = "int"
+                        func = "integer"
+                    case "a" | "A" | "e" | "E" | "f" | "g" | "G":
+                        name = "num"
+                        func = "number"
+                    case _:
+                        name = "arg"
+                        func = None
                 if m[1]:
                     attributes["index"] = index = m[1][0]
                     name += index
