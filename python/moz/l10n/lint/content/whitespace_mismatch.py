@@ -49,9 +49,8 @@ class LeadingWhitespaceMismatch(Rule):
     def _get_leading_whitespace(self, pattern: Pattern) -> str:
         """Accumulate and return leading whitespace from given pattern.
 
-        Note: Whitespace ONLY patterns return `""` by design to avoid unsolvable mismatches.
-        If we'd pass `"   \\n"` a translator would need to make the counterpart
-        for instance `"   \\nLOL   \\n"` to satisfy both leading and trailing rules.
+        Note: Whitespace-ONLY patterns return `""` to avoid reporting duplicate
+        mismatches on both leading and trailing rules for the same text span.
         """
         string_stack: list[str] = []
         for element in pattern:
@@ -96,9 +95,8 @@ class TrailingWhitespaceMismatch(Rule):
     def _get_trailing_whitespace(self, pattern: Pattern) -> str:
         """Accumulate and return trailing whitespace from given pattern.
 
-        Note: Whitespace ONLY patterns return `""` by design to avoid unsolvable mismatches.
-        If we'd pass `"   \\n"` a translator would need to make the counterpart
-        for instance `"   \\nLOL   \\n"` to satisfy both leading and trailing rules.
+        Note: Whitespace-ONLY patterns return `""` to avoid reporting duplicate
+        mismatches on both leading and trailing rules for the same text span.
         """
         string_stack: list[str] = []
         for element in reversed(pattern):
