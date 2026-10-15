@@ -63,7 +63,7 @@ class LeadingWhitespaceMismatch(Rule):
         else:
             return ""
         text = "".join(string_stack)
-        return match[0] if (match := self._whitespace_regex.search(text)) else ""
+        return match[0] if (match := self._whitespace_regex.match(text)) else ""
 
 
 class TrailingWhitespaceMismatch(Rule):
