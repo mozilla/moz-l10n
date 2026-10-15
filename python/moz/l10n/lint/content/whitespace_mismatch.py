@@ -117,7 +117,7 @@ def _make_msg(
 ) -> str:
     """Make a whitespace violation report saying under what variant it happened."""
     prefix = (
-        f"Variant [{', '.join((k.value or '*') if isinstance(k, CatchallKey) else k for k in keys)}]: "
+        f"Variant [{', '.join((str(k) or '*') for k in keys)}]: "
         if keys
         else ""
     )
