@@ -52,17 +52,16 @@ class LeadingWhitespaceMismatch(Rule):
         Note: Whitespace-ONLY patterns return `""` to avoid reporting duplicate
         mismatches on both leading and trailing rules for the same text span.
         """
-        string_stack: list[str] = []
+        string_stack: str = ""
         for element in pattern:
             if not isinstance(element, str):
                 break
-            string_stack.append(element)
+            string_stack += element
             if element.strip():
                 break
         else:
             return ""
-        text = "".join(string_stack)
-        return match[0] if (match := self._whitespace_regex.match(text)) else ""
+        return match[0] if (match := self._whitespace_regex.match(string_stack)) else ""
 
 
 class TrailingWhitespaceMismatch(Rule):
@@ -98,17 +97,16 @@ class TrailingWhitespaceMismatch(Rule):
         Note: Whitespace-ONLY patterns return `""` to avoid reporting duplicate
         mismatches on both leading and trailing rules for the same text span.
         """
-        string_stack: list[str] = []
+        string_stack: str = ""
         for element in reversed(pattern):
             if not isinstance(element, str):
                 break
-            string_stack.append(element)
+            string_stack = element + string_stack
             if element.strip():
                 break
         else:
             return ""
-        text = "".join(reversed(string_stack))
-        return match[0] if (match := self._whitespace_regex.search(text)) else ""
+        return match[0] if (match := self._whitespace_regex.search(string_stack)) else ""
 
 
 def _make_msg(
