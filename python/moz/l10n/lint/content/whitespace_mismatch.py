@@ -106,7 +106,9 @@ class TrailingWhitespaceMismatch(Rule):
                 break
         else:
             return ""
-        return match[0] if (match := self._whitespace_regex.search(string_stack)) else ""
+        return (
+            match[0] if (match := self._whitespace_regex.search(string_stack)) else ""
+        )
 
 
 def _make_msg(
@@ -116,9 +118,5 @@ def _make_msg(
     keys: tuple[str | CatchallKey, ...],
 ) -> str:
     """Make a whitespace violation report saying under what variant it happened."""
-    prefix = (
-        f"Variant [{', '.join((str(k) or '*') for k in keys)}]: "
-        if keys
-        else ""
-    )
+    prefix = f"Variant [{', '.join((str(k) or '*') for k in keys)}]: " if keys else ""
     return f"{prefix}{message} (expected {src_whitespace!r}, got {trg_whitespace!r})"
