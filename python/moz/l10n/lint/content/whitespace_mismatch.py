@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterator
-from os.path import commonprefix
 from typing import ClassVar
 
 from moz.l10n.formats import Format
@@ -37,7 +36,7 @@ class LeadingWhitespaceMismatch(Rule):
     ) -> Iterator[Diagnostic]:
         # Get common source whitespace from all variants.
         ws_list = [self._get_leading_whitespace(p) for _, p in source]
-        src_whitespace = commonprefix(ws_list) if ws_list else ""
+        src_whitespace = _commonprefix(ws_list)
 
         for keys, trg_pattern in target:
             trg_whitespace = self._get_leading_whitespace(trg_pattern)
@@ -80,9 +79,7 @@ class TrailingWhitespaceMismatch(Rule):
     ) -> Iterator[Diagnostic]:
         # Get common source whitespace from all variants.
         ws_list = [self._get_trailing_whitespace(p) for _, p in source]
-        src_whitespace = (
-            commonprefix([s[::-1] for s in ws_list])[::-1] if ws_list else ""
-        )
+        src_whitespace = _commonprefix([s[::-1] for s in ws_list])[::-1]
 
         for keys, trg_pattern in target:
             trg_whitespace = self._get_trailing_whitespace(trg_pattern)
@@ -120,3 +117,14 @@ def _make_msg(
     """Make a whitespace violation report saying under what variant it happened."""
     prefix = f"Variant [{', '.join((str(k) or '*') for k in keys)}]: " if keys else ""
     return f"{prefix}{message} (expected {src_whitespace!r}, got {trg_whitespace!r})"
+
+
+def _commonprefix(sequence: list[str]) -> str:
+    """Given a list of strings, return the longest common leading component."""
+    if not sequence:
+        return ""
+    s1, s2 = min(sequence), max(sequence)
+    for i, c in enumerate(s1):
+        if c != s2[i]:
+            return s1[:i]
+    return s1
