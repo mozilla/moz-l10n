@@ -27,5 +27,8 @@
     "semi": false,
     "singleQuote": true,
     "trailingComma": "none"
+  },
+  "allowScripts": {
+    "fsevents": false
   }
 }
