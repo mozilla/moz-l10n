@@ -123,6 +123,8 @@ def _commonprefix(sequence: list[str]) -> str:
     """Given a list of strings, return the longest common leading component."""
     if not sequence:
         return ""
+    if len(sequence) == 1:
+        return sequence[0]
     s1, s2 = min(sequence), max(sequence)
     for i, c in enumerate(s1):
         if c != s2[i]:
