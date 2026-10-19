@@ -1520,3 +1520,142 @@ class TestXliff1(TestCase):
             </xliff>
             """)
         assert "".join(xliff_serialize(res, source_entries=True)) == exp
+
+    def test_serialize_xcstrings_multiple_substitutions(self):
+        xml = dedent("""\
+            <?xml version="1.0" encoding="utf-8"?>
+            <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+              <file original="catalog.xcstrings" source-language="en" target-language="fi" datatype="plaintext">
+                <header>
+                  <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.1.1" build-num="17B100"/>
+                </header>
+                <body>
+                  <trans-unit id="multiple_substitutions">
+                    <source>This app has %1$#@strings@ in %2$#@catalogs@.</source>
+                  </trans-unit>
+                  <trans-unit id="multiple_substitutions|==|substitutions.strings.plural.one">
+                    <source>%1$lld string</source>
+                  </trans-unit>
+                  <trans-unit id="multiple_substitutions|==|substitutions.strings.plural.other">
+                    <source>%1$lld strings</source>
+                  </trans-unit>
+                  <trans-unit id="multiple_substitutions|==|substitutions.catalogs.plural.one">
+                    <source>%2$lld catalog</source>
+                  </trans-unit>
+                  <trans-unit id="multiple_substitutions|==|substitutions.catalogs.plural.other">
+                    <source>%2$lld catalogs</source>
+                  </trans-unit>
+                </body>
+              </file>
+            </xliff>
+            """)
+        res = xliff_parse(xml.encode("utf-8"), source_entries=True)
+        assert "".join(xliff_serialize(res, source_entries=True)) == xml
+
+    def test_serialize_xcstrings_multiple_substitutions_target(self):
+        xml = dedent("""\
+            <?xml version="1.0" encoding="utf-8"?>
+            <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+              <file original="catalog.xcstrings" source-language="en" target-language="fi" datatype="plaintext">
+                <header>
+                  <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.1.1" build-num="17B100"/>
+                </header>
+                <body>
+                  <trans-unit id="m">
+                    <source>%1$#@strings@ in %2$#@catalogs@</source>
+                    <target>Sovelluksessa on %1$#@strings@ kansiossa %2$#@catalogs@.</target>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.strings.plural.one">
+                    <source>%1$lld string</source>
+                    <target>%1$lld merkkijono</target>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.strings.plural.other">
+                    <source>%1$lld strings</source>
+                    <target>%1$lld merkkijonoa</target>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.catalogs.plural.one">
+                    <source>%2$lld catalog</source>
+                    <target>%2$lld luettelo</target>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.catalogs.plural.other">
+                    <source>%2$lld catalogs</source>
+                    <target>%2$lld luetteloa</target>
+                  </trans-unit>
+                </body>
+              </file>
+            </xliff>
+            """)
+        res = xliff_parse(xml.encode("utf-8"))
+        assert "".join(xliff_serialize(res)) == xml
+
+    def test_serialize_xcstrings_multiple_substitutions_varying_text(self):
+        # Text around the placeholder differs by key,
+        # one key has no placeholder at all, and there are three substitutions.
+        xml = dedent("""\
+            <?xml version="1.0" encoding="utf-8"?>
+            <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+              <file original="catalog.xcstrings" source-language="en" target-language="fi" datatype="plaintext">
+                <header>
+                  <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.1.1" build-num="17B100"/>
+                </header>
+                <body>
+                  <trans-unit id="m">
+                    <source>%1$#@a@, %2$#@b@, %3$#@c@!</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.a.plural.one">
+                    <source>only %1$lld apple</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.a.plural.other">
+                    <source>many %1$lld apples</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.b.plural.one">
+                    <source>%2$lld pear</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.b.plural.other">
+                    <source>%2$lld pears</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.c.plural.zero">
+                    <source>none</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.c.plural.other">
+                    <source>%3$lld plums</source>
+                  </trans-unit>
+                </body>
+              </file>
+            </xliff>
+            """)
+        res = xliff_parse(xml.encode("utf-8"), source_entries=True)
+        assert "".join(xliff_serialize(res, source_entries=True)) == xml
+
+    def test_serialize_xcstrings_multiple_substitutions_untranslated(self):
+        # Without a translation, the selectors are not known, only the metadata.
+        xml = dedent("""\
+            <?xml version="1.0" encoding="utf-8"?>
+            <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+              <file original="catalog.xcstrings" source-language="en" target-language="fi" datatype="plaintext">
+                <header>
+                  <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.1.1" build-num="17B100"/>
+                </header>
+                <body>
+                  <trans-unit id="m">
+                    <source>This app has %1$#@strings@ in %2$#@catalogs@.</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.catalogs.plural.one">
+                    <source>%2$lld catalog</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.catalogs.plural.other">
+                    <source>%2$lld catalogs</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.strings.plural.one">
+                    <source>%1$lld string</source>
+                  </trans-unit>
+                  <trans-unit id="m|==|substitutions.strings.plural.other">
+                    <source>%1$lld strings</source>
+                  </trans-unit>
+                </body>
+              </file>
+            </xliff>
+            """)
+        res = xliff_parse(xml.encode("utf-8"))
+        assert xliff_is_xcode(res)
+        assert "".join(xliff_serialize(res)) == xml
