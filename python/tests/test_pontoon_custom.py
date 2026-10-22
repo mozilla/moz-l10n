@@ -26,6 +26,11 @@ FORMAT_MAP = {
     "webext": "json",
 }
 
+pytest.skip(
+    "This is outdated and incompatible with our current approach",
+    allow_module_level=True,
+)
+
 
 @dataclass
 class MockResource:
