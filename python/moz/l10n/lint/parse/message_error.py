@@ -12,12 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""NOTE: This is going to change!
+Parsing it all through mf2 was a Pontoon hack.
+We're focussing in actual moz-l10n-model nodes for now
+and will revisit lint parsing when we do CLI for this.
+"""
+
+
 from __future__ import annotations
 
 from fluent.syntax import FluentParser, ast
 from moz.l10n.formats import Format, fluent, mf2
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
-from moz.l10n.lint.tools import get_line_column
+
+# from moz.l10n.lint.tools import get_line_column
 from moz.l10n.model import Message
 
 ftl_parser = FluentParser()
@@ -90,13 +98,12 @@ def parse_message_mf2(
     try:
         return mf2.mf2_parse_message(raw), None
     except ValueError as error:
-        line, column = get_line_column(raw, getattr(error, "pos", 0))
-        diagnostic = rule.diagnostic(
+        # line, column = get_line_column(raw, getattr(error, "pos", 0))
+        diagnostic = rule.report(
+            context,
             ERROR_PATTERN.format(parse_type, error),
-            severity=context.severity_of(rule),
-            id=context.id,
-            line=line,
-            column=column,
+            # line=line,
+            # column=column,
         )
         return None, diagnostic
 
@@ -108,13 +115,12 @@ def parse_message_ftl(
     try:
         msg = next(fluent.fluent_parse(raw).all_entries()).value
     except ValueError as error:
-        line, column = get_line_column(raw, getattr(error, "pos", 0))
-        diagnostic = rule.diagnostic(
+        # line, column = get_line_column(raw, getattr(error, "pos", 0))
+        diagnostic = rule.report(
+            context,
             ERROR_PATTERN.format(parse_type, error),
-            severity=context.severity_of(rule),
-            id=context.id,
-            line=line,
-            column=column,
+            # line=line,
+            # column=column,
         )
         return None, diagnostic
 
@@ -123,10 +129,8 @@ def parse_message_ftl(
         and msg.annotations
         and msg.annotations[0].message is not None
     ):
-        diagnostic = rule.diagnostic(
-            ERROR_PATTERN.format(parse_type, msg.annotations[0].message),
-            severity=context.severity_of(rule),
-            id=context.id,
+        diagnostic = rule.report(
+            context, ERROR_PATTERN.format(parse_type, msg.annotations[0].message)
         )
         return None, diagnostic
 
