@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Any, ClassVar, Iterator
 
 from moz.l10n.formats import Format
@@ -102,6 +103,9 @@ class LintContext:
 
     severity: dict[str, Severity] = field(default_factory=dict)
     """Per-rule severity overrides, keyed by rule full-name."""
+
+    path: str | Path | None = None
+    """Path to the resource being checked, if known."""
 
     def severity_of(self, rule: Rule, fallback: Severity | None = None) -> Severity:
         """The effective severity of `rule`, applying any override.

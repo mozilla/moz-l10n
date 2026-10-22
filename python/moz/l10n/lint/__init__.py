@@ -31,7 +31,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Iterator
 
-from moz.l10n.lint.model import NAME_PATTERN, Diagnostic, LintContext, Rule, Severity
+from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
 from moz.l10n.lint.parse import SourceMessageError, TargetMessageError
 from moz.l10n.model import Message
 
@@ -59,10 +59,12 @@ All directories except "parse" in the Python lint directory. (with `-` for `_`)
 """
 
 RULES: dict[str, tuple[str, ...]] = {
-    f: tuple(
-        rd.name for rd in (RULES_COMMON / f).glob("*") if (rd / DOCS_NAME).is_file()
+    family: tuple(
+        rd.name
+        for rd in (RULES_COMMON / family).glob("*")
+        if (rd / DOCS_NAME).is_file()
     )
-    for f in FAMILIES
+    for family in FAMILIES
 }
 """Rule names dictionary `family: [rules]`.
 From all folders with a `docs.md` in common family dirs. (with `-` for `_`).
@@ -79,10 +81,8 @@ _RULE_MODULES: dict[str, list[ModuleType]] = {}
 """Rule family modules cache."""
 
 
-def check(
-    raw_target: str,
-    raw_source: str | None,
-    context: LintContext,
+def check_raw(
+    raw_target: str, raw_source: str, context: LintContext
 ) -> list[Diagnostic]:
     """
     Check a translation against its source.
@@ -99,7 +99,11 @@ def check(
     diagnostics = []
     target, source, parse_diagnostics = check_parse(raw_target, raw_source, context)
     diagnostics.extend(parse_diagnostics)
-    if any(d.severity is Severity.ERROR for d in diagnostics):
+    if (
+        target is None
+        or source is None
+        or any(d.severity is Severity.ERROR for d in diagnostics)
+    ):
         return diagnostics
 
     diagnostics.extend(check_rules(target, source, context))
@@ -108,7 +112,7 @@ def check(
 
 
 def check_parse(
-    raw_target: str | None, raw_source: str | None, context: LintContext
+    raw_target: str, raw_source: str, context: LintContext
 ) -> tuple[Message | None, Message | None, list[Diagnostic]]:
     """
     Perform `parse_check` on `raw_target` and `raw_source`.
@@ -133,7 +137,7 @@ def check_parse(
 
 
 def check_rules(
-    target: Message | None, source: Message | None, context: LintContext
+    target: Message, source: Message, context: LintContext
 ) -> list[Diagnostic]:
     """
     Perform `check` of enabled rules on parsed `target` and `source` resources.
@@ -142,9 +146,9 @@ def check_rules(
     diagnostics: list[Diagnostic] = []
     for rule_family, rules in RULES.items():
         for rule_name in rules:
-            full_name = get_full_name(rule_family, rule_name)
-            if context.enabled_rules and full_name not in context.enabled_rules:
-                continue
+            # full_name = get_full_name(rule_family, rule_name)
+            # if context.enabled_rules and full_name not in context.enabled_rules:
+            #     continue
 
             rule = get_rule_class(rule_family, rule_name)()
 
@@ -161,11 +165,14 @@ def check_rules(
     return diagnostics
 
 
-def get_full_name(rule_family: str, rule_name: str) -> str:
-    """Given rule family and rule name strings produce a rule name string.
-    Concatenating with a dot band replacing any `-` with `_`.
+def get_full_name(a: str | type[Rule], b: str | None = None) -> str:
+    """Produce a full 'family.rule' string concatenated with a dot given either:
+    * rule family and rule name strings
+    * a Rule class
     """
-    return NAME_PATTERN.format(rule_family, rule_name)
+    if b is None and not isinstance(a, str) and issubclass(a, Rule):
+        return f"{a.family}.{a.name}"
+    return f"{a}.{b}"
 
 
 def get_rule_class(rule_family: str, rule_name: str) -> type[Rule]:
