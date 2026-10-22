@@ -3,9 +3,6 @@
     "rule_name": "source-error",
     "rule_family": "parse",
     "message": "Source message parse error: Expected }\nHello {$name\n            ^",
-    "severity": "warning",
-    "id": null,
-    "line": 1,
-    "column": 13
+    "severity": "warning"
   }
 ]

@@ -1,0 +1,4 @@
+.input {$n :number}
+.match $n
+one {{Sinulla on {$n} uusi viesti.}}
+* {{Sinulla on {$n} uutta viestiä.}}

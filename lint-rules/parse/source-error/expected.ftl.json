@@ -3,9 +3,6 @@
     "rule_name": "source-error",
     "rule_family": "parse",
     "message": "Source message parse error: Expected token: \"=\"",
-    "severity": "warning",
-    "id": null,
-    "line": 1,
-    "column": 1
+    "severity": "warning"
   }
 ]

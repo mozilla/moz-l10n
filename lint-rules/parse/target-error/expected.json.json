@@ -3,9 +3,6 @@
     "rule_name": "target-error",
     "rule_family": "parse",
     "message": "Target message parse error: Invalid name or number\n{\u00b6  \"greeting\": {\u00b6    \"message\": \"Hola {$name\"\u00b6  }\u00b6}\u00b6\n    ^",
-    "severity": "error",
-    "id": null,
-    "line": 2,
-    "column": 3
+    "severity": "error"
   }
 ]

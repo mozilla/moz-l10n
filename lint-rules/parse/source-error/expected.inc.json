@@ -3,9 +3,6 @@
     "rule_name": "source-error",
     "rule_family": "parse",
     "message": "Source message parse error: Expected }\n#define greeting Hello {$name\u00b6\n                              ^",
-    "severity": "warning",
-    "id": null,
-    "line": 2,
-    "column": 1
+    "severity": "warning"
   }
 ]

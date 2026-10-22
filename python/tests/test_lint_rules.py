@@ -138,19 +138,22 @@ def test_rule(rule_family: str, rule_name: str, snapshot: Snapshot, subtests):
     if not rule_common.is_dir():
         raise RuntimeError(f'No such lint-rule directory: "{rule_common}"!')
 
-    for target, source, test_file, this_format in moz.l10n.lint.testing.iter_test_files(
-        rule_common
-    ):
+    for (
+        target,
+        source,
+        test_file,
+        this_format,
+        snapshot_name,
+    ) in moz.l10n.lint.testing.iter_test_messages(rule_common):
         with subtests.test(
-            f"{rule.get_full_name()}::{test_file.suffix}", ext=test_file.suffix
+            f"{rule.full_name}::{test_file.suffix}", ext=test_file.suffix
         ):
-            snapshot_name = f"expected{test_file.suffix}.json"
             if not (rule_common / snapshot_name).is_file():
                 pytest.skip(
                     f"No snapshot file for {test_file.name} for {rule.full_name}"
                 )
 
-            context = LintContext(resource_format=this_format, path=str(test_file))
+            context = LintContext(resource_format=this_format, path=test_file)
             diagnostics = list(rule.check(target, source, context))
 
             snapshot.snapshot_dir = rule_common

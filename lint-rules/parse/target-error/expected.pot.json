@@ -3,9 +3,6 @@
     "rule_name": "target-error",
     "rule_family": "parse",
     "message": "Target message parse error: Expected }\nmsgid \"greeting\"\u00b6msgstr \"Hola {$name\"\u00b6\n                                    ^",
-    "severity": "error",
-    "id": null,
-    "line": 2,
-    "column": 20
+    "severity": "error"
   }
 ]

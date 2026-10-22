@@ -3,9 +3,6 @@
     "rule_name": "target-error",
     "rule_family": "parse",
     "message": "Target message parse error: Expected }\nHola {$name\n           ^",
-    "severity": "error",
-    "id": null,
-    "line": 1,
-    "column": 12
+    "severity": "error"
   }
 ]
