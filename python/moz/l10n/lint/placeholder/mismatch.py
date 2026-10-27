@@ -111,10 +111,8 @@ _RE_HTML_TAG = re.compile(r"<\s*(/?)\s*([A-Za-z_][\w:.-]*)(.*?)(/?)\s*>", re.DOT
 - Group 4 (self_closing): '/' for self-closing tags (<br />), otherwise empty
 """
 _RE_WEBEXT = re.compile(r"\$[1-9][0-9]*|\$[A-Za-z0-9_]+\$")
-"""Regex to match WebExtension placeholder syntax in plain text:
-- Indexed placeholders: $1, $2, ...
-- Named placeholders: $FOO$, $USER$, ...
-"""
+"""Regex to match WebExtension placeholder syntax in plain text like
+indexed placeholders ('$1', '$2') or named placeholders ('$FOO$', '$USER$')"""
 
 
 @dataclass(frozen=True)
@@ -132,6 +130,47 @@ class _DiffResult:
     missing_elements: set[str]
 
 
+@dataclass
+class _PatternScan:
+    """Scan a single variant pattern for markup elements and placeholders."""
+
+    text: str
+    elements: Counter[str]
+    element_spans: list[tuple[int, int]]
+    placeholders: list[str]
+    ph_spans: list[tuple[int, int, str]]
+    unnumbered_counts: Counter[str]
+
+    def __init__(self, pattern: Pattern, is_printf_format: bool) -> None:
+        self.text, self.ph_spans = _get_text_and_spans(pattern)
+        mismatched = _get_mismatched_tag_spans(self.text)
+        enclosed_spans: set[tuple[int, int, str]] = set()
+        self.elements: Counter[str] = Counter()
+        self.element_spans: list[tuple[int, int]] = []
+
+        for match in _RE_HTML_TAG.finditer(self.text):
+            if not _is_element(match, self.text) and match.span() not in mismatched:
+                continue
+            self.elements[match[0]] += 1
+            self.element_spans.append(match.span())
+            for start, end, val in self.ph_spans:
+                if (
+                    match.start() <= start
+                    and end <= match.end()
+                    and match.span() != (start, end)
+                ):
+                    enclosed_spans.add((start, end, val))
+
+        self.placeholders = [
+            val
+            for start, end, val in self.ph_spans
+            if (start, end, val) not in enclosed_spans
+        ]
+        self.unnumbered_counts = (
+            _count_unnumbered_placeholders(self.text) if is_printf_format else Counter()
+        )
+
+
 def _diff_messages(
     target: Message, source: Message, resource_format: Format
 ) -> _DiffResult:
@@ -144,96 +183,58 @@ def _diff_messages(
     source_unnumbered_counts: list[Counter[str]] = []
 
     for _, pattern in source:
-        text, ph_spans = _get_text_and_spans(pattern)
-        mismatched = _get_mismatched_tag_spans(text)
-        enclosed_spans: set[tuple[int, int, str]] = set()
-        variant_elements: Counter[str] = Counter()
-
-        for match in _RE_HTML_TAG.finditer(text):
-            if _is_element(match, text) or match.span() in mismatched:
-                source_elements.add(match[0])
-                variant_elements[match[0]] += 1
-                for start, end, val in ph_spans:
-                    if (
-                        match.start() <= start
-                        and end <= match.end()
-                        and match.span() != (start, end)
-                    ):
-                        enclosed_spans.add((start, end, val))
-
-        for start, end, val in ph_spans:
-            if (start, end, val) not in enclosed_spans:
-                source_required_ph.add(val)
-
-        source_elements_by_variant.append(variant_elements)
+        source_scan = _PatternScan(pattern, scan_printf)
+        source_elements.update(source_scan.elements)
+        source_elements_by_variant.append(source_scan.elements)
+        source_required_ph.update(source_scan.placeholders)
         if is_printf_format:
-            source_unnumbered_counts.append(_count_unnumbered_placeholders(text))
+            source_unnumbered_counts.append(source_scan.unnumbered_counts)
 
-    # 2. Inspect target patterns
     target_elements: set[str] = set()
     target_found_ph: set[str] = set()
     extra_placeholders: list[_Mismatch] = []
     target_unnumbered_counts: list[Counter[str]] = []
 
-    for _, pattern in target:
-        text, ph_spans = _get_text_and_spans(pattern)
-        mismatched = _get_mismatched_tag_spans(text)
-        enclosed_spans: set[tuple[int, int, str]] = set()
+    literal_regexes: list[re.Pattern[str]] = []
+    if scan_printf:
+        literal_regexes.append(_RE_PRINTF)
+    if resource_format is Format.webext:
+        literal_regexes.append(_RE_WEBEXT)
 
-        for match in _RE_HTML_TAG.finditer(text):
-            if _is_element(match, text) or match.span() in mismatched:
-                target_elements.add(match[0])
-                for start, end, val in ph_spans:
-                    if (
-                        match.start() <= start
-                        and end <= match.end()
-                        and match.span() != (start, end)
-                    ):
-                        enclosed_spans.add((start, end, val))
+    for _, pattern in target:
+        target_scan = _PatternScan(pattern, is_printf_format)
+        target_elements.update(target_scan.elements)
+        if is_printf_format:
+            target_unnumbered_counts.append(target_scan.unnumbered_counts)
 
         # Check expression-based placeholders
-        for start, end, val in ph_spans:
-            if (start, end, val) not in enclosed_spans:
-                if val in source_required_ph:
-                    target_found_ph.add(val)
-                else:
-                    extra_placeholders.append(_Mismatch(val, expected=0, found=1))
+        for val in target_scan.placeholders:
+            if val in source_required_ph:
+                target_found_ph.add(val)
+            else:
+                extra_placeholders.append(_Mismatch(val, expected=0, found=1))
 
-        # Check raw literal placeholders typed by translators
-        if scan_printf:
-            for match in _RE_PRINTF.finditer(text):
+        # Check raw literal placeholders from plain text
+        for regex in literal_regexes:
+            for match in regex.finditer(target_scan.text):
                 if match[0] in IGNORED_PLACEHOLDERS:
                     continue
                 # Skip if already identified via AST Expression
-                if any(s <= match.start() and match.end() <= e for s, e, _ in ph_spans):
+                if any(
+                    s <= match.start() and match.end() <= e
+                    for s, e, _ in target_scan.ph_spans
+                ):
                     continue
                 # Skip if enclosed in markup
                 if any(
-                    m.start() <= match.start() and match.end() <= m.end()
-                    for m in _RE_HTML_TAG.finditer(text)
-                    if _is_element(m, text)
+                    start <= match.start() and match.end() <= end
+                    for start, end in target_scan.element_spans
                 ):
                     continue
                 if match[0] in source_required_ph:
                     target_found_ph.add(match[0])
                 else:
                     extra_placeholders.append(_Mismatch(match[0], expected=0, found=1))
-
-        if resource_format is Format.webext:
-            for match in _RE_WEBEXT.finditer(text):
-                if any(s <= match.start() and match.end() <= e for s, e, _ in ph_spans):
-                    continue
-                if match[0] in source_required_ph:
-                    target_found_ph.add(match[0])
-                else:
-                    extra_placeholders.append(_Mismatch(match[0], expected=0, found=1))
-
-        if is_printf_format:
-            target_unnumbered_counts.append(_count_unnumbered_placeholders(text))
-
-    # Elements diff
-    missing_elements = source_elements - target_elements
-    extra_elements = target_elements - source_elements
 
     # Reusable & named placeholders diff
     missing_placeholders: list[_Mismatch] = []
@@ -244,6 +245,7 @@ def _diff_messages(
             missing_placeholders.append(_Mismatch(ph, expected=1, found=0))
 
     # 3. Unnumbered printf occurrence checking (Android / XLIFF)
+    missing_elements = source_elements - target_elements
     all_keys = {k for cnt in source_unnumbered_counts for k in cnt}
     if is_printf_format and all_keys:
         src_min = {k: min(cnt[k] for cnt in source_unnumbered_counts) for k in all_keys}
@@ -261,10 +263,10 @@ def _diff_messages(
                 missing_in_var if i == 0 else missing_element_counts & missing_in_var
             )
 
-        for tgt_cnt in target_unnumbered_counts:
+        for tgt_count in target_unnumbered_counts:
             for ph, maximum in src_max.items():
                 minimum = src_min[ph]
-                found = tgt_cnt[ph]
+                found = tgt_count[ph]
                 if found > maximum:
                     extra_placeholders.append(_Mismatch(ph, maximum, found))
                 elif found + missing_element_counts[ph] < minimum:
@@ -273,7 +275,7 @@ def _diff_messages(
     return _DiffResult(
         extra_placeholders=list(dict.fromkeys(extra_placeholders)),
         missing_placeholders=list(dict.fromkeys(missing_placeholders)),
-        extra_elements=extra_elements,
+        extra_elements=target_elements - source_elements,
         missing_elements=missing_elements,
     )
 
