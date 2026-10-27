@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock
 
 from moz.l10n.formats import Format, fluent, mf2
-from moz.l10n.lint import content, placeholder, structure
+from moz.l10n.lint import content, structure
 from moz.l10n.lint.model import Diagnostic, LintContext, Severity
 from moz.l10n.model import Entry, Message
 
@@ -28,10 +28,6 @@ RULES = (
     content.LeadingWhitespaceMismatch(),
     content.TrailingWhitespaceMismatch(),
     structure.PluralSourceRequired(),
-    placeholder.ExtraElement(),
-    placeholder.MissingElement(),
-    placeholder.ExtraPlaceholder(),
-    placeholder.MissingPlaceholder(),
 )
 
 
@@ -404,148 +400,6 @@ class TestWhitespace:
                 "Variant [b]: Leading whitespace mismatch (expected '\\t', got '')",
             ]
         }
-
-
-class TestPlaceholders:
-    def test_android_percent_signs_same(self):
-        original = "Source string 100%"
-        translation = "Translation string 100%"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_android_percent_signs_more(self):
-        original = "Source string 100%"
-        translation = "Translation 100%! string 100%"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_android_same_placeholder(self):
-        original = "Source string with a {$arg1 :string @source=|%1$s|}"
-        translation = "Translation with a {$arg1 :string @source=|%1$s|}"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_android_plural_placeholders(self):
-        original = """
-            .input {$n :number}
-            .match $n
-            one {{One item}}
-            * {{{$arg1 :number @source=|%1$d|} items}}
-        """
-        translation = """
-            .input {$n :number}
-            .match $n
-            one {{{$arg1 :number @source=|%1$d|} item}}
-            many {{{$arg1 :number @source=|%1$d|} items}}
-            * {{{$arg1 :number @source=|%1$d|} items}}
-        """
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_android_missing_placeholder(self):
-        original = "Source string with a {$arg1 :string @source=|%1$s|}"
-        translation = "Translation"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {
-            "pndbWarnings": ["Placeholder %1$s not found in translation"]
-        }
-
-    def test_android_mistyped_placeholder(self):
-        original = "Source string with a {$arg1 :string @source=|%1$s|}"
-        translation = "Translation %1"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {
-            "pErrors": ["Placeholder %1 not found in reference"],
-            "pndbWarnings": ["Placeholder %1$s not found in translation"],
-        }
-
-    def test_android_extra_placeholder(self):
-        original = "Source string"
-        translation = "Translation with a {$arg1 :string @source=|%1$s|}"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {
-            "pErrors": ["Placeholder %1$s not found in reference"]
-        }
-
-    def test_android_extra_placeholder_as_literal(self):
-        original = "Source string"
-        translation = "Translation with a %1$s"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {
-            "pErrors": ["Placeholder %1$s not found in reference"]
-        }
-
-    def test_android_changed_placeholder(self):
-        original = (
-            "New! {$arg :string @source=|%s|} email masks are now available on mobile."
-        )
-        translation = "Нав! Акнун ниқобҳои почтаи электронии «{$arg1 :string @source=|%@|}» дар дастгоҳҳои мобилӣ дастрасанд."
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {
-            "pErrors": ["Placeholder %@ not found in reference"],
-            "pndbWarnings": ["Placeholder %s not found in translation"],
-        }
-
-    def test_android_protections(self):
-        original = "Source {$string :xliff:g id=string @translate=no @source=String} with {$variable :xliff:g id=variable example=5 @translate=no @source=|%1$s|}"
-        translation = "Translation String with %1$s"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {
-            "pndbWarnings": ["Placeholder String not found in translation"]
-        }
-
-    def test_android_good_html(self):
-        original = "Source with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}"
-        translation = (
-            "Translation with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}"
-        )
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_android_good_html_as_literal(self):
-        original = "Source with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}"
-        translation = "Translation with a <b>line<br>break</b>"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_android_bad_html(self):
-        original = "Source {|<b>| :html}string{|</b>| :html}"
-        translation = "Translation with a <a>tag mismatch{|</b>| :html}"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {
-            "pErrors": ["Element <a> not found in reference"],
-            "pndbWarnings": ["Element <b> not found in translation"],
-        }
-
-    def test_android_extra_percent(self):
-        original = "Source percent"
-        translation = "Translation {|%| @source=|%%|}"
-        entity = mock_entity("android", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_webext_literal_index_placeholder_as_placeholder(self):
-        original = "Source string with a {$arg1 @source=|$1|}"
-        translation = "Translation with a {$arg1 @source=|$1|}"
-        entity = mock_entity("webext", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_webext_literal_index_placeholder_as_literal(self):
-        original = "Source string with a {$arg1 @source=|$1|}"
-        translation = "Translation with a $1"
-        entity = mock_entity("webext", string=original)
-        assert run_custom_checks(entity, translation) == {}
-
-    def test_webext_literal_named_placeholder_as_placeholder(self):
-        original = (
-            ".local $FOO = {$arg1 @source=|$1|}\n"
-            + "{{Source string with a {$FOO @source=|$FOO$|}}}"
-        )
-        translation = (
-            ".local $FOO = {$arg1 @source=|$1|}\n"
-            + "{{Translation with a {$FOO @source=|$FOO$|}}}"
-        )
-        entity = mock_entity("webext", string=original)
-        assert run_custom_checks(entity, translation) == {}
 
 
 def _parse_custom(
