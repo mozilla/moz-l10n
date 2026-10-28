@@ -13,6 +13,11 @@ This is the mirror of [`placeholder.extra-element`](../extra-element/docs.md)
 
 This is reported as a **warning** because a translator may legitimately drop an element in some grammatical constructions.
 
+## How to fix?
+
+Reintroduce the missing placeholder/element where it belongs in the translation.
+If it is intentionally omitted, the warning can be acknowledged.
+
 ## Example
 
 Reference:
@@ -24,8 +29,3 @@ Translation:
 Translation without a link!
 ```
 > ⚠️ `Element <x> not found in translation`
-
-## How to fix?
-
-Reintroduce the missing placeholder/element where it belongs in the translation.
-If it is intentionally omitted, the warning can be acknowledged.
