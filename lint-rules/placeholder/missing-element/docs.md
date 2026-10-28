@@ -2,29 +2,28 @@
 
 ## Description
 
-A markup element present in the source string does not appear in the translation. This is the mirror of
-[`placeholder.extra-element`](../extra-element/docs.md) and is
-reported as a **warning** because a translator may legitimately drop an element in some grammatical constructions.
+A markup element present in the source string does not appear in the translation.
 
-The diagnostic wording follows the item kind:
-
+The diagnostic wording follows the style:
 - `Element <x> not found in translation`
 
-## Why is this bad?
+This is the mirror of [`placeholder.extra-element`](../extra-element/docs.md)
 
-A dropped placeholder usually means the translation loses a dynamic value the
-source intended to show (a count, a name, a link). It is often a mistake, but
-because it is occasionally intentional it warns rather than blocks.
+## Severity.WARNING
+
+This is reported as a **warning** because a translator may legitimately drop an element in some grammatical constructions.
 
 ## Example
 
+Reference:
 ```
-# source.xml — source provides a %1$s
-Source string with a %1$s
-
-# example.xml — translation omits it
-Translation
+Source string with a <a href="https:some.where">link!</a>
 ```
+Translation:
+```
+Translation without a link!
+```
+> ⚠️ `Element <x> not found in translation`
 
 ## How to fix?
 
