@@ -758,6 +758,7 @@ class TestWebExtension:
 class TestRest:
     def test_coverage_html_markup_key(self) -> None:
         from moz.l10n.lint.placeholder.mismatch import _MarkupKey
+
         for arg in (VariableRef("div"), "not-a-tag", "<>", "<", ">"):
             assert (
                 _MarkupKey.from_expression(Expression(function="html", arg=arg)) is None
