@@ -20,6 +20,7 @@ from moz.l10n.formats import Format
 from moz.l10n.formats.mf2 import mf2_parse_message
 from moz.l10n.lint import placeholder
 from moz.l10n.lint.model import Diagnostic, LintContext, Severity
+from moz.l10n.model import Expression, VariableRef
 
 PLACEHOLDER_CHECKS = {
     "extra": placeholder.ExtraPlaceholder(),
@@ -72,7 +73,7 @@ class TestBasic:
 
     def test_android_mistyped_placeholder(self) -> None:
         result = _check_all_placeholder_rules(
-            "Translation %1",
+            "Translation  {$arg1 :string @source=|%1|}",
             "Source string with a {$arg1 :string @source=|%1$s|}",
             Format.android,
         )
@@ -105,29 +106,6 @@ class TestBasic:
                 "severity": Severity.ERROR,
             }
         ]
-
-    def test_android_extra_placeholder_as_literal(self) -> None:
-        result = _check_all_placeholder_rules(
-            "Translation with a %1$s",
-            "Source string",
-            Format.android,
-        )
-        assert result == [
-            {
-                "rule_name": "extra",
-                "rule_family": "placeholder",
-                "message": "Placeholder %1$s not found in reference",
-                "severity": Severity.ERROR,
-            }
-        ]
-
-    def test_android_literal_placeholder_satisfies_reference(self) -> None:
-        result = _check_all_placeholder_rules(
-            "Translation with %1$s",
-            "Source with {$arg1 :string @source=|%1$s|}",
-            Format.android,
-        )
-        assert result == []
 
     def test_android_changed_placeholder(self) -> None:
         result = _check_all_placeholder_rules(
@@ -452,14 +430,14 @@ class TestPluralVariants:
         ]
 
     def test_missing_elements_in_different_source_variants(self) -> None:
-        arg = "{$arg1 :string @source=|%@|}"
         original = (
-            f".input {{$n :number}} .match $n "
-            f'one {{{{<a href="{arg}">link</a>}}}} '
-            f'* {{{{<a title="{arg}">link</a>}}}}'
+            ".input {$n :number} .match $n "
+            "one {{{#a href=|%@|}link{/a}}} "
+            "* {{{#a title=|%@|}link{/a}}}"
         )
-        translation = ".input {$n :number} .match $n * {{link</a>}}"
+        translation = ".input {$n :number} .match $n * {{link{/a}}}"
         result = _check_all_placeholder_rules(translation, original, Format.xliff)
+
         assert result == [
             {
                 "rule_name": "missing-element",
@@ -486,9 +464,9 @@ class TestMarkup:
         )
         assert result == []
 
-    def test_good_html_as_literal(self) -> None:
+    def test_android_good_html(self) -> None:
         result = _check_all_placeholder_rules(
-            "Translation with a <b>line<br>break</b>",
+            "Translation with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}",
             "Source with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}",
         )
         assert result == []
@@ -502,7 +480,7 @@ class TestMarkup:
 
     def test_android_bad_html(self) -> None:
         result = _check_all_placeholder_rules(
-            "Translation with a <a>tag mismatch{|</b>| :html}",
+            "Translation with a {|<a>| :html}tag mismatch{|</b>| :html}",
             "Source {|<b>| :html}string{|</b>| :html}",
         )
         assert result == [
@@ -581,6 +559,19 @@ class TestMarkup:
         )
         assert result == []
 
+    def test_equal_links(self) -> None:
+        result = _check_all_placeholder_rules(
+            "{#a href=$url}link{/a}", "{#a href=$url}link{/a}"
+        )
+        assert result == []
+
+    def test_mf2_function_markup(self) -> None:
+        """Check Expression without string or VariableRef arg, e.g. function call with no args."""
+        result1 = _check_all_placeholder_rules(
+            "Hola {:current_date}", "Hello {:current_date}"
+        )
+        assert result1 == []
+
 
 class TestAttributes:
     """Placeholders in Attributes & Suppression Cascades"""
@@ -592,13 +583,14 @@ class TestAttributes:
         result = _check_all_placeholder_rules(original, original, Format.android)
         assert result == []
 
-    def test_changed_placeholder_in_element(self) -> None:
-        original = (
-            'Read the <a href="{$arg1 :string @source=|%1$s|}">policy{|</a>| :html}'
-        )
-        translation = 'Leggi la <a href="https://example.com">policy{|</a>| :html}'
-        result = _check_all_placeholder_rules(translation, original, Format.android)
-        assert result == [
+    @pytest.mark.parametrize(
+        "format, placeholder",
+        [(Format.xliff, "%1$@"), (Format.android, "%1$s")],
+    )
+    def test_changed_placeholder_in_element(
+        self, format: Format, placeholder: str
+    ) -> None:
+        expected = [
             {
                 "rule_name": "extra-element",
                 "rule_family": "placeholder",
@@ -608,23 +600,43 @@ class TestAttributes:
             {
                 "rule_name": "missing-element",
                 "rule_family": "placeholder",
-                "message": 'Element <a href="%1$s"> not found in translation',
+                "message": f'Element <a href="{placeholder}"> not found in translation',
                 "severity": Severity.WARNING,
             },
         ]
+        result = _check_all_placeholder_rules(
+            "Leggi la {#a href=|https://example.com|}policy{/a}",
+            f"Read the {{#a href=|{placeholder}|}}policy{{/a}}",
+            format,
+        )
+        assert result == expected
+        result = _check_all_placeholder_rules(
+            'Leggi la {|<a href="https://example.com">| :html}policy{|</a>| :html}',
+            f'Read the {{|<a href="{placeholder}">| :html}}policy{{|</a>| :html}}',
+            format,
+        )
+        assert result == expected
 
     def test_missing_element_suppresses_unnumbered_placeholder_warning(self) -> None:
-        original = 'Read <a href="{$arg1 :string @source=|%@|}">link</a>'
-        translation = "Read link</a>"
-        result = _check_all_placeholder_rules(translation, original, Format.xliff)
-        assert result == [
-            {
-                "rule_name": "missing-element",
-                "rule_family": "placeholder",
-                "message": 'Element <a href="%@"> not found in translation',
-                "severity": Severity.WARNING,
-            }
-        ]
+        expected = {
+            "rule_name": "missing-element",
+            "rule_family": "placeholder",
+            "message": 'Element <a href="%@"> not found in translation',
+            "severity": Severity.WARNING,
+        }
+        result = _check_all_placeholder_rules(
+            "Read link{|</a>| :html}",
+            'Read {|<a href="%@">| :html}link{|</a>| :html}',
+            Format.xliff,
+        )
+        assert result == [expected]
+
+        result = _check_all_placeholder_rules(
+            "Read link{/a}",
+            "Read {#a href=|%@|}link{/a}",
+            Format.xliff,
+        )
+        assert result == [expected]
 
     def test_extra_unnumbered_placeholder_with_markup_attribute(self) -> None:
         translation = "Hi {$arg :string @source=|%s|} {$arg2 :string @source=|%s|} {#a href=|%s|}link{/a}"
@@ -706,11 +718,18 @@ class TestWebExtension:
             "Source string with a {$arg1 @source=|$1|}",
             Format.webext,
         )
-        assert result == []
+        assert result == [
+            {
+                "rule_name": "missing",
+                "rule_family": "placeholder",
+                "message": "Placeholder $1 not found in translation",
+                "severity": Severity.WARNING,
+            }
+        ]
 
     def test_webext_extra_named_placeholder_as_literal(self) -> None:
         result = _check_all_placeholder_rules(
-            "Translation with a $FOO$",
+            "Translation with a {$arg @source=|$FOO$|}",
             "Source string",
             Format.webext,
         )
@@ -727,3 +746,19 @@ class TestWebExtension:
         msg = ".local $FOO = {$arg1 @source=|$1|}\n{{Translation with a {$FOO @source=|$FOO$|}}}"
         result = _check_all_placeholder_rules(msg, msg, Format.webext)
         assert result == []
+
+    def test_webext_extra_index_placeholder(self) -> None:
+        result = _check_all_placeholder_rules(
+            "Translation with a $1", "Source string", Format.webext
+        )
+        # This should totally not be caught
+        assert result == []
+
+
+class TestRest:
+    def test_coverage_html_markup_key(self) -> None:
+        from moz.l10n.lint.placeholder.mismatch import _MarkupKey
+        for arg in (VariableRef("div"), "not-a-tag", "<>", "<", ">"):
+            assert (
+                _MarkupKey.from_expression(Expression(function="html", arg=arg)) is None
+            )
