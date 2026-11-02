@@ -151,8 +151,8 @@ function message(ftlPattern: FTL.Pattern): Message {
           // Otherwise we'd duplicate default variant. CatchAll already covers it!
           const isExpandableDefault =
             variant.default &&
-            ftlSelectors.length > 1 &&
-            containsSelector(variant.value, ftlSelectors)
+            (prevFilt !== undefined ||
+              containsSelector(variant.value, ftlSelectors))
           filter[idx] = new Set(
             Array.from(keyCandidates).filter(
               (key) =>
@@ -246,9 +246,15 @@ function findSelectors(
 }
 
 function uniqueKeys({ keys }: SelectorResultRow): Key[] {
+  // Selects sharing a selector may declare overlapping or differing keys,
+  // but each key name maps to one variant and only one may be the catch-all.
+  // Deduplicate by name, keeping the outermost default as the catch-all.
+  const defaultName = keys.find((key) => key.isDefault)?.name
   const byName = new Map<string, Key>()
-  for (const key of keys) {
-    if (!byName.has(key.name)) byName.set(key.name, key)
+  for (const { name, isNumeric } of keys) {
+    if (!byName.has(name)) {
+      byName.set(name, { name, isNumeric, isDefault: name === defaultName })
+    }
   }
   return Array.from(byName.values())
 }

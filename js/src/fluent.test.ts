@@ -617,6 +617,74 @@ describe('entry', () => {
     `
   )
 
+  ok(
+    'nested-in-non-default',
+    ftl`
+    nested-in-non-default =
+        { $retryAfter ->
+            [one] Wait { $retryAfter ->
+                [0] no time at all
+               *[other] a moment
+            }, please.
+           *[other] Please wait.
+        }
+
+    `,
+    {
+      '=': {
+        decl: { retryAfter: { $: 'retryAfter', fn: 'number' } },
+        sel: ['retryAfter'],
+        alt: [
+          { keys: ['one'], pat: ['Wait a moment, please.'] },
+          { keys: [{ '*': 'other' }], pat: ['Please wait.'] }
+        ]
+      }
+    },
+    ftl`
+    nested-in-non-default =
+        { $retryAfter ->
+            [one] Wait a moment, please.
+           *[other] Please wait.
+        }
+
+    `
+  )
+
+  // The outer *[1] is the only catch-all: its pattern must survive,
+  // even though the inner select declares a different default key.
+  ok(
+    'differing-defaults',
+    ftl`
+    differing-defaults =
+        { $n ->
+            [one] One { $n ->
+                [two] Two
+               *[one] Nested one
+            }
+           *[1] Fallback
+        }
+
+    `,
+    {
+      '=': {
+        decl: { n: { $: 'n', fn: 'number' } },
+        sel: ['n'],
+        alt: [
+          { keys: ['one'], pat: ['One Nested one'] },
+          { keys: [{ '*': '1' }], pat: ['Fallback'] }
+        ]
+      }
+    },
+    ftl`
+    differing-defaults =
+        { $n ->
+            [one] One Nested one
+           *[1] Fallback
+        }
+
+    `
+  )
+
   test('serialize variable reference to declaration', () => {
     const msg: Message = {
       decl: {
