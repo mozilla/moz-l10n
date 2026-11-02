@@ -1154,3 +1154,100 @@ class TestFluent(TestCase):
             """
         )
         assert "".join(fluent_serialize(fluent_parse(original))) == expected
+
+    def test_nested_variants_in_non_default(self):
+        original = dedent(
+            """\
+            error-wait =
+                { $retryAfter ->
+                    [one] Wait { $retryAfter ->
+                        [0] no time at all
+                       *[other] a moment
+                    }, please.
+                   *[other] Please wait.
+                }
+            """
+        )
+
+        expected = dedent(
+            """\
+            error-wait =
+                { $retryAfter ->
+                    [one] Wait a moment, please.
+                   *[other] Please wait.
+                }
+            """
+        )
+        assert "".join(fluent_serialize(fluent_parse(original))) == expected
+
+    def test_nested_variants_with_differing_defaults(self):
+        original = dedent(
+            """\
+            m =
+                { $n ->
+                    [one] One { $n ->
+                        [two] Two
+                       *[one] Nested one
+                    }
+                   *[1] Fallback
+                }
+            """
+        )
+
+        expected = dedent(
+            """\
+            m =
+                { $n ->
+                    [one] One Nested one
+                   *[1] Fallback
+                }
+            """
+        )
+        assert "".join(fluent_serialize(fluent_parse(original))) == expected
+
+    def test_nested_select_same_selector_prunes_redundant_fallback(self):
+        original = dedent(
+            """\
+            b = Prefix { $n ->
+                [0] A { $n ->
+                    [one] x
+                   *[other] y
+                }
+               *[other] B
+              }
+            """
+        )
+        expected = dedent(
+            """\
+            b =
+                { $n ->
+                    [0] Prefix A y
+                   *[other] Prefix B
+                }
+            """
+        )
+        assert "".join(fluent_serialize(fluent_parse(original))) == expected
+
+    def test_multiple_selects_same_selector(self):
+        original = dedent(
+            """\
+            a = { $n ->
+                [one] x
+               *[other] y
+              } and { $n ->
+                [0] z
+               *[other] w
+              }
+            """
+        )
+        expected = dedent(
+            """\
+            a =
+                { $n ->
+                    [0] y and z
+                    [one] x and w
+                   *[other] y and w
+                }
+            """
+        )
+        assert "".join(fluent_serialize(fluent_parse(original))) == expected
