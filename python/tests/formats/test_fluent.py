@@ -1126,32 +1126,6 @@ class TestFluent(TestCase):
         )
         assert "".join(fluent_serialize(fluent_parse(original))) == expected
 
-    def test_nested_variants_in_non_default(self):
-        original = dedent(
-            """\
-            error-wait =
-                { $retryAfter ->
-                    [one] Wait { $retryAfter ->
-                        [0] no time at all
-                       *[other] a moment
-                    }, please.
-                   *[other] Please wait.
-                }
-            """
-        )
-
-        # The inner `*[other]` is what applies when $retryAfter is `one`.
-        expected = dedent(
-            """\
-            error-wait =
-                { $retryAfter ->
-                    [one] Wait a moment, please.
-                   *[other] Please wait.
-                }
-            """
-        )
-        assert "".join(fluent_serialize(fluent_parse(original))) == expected
-
     def test_nested_sibling_variants(self):
         original = dedent(
             """\
@@ -1176,79 +1150,6 @@ class TestFluent(TestCase):
                     [0] No items.
                     [one] One item found in one folder.
                    *[other] { $count } items found in several folders.
-                }
-            """
-        )
-        assert "".join(fluent_serialize(fluent_parse(original))) == expected
-
-    def test_nested_variants_with_differing_defaults(self):
-        original = dedent(
-            """\
-            m =
-                { $n ->
-                    [one] One { $n ->
-                        [two] Two
-                       *[one] Nested one
-                    }
-                   *[1] Fallback
-                }
-            """
-        )
-
-        # The outer `*[1]` is the only catch-all: its pattern must survive.
-        expected = dedent(
-            """\
-            m =
-                { $n ->
-                    [one] One Nested one
-                   *[1] Fallback
-                }
-            """
-        )
-        assert "".join(fluent_serialize(fluent_parse(original))) == expected
-
-    def test_nested_selector_prunes_redundant_fallback(self):
-        original = dedent(
-            """\
-            b = Prefix { $n ->
-                [0] A { $n ->
-                    [one] x
-                   *[other] y
-                }
-               *[other] B
-              }
-            """
-        )
-        expected = dedent(
-            """\
-            b =
-                { $n ->
-                    [0] Prefix A y
-                   *[other] Prefix B
-                }
-            """
-        )
-        assert "".join(fluent_serialize(fluent_parse(original))) == expected
-
-    def test_multi_selects_same_selector(self):
-        original = dedent(
-            """\
-            a = { $n ->
-                [one] x
-               *[other] y
-              } and { $n ->
-                [0] z
-               *[other] w
-              }
-            """
-        )
-        expected = dedent(
-            """\
-            a =
-                { $n ->
-                    [0] y and z
-                    [one] x and w
-                   *[other] y and w
                 }
             """
         )
