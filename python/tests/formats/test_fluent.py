@@ -122,6 +122,34 @@ class TestFluent(TestCase):
         with self.assertRaises(ValueError):
             fluent_parse_entry("# comment\n")
 
+        entry = fluent_parse_entry("# comment\nmsg = body\n\n", with_linepos=False)
+        assert entry == Entry(("msg",), PatternMessage(["body"]))
+
+        with self.assertRaises(ValueError) as cm:
+            fluent_parse_entry("msg =\n    <b>[x]</b>\n    [y]</b>\n")
+        assert str(cm.exception) == (
+            'A line cannot start with "[". Use { "[" } to write it as text.'
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            fluent_parse_entry("msg = body\nother = body\n")
+        assert str(cm.exception) == "Unexpected text after the end of the message"
+
+        with self.assertRaises(ValueError) as cm:
+            fluent_parse_entry("msg = body\n# comment\n")
+        assert str(cm.exception) == "Unexpected text after the end of the message"
+
+        entry = fluent_parse_entry("msg = body\r\n  \r\n\n ", with_linepos=False)
+        assert entry == Entry(("msg",), PatternMessage(["body"]))
+
+        with self.assertRaises(ValueError) as cm:
+            fluent_parse_entry("msg = body\n\t\n")
+        assert str(cm.exception) == "Unexpected text after the end of the message"
+
+        with self.assertRaises(ValueError) as cm:
+            fluent_parse_entry("msg = body\n\u00a0\n")
+        assert str(cm.exception) == "Unexpected text after the end of the message"
+
     def test_messages(self):
         msg = fluent_parse_message("body")
         assert msg == PatternMessage(["body"])
@@ -139,6 +167,18 @@ class TestFluent(TestCase):
         msg = fluent_parse_message("# comment")
         assert msg == PatternMessage(["# comment"])
         assert fluent_serialize_message(msg) == "# comment"
+
+        with self.assertRaises(ValueError) as cm:
+            fluent_parse_message("aaa\n[bbb]")
+        assert str(cm.exception) == (
+            'A line cannot start with "[". Use { "[" } to write it as text.'
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            fluent_parse_message("aaa\n.bbb")
+        assert str(cm.exception) == (
+            'A line cannot start with ".". Use { "." } to write it as text.'
+        )
 
         msg = fluent_parse_message(
             """
