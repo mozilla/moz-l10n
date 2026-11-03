@@ -254,7 +254,7 @@ class _MarkupKey(NamedTuple):
     def from_markup(cls, node: Markup) -> _MarkupKey:
         options = tuple(
             sorted(
-                (k, v.name if isinstance(v, VariableRef) else v)
+                (k, f"${v.name}" if isinstance(v, VariableRef) else v)
                 for k, v in node.options.items()
             )
         )
