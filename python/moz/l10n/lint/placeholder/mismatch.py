@@ -33,8 +33,7 @@ class ExtraPlaceholder(Rule):
     def check(
         self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
-        diff = _DiffResult(target, source, context.resource_format)
-        for mismatch in diff.extra_placeholders:
+        for mismatch in _Diff.cached(target, source, context).extra_placeholders:
             if mismatch.expected == 0:
                 msg = f"Placeholder {mismatch.placeholder} not found in reference"
             else:
@@ -53,8 +52,7 @@ class MissingPlaceholder(Rule):
     def check(
         self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
-        diff = _DiffResult(target, source, context.resource_format)
-        for mismatch in diff.missing_placeholders:
+        for mismatch in _Diff.cached(target, source, context).missing_placeholders:
             if mismatch.found == 0:
                 msg = f"Placeholder {mismatch.placeholder} not found in translation"
             else:
@@ -73,8 +71,7 @@ class ExtraElement(Rule):
     def check(
         self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
-        diff = _DiffResult(target, source, context.resource_format)
-        for element in sorted(diff.extra_elements):
+        for element in sorted(_Diff.cached(target, source, context).extra_elements):
             yield self.report(context, f"Element {element} not found in reference")
 
 
@@ -86,8 +83,7 @@ class MissingElement(Rule):
     def check(
         self, target: Message, source: Message, context: LintContext
     ) -> Iterator[Diagnostic]:
-        diff = _DiffResult(target, source, context.resource_format)
-        for element in sorted(diff.missing_elements):
+        for element in sorted(_Diff.cached(target, source, context).missing_elements):
             yield self.report(context, f"Element {element} not found in translation")
 
 
@@ -98,16 +94,33 @@ class _Mismatch:
     found: int
 
 
-class _DiffResult:
+class _Diff:
     extra_placeholders: list[_Mismatch]
     missing_placeholders: list[_Mismatch]
     extra_elements: set[_MarkupKey]
     missing_elements: set[_MarkupKey]
 
-    def __init__(
-        self, target: Message, source: Message, resource_format: Format
-    ) -> None:
-        is_printf_format = resource_format in (Format.android, Format.xliff)
+    _last_source: Message | None = None
+    _last_target: Message | None = None
+    _last_format: Format | None = None
+    _last_result: _Diff | None = None
+
+    @classmethod
+    def cached(cls, target: Message, source: Message, context: LintContext) -> _Diff:
+        if (
+            source is not cls._last_source
+            or target is not cls._last_target
+            or context.resource_format is not cls._last_format
+            or cls._last_result is None
+        ):
+            cls._last_source = source
+            cls._last_target = target
+            cls._last_format = context.resource_format
+            cls._last_result = cls(target, source, context)
+        return cls._last_result
+
+    def __init__(self, target: Message, source: Message, context: LintContext) -> None:
+        is_printf_format = context.resource_format in (Format.android, Format.xliff)
 
         src_scans = [_PatternScan(p, is_printf_format) for _, p in source]
         trg_scans = [_PatternScan(p, is_printf_format) for _, p in target]
