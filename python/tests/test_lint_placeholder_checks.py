@@ -40,6 +40,8 @@ def _check_all_placeholder_rules(
     """Parse incoming strings with their dedicated format parser,
     run rules with given format context, and gather diagnostics from all checks.
     """
+    if format in (Format.android, Format.xliff):
+        pytest.importorskip("lxml")
     target = parse_message(format, target_raw, xliff_is_xcode=xliff_is_xcode)
     source = parse_message(format, source_raw, xliff_is_xcode=xliff_is_xcode)
     return _call_checks(target, source, format)
