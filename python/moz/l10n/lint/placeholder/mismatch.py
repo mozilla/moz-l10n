@@ -185,9 +185,9 @@ class _PatternScan:
     unnumbered: Counter[str]
 
     def __init__(self, pattern: Pattern, is_printf: bool) -> None:
-        self.elements: set[_MarkupKey] = set()
-        self.reusable: set[str] = set()
-        self.unnumbered: Counter[str] = Counter()
+        self.elements = set()
+        self.reusable = set()
+        self.unnumbered = Counter()
 
         def record_token(token: str | None) -> None:
             if not token or token in IGNORED_PLACEHOLDERS:
@@ -251,7 +251,7 @@ class _MarkupKey(NamedTuple):
         return f"<{self.name}{opts_str}{closer}>"
 
     @classmethod
-    def from_markup(cls, node: Markup) -> "_MarkupKey":
+    def from_markup(cls, node: Markup) -> _MarkupKey:
         options = tuple(
             sorted(
                 (k, v.name if isinstance(v, VariableRef) else v)
@@ -261,7 +261,7 @@ class _MarkupKey(NamedTuple):
         return cls(node.kind, node.name, options)
 
     @classmethod
-    def from_expression(cls, node: Expression) -> "_MarkupKey" | None:
+    def from_expression(cls, node: Expression) -> _MarkupKey | None:
         if not isinstance(node.arg, str):
             return None
         arg = node.arg.strip()
@@ -287,7 +287,7 @@ class _MarkupKey(NamedTuple):
                 for k, v in [token.split("=", 1)]
             )
         )
-        return cls(kind, parts[0], tuple(sorted(options)))
+        return cls(kind, parts[0], options)
 
 
 def _get_expression_token(node: Expression) -> str | None:
