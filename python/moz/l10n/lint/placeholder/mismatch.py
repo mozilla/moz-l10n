@@ -197,22 +197,23 @@ class _PatternScan:
             else:
                 self.reusable.add(token)
 
-        def record_option_token(val: str | VariableRef) -> None:
-            """Record markup attribute values.
-
-            Attributes are already validated via _MarkupKey.
-            Only unnumbered printf (%s, %@) affect sequential runtime
-            argument indexing and need to be tracked in unnumbered.
+        def record_option_token(value: str | VariableRef) -> None:
+            """Record unnumbered printf specifiers in markup attributes.
+            For example:
+                `Please click <a href="%s">here</a> or see %s.`
+            Our Android/XLIFF parsers keep the literal `%s` like:
+                `Markup('open','a',options={'href': '%s'})`
+            No `VariableRef`! So we track them in `self.unnumbered`.
+            See `test_extra_unnumbered_placeholder_with_markup_attribute`.
             """
-            if not is_printf or not isinstance(val, str):
-                return
             if (
-                not val.startswith("%")
-                or val in IGNORED_PLACEHOLDERS
-                or _is_reusable(val)
+                is_printf
+                and isinstance(value, str)
+                and value.startswith("%")
+                and value not in IGNORED_PLACEHOLDERS
+                and not _is_reusable(value)
             ):
-                return
-            self.unnumbered[val] += 1
+                self.unnumbered[value] += 1
 
         candidates: list[_MarkupKey] = []
         for node in pattern:
