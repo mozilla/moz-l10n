@@ -201,9 +201,9 @@ class _PatternScan:
             """Record unnumbered printf specifiers in markup attributes.
             For example:
                 `Please click <a href="%s">here</a> or see %s.`
-            Our Android/XLIFF parsers keep the literal `%s` like:
+            Our Android/XLIFF parsers keep the literal `%s` not `VariableRef` like:
                 `Markup('open','a',options={'href': '%s'})`
-            No `VariableRef`! So we track them in `self.unnumbered`.
+            So we track them in `self.unnumbered` along text specifiers.
             See `test_extra_unnumbered_placeholder_with_markup_attribute`.
             """
             if (
@@ -216,12 +216,13 @@ class _PatternScan:
                 self.unnumbered[value] += 1
 
         candidates: list[_MarkupKey] = []
+        """All markup to filter for bare open tags (e.g. <br>, <img>)
+        which requires inspecting the whole pattern."""
         for node in pattern:
             if isinstance(node, Markup):
                 candidates.append(_MarkupKey.from_markup(node))
                 for value in node.options.values():
                     record_option_token(value)
-
             elif isinstance(node, Expression):
                 if node.function == "html":
                     if key := _MarkupKey.from_expression(node):
@@ -231,6 +232,8 @@ class _PatternScan:
                 else:
                     record_token(_get_expression_token(node))
 
+        # Track opening tags without options as lintable elements
+        # only if accompanied by closing tags or option attributes.
         has_closing = any(el.kind == "close" for el in candidates)
         self.elements = {
             el for el in candidates if el.kind != "open" or el.options or has_closing
@@ -238,18 +241,15 @@ class _PatternScan:
 
 
 class _MarkupKey(NamedTuple):
-    """Hashable markup representation for sets and counters."""
+    """Hashable markup representation for sets and counters.
+    * Created from both `Markup` and `Expression(function="html",...`
+      which are not hashable and cannot be used in set math.
+    * Sorts options so `<x x="x" y="y">` == `<x y="y" x="x">`.
+    """
 
     kind: Literal["open", "standalone", "close"]
     name: str
     options: tuple[tuple[str, str], ...] = ()
-
-    def __str__(self) -> str:
-        if self.kind == "close":
-            return f"</{self.name}>"
-        opts_str = "".join(f' {k}="{v}"' for k, v in self.options)
-        closer = "/" if self.kind == "standalone" else ""
-        return f"<{self.name}{opts_str}{closer}>"
 
     @classmethod
     def from_markup(cls, node: Markup) -> _MarkupKey:
@@ -289,6 +289,14 @@ class _MarkupKey(NamedTuple):
             )
         )
         return cls(kind, parts[0], options)
+
+    def __str__(self) -> str:
+        """Convenience stringification for reporting."""
+        if self.kind == "close":
+            return f"</{self.name}>"
+        opts_str = "".join(f' {k}="{v}"' for k, v in self.options)
+        closer = "/" if self.kind == "standalone" else ""
+        return f"<{self.name}{opts_str}{closer}>"
 
 
 def _get_expression_token(node: Expression) -> str | None:
