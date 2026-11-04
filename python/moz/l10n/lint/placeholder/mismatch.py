@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Iterator, Literal, NamedTuple
 
@@ -189,55 +190,51 @@ class _PatternScan:
         self.reusable = set()
         self.unnumbered = Counter()
 
-        def record_token(token: str | None) -> None:
-            if not token or token in IGNORED_PLACEHOLDERS:
-                return
-            if is_printf and not _is_reusable(token):
-                self.unnumbered[token] += 1
-            else:
-                self.reusable.add(token)
-
-        def record_option_token(value: str | VariableRef) -> None:
-            """Record unnumbered printf specifiers in markup attributes.
-            For example:
-                `Please click <a href="%s">here</a> or see %s.`
-            Our Android/XLIFF parsers keep the literal `%s` not `VariableRef` like:
-                `Markup('open','a',options={'href': '%s'})`
-            So we track them in `self.unnumbered` along text specifiers.
-            See `test_extra_unnumbered_placeholder_with_markup_attribute`.
-            """
-            if (
-                is_printf
-                and isinstance(value, str)
-                and value.startswith("%")
-                and value not in IGNORED_PLACEHOLDERS
-                and not _is_reusable(value)
-            ):
-                self.unnumbered[value] += 1
-
         candidates: list[_MarkupKey] = []
         """All markup to filter for bare open tags (e.g. <br>, <img>)
         which requires inspecting the whole pattern."""
         for node in pattern:
             if isinstance(node, Markup):
                 candidates.append(_MarkupKey.from_markup(node))
-                for value in node.options.values():
-                    record_option_token(value)
+                if is_printf:
+                    self._record_option_tokens(node.options.values())
+
             elif isinstance(node, Expression):
                 if node.function == "html":
                     if key := _MarkupKey.from_expression(node):
                         candidates.append(key)
-                        for _, opt_val in key.options:
-                            record_option_token(opt_val)
-                else:
-                    record_token(_get_expression_token(node))
+                        if is_printf:
+                            self._record_option_tokens(v for _, v in key.options)
+                elif token := _get_expression_token(node):
+                    if _is_reusable(token) or not is_printf:
+                        self.reusable.add(token)
+                    else:
+                        self.unnumbered[token] += 1
 
-        # Track opening tags without options as lintable elements
+        # Track opening tags without options as lint-able elements
         # only if accompanied by closing tags or option attributes.
         has_closing = any(el.kind == "close" for el in candidates)
         self.elements = {
             el for el in candidates if el.kind != "open" or el.options or has_closing
         }
+
+    def _record_option_tokens(self, values: Iterable[str | VariableRef]) -> None:
+        """Record unnumbered printf specifiers in markup attributes.
+        For example:
+            `Please click <a href="%s">here</a> or see %s.`
+        Our Android/XLIFF parsers keep the literal `%s` not `VariableRef` like:
+            `Markup('open','a',options={'href': '%s'})`
+        So we track them in `self.unnumbered` along text specifiers.
+        See `test_extra_unnumbered_placeholder_with_markup_attribute`.
+        """
+        for value in values:
+            if (
+                isinstance(value, str)
+                and value.startswith("%")
+                and value not in IGNORED_PLACEHOLDERS
+                and not _is_reusable(value)
+            ):
+                self.unnumbered[value] += 1
 
 
 class _MarkupKey(NamedTuple):
@@ -300,18 +297,26 @@ class _MarkupKey(NamedTuple):
 
 
 def _get_expression_token(node: Expression) -> str | None:
-    """Extract a hashable/comparable token string from `Expression`.
+    """Get a hashable/comparable token string from `Expression`.
+    `serialize_message(format, [node])` would work sometimes but:
+    * MF2 syntax leakage: `{$user}, {$brand :entity}, {42}` instead of: `$user, brand, 42`
+    * For XLIFF instead of `Name` we'd get a full namespace wrapper:
+      `<xliff:g xmlns:xliff="urn:..." id="a">Name</xliff:g>`
+    * `ValueError: Unsupported expression: Expression(None, function='current_date')`
+
     Note:
     * `{$user}` This is a runtime variable! We pass the `$`
     * `{$brand :entity}` This is an entity reference! We drop the `$`
     """
     if "source" in node.attributes:
-        return str(node.attributes["source"]).strip("|")
-    if isinstance(node.arg, str):
-        return node.arg
-    if isinstance(node.arg, VariableRef):
-        return node.arg.name if node.function == "entity" else f"${node.arg.name}"
-    return None
+        token = str(node.attributes["source"]).strip("|")
+    elif isinstance(node.arg, str):
+        token = node.arg
+    elif isinstance(node.arg, VariableRef):
+        token = node.arg.name if node.function == "entity" else f"${node.arg.name}"
+    else:
+        return None
+    return token if token not in IGNORED_PLACEHOLDERS else None
 
 
 def _is_reusable(token: str) -> bool:
