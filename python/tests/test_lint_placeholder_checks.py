@@ -21,7 +21,7 @@ from moz.l10n.formats.mf2 import mf2_parse_message
 from moz.l10n.lint import placeholder
 from moz.l10n.lint.model import Diagnostic, LintContext, Severity
 from moz.l10n.message import parse_message
-from moz.l10n.model import Expression, Message, VariableRef
+from moz.l10n.model import Expression, Message, PatternMessage, VariableRef
 
 PLACEHOLDER_CHECKS = {
     "extra": placeholder.ExtraPlaceholder(),
@@ -905,9 +905,9 @@ class TestWebExtension:
 
 class TestRest:
     def test_coverage_html_markup_key(self) -> None:
-        from moz.l10n.lint.placeholder.mismatch import _MarkupKey
-
+        rule = PLACEHOLDER_CHECKS["extra-element"]
+        context = LintContext(Format.android)
+        source = PatternMessage([])
         for arg in (VariableRef("div"), "not-a-tag", "<>", "<", ">"):
-            assert (
-                _MarkupKey.from_expression(Expression(function="html", arg=arg)) is None
-            )
+            target = PatternMessage([Expression(function="html", arg=arg)])
+            assert next(iter(rule.check(target, source, context)), None) is None
