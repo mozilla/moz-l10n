@@ -755,17 +755,29 @@ class TestAttributes:
         )
         assert result == [expected]
 
-    def test_extra_unnumbered_placeholder_with_markup_attribute(self) -> None:
+    @pytest.mark.parametrize(
+        "format, placeholder",
+        [
+            (Format.xliff, "%@"),
+            (Format.xliff, "%#x"),
+            (Format.android, "%s"),
+            (Format.android, "%02d"),
+        ],
+    )
+    def test_extra_unnumbered_placeholder_with_markup_attribute(
+        self, format: Format, placeholder: str
+    ) -> None:
         result = _check_all_placeholder_rules(
-            'Hi %s <a href="%s">link</a>',
-            'Hi %s %s <a href="%s">link</a>',
-            Format.android,
+            f'Hi {placeholder} <a href="{placeholder}">link</a>',
+            f'Hi {placeholder} {placeholder} <a href="{placeholder}">link</a>',
+            format,
+            xliff_is_xcode=True,
         )
         assert result == [
             {
                 "rule_name": "extra",
                 "rule_family": "placeholder",
-                "message": "Placeholder %s has more occurrences in translation (expected 2, found 3)",
+                "message": f"Placeholder {placeholder} has more occurrences in translation (expected 2, found 3)",
                 "severity": Severity.ERROR,
             }
         ]
