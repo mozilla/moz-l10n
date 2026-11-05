@@ -103,6 +103,14 @@ class LintContext:
     severity: dict[str, Severity] = field(default_factory=dict)
     """Per-rule severity overrides, keyed by rule full-name."""
 
+    is_printf: bool = False
+    """Set `True` to enable sequential argument accounting for unnumbered specifiers (%s, %@)
+    (e.g. Android or Xcode XLIFF). (automatically `True` for Android)"""
+
+    def __post_init__(self) -> None:
+        if self.resource_format == Format.android:
+            self.is_printf = True
+
     def severity_of(self, rule: Rule, fallback: Severity | None = None) -> Severity:
         """The effective severity of `rule`, applying any override.
         Pass a `fallback` severity to be taken if overrides don't apply.

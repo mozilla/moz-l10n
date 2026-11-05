@@ -35,36 +35,38 @@ def _check_all_placeholder_rules(
     source_raw: str,
     target_raw: str,
     format: Format,
-    xliff_is_xcode: bool = False,
+    is_printf: bool = False,
 ) -> list[dict[str, Any]]:
     """Parse incoming strings with their dedicated format parser,
     run rules with given format context, and gather diagnostics from all checks.
     """
     if format in (Format.android, Format.xliff):
         pytest.importorskip("lxml")
+    xliff_is_xcode = format is Format.xliff and is_printf
     target = parse_message(format, target_raw, xliff_is_xcode=xliff_is_xcode)
     source = parse_message(format, source_raw, xliff_is_xcode=xliff_is_xcode)
-    return _call_checks(target, source, format)
+    return _call_checks(target, source, format, is_printf)
 
 
 def _check_all_placeholder_rules_mf2(
     source_raw: str,
     target_raw: str,
     format: Format = Format.android,
-    xliff_is_xcode: bool = False,
+    *,
+    is_printf: bool = False,
 ) -> list[dict[str, Any]]:
     """Parse incoming strings via MF2 to make sure we create the desired Message objects we want to test for
     run rules with given format context, and gather diagnostics from all checks.
     """
     target = mf2_parse_message(target_raw)
     source = mf2_parse_message(source_raw)
-    return _call_checks(target, source, format)
+    return _call_checks(target, source, format, is_printf)
 
 
 def _call_checks(
-    target: Message, source: Message, format: Format
+    target: Message, source: Message, format: Format, is_printf: bool = False
 ) -> list[dict[str, Any]]:
-    context = LintContext(format)
+    context = LintContext(format, is_printf=is_printf)
     diagnostics: list[Diagnostic] = []
     for rule in PLACEHOLDER_CHECKS.values():
         diagnostics.extend(rule.check(target, source, context))
@@ -300,7 +302,7 @@ class TestCounts:
             f"Hello {placeholder} and {placeholder}",
             "Hello " + " and ".join([placeholder, placeholder][:count]),
             format,
-            xliff_is_xcode=True,
+            is_printf=True,
         )
 
         expected = []
@@ -332,7 +334,7 @@ class TestCounts:
             "Hello %@ and %@",
             "Hello %@, %@ and %@",
             Format.xliff,
-            xliff_is_xcode=True,
+            is_printf=True,
         )
         assert result == [
             {
@@ -359,7 +361,7 @@ class TestCounts:
             f"Hello {arg} and {arg}",
             f"Hello {arg}",
             format,
-            xliff_is_xcode=True,
+            is_printf=True,
         )
         assert result == []
 
@@ -370,7 +372,9 @@ class TestCounts:
         element = '<a href="%@">link</a>'
         source = " ".join([element] * source_count)
         target = " ".join([element] * target_count)
-        result = _check_all_placeholder_rules(source, target, Format.xliff)
+        result = _check_all_placeholder_rules(
+            source, target, Format.xliff, is_printf=True
+        )
         expected = []
         if source_count != target_count:
             fewer = target_count < source_count
@@ -448,7 +452,8 @@ class TestPluralVariants:
     def test_unnumbered_placeholder_mismatch_in_one_plural_variant(
         self, count: int
     ) -> None:
-        """Using mf2 parser. Trying with xliff parser produced an error:
+        """Using mf2 parser to construct a proper SelectMessage.
+        Trying with xliff parser produced an error:
         `Unsupported message: SelectMessage(declarations={'n': Expression...`
         """
         arg = "{$arg1 :string @source=|%@|}"
@@ -459,7 +464,9 @@ class TestPluralVariants:
         changed = " ".join([arg] * count)
         translation = f".input {{$n :number}} .match $n one {{{{ {changed} }}}} * {{{{ {pair} }}}}"
 
-        result = _check_all_placeholder_rules_mf2(original, translation, Format.xliff)
+        result = _check_all_placeholder_rules_mf2(
+            original, translation, Format.xliff, is_printf=True
+        )
         direction = "fewer" if count == 1 else "more"
         rule_name = "missing" if count == 1 else "extra"
         severity = Severity.WARNING if count == 1 else Severity.ERROR
@@ -771,7 +778,7 @@ class TestAttributes:
             f'Hi {placeholder} <a href="{placeholder}">link</a>',
             f'Hi {placeholder} {placeholder} <a href="{placeholder}">link</a>',
             format,
-            xliff_is_xcode=True,
+            is_printf=True,
         )
         assert result == [
             {
@@ -898,13 +905,13 @@ class TestWebExtension:
         result = _check_all_placeholder_rules_mf2(
             "Source string", "Translation with a $1", Format.webext
         )
-        # This should totally not be caught!
+        # This should totally not be caught.
         assert result == []
 
         result = _check_all_placeholder_rules(
             "Source string", "Translation with a $1", Format.webext
         )
-        # And THIS should totally be caught!
+        # And THIS should totally be caught.
         assert result == [
             {
                 "message": "Placeholder $1 not found in reference",

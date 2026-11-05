@@ -121,10 +121,8 @@ class _Diff:
         return cls._last_result
 
     def __init__(self, target: Message, source: Message, context: LintContext) -> None:
-        is_printf_format = context.resource_format in (Format.android, Format.xliff)
-
-        src_scans = [_PatternScan(p, is_printf_format) for _, p in source]
-        trg_scans = [_PatternScan(p, is_printf_format) for _, p in target]
+        src_scans = [_PatternScan(p, context.is_printf) for _, p in source]
+        trg_scans = [_PatternScan(p, context.is_printf) for _, p in target]
         src_elements = {el for s in src_scans for el in s.elements}
         trg_elements = {el for s in trg_scans for el in s.elements}
 
@@ -141,7 +139,7 @@ class _Diff:
             for ph in sorted(trg_reusable - src_reusable)
         ]
 
-        if is_printf_format and src_scans and trg_scans:
+        if context.is_printf and src_scans and trg_scans:
             self._collect_placeholders(src_scans, trg_scans)
 
     def _collect_placeholders(
@@ -220,6 +218,7 @@ class _PatternScan:
 
     def _record_option_tokens(self, values: Iterable[str | VariableRef]) -> None:
         """Record unnumbered printf specifiers in markup attributes.
+        These are always `str` and never `VariableRef`. We ignore these by design.
         For example:
             `Please click <a href="%s">here</a> or see %s.`
         Our Android/XLIFF parsers keep the literal `%s` not `VariableRef` like:
