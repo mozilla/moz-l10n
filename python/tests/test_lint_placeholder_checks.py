@@ -32,9 +32,10 @@ PLACEHOLDER_CHECKS = {
 
 
 def _check_all_placeholder_rules(
+    format: Format,
     source_raw: str,
     target_raw: str,
-    format: Format,
+    *,
     is_printf: bool = False,
 ) -> list[dict[str, Any]]:
     """Parse incoming strings with their dedicated format parser,
@@ -45,13 +46,13 @@ def _check_all_placeholder_rules(
     xliff_is_xcode = format is Format.xliff and is_printf
     target = parse_message(format, target_raw, xliff_is_xcode=xliff_is_xcode)
     source = parse_message(format, source_raw, xliff_is_xcode=xliff_is_xcode)
-    return _call_checks(target, source, format, is_printf)
+    return _call_checks(format, source, target, is_printf)
 
 
 def _check_all_placeholder_rules_mf2(
+    format: Format,
     source_raw: str,
     target_raw: str,
-    format: Format = Format.android,
     *,
     is_printf: bool = False,
 ) -> list[dict[str, Any]]:
@@ -60,11 +61,11 @@ def _check_all_placeholder_rules_mf2(
     """
     target = mf2_parse_message(target_raw)
     source = mf2_parse_message(source_raw)
-    return _call_checks(target, source, format, is_printf)
+    return _call_checks(format, source, target, is_printf)
 
 
 def _call_checks(
-    target: Message, source: Message, format: Format, is_printf: bool = False
+    format: Format, source: Message, target: Message, is_printf: bool = False
 ) -> list[dict[str, Any]]:
     context = LintContext(format, is_printf=is_printf)
     diagnostics: list[Diagnostic] = []
@@ -78,17 +79,17 @@ class TestBasic:
 
     def test_android_same_placeholder(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.android,
             "Source string with a %1$s",
             "Translation with a %1$s",
-            Format.android,
         )
         assert result == []
 
     def test_android_missing_placeholder(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.android,
             "Source string with a %1$s",
             "Translation",
-            Format.android,
         )
         assert result == [
             {
@@ -115,23 +116,23 @@ class TestBasic:
             },
         ]
         result = _check_all_placeholder_rules(
+            Format.android,
             "Source string with a %1$s",
             "Translation \u0020%1",
-            Format.android,
         )
         assert result == expected
         result = _check_all_placeholder_rules_mf2(
+            Format.android,
             "Source string with a {$arg1 :string @source=|%1$s|}",
             "Translation  {$arg1 :string @source=|%1|}",
-            Format.android,
         )
         assert result == expected
 
     def test_android_extra_placeholder(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.android,
             "Source string",
             "Translation with a %1$s",
-            Format.android,
         )
         assert result == [
             {
@@ -144,9 +145,9 @@ class TestBasic:
 
     def test_android_changed_placeholder(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.android,
             "New! %s email masks are now available on mobile.",
             "Нав! Акнун ниқобҳои почтаи электронии «%@» дар дастгоҳҳои мобилӣ дастрасанд.",
-            Format.android,
         )
         assert result == [
             {
@@ -165,27 +166,27 @@ class TestBasic:
 
     def test_extra_percent_escapes_ignored(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.android,
             "Translation %%",
             "Source percent",
-            Format.android,
         )
         assert result == []
         result = _check_all_placeholder_rules_mf2(
+            Format.android,
             "Translation {|%| @source=|%%|}",
             "Source percent",
-            Format.android,
         )
         assert result == []
 
     def test_mf2_plain_variable_placeholder(self) -> None:
         """Covers Expression nodes with a VariableRef argument (e.g. {$user})."""
         result = _check_all_placeholder_rules(
-            "Source {$user}", "Hello {$user}", Format.mf2
+            Format.mf2, "Source {$user}", "Hello {$user}"
         )
         assert result == []
 
         missing_result = _check_all_placeholder_rules(
-            "Source {$user}", "Hello", Format.mf2
+            Format.mf2, "Source {$user}", "Hello"
         )
         assert missing_result == [
             {
@@ -199,14 +200,14 @@ class TestBasic:
     def test_mf2_entity_placeholder(self) -> None:
         """Covers Expression nodes with :entity function."""
         result = _check_all_placeholder_rules(
+            Format.mf2,
             "Welcome to {$brand :entity}",
             "Source {$brand :entity}",
-            Format.mf2,
         )
         assert result == []
 
         missing_result = _check_all_placeholder_rules(
-            "Source {$brand :entity}", "Welcome", Format.mf2
+            Format.mf2, "Source {$brand :entity}", "Welcome"
         )
         assert missing_result == [
             {
@@ -219,15 +220,15 @@ class TestBasic:
 
     def test_mf2_literal_expression_placeholder(self) -> None:
         """Check Expression nodes with literal arguments (e.g. `{42}`, `{|42|}`)."""
-        result = _check_all_placeholder_rules("Source: {42}", "Count: {42}", Format.mf2)
+        result = _check_all_placeholder_rules(Format.mf2, "Source: {42}", "Count: {42}")
         assert result == []
         result = _check_all_placeholder_rules(
-            "Source: {|42|}", "Count: {|42|}", Format.mf2
+            Format.mf2, "Source: {|42|}", "Count: {|42|}"
         )
         assert result == []
 
         missing_result = _check_all_placeholder_rules(
-            "Source: {42}", "Count", Format.mf2
+            Format.mf2, "Source: {42}", "Count"
         )
         assert missing_result == [
             {
@@ -244,27 +245,27 @@ class TestPlainText:
 
     def test_android_apostrophes(self) -> None:
         result = _check_all_placeholder_rules(
-            "Translation with a straight '",
-            "Source string",
             Format.android,
+            "Source string",
+            "Translation with a straight '",
         )
         assert result == []
 
     def test_android_percent_signs_same(self) -> None:
         result = _check_all_placeholder_rules(
-            "Source string 100%", "Translation string 100%", Format.android
+            Format.android, "Source string 100%", "Translation string 100%"
         )
         assert result == []
 
     def test_android_percent_signs_more(self) -> None:
         """"""
         result = _check_all_placeholder_rules_mf2(
-            "Source string 100%", "Translation 100%! string 100%", Format.android
+            Format.android, "Source string 100%", "Translation 100%! string 100%"
         )
         assert result == []
 
         result = _check_all_placeholder_rules(
-            "Source string 100%", "Translation 100%! string 100%", Format.android
+            Format.android, "Source string 100%", "Translation 100%! string 100%"
         )
         assert result == [
             {
@@ -277,7 +278,7 @@ class TestPlainText:
 
     def test_android_literal_newline(self) -> None:
         result = _check_all_placeholder_rules(
-            "Source string", r"Translation with an escaped \\n newline", Format.android
+            Format.android, "Source string", r"Translation with an escaped \\n newline"
         )
         assert result == []
 
@@ -299,9 +300,9 @@ class TestCounts:
         self, format: Format, placeholder: str, count: int
     ) -> None:
         result = _check_all_placeholder_rules(
+            format,
             f"Hello {placeholder} and {placeholder}",
             "Hello " + " and ".join([placeholder, placeholder][:count]),
-            format,
             is_printf=True,
         )
 
@@ -331,9 +332,9 @@ class TestCounts:
 
     def test_repeated_unnumbered_placeholder_extra_occurrence(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.xliff,
             "Hello %@ and %@",
             "Hello %@, %@ and %@",
-            Format.xliff,
             is_printf=True,
         )
         assert result == [
@@ -358,9 +359,9 @@ class TestCounts:
     ) -> None:
         arg = f"{{$arg1 :string @source=|{placeholder}|}}"
         result = _check_all_placeholder_rules(
+            format,
             f"Hello {arg} and {arg}",
             f"Hello {arg}",
-            format,
             is_printf=True,
         )
         assert result == []
@@ -373,7 +374,7 @@ class TestCounts:
         source = " ".join([element] * source_count)
         target = " ".join([element] * target_count)
         result = _check_all_placeholder_rules(
-            source, target, Format.xliff, is_printf=True
+            Format.xliff, source, target, is_printf=True
         )
         expected = []
         if source_count != target_count:
@@ -418,7 +419,7 @@ class TestPluralVariants:
             f"few {{{{For {pattern}}}}} "
             f"* {{{{For {pattern}}}}}"
         )
-        result = _check_all_placeholder_rules_mf2(original, translation)
+        result = _check_all_placeholder_rules_mf2(Format.android, original, translation)
         expected = (
             [
                 {
@@ -445,7 +446,7 @@ class TestPluralVariants:
             f"* {{{{ {first} items }}}}"
         )
         translation = f".input {{$n :number}} .match $n * {{{{ {first} items }}}}"
-        result = _check_all_placeholder_rules_mf2(original, translation, Format.android)
+        result = _check_all_placeholder_rules_mf2(Format.android, original, translation)
         assert result == []
 
     @pytest.mark.parametrize("count", [1, 3])
@@ -465,7 +466,7 @@ class TestPluralVariants:
         translation = f".input {{$n :number}} .match $n one {{{{ {changed} }}}} * {{{{ {pair} }}}}"
 
         result = _check_all_placeholder_rules_mf2(
-            original, translation, Format.xliff, is_printf=True
+            Format.xliff, original, translation, is_printf=True
         )
         direction = "fewer" if count == 1 else "more"
         rule_name = "missing" if count == 1 else "extra"
@@ -490,7 +491,7 @@ class TestPluralVariants:
             "* {{{#a title=|%@|}link{/a}}}"
         )
         translation = ".input {$n :number} .match $n * {{link{/a}}}"
-        result = _check_all_placeholder_rules_mf2(original, translation, Format.xliff)
+        result = _check_all_placeholder_rules_mf2(Format.xliff, original, translation)
         assert result == [
             {
                 "rule_name": "missing-element",
@@ -512,29 +513,29 @@ class TestMarkup:
 
     def test_good_html(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.android,
             "Source with a &lt;b&gt;line&lt;br&gt;break&lt;/b&gt;",
             "Translation with a &lt;b&gt;line&lt;br&gt;break&lt;/b&gt;",
-            Format.android,
         )
         assert result == []
         result = _check_all_placeholder_rules_mf2(
+            Format.android,
             "Source with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}",
             "Translation with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}",
-            Format.android,
         )
         assert result == []
 
     def test_android_good_html(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.android,
             "Source with a &lt;b&gt;line&lt;br&gt;break&lt;/b&gt;",
             "Translation with a &lt;b&gt;line&lt;br&gt;break&lt;/b&gt;",
-            Format.android,
         )
         assert result == []
         result = _check_all_placeholder_rules_mf2(
+            Format.android,
             "Source with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}",
             "Translation with a {|<b>| :html}line{|<br>| :html}break{|</b>| :html}",
-            Format.android,
         )
         assert result == []
 
@@ -543,9 +544,9 @@ class TestMarkup:
         `Opening and ending tag mismatch: br line 1 and b, line 1, column 48 (<string>, line 1)`
         """
         result = _check_all_placeholder_rules_mf2(
+            Format.android,
             "Source with a {#b}line{#br}{/br}break{/b}",
             "Translation with a {#b}line{#br}{/br}break{/b}",
-            Format.android,
         )
         assert result == []
 
@@ -566,40 +567,40 @@ class TestMarkup:
         ]
 
         result = _check_all_placeholder_rules_mf2(
+            Format.android,
             "Source {|<b>| :html}string{|</b>| :html}",
             "Translation with a {|<a>| :html}tag mismatch{|</b>| :html}",
-            Format.android,
         )
         assert result == expected
         result = _check_all_placeholder_rules(
+            Format.android,
             "Source &lt;b&gt;string&lt;/b&gt;",
             "Translation with a &lt;a&gt;tag mismatch&lt;/b&gt;",
-            Format.android,
         )
         assert result == expected
 
     def test_angle_brackets_not_element(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.android,
             "Press &lt;Enter&gt; to continue",
             "Premi &lt;Invio&gt; per continuare",
-            Format.android,
         )
         assert result == []
         result = _check_all_placeholder_rules_mf2(
+            Format.android,
             "Press {|<Enter>| :html} to continue",
             "Premi {|<Invio>| :html} per continuare",
-            Format.android,
         )
         assert result == []
 
     def test_bare_element_name_not_element(self) -> None:
         translation = "Digita per andare a capo"
         result = _check_all_placeholder_rules(
-            "Type &lt;br&gt; for a break", translation, Format.android
+            Format.android, "Type &lt;br&gt; for a break", translation
         )
         assert result == []
         result = _check_all_placeholder_rules_mf2(
-            "Type {|<br>| :html} for a break", translation, Format.android
+            Format.android, "Type {|<br>| :html} for a break", translation
         )
         assert result == []
 
@@ -620,11 +621,11 @@ class TestMarkup:
         ]
         translation = "testo"
         result = _check_all_placeholder_rules(
-            "&lt;myTag&gt;text&lt;/myTag&gt;", translation, Format.android
+            Format.android, "&lt;myTag&gt;text&lt;/myTag&gt;", translation
         )
         assert result == expected
         result = _check_all_placeholder_rules_mf2(
-            "{|<myTag>| :html}text{|</myTag>| :html}", translation, Format.android
+            Format.android, "{|<myTag>| :html}text{|</myTag>| :html}", translation
         )
         assert result == expected
 
@@ -644,15 +645,15 @@ class TestMarkup:
             },
         ]
         result = _check_all_placeholder_rules(
-            '<myTag id="1">text</myTag>', "testo", Format.android
+            Format.android, '<myTag id="1">text</myTag>', "testo"
         )
         assert result == expected
         result = _check_all_placeholder_rules(
-            '&lt;myTag id="1"&gt;text&lt;/myTag&gt;', "testo", Format.android
+            Format.android, '&lt;myTag id="1"&gt;text&lt;/myTag&gt;', "testo"
         )
         assert result == expected
         result = _check_all_placeholder_rules(
-            '{|<myTag id="1">| :html}text{|</myTag>| :html}', "testo", Format.android
+            Format.android, '{|<myTag id="1">| :html}text{|</myTag>| :html}', "testo"
         )
         assert result == expected
 
@@ -663,9 +664,9 @@ class TestMarkup:
         It would cause `XMLSyntaxError: StartTag: invalid element name, line 1, column 12`
         """
         result = _check_all_placeholder_rules(
+            Format.android,
             "5 &lt; 10 and x &gt; y",
             "5 &lt; 10 e x &gt; y",
-            Format.android,
         )
         assert result == []
 
@@ -674,7 +675,7 @@ class TestMarkup:
         `Unsupported markup with variable option: Markup('open','a',options={'href': VariableRef('url')})`
         """
         result = _check_all_placeholder_rules_mf2(
-            "{#a href=$url}link{/a}", "{#a href=$url}link{/a}"
+            Format.android, "{#a href=$url}link{/a}", "{#a href=$url}link{/a}"
         )
         assert result == []
 
@@ -684,6 +685,7 @@ class TestMarkup:
         `Unsupported expression: Expression(None,function='current_date')`
         """
         result1 = _check_all_placeholder_rules_mf2(
+            Format.android,
             "Hello {:current_date}",
             "Hola {:current_date}",
         )
@@ -697,7 +699,7 @@ class TestAttributes:
         original = (
             'Read the <a href="{$arg1 :string @source=|%1$s|}">policy{|</a>| :html}'
         )
-        result = _check_all_placeholder_rules(original, original, Format.android)
+        result = _check_all_placeholder_rules(Format.android, original, original)
         assert result == []
 
     @pytest.mark.parametrize(
@@ -725,15 +727,15 @@ class TestAttributes:
             },
         ]
         result = _check_all_placeholder_rules_mf2(
+            format,
             f"Read the {{#a href=|{placeholder}|}}policy{{/a}}",
             "Leggi la {#a href=|https://example.com|}policy{/a}",
-            format,
         )
         assert result == expected
         result = _check_all_placeholder_rules_mf2(
+            format,
             f'Read the {{|<a href="{placeholder}">| :html}}policy{{|</a>| :html}}',
             'Leggi la {|<a href="https://example.com">| :html}policy{|</a>| :html}',
-            format,
         )
         assert result == expected
 
@@ -749,16 +751,16 @@ class TestAttributes:
             "severity": Severity.WARNING,
         }
         result = _check_all_placeholder_rules_mf2(
+            Format.xliff,
             'Read {|<a href="%@">| :html}link{|</a>| :html}',
             "Read link{|</a>| :html}",
-            Format.xliff,
         )
         assert result == [expected]
 
         result = _check_all_placeholder_rules_mf2(
+            Format.xliff,
             "Read {#a href=|%@|}link{/a}",
             "Read link{/a}",
-            Format.xliff,
         )
         assert result == [expected]
 
@@ -775,9 +777,9 @@ class TestAttributes:
         self, format: Format, placeholder: str
     ) -> None:
         result = _check_all_placeholder_rules(
+            format,
             f'Hi {placeholder} <a href="{placeholder}">link</a>',
             f'Hi {placeholder} {placeholder} <a href="{placeholder}">link</a>',
-            format,
             is_printf=True,
         )
         assert result == [
@@ -799,7 +801,7 @@ class TestProtections:
             'id="a">Name</xliff:g> and <xliff:g xmlns:xliff="urn:oasis:names:'
             'tc:xliff:document:1.2" id="b">FullName</xliff:g>'
         )
-        result = _check_all_placeholder_rules(original, "Salve", Format.android)
+        result = _check_all_placeholder_rules(Format.android, original, "Salve")
         assert result == [
             {
                 "rule_name": "missing",
@@ -817,10 +819,10 @@ class TestProtections:
 
     def test_multi_digit_placeholder_same(self) -> None:
         original = "Hi %10$s and %2$s"
-        result = _check_all_placeholder_rules(original, original, Format.android)
+        result = _check_all_placeholder_rules(Format.android, original, original)
         assert result == []
         original = "Hi {$a :string @source=|%10$s|} and {$b :string @source=|%2$s|}"
-        result = _check_all_placeholder_rules_mf2(original, original, Format.android)
+        result = _check_all_placeholder_rules_mf2(Format.android, original, original)
         assert result == []
 
     def test_multi_digit_placeholder_changed(self) -> None:
@@ -832,7 +834,7 @@ class TestProtections:
         """
         original = "Hi {$a :string @source=|%10$s|} and {$b :string @source=|%2$s|}"
         translation = "Ciao {$a :string @source=|%11$s|} e {$b :string @source=|%2$s|}"
-        result = _check_all_placeholder_rules_mf2(original, translation, Format.android)
+        result = _check_all_placeholder_rules_mf2(Format.android, original, translation)
         assert result == [
             {
                 "rule_name": "extra",
@@ -854,17 +856,17 @@ class TestWebExtension:
 
     def test_webext_literal_index_placeholder_as_placeholder(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.webext,
             "Source string with a $1",
             "Translation with a $1",
-            Format.webext,
         )
         assert result == []
 
     def test_webext_literal_index_placeholder_as_literal(self) -> None:
         result = _check_all_placeholder_rules(
+            Format.webext,
             "Source string with a $1",
             "Translation with a $$1",
-            Format.webext,
         )
         assert result == [
             {
@@ -880,9 +882,9 @@ class TestWebExtension:
         `Missing placeholders entry for foo`
         """
         result = _check_all_placeholder_rules_mf2(
+            Format.webext,
             "Source string",
             "Translation with a {$arg @source=|$FOO$|}",
-            Format.webext,
         )
         assert result == [
             {
@@ -898,18 +900,18 @@ class TestWebExtension:
         `Missing placeholders entry for foo`
         """
         msg = ".local $FOO = {$arg1 @source=|$1|}\n{{Translation with a {$FOO @source=|$FOO$|}}}"
-        result = _check_all_placeholder_rules_mf2(msg, msg, Format.webext)
+        result = _check_all_placeholder_rules_mf2(Format.android, msg, msg)
         assert result == []
 
     def test_webext_extra_index_placeholder(self) -> None:
         result = _check_all_placeholder_rules_mf2(
-            "Source string", "Translation with a $1", Format.webext
+            Format.webext, "Source string", "Translation with a $1"
         )
         # This should totally not be caught.
         assert result == []
 
         result = _check_all_placeholder_rules(
-            "Source string", "Translation with a $1", Format.webext
+            Format.webext, "Source string", "Translation with a $1"
         )
         # And THIS should totally be caught.
         assert result == [
