@@ -911,3 +911,32 @@ class TestAndroid(TestCase):
               </plurals>
             </resources>
             """)
+
+    def test_parse_multi_digit_placeholder(self):
+        for n in 1, 2, 23:
+            number_string = "".join(str(i) for i in range(1, n + 1))
+            placeholder = f"%{number_string}$s"
+            assert android_parse_message(placeholder).pattern == [
+                Expression(
+                    VariableRef(f"arg{number_string}"),
+                    function="string",
+                    attributes={"source": placeholder},
+                )
+            ]
+
+    def test_parse_multi_digit_previous_placeholder(self):
+        for n in 1, 2, 23:
+            number_string = "".join(str(i) for i in range(1, n + 1))
+            assert android_parse_message(f"%{number_string}$tm %&lt;te").pattern == [
+                Expression(
+                    VariableRef(f"arg{number_string}"),
+                    function="datetime",
+                    attributes={"source": f"%{number_string}$tm"},
+                ),
+                " ",
+                Expression(
+                    VariableRef(f"arg{number_string}"),
+                    function="datetime",
+                    attributes={"source": f"%{number_string}$te"},
+                ),
+            ]

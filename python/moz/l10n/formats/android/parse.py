@@ -435,11 +435,11 @@ inline_re = compile(
     r"\\u([0-9a-fA-F]{4})|"
     r"\\(.)|"
     r"(<[^%>]+>)|"
-    r"(%(?:[1-9]\$|<)?[-#+ 0,(]?[0-9.]*([tT]?.))"
+    r"(%(?:[1-9][0-9]*\$|<)?[-#+ 0,(]?[0-9.]*([tT]?.))"
 )
 block_tag_re = compile(r"<(div|h[123456r]|p|d[dt]|li|/?[dou]l)\b")
 break_tag_re = compile(r"<[bh]r/?>")
-var_idx_re = compile(r"[1-9]$")
+var_idx_re = compile(r"[1-9][0-9]*$")
 
 
 def parse_inline(
@@ -533,7 +533,7 @@ def parse_inline(
         yield acc
 
 
-arg_idx = compile(r"%([1-9]\$)?")
+arg_idx = compile(r"%(?:([1-9][0-9]*)\$)?")
 not_name_char = compile(f"[^{xml_name_start}{xml_name_rest}]")
 not_name_start = compile(f"[^{xml_name_start}]")
 
@@ -542,7 +542,7 @@ def get_var_name(src: str) -> str:
     """Returns a valid MF2 name."""
     pm = arg_idx.match(src)
     if pm:
-        return f"arg{pm[1][0]}" if pm[1] else "arg"
+        return f"arg{pm[1]}" if pm[1] else "arg"
     name = not_name_char.sub("", src)
     if not_name_start.match(name):
         name = name[1:]
