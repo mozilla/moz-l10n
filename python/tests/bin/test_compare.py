@@ -112,6 +112,28 @@ def test_compare_multiple_paths(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.undo()
 
 
+def test_compare_relative_source_directory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A relative source directory is resolved like an absolute one."""
+    tree: Tree = {
+        "en": {FILE: "msg-a = Hello\nmsg-b = World\n"},
+        "fr": {FILE: "msg-a = Bonjour\n"},
+    }
+    with TemporaryDirectory() as tmp_dir:
+        build_file_tree(tmp_dir, tree)
+        monkeypatch.chdir(tmp_dir)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            moz.l10n.bin.cli, ["compare", "fr", "--source", "en", "--json"]
+        )
+
+        assert result.exit_code == 0, result.output
+        parsed_output = json.loads(result.output)
+        assert parsed_output["fr"]["missing"] == {FILE: ["msg-b"]}
+        # fixes VS Code test adapter breaking with FileNotFoundError
+        monkeypatch.undo()
+
+
 def test_compare_ext_inclusion_and_exclusion() -> None:
     """Test source having keys spread across different file types."""
     source_map = {FILE: ["msg-ftl"], "file.ini": ["msg-ini"], "file.txt": ["msg-txt"]}
