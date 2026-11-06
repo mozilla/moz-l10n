@@ -180,7 +180,7 @@ function* parseQuotes(
 const _inline =
   // 1:esc-unicode     2:esc-char       4:printf                         5:printf-conversion
   //                         3:esc-elem                                            6:xml-entity
-  /\\u([0-9A-Fa-f]{4})|\\(.)|(<[^%>]+>)|(%(?:[1-9]\$|<)?[-#+ 0,(]?[0-9.]*([tT]?.))|(_entity_\d+_)/g
+  /\\u([0-9A-Fa-f]{4})|\\(.)|(<[^%>]+>)|(%(?:[1-9][0-9]*\$|<)?[-#+ 0,(]?[0-9.]*([tT]?.))|(_entity_\d+_)/g
 const _blocktag = /^<(div|h[123456r]|p|d[dt]|li|\/?[dou]l)\b/
 const _breaktag = /^<[bh]r\/?>$/
 
@@ -268,7 +268,8 @@ function* parseInline(
               // # https://developer.android.com/reference/java/util/Formatter#argument-index
               if (prevVarName) {
                 name = prevVarName
-                const prevIdx = /[1-9]$/.test(name) ? name.at(-1) + '$' : ''
+                const prevIdxM = name.match(/[1-9][0-9]*$/)
+                const prevIdx = prevIdxM ? prevIdxM[0] + '$' : ''
                 attr.source = `%${prevIdx}${m[0].substring(2)}`
               } else {
                 throw new ParseError(`Invalid ${m[0]} placeholder`)
@@ -307,8 +308,8 @@ const _notNameChar = new RegExp(
 
 /** Returns a valid MF2 name */
 function varName(src: string): string {
-  const printf = src.match(/^%([1-9]\$)?/)
-  if (printf) return printf[1] ? `arg${printf[1][0]}` : 'arg'
+  const printf = src.match(/^%(?:([1-9][0-9]*)\$)?/)
+  if (printf) return printf[1] ? `arg${printf[1]}` : 'arg'
   let name = src.replace(_notNameChar, '')
   if (_notNameStart.test(name)) name = name.substring(1)
   return name || 'arg'

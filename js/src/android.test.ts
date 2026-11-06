@@ -49,6 +49,11 @@ describe('success', () => {
     'Hello, %1$s!'
   )
   ok(
+    'inline multi-digit variable',
+    ['Hello, ', { $: 'arg42', fn: 'string', attr: { source: '%42$s' } }, '!'],
+    'Hello, %42$s!'
+  )
+  ok(
     'inline percent escapes',
     [
       'Hello',
@@ -159,6 +164,11 @@ describe('editable', () => {
     { $: 'arg1', fn: 'datetime', attr: { source: '%1$te' } },
     ',',
     { $: 'arg1', fn: 'datetime', attr: { source: '%1$tY' } }
+  ])
+  ok('inline multi-digit previous variable references', '%1337$tm %<te', [
+    { $: 'arg1337', fn: 'datetime', attr: { source: '%1337$tm' } },
+    ' ',
+    { $: 'arg1337', fn: 'datetime', attr: { source: '%1337$te' } }
   ])
 })
 
