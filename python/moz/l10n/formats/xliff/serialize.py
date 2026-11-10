@@ -16,11 +16,12 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterator
-from typing import cast
+from typing import Union, cast
 
 from lxml import etree
 
 from ...model import (
+    CatchallKey,
     Comment,
     Entry,
     Expression,
@@ -34,6 +35,7 @@ from ...model import (
     VariableRef,
 )
 from .common import clark_name
+from .parse_xcode import plural_categories
 
 
 def xliff_serialize(
@@ -344,6 +346,32 @@ def add_xcstrings_selectmessage(
     msg = entry.value
     msg_id = entry.id[0]
 
+    if not msg.selectors and not msg.variants:
+        # Multiple substitutions without a translation have no selectors,
+        # as their order in the source is not known. Their data is in the metadata.
+        plain_meta: list[Metadata] = []
+        by_sub: dict[str, dict[str, list[Metadata]]] = {}
+        for m in entry.meta:
+            kp = m.key.split("/")
+            if len(kp) >= 3 and kp[1] in plural_categories:
+                by_key = by_sub.setdefault(kp[0], {})
+                by_key.setdefault(kp[1], []).append(Metadata("/".join(kp[2:]), m.value))
+            else:
+                plain_meta.append(m)
+        if by_sub:
+            unit = etree.SubElement(parent, "trans-unit", {"id": msg_id})
+            add_unit(unit, "", plain_meta, [], source_entries, trim_comments)
+            for sub_name, by_key in by_sub.items():
+                for key, key_meta in by_key.items():
+                    id = f"{msg_id}|==|substitutions.{sub_name}.plural.{key}"
+                    unit = etree.SubElement(parent, "trans-unit", {"id": id})
+                    add_unit(unit, "", key_meta, [], source_entries, trim_comments)
+            return
+    if len(msg.selectors) > 1 and all(
+        "substitution" in sel.attributes for sel in msg.selector_expressions()
+    ):
+        add_xcstrings_substitutions(parent, entry, source_entries, trim_comments)
+        return
     if len(msg.selectors) != 1:
         raise ValueError(
             f"Serialization is only supported for messages with one selector: {msg.selectors}"
@@ -389,6 +417,146 @@ def add_xcstrings_selectmessage(
                 meta.append(Metadata("/".join(parts), m.value))
         unit = etree.SubElement(parent, "trans-unit", {"id": id})
         add_unit(unit, "", meta, pattern, source_entries, trim_comments)
+
+
+def add_xcstrings_substitutions(
+    parent: etree._Element,
+    entry: Entry[SelectMessage],
+    source_entries: bool,
+    trim_comments: bool,
+) -> None:
+    """
+    Serialize a message with multiple substitutions.
+
+    The variants of such a message are the cross product of the variants
+    of each substitution, with each substitution's pattern inlined into the base pattern.
+    To get the pieces back out, each selector is varied on its own
+    while the others stay on their first key.
+    What changes is that substitution's pattern,
+    widened to include its numeric placeholder.
+    The text that is the same for all of its keys is left in the base pattern.
+    """
+    msg = entry.value
+    msg_id = entry.id[0]
+    sels = msg.selector_expressions()
+    names = [cast(VariableRef, sel.arg).name for sel in sels]
+
+    ref_keys = next(iter(msg.variants), None)
+    if ref_keys is None:
+        raise ValueError(f"Message {msg_id} has no variants")
+    ref_atoms = pattern_atoms(msg.variants[ref_keys])
+
+    base_meta: list[Metadata] = []
+    sub_meta: dict[str, dict[str, list[Metadata]]] = {
+        n: defaultdict(list) for n in names
+    }
+    for m in entry.meta:
+        kp = m.key.split("/")
+        if len(kp) >= 3 and kp[0] in sub_meta:
+            sub_meta[kp[0]][kp[1]].append(Metadata("/".join(kp[2:]), m.value))
+        else:
+            base_meta.append(m)
+
+    # (start, end, selector) of each substitution in the first variant
+    spans: list[tuple[int, int, Expression]] = []
+    sub_patterns: list[list[tuple[str, Pattern]]] = []
+    for idx, (name, sel) in enumerate(zip(names, sels)):
+        key_list: list[str | CatchallKey] = []
+        for keys in msg.variants:
+            if keys[idx] not in key_list:
+                key_list.append(keys[idx])
+        atoms: list[list[PatternAtom]] = []
+        for key in key_list:
+            keys = (*ref_keys[:idx], key, *ref_keys[idx + 1 :])
+            variant = msg.variants.get(keys, None)
+            if variant is None:
+                raise ValueError(f"Missing variant {keys} for message {msg_id}")
+            atoms.append(pattern_atoms(variant))
+
+        min_len = min(len(a) for a in atoms)
+        pre = 0
+        while pre < min_len and all(a[pre] == atoms[0][pre] for a in atoms):
+            pre += 1
+        suf = 0
+        while suf < min_len - pre and all(
+            a[-1 - suf] == atoms[0][-1 - suf] for a in atoms
+        ):
+            suf += 1
+
+        # The numeric placeholder belongs to the substitution,
+        # even if it is the same for all keys.
+        start = pre
+        tail = suf
+        for a in atoms:
+            ph = [
+                i
+                for i, atom in enumerate(a)
+                if isinstance(atom, Expression)
+                and isinstance(atom.arg, VariableRef)
+                and atom.arg.name == name
+            ]
+            if ph:
+                start = min(start, ph[0])
+                tail = min(tail, len(a) - ph[-1] - 1)
+
+        key_patterns: list[tuple[str, Pattern]] = []
+        for key, a in zip(key_list, atoms):
+            key_patterns.append(
+                (str(key) or "other", atoms_pattern(a[start : len(a) - tail]))
+            )
+        sub_patterns.append(key_patterns)
+        spans.append((start, len(ref_atoms) - tail, sel))
+
+    base: list[PatternAtom] = []
+    pos = 0
+    for start, end, sel in sorted(spans, key=lambda span: span[0]):
+        if start < pos:
+            raise ValueError(f"Overlapping substitutions in message {msg_id}")
+        base.extend(ref_atoms[pos:start])
+        base.append(sel)
+        pos = end
+    base.extend(ref_atoms[pos:])
+
+    unit = etree.SubElement(parent, "trans-unit", {"id": msg_id})
+    add_unit(unit, "", base_meta, atoms_pattern(base), source_entries, trim_comments)
+    for name, key_patterns in zip(names, sub_patterns):
+        for key, pattern in key_patterns:
+            id = f"{msg_id}|==|substitutions.{name}.plural.{key}"
+            unit = etree.SubElement(parent, "trans-unit", {"id": id})
+            add_unit(
+                unit, "", sub_meta[name][key], pattern, source_entries, trim_comments
+            )
+
+
+PatternAtom = Union[str, Expression, Markup]
+
+
+def pattern_atoms(pattern: Pattern) -> list[PatternAtom]:
+    """Split a pattern into single characters and non-text parts."""
+    atoms: list[PatternAtom] = []
+    for part in pattern:
+        if isinstance(part, str):
+            atoms.extend(part)
+        else:
+            atoms.append(part)
+    return atoms
+
+
+def atoms_pattern(atoms: list[PatternAtom]) -> Pattern:
+    """The inverse of pattern_atoms()."""
+    pattern: Pattern = []
+    text = ""
+    for atom in atoms:
+        if isinstance(atom, str):
+            text += atom
+        else:
+            if text:
+                pattern.append(text)
+                text = ""
+            pattern.append(atom)
+    if text:
+        pattern.append(text)
+    return pattern
 
 
 def assign_metadata(
