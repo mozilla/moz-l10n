@@ -358,15 +358,18 @@ def add_xcstrings_selectmessage(
                 by_key.setdefault(kp[1], []).append(Metadata("/".join(kp[2:]), m.value))
             else:
                 plain_meta.append(m)
-        if by_sub:
-            unit = etree.SubElement(parent, "trans-unit", {"id": msg_id})
-            add_unit(unit, "", plain_meta, [], source_entries, trim_comments)
-            for sub_name, by_key in by_sub.items():
-                for key, key_meta in by_key.items():
-                    id = f"{msg_id}|==|substitutions.{sub_name}.plural.{key}"
-                    unit = etree.SubElement(parent, "trans-unit", {"id": id})
-                    add_unit(unit, "", key_meta, [], source_entries, trim_comments)
-            return
+        if not by_sub:
+            raise ValueError(
+                f"Untranslated SelectMessage '{msg_id}' has no substitution metadata to serialize."
+            )
+        unit = etree.SubElement(parent, "trans-unit", {"id": msg_id})
+        add_unit(unit, "", plain_meta, [], source_entries, trim_comments)
+        for sub_name, by_key in by_sub.items():
+            for key, key_meta in by_key.items():
+                id = f"{msg_id}|==|substitutions.{sub_name}.plural.{key}"
+                unit = etree.SubElement(parent, "trans-unit", {"id": id})
+                add_unit(unit, "", key_meta, [], source_entries, trim_comments)
+        return
     if len(msg.selectors) > 1 and all(
         "substitution" in sel.attributes for sel in msg.selector_expressions()
     ):
@@ -438,8 +441,8 @@ def add_xcstrings_substitutions(
     """
     msg = entry.value
     msg_id = entry.id[0]
-    sels = msg.selector_expressions()
-    names = [cast(VariableRef, sel.arg).name for sel in sels]
+    selectors = msg.selector_expressions()
+    names = [cast(VariableRef, sel.arg).name for sel in selectors]
 
     ref_keys = next(iter(msg.variants), None)
     if ref_keys is None:
@@ -460,7 +463,7 @@ def add_xcstrings_substitutions(
     # (start, end, selector) of each substitution in the first variant
     spans: list[tuple[int, int, Expression]] = []
     sub_patterns: list[list[tuple[str, Pattern]]] = []
-    for idx, (name, sel) in enumerate(zip(names, sels)):
+    for idx, (name, sel) in enumerate(zip(names, selectors)):
         key_list: list[str | CatchallKey] = []
         for keys in msg.variants:
             if keys[idx] not in key_list:
@@ -474,30 +477,32 @@ def add_xcstrings_substitutions(
             atoms.append(pattern_atoms(variant))
 
         min_len = min(len(a) for a in atoms)
-        pre = 0
-        while pre < min_len and all(a[pre] == atoms[0][pre] for a in atoms):
-            pre += 1
-        suf = 0
-        while suf < min_len - pre and all(
-            a[-1 - suf] == atoms[0][-1 - suf] for a in atoms
+        prefix_len = 0
+        while prefix_len < min_len and all(
+            a[prefix_len] == atoms[0][prefix_len] for a in atoms
         ):
-            suf += 1
+            prefix_len += 1
+        suffix_len = 0
+        while suffix_len < min_len - prefix_len and all(
+            a[-1 - suffix_len] == atoms[0][-1 - suffix_len] for a in atoms
+        ):
+            suffix_len += 1
 
         # The numeric placeholder belongs to the substitution,
         # even if it is the same for all keys.
-        start = pre
-        tail = suf
+        start = prefix_len
+        tail = suffix_len
         for a in atoms:
-            ph = [
+            placeholder_indices = [
                 i
                 for i, atom in enumerate(a)
                 if isinstance(atom, Expression)
                 and isinstance(atom.arg, VariableRef)
                 and atom.arg.name == name
             ]
-            if ph:
-                start = min(start, ph[0])
-                tail = min(tail, len(a) - ph[-1] - 1)
+            if placeholder_indices:
+                start = min(start, placeholder_indices[0])
+                tail = min(tail, len(a) - placeholder_indices[-1] - 1)
 
         key_patterns: list[tuple[str, Pattern]] = []
         for key, a in zip(key_list, atoms):
@@ -529,6 +534,7 @@ def add_xcstrings_substitutions(
 
 
 PatternAtom = Union[str, Expression, Markup]
+"""Single character/Expression/Markup `Pattern` component for character-level diffing."""
 
 
 def pattern_atoms(pattern: Pattern) -> list[PatternAtom]:

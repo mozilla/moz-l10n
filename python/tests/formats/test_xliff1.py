@@ -1521,6 +1521,106 @@ class TestXliff1(TestCase):
             """)
         assert "".join(xliff_serialize(res, source_entries=True)) == exp
 
+    def test_serialize_xcstrings_untranslated_without_substitution_metadata(self):
+        msg = SelectMessage(declarations={}, selectors=(), variants={})
+        res = Resource(
+            Format.xliff,
+            sections=[
+                Section(
+                    id=("catalog.xcstrings",),
+                    entries=[Entry(id=("msg_empty",), value=msg)],
+                )
+            ],
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Untranslated SelectMessage 'msg_empty' has no substitution metadata",
+        ):
+            list(xliff_serialize(res))
+
+    def test_serialize_xcstrings_multiple_substitutions_no_variants(self):
+        msg = SelectMessage(
+            declarations={
+                name: Expression(
+                    VariableRef(name), "integer", attributes={"substitution": index}
+                )
+                for name, index in (("a", "1"), ("b", "2"))
+            },
+            selectors=(VariableRef("a"), VariableRef("b")),
+            variants={},
+        )
+        res = Resource(
+            Format.xliff,
+            sections=[
+                Section(
+                    id=("catalog.xcstrings",),
+                    entries=[Entry(id=("msg_empty",), value=msg)],
+                )
+            ],
+        )
+        with self.assertRaisesRegex(ValueError, "Message msg_empty has no variants"):
+            list(xliff_serialize(res))
+
+    def test_serialize_xcstrings_multiple_substitutions_missing_variant(self):
+        msg = SelectMessage(
+            declarations={
+                name: Expression(
+                    VariableRef(name), "integer", attributes={"substitution": index}
+                )
+                for name, index in (("a", "1"), ("b", "2"))
+            },
+            selectors=(VariableRef("a"), VariableRef("b")),
+            variants={
+                ("one", "one"): ["one item in one group"],
+                (CatchallKey("other"), CatchallKey("other")): ["items in groups"],
+            },
+        )
+        res = Resource(
+            Format.xliff,
+            sections=[
+                Section(
+                    id=("catalog.xcstrings",),
+                    entries=[Entry(id=("msg_incomplete",), value=msg)],
+                )
+            ],
+        )
+        with self.assertRaisesRegex(
+            ValueError, "Missing variant .* for message msg_incomplete"
+        ):
+            list(xliff_serialize(res))
+
+    def test_serialize_xcstrings_multiple_substitutions_overlapping(self):
+        placeholder_a = Expression(VariableRef("a"), attributes={"source": "%1$lld"})
+        placeholder_b = Expression(VariableRef("b"), attributes={"source": "%2$lld"})
+        msg = SelectMessage(
+            declarations={
+                name: Expression(
+                    VariableRef(name), "integer", attributes={"substitution": index}
+                )
+                for name, index in (("a", "1"), ("b", "2"))
+            },
+            selectors=(VariableRef("a"), VariableRef("b")),
+            variants={
+                ("one", "one"): [placeholder_a, placeholder_b],
+                ("other", "one"): [placeholder_a, placeholder_b],
+                ("one", "other"): [placeholder_a, placeholder_b],
+                ("other", "other"): [placeholder_a, placeholder_b],
+            },
+        )
+        res = Resource(
+            Format.xliff,
+            sections=[
+                Section(
+                    id=("catalog.xcstrings",),
+                    entries=[Entry(id=("msg_overlap",), value=msg)],
+                )
+            ],
+        )
+        with self.assertRaisesRegex(
+            ValueError, "Overlapping substitutions in message msg_overlap"
+        ):
+            list(xliff_serialize(res))
+
     def test_serialize_xcstrings_multiple_substitutions(self):
         xml = dedent("""\
             <?xml version="1.0" encoding="utf-8"?>
