@@ -1099,3 +1099,58 @@ class TestFluent(TestCase):
                 }
             """
         )
+
+    def test_nested_variants(self):
+        original = dedent(
+            """\
+            error-title-429 =
+                { $retryAfter ->
+                    [0] You're going too fast. Please slow down and try again in a moment.
+                   *[other] You're going too fast. Please try again in { NUMBER($retryAfter) } { $retryAfter ->
+                        [one] second
+                       *[other] seconds
+                    }.
+                }
+            """
+        )
+
+        expected = dedent(
+            """\
+            error-title-429 =
+                { $retryAfter ->
+                    [0] You're going too fast. Please slow down and try again in a moment.
+                    [one] You're going too fast. Please try again in { NUMBER($retryAfter) } second.
+                   *[other] You're going too fast. Please try again in { NUMBER($retryAfter) } seconds.
+                }
+            """
+        )
+        assert "".join(fluent_serialize(fluent_parse(original))) == expected
+
+    def test_nested_sibling_variants(self):
+        original = dedent(
+            """\
+            items =
+                { $count ->
+                    [0] No items.
+                   *[other] { $count ->
+                        [one] One item
+                       *[other] { $count } items
+                    } found in { $count ->
+                        [one] one folder
+                       *[other] several folders
+                    }.
+                }
+            """
+        )
+
+        expected = dedent(
+            """\
+            items =
+                { $count ->
+                    [0] No items.
+                    [one] One item found in one folder.
+                   *[other] { $count } items found in several folders.
+                }
+            """
+        )
+        assert "".join(fluent_serialize(fluent_parse(original))) == expected
