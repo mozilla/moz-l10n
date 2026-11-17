@@ -116,7 +116,7 @@ def cli(
         source_paths: L10nConfigPaths | L10nDiscoverPaths = (
             L10nConfigPaths(source)
             if source.endswith(".toml")
-            else L10nDiscoverPaths(source, source)
+            else L10nDiscoverPaths(abspath(source), abspath(source))
         )
         path0 = abspath(paths[0])
         locale0 = basename(path0)
