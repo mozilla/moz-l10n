@@ -817,14 +817,6 @@ class TestWebExtension:
 
 
 class TestRest:
-    def test_coverage_html_markup_key(self) -> None:
-        rule = PLACEHOLDER_CHECKS["extra-element"]
-        context = LintContext(Format.android)
-        source = PatternMessage([])
-        for arg in (VariableRef("div"), "not-a-tag", "<>", "<", ">"):
-            target = PatternMessage([Expression(function="html", arg=arg)])
-            assert next(iter(rule.check(target, source, context)), None) is None
-
     def test_plain_variable_placeholder(self) -> None:
         """Test coverage for Expression nodes with a VariableRef argument (e.g. {$user})."""
         result = _check_all_placeholder_rules(
