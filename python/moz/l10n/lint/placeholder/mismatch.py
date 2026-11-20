@@ -197,7 +197,9 @@ class _PatternScan:
                 if is_printf:
                     self._record_option_tokens(node.options.values())
 
-            elif isinstance(node, Expression) and (token := _get_expression_token(node)):
+            elif isinstance(node, Expression) and (
+                token := _get_expression_token(node)
+            ):
                 if _is_reusable(token) or not is_printf:
                     self.reusable.add(token)
                 else:
@@ -273,7 +275,7 @@ def _get_expression_token(node: Expression) -> str | None:
     * `{$brand :entity}` This is an entity reference! We drop the `$`
     """
     if "source" in node.attributes:
-        token = str(node.attributes["source"]).strip("|")
+        token = str(node.attributes["source"])
     elif isinstance(node.arg, str):
         token = node.arg
     elif isinstance(node.arg, VariableRef):
