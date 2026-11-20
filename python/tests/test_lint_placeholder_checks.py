@@ -802,20 +802,24 @@ class TestRest:
         """Test coverage for Expression nodes without string or VariableRef arg,
         e.g. function call with no args.
         """
-        result1 = _check_all_placeholder_rules(
-            Format.mf2, "Hello {:current_date}", "Hola {:current_date}"
+        result = _call_checks(
+            Format.fluent,
+            PatternMessage(["Hello ", Expression(None, function="current_date")]),
+            PatternMessage(["Hola ", Expression(None, function="current_date")]),
         )
-        assert result1 == []
+        assert result == []
 
     def test_plain_variable_placeholder(self) -> None:
         """Test coverage for Expression nodes with a VariableRef argument (e.g. {$user})."""
         result = _check_all_placeholder_rules(
-            Format.mf2, "Source {$user}", "Hello {$user}"
+            Format.fluent,
+            "Source { $user }",
+            "Hello { $user }",
         )
         assert result == []
 
         missing_result = _check_all_placeholder_rules(
-            Format.mf2, "Source {$user}", "Hello"
+            Format.fluent, "Source { $user }", "Hello"
         )
         assert missing_result == [
             {
