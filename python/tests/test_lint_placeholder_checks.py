@@ -799,16 +799,16 @@ class TestRest:
             assert next(iter(rule.check(target, source, context)), None) is None
 
     def test_function_markup(self) -> None:
-        """Check Expression without string or VariableRef arg, e.g. function call with no args.
-        For tests coverage.
+        """Test coverage for Expression nodes without string or VariableRef arg,
+        e.g. function call with no args.
         """
         result1 = _check_all_placeholder_rules(
             Format.mf2, "Hello {:current_date}", "Hola {:current_date}"
         )
         assert result1 == []
 
-    def test_mf2_plain_variable_placeholder(self) -> None:
-        """Covers Expression nodes with a VariableRef argument (e.g. {$user})."""
+    def test_plain_variable_placeholder(self) -> None:
+        """Test coverage for Expression nodes with a VariableRef argument (e.g. {$user})."""
         result = _check_all_placeholder_rules(
             Format.mf2, "Source {$user}", "Hello {$user}"
         )
@@ -826,42 +826,44 @@ class TestRest:
             }
         ]
 
-    def test_mf2_entity_placeholder(self) -> None:
-        """Covers Expression nodes with :entity function.
-        TODO: Look into android?
-        """
+    def test_entity_placeholder(self) -> None:
+        """Test coverage for `Expression` nodes with :entity function."""
         result = _check_all_placeholder_rules(
-            Format.mf2,
-            "Welcome to {$brand :entity}",
-            "Source {$brand :entity}",
+            Format.android,
+            "Welcome to &brand;",
+            "Source &brand;",
         )
         assert result == []
 
         missing_result = _check_all_placeholder_rules(
-            Format.mf2, "Source {$brand :entity}", "Welcome"
+            Format.android,
+            "Welcome to &brand;!",
+            "Wilkommen bei &marke;!",
         )
         assert missing_result == [
+            {
+                "rule_name": "extra",
+                "rule_family": "placeholder",
+                "message": "Placeholder marke not found in reference",
+                "severity": Severity.ERROR,
+            },
             {
                 "rule_name": "missing",
                 "rule_family": "placeholder",
                 "message": "Placeholder brand not found in translation",
                 "severity": Severity.WARNING,
-            }
+            },
         ]
 
-    def test_mf2_literal_expression_placeholder(self) -> None:
-        """Check Expression nodes with literal arguments (e.g. `{42}`, `{|42|}`).
-        TODO: try that with fluent.
-        """
-        result = _check_all_placeholder_rules(Format.mf2, "Source: {42}", "Count: {42}")
-        assert result == []
+    def test_literal_expression_placeholder(self) -> None:
+        """Check Expression nodes with literal arguments (`{42}`)."""
         result = _check_all_placeholder_rules(
-            Format.mf2, "Source: {|42|}", "Count: {|42|}"
+            Format.fluent, "Source: {42}", "Count: {42}"
         )
         assert result == []
 
         missing_result = _check_all_placeholder_rules(
-            Format.mf2, "Source: {42}", "Count"
+            Format.fluent, "Source: {42}", "Count"
         )
         assert missing_result == [
             {
