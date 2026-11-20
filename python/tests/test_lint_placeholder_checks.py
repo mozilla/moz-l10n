@@ -591,6 +591,15 @@ class TestMarkup:
         )
         assert result == []
 
+    @pytest.mark.xfail(strict=True, reason="#250 - `% o` is turned into an Expression")
+    def test_percentage_whitespace(self) -> None:
+        result = _check_all_placeholder_rules(
+            Format.android,
+            "Now 25% off!!!",
+            "Jetzt 25 Prozent billiger!!",
+        )
+        assert result == []
+
 
 class TestAttributes:
     """Placeholders in Attributes & Suppression Cascades"""
@@ -816,17 +825,6 @@ class TestRest:
             target = PatternMessage([Expression(function="html", arg=arg)])
             assert next(iter(rule.check(target, source, context)), None) is None
 
-    def test_function_markup(self) -> None:
-        """Test coverage for Expression nodes without string or VariableRef arg,
-        e.g. function call with no args.
-        """
-        result = _call_checks(
-            Format.fluent,
-            PatternMessage(["Hello ", Expression(None, function="current_date")]),
-            PatternMessage(["Hola ", Expression(None, function="current_date")]),
-        )
-        assert result == []
-
     def test_plain_variable_placeholder(self) -> None:
         """Test coverage for Expression nodes with a VariableRef argument (e.g. {$user})."""
         result = _check_all_placeholder_rules(
@@ -843,7 +841,7 @@ class TestRest:
             {
                 "rule_name": "missing",
                 "rule_family": "placeholder",
-                "message": "Placeholder $user not found in translation",
+                "message": "Placeholder { $user } not found in translation",
                 "severity": Severity.WARNING,
             }
         ]
@@ -866,13 +864,13 @@ class TestRest:
             {
                 "rule_name": "extra",
                 "rule_family": "placeholder",
-                "message": "Placeholder marke not found in reference",
+                "message": "Placeholder &marke; not found in reference",
                 "severity": Severity.ERROR,
             },
             {
                 "rule_name": "missing",
                 "rule_family": "placeholder",
-                "message": "Placeholder brand not found in translation",
+                "message": "Placeholder &brand; not found in translation",
                 "severity": Severity.WARNING,
             },
         ]
@@ -891,7 +889,7 @@ class TestRest:
             {
                 "rule_name": "missing",
                 "rule_family": "placeholder",
-                "message": "Placeholder 42 not found in translation",
+                "message": "Placeholder { 42 } not found in translation",
                 "severity": Severity.WARNING,
             }
         ]

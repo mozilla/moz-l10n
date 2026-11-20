@@ -21,6 +21,7 @@ from typing import Iterator, Literal, NamedTuple
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
+from moz.l10n.message import serialize_message
 from moz.l10n.model import Expression, Markup, Message, Pattern, VariableRef
 
 IGNORED_PLACEHOLDERS = {"%%", "%n"}
@@ -121,8 +122,8 @@ class _Diff:
         return cls._last_result
 
     def __init__(self, target: Message, source: Message, context: LintContext) -> None:
-        src_scans = [_PatternScan(p, context.is_printf) for _, p in source]
-        trg_scans = [_PatternScan(p, context.is_printf) for _, p in target]
+        src_scans = [_PatternScan(p, context) for _, p in source]
+        trg_scans = [_PatternScan(p, context) for _, p in target]
         src_elements = {el for s in src_scans for el in s.elements}
         trg_elements = {el for s in trg_scans for el in s.elements}
 
@@ -183,7 +184,7 @@ class _PatternScan:
     reusable: set[str]
     unnumbered: Counter[str]
 
-    def __init__(self, pattern: Pattern, is_printf: bool) -> None:
+    def __init__(self, pattern: Pattern, context: LintContext) -> None:
         self.elements = set()
         self.reusable = set()
         self.unnumbered = Counter()
@@ -194,13 +195,14 @@ class _PatternScan:
         for node in pattern:
             if isinstance(node, Markup):
                 candidates.append(_MarkupKey.from_markup(node))
-                if is_printf:
+                if context.is_printf:
                     self._record_option_tokens(node.options.values())
 
-            elif isinstance(node, Expression) and (
-                token := _get_expression_token(node)
-            ):
-                if _is_reusable(token) or not is_printf:
+            elif isinstance(node, Expression):
+                token = serialize_message(context.resource_format, [node])
+                if not token or token in IGNORED_PLACEHOLDERS:
+                    continue
+                if _is_reusable(token) or not context.is_printf:
                     self.reusable.add(token)
                 else:
                     self.unnumbered[token] += 1
@@ -260,29 +262,6 @@ class _MarkupKey(NamedTuple):
         opts_str = "".join(f' {k}="{v}"' for k, v in self.options)
         closer = "/" if self.kind == "standalone" else ""
         return f"<{self.name}{opts_str}{closer}>"
-
-
-def _get_expression_token(node: Expression) -> str | None:
-    """Get a hashable/comparable token string from `Expression`.
-    `serialize_message(format, [node])` would work sometimes but:
-    * MF2 syntax leakage: `{$user}, {$brand :entity}, {42}` instead of: `$user, brand, 42`
-    * For XLIFF instead of `Name` we'd get a full namespace wrapper:
-      `<xliff:g xmlns:xliff="urn:..." id="a">Name</xliff:g>`
-    * `ValueError: Unsupported expression: Expression(None, function='current_date')`
-
-    Note:
-    * `{$user}` This is a runtime variable! We pass the `$`
-    * `{$brand :entity}` This is an entity reference! We drop the `$`
-    """
-    if "source" in node.attributes:
-        token = str(node.attributes["source"])
-    elif isinstance(node.arg, str):
-        token = node.arg
-    elif isinstance(node.arg, VariableRef):
-        token = node.arg.name if node.function == "entity" else f"${node.arg.name}"
-    else:
-        return None
-    return token if token not in IGNORED_PLACEHOLDERS else None
 
 
 def _is_reusable(token: str) -> bool:
