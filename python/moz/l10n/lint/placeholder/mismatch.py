@@ -197,17 +197,11 @@ class _PatternScan:
                 if is_printf:
                     self._record_option_tokens(node.options.values())
 
-            elif isinstance(node, Expression):
-                if node.function == "html":
-                    if key := _MarkupKey.from_expression(node):
-                        candidates.append(key)
-                        if is_printf:
-                            self._record_option_tokens(v for _, v in key.options)
-                elif token := _get_expression_token(node):
-                    if _is_reusable(token) or not is_printf:
-                        self.reusable.add(token)
-                    else:
-                        self.unnumbered[token] += 1
+            elif isinstance(node, Expression) and (token := _get_expression_token(node)):
+                if _is_reusable(token) or not is_printf:
+                    self.reusable.add(token)
+                else:
+                    self.unnumbered[token] += 1
 
         # Track opening tags without options as lint-able elements
         # only if accompanied by closing tags or option attributes.
@@ -256,35 +250,6 @@ class _MarkupKey(NamedTuple):
             )
         )
         return cls(node.kind, node.name, options)
-
-    @classmethod
-    def from_expression(cls, node: Expression) -> _MarkupKey | None:
-        if not isinstance(node.arg, str):
-            return None
-        arg = node.arg.strip()
-        if not (arg.startswith("<") and arg.endswith(">")):
-            return None
-        if arg.startswith("</"):
-            name = arg[2:-1].strip()
-            return cls("close", name) if name else None
-
-        kind: Literal["open", "standalone", "close"]
-        kind, content = (
-            ("standalone", arg[1:-2]) if arg.endswith("/>") else ("open", arg[1:-1])
-        )
-        parts = content.split(None, 1)
-        if not parts:
-            return None
-        # collect tag options if any
-        options = tuple(
-            sorted(
-                (k, v.strip("\"'"))
-                for token in (parts[1].split() if len(parts) > 1 else ())
-                if "=" in token
-                for k, v in [token.split("=", 1)]
-            )
-        )
-        return cls(kind, parts[0], options)
 
     def __str__(self) -> str:
         """Convenience stringification for reporting."""

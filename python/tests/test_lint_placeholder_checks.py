@@ -472,16 +472,14 @@ class TestPluralVariants:
 class TestMarkup:
     """Markup, Literal Angle Brackets & Heuristics"""
 
-    def test_good_html(self) -> None:
-        result = _check_all_placeholder_rules(
-            Format.android,
-            "Source with a &lt;b&gt;line&lt;br&gt;break&lt;/b&gt;",
-            "Translation with a &lt;b&gt;line&lt;br&gt;break&lt;/b&gt;",
-        )
-        assert result == []
-
     def test_android_good_html_as_markup(self) -> None:
-        """Testing escaped markup! `<b>line<br/>break</b>`"""
+        """Testing escaped markup `<b>line<br/>break</b>`
+
+        Note: This succeeds but actually produces markup nodes as
+        `Expression('<b>',function='html')` that we no longer check for.
+        We could mock the expected structure and fail here
+        but #246 is not even started and all that should be done there.
+        """
         result = _check_all_placeholder_rules(
             Format.android,
             "Source with a &lt;b&gt;line&lt;br&gt;break&lt;/b&gt;",
@@ -489,6 +487,10 @@ class TestMarkup:
         )
         assert result == []
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason="#246 - Escaped xml not yet parsed into Markup(..'escaped': True)",
+    )
     def test_android_bad_html(self) -> None:
         result = _check_all_placeholder_rules(
             Format.android,
@@ -510,6 +512,10 @@ class TestMarkup:
             },
         ]
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason="#246 - Escaped xml not yet parsed into Markup(..'escaped': True)",
+    )
     def test_angle_brackets_not_element(self) -> None:
         result = _check_all_placeholder_rules(
             Format.android,
@@ -518,6 +524,10 @@ class TestMarkup:
         )
         assert result == []
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason="#246 - Escaped xml not yet parsed into Markup(..'escaped': True)",
+    )
     def test_bare_element_name_not_element(self) -> None:
         translation = "Digita per andare a capo"
         result = _check_all_placeholder_rules(
@@ -525,6 +535,10 @@ class TestMarkup:
         )
         assert result == []
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason="#246 - Escaped xml not yet parsed into Markup(..'escaped': True)",
+    )
     def test_escaped_custom_element_pair(self) -> None:
         result = _check_all_placeholder_rules(
             Format.android,
@@ -546,7 +560,7 @@ class TestMarkup:
             },
         ]
 
-    def test_escaped_element_with_attributes(self) -> None:
+    def test_un_escaped_element_with_attributes(self) -> None:
         result = _check_all_placeholder_rules(
             Format.android, '<myTag id="1">text</myTag>', "testo"
         )
@@ -565,6 +579,10 @@ class TestMarkup:
             },
         ]
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason="#246 - Escaped xml not yet parsed into Markup(..'escaped': True)",
+    )
     def test_stray_angle_brackets_ignored(self) -> None:
         result = _check_all_placeholder_rules(
             Format.android,
