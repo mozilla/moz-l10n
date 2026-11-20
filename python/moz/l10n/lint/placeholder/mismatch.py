@@ -235,10 +235,23 @@ class _PatternScan:
 
 
 class _MarkupKey(NamedTuple):
-    """Hashable markup representation for sets and counters.
-    * Created from both `Markup` and `Expression(function="html",...`
-      which are not hashable and cannot be used in set math.
-    * Sorts options so `<x x="x" y="y">` == `<x y="y" x="x">`.
+    """Hashable markup representation to be used in sets and counters.
+
+    Why not serializing via `serialize_message`?:
+    - A single `open` Markup results in open+close pair right away.
+      `Markup('open','myTag',options={'id': '1'})` > `<myTag id="1"></myTag>`
+    - A single `close` Markup raises `ValueError: Improper element nesting for Markup(...`.
+    - A single `standalone` Markup also results in an open+close pair that would give us:
+      `Element <br></br> not found in translation` instead of
+      `Element <br/> not found in translation`
+    - We would lose structured `options` or would need to re-parse it to
+      - sort out stray single Markup (`<Enter>`)
+      - handle suppression of redundant reports
+
+    OK Why not using `list` instead of `set`?:
+    - it's less efficient and adds extra code.
+    - Sorted `options` prevent false positives i.e. `<x x="x" y="y">` vs `<x y="y" x="x">`.
+    - We'd also need to solve for `Counter`s.
     """
 
     kind: Literal["open", "standalone", "close"]
@@ -247,13 +260,11 @@ class _MarkupKey(NamedTuple):
 
     @classmethod
     def from_markup(cls, node: Markup) -> _MarkupKey:
-        options = tuple(
-            sorted(
-                (k, f"${v.name}" if isinstance(v, VariableRef) else v)
-                for k, v in node.options.items()
-            )
+        options = (
+            (k, f"${v.name}" if isinstance(v, VariableRef) else v)
+            for k, v in node.options.items()
         )
-        return cls(node.kind, node.name, options)
+        return cls(node.kind, node.name, tuple(sorted(options)))
 
     def __str__(self) -> str:
         """Convenience stringification for reporting."""

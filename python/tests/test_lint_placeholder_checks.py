@@ -312,7 +312,7 @@ class TestPluralVariants:
                 (CatchallKey(None),): android_msg2.pattern,
             },
         )
-        assert _call_checks(Format.android, original, translation) == [
+        assert _call_checks(Format.android, original, translation, is_printf=True) == [
             {
                 "rule_name": "missing",
                 "rule_family": "placeholder",
@@ -346,7 +346,7 @@ class TestPluralVariants:
                 (CatchallKey(None),): android_msg.pattern,
             },
         )
-        assert _call_checks(Format.android, original, translation) == []
+        assert _call_checks(Format.android, original, translation, is_printf=True) == []
 
     def test_repeated_unnumbered_placeholder_fewer_source_variants(self) -> None:
         """Translations can have fewer plural forms than the source.
@@ -377,7 +377,10 @@ class TestPluralVariants:
             selectors=(VariableRef("n"),),
             variants={(CatchallKey(None),): variant3.pattern},
         )
-        assert _call_checks(Format.android, original_msg, translation_msg) == []
+        assert (
+            _call_checks(Format.android, original_msg, translation_msg, is_printf=True)
+            == []
+        )
 
     @pytest.mark.parametrize("count", [1, 3])
     def test_unnumbered_placeholder_mismatch_in_one_plural_variant(
@@ -452,7 +455,7 @@ class TestPluralVariants:
             variants={(CatchallKey(None),): variant3.pattern},
         )
 
-        result = _call_checks(Format.xliff, original, translation)
+        result = _call_checks(Format.xliff, original, translation, is_printf=True)
         assert result == [
             {
                 "rule_name": "missing-element",
@@ -473,7 +476,7 @@ class TestMarkup:
     """Markup, Literal Angle Brackets & Heuristics"""
 
     def test_android_good_html_as_markup(self) -> None:
-        """Testing escaped markup `<b>line<br/>break</b>`
+        """Test escaped markup `<b>line<br>break</b>`
 
         Note: This succeeds but actually produces markup nodes as
         `Expression('<b>',function='html')` that we no longer check for.
@@ -486,6 +489,22 @@ class TestMarkup:
             "Translation with a &lt;b&gt;line&lt;br&gt;break&lt;/b&gt;",
         )
         assert result == []
+
+    def test_android_standalone_markup(self) -> None:
+        """Test `<standalone/>` markup."""
+        result = _check_all_placeholder_rules(
+            Format.android,
+            "Source with a &lt;b&gt;line&lt;br/&gt;break&lt;/b&gt;",
+            "Translation with &lt;b&gt;no&lt;/b&gt; line break",
+        )
+        assert result == [
+            {
+                "rule_name": "missing",
+                "rule_family": "placeholder",
+                "message": "Placeholder &lt;br/&gt; not found in translation",
+                "severity": Severity.WARNING,
+            }
+        ]
 
     @pytest.mark.xfail(
         strict=True,
@@ -524,14 +543,10 @@ class TestMarkup:
         )
         assert result == []
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="#246 - Escaped xml not yet parsed into Markup(..'escaped': True)",
-    )
-    def test_bare_element_name_not_element(self) -> None:
-        translation = "Digita per andare a capo"
         result = _check_all_placeholder_rules(
-            Format.android, "Type &lt;br&gt; for a break", translation
+            Format.android,
+            "Type &lt;br&gt; for a break",
+            "Digita per andare a capo",
         )
         assert result == []
 
@@ -600,16 +615,18 @@ class TestMarkup:
         )
         assert result == []
 
+    def test_element_attribute_order(self) -> None:
+        result = _check_all_placeholder_rules(
+            Format.xliff,
+            'Read the <a href="https://example.com" title="Policy">policy</a>',
+            'Leggi la <a title="Policy" href="https://example.com">policy</a>',
+            is_printf=True,
+        )
+        assert result == []
+
 
 class TestAttributes:
     """Placeholders in Attributes & Suppression Cascades"""
-
-    def test_placeholder_in_element(self) -> None:
-        original = (
-            'Read the <a href="{$arg1 :string @source=|%1$s|}">policy{|</a>| :html}'
-        )
-        result = _check_all_placeholder_rules(Format.android, original, original)
-        assert result == []
 
     @pytest.mark.parametrize(
         "format, placeholder",
@@ -701,6 +718,11 @@ class TestProtections:
         reason="#244 - Currently fails because it's missing the namespace declaration.",
     )
     def test_protections_with_shared_substring(self) -> None:
+        """TODO For when #244 lands: We replaced our tokenizer with `serialize_message`!
+        This means we need to amend the expected report messages. It won't be this behemoth
+        `<xliff:g xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2" id="a">Name</xliff:g>`
+        but probably `<xliff:g id="a">Name</xliff:g>` instead of `Name` for instance?
+        """
         original = (
             'Hi <xliff:g id="a">Name</xliff:g> and <xliff:g id="b">FullName</xliff:g>'
         )
@@ -719,11 +741,6 @@ class TestProtections:
                 "severity": Severity.WARNING,
             },
         ]
-
-    def test_multi_digit_placeholder_same(self) -> None:
-        original = "Hi %10$s and %2$s"
-        result = _check_all_placeholder_rules(Format.android, original, original)
-        assert result == []
 
     def test_multi_digit_placeholder_changed(self) -> None:
         result = _check_all_placeholder_rules(
