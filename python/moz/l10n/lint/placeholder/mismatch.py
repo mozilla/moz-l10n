@@ -140,7 +140,7 @@ class _Diff:
     def _collect_placeholders(
         self, src_scans: list[_PatternScan], trg_scans: list[_PatternScan]
     ) -> None:
-        # Suppression intersection across source variants
+        # avoid redundant reports for placeholders inside missing elements
         suppressed: Counter[str] = Counter()
         for i, scan in enumerate(src_scans):
             var_supp = Counter(
@@ -196,10 +196,10 @@ class _PatternScan:
                 token = serialize_message(context.resource_format, [node])
                 if not token or token in IGNORED_PLACEHOLDERS:
                     continue
-                if _is_reusable(token) or not context.is_printf:
-                    self.reusable.add(token)
-                else:
+                if context.is_printf and not _is_reusable(token):
                     self.unnumbered[token] += 1
+                else:
+                    self.reusable.add(token)
 
         # Track opening tags without options as lint-able elements
         # only if accompanied by closing tags or option attributes.
