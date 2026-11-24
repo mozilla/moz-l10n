@@ -473,16 +473,10 @@ class TestPluralVariants:
 
 
 class TestMarkup:
-    """Markup, Literal Angle Brackets & Heuristics"""
+    """Markup, Angle Brackets & Heuristics"""
 
     def test_android_good_html_as_markup(self) -> None:
-        """Test escaped markup `<b>line<br>break</b>`
-
-        Note: This succeeds but actually produces markup nodes as
-        `Expression('<b>',function='html')` that we no longer check for.
-        We could mock the expected structure and fail here
-        but #246 is not even started and all that should be done there.
-        """
+        """Test escaped markup `<b>line<br>break</b>`."""
         result = _check_all_placeholder_rules(
             Format.android,
             "Source with a &lt;b&gt;line&lt;br&gt;break&lt;/b&gt;",
@@ -765,7 +759,7 @@ class TestProtections:
 class TestWebExtension:
     """WebExtension Syntax ($1, $FOO$)"""
 
-    def test_webext_literal_index_placeholder_as_placeholder(self) -> None:
+    def test_webext_index_placeholder_success(self) -> None:
         result = _check_all_placeholder_rules(
             Format.webext,
             "Source string with a $1",
@@ -773,7 +767,7 @@ class TestWebExtension:
         )
         assert result == []
 
-    def test_webext_literal_index_placeholder_as_literal(self) -> None:
+    def test_webext_index_placeholder_missing(self) -> None:
         result = _check_all_placeholder_rules(
             Format.webext,
             "Source string with a $1",
@@ -788,7 +782,20 @@ class TestWebExtension:
             }
         ]
 
-    def test_webext_extra_named_placeholder_as_literal(self) -> None:
+    def test_webext_index_placeholder_extra(self) -> None:
+        result = _check_all_placeholder_rules(
+            Format.webext, "Source string", "Translation with a $1"
+        )
+        assert result == [
+            {
+                "message": "Placeholder $1 not found in reference",
+                "rule_family": "placeholder",
+                "rule_name": "extra",
+                "severity": Severity.ERROR,
+            }
+        ]
+
+    def test_webext_named_placeholder_extra(self) -> None:
         source = parse_message(Format.webext, "Source string")
         target = parse_message(
             Format.webext,
@@ -805,7 +812,7 @@ class TestWebExtension:
             }
         ]
 
-    def test_webext_literal_named_placeholder_as_placeholder(self) -> None:
+    def test_webext_named_placeholder_success(self) -> None:
         placeholders = {"foo": {"content": "$1"}}
         source = parse_message(
             Format.webext, "Source with a $FOO$", webext_placeholders=placeholders
@@ -817,20 +824,6 @@ class TestWebExtension:
         )
         result = _call_checks(Format.webext, source, target)
         assert result == []
-
-    def test_webext_extra_index_placeholder(self) -> None:
-        result = _check_all_placeholder_rules(
-            Format.webext, "Source string", "Translation with a $1"
-        )
-        # And THIS should totally be caught.
-        assert result == [
-            {
-                "message": "Placeholder $1 not found in reference",
-                "rule_family": "placeholder",
-                "rule_name": "extra",
-                "severity": Severity.ERROR,
-            }
-        ]
 
 
 class TestRest:
