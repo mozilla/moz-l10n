@@ -142,14 +142,15 @@ class _Diff:
     ) -> None:
         # avoid redundant reports for placeholders inside missing elements
         suppressed: Counter[str] = Counter()
-        for i, scan in enumerate(src_scans):
-            var_supp = Counter(
-                option_value
-                for el in scan.elements & self.missing_elements
-                for _, option_value in el.options
-                if not _is_reusable(option_value)
+        for scan in src_scans:
+            suppressed.update(
+                Counter(
+                    option_value
+                    for el in scan.elements & self.missing_elements
+                    for _, option_value in el.options
+                    if not _is_reusable(option_value)
+                )
             )
-            suppressed = var_supp if i == 0 else suppressed & var_supp
 
         # Compare aggregate bounds deterministically (at most 1 report per token)
         all_src_ph = {ph for s in src_scans for ph in s.unnumbered}
@@ -231,21 +232,9 @@ class _PatternScan:
 class _MarkupKey(NamedTuple):
     """Hashable markup representation to be used in sets and counters.
 
-    Why not serializing via `serialize_message`?:
-    - A single `open` Markup results in open+close pair right away.
-      `Markup('open','myTag',options={'id': '1'})` > `<myTag id="1"></myTag>`
-    - A single `close` Markup raises `ValueError: Improper element nesting for Markup(...`.
-    - A single `standalone` Markup also results in an open+close pair that would give us:
-      `Element <br></br> not found in translation` instead of
-      `Element <br/> not found in translation`
-    - We would lose structured `options` or would need to re-parse it to
-      - sort out stray single Markup (`<Enter>`)
-      - handle suppression of redundant reports
-
-    OK Why not using `list` instead of `set`?:
-    - it's less efficient and adds extra code.
-    - Sorted `options` prevent false positives i.e. `<x x="x" y="y">` vs `<x y="y" x="x">`.
-    - We'd also need to solve for `Counter`s.
+    `serialize_message` would make open+close pairs from single `open` or `standalone`
+    and break on single `close` Markups. We would lose structured `options` that we use
+    to sort out stray single Markup (`<Enter>`) and handle suppression of redundant reports.
     """
 
     kind: Literal["open", "standalone", "close"]
