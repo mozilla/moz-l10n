@@ -800,7 +800,7 @@ class TestWebExtension:
         target = parse_message(
             Format.webext,
             "Translation with a $FOO$",
-            webext_placeholders={"foo": {"content": "BAR"}},
+            webext_placeholders={"foo": {"content": "$1"}},
         )
         result = _call_checks(Format.webext, source, target)
         assert result == [
