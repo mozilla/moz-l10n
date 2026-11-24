@@ -577,13 +577,13 @@ class TestMarkup:
             {
                 "rule_name": "missing-element",
                 "rule_family": "placeholder",
-                "message": "Element </myTag> not found in translation",
+                "message": 'Element <myTag id="1"> not found in translation',
                 "severity": Severity.WARNING,
             },
             {
                 "rule_name": "missing-element",
                 "rule_family": "placeholder",
-                "message": 'Element <myTag id="1"> not found in translation',
+                "message": "Element </myTag> not found in translation",
                 "severity": Severity.WARNING,
             },
         ]
@@ -659,13 +659,13 @@ class TestAttributes:
             {
                 "rule_name": "missing-element",
                 "rule_family": "placeholder",
-                "message": "Element </a> not found in translation",
+                "message": f'Element <a href="{placeholder}"> not found in translation',
                 "severity": Severity.WARNING,
             },
             {
                 "rule_name": "missing-element",
                 "rule_family": "placeholder",
-                "message": f'Element <a href="{placeholder}"> not found in translation',
+                "message": "Element </a> not found in translation",
                 "severity": Severity.WARNING,
             },
         ]

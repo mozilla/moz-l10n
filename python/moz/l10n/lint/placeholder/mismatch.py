@@ -17,7 +17,8 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterator, Literal, NamedTuple
+from enum import Enum
+from typing import Iterator, NamedTuple
 
 from moz.l10n.formats import Format
 from moz.l10n.lint.model import Diagnostic, LintContext, Rule, Severity
@@ -204,9 +205,11 @@ class _PatternScan:
 
         # Track opening tags without options as lint-able elements
         # only if accompanied by closing tags or option attributes.
-        has_closing = any(el.kind == "close" for el in candidates)
+        has_closing = any(el.kind is _MarkupKind.close for el in candidates)
         self.elements = {
-            el for el in candidates if el.kind != "open" or el.options or has_closing
+            el
+            for el in candidates
+            if el.kind is not _MarkupKind.open or el.options or has_closing
         }
 
     def _record_option_tokens(self, values: Iterable[str | VariableRef]) -> None:
@@ -229,6 +232,17 @@ class _PatternScan:
                 self.unnumbered[value] += 1
 
 
+class _MarkupKind(Enum):
+    open = 0
+    standalone = 1
+    close = 2
+
+    def __lt__(self, other: object) -> bool:
+        if isinstance(other, _MarkupKind):
+            return self.value < other.value
+        raise NotImplementedError
+
+
 class _MarkupKey(NamedTuple):
     """Hashable markup representation to be used in sets and counters.
 
@@ -237,8 +251,8 @@ class _MarkupKey(NamedTuple):
     to sort out stray single Markup (`<Enter>`) and handle suppression of redundant reports.
     """
 
-    kind: Literal["open", "standalone", "close"]
     name: str
+    kind: _MarkupKind
     options: tuple[tuple[str, str], ...] = ()
 
     @classmethod
@@ -247,14 +261,14 @@ class _MarkupKey(NamedTuple):
             (k, f"${v.name}" if isinstance(v, VariableRef) else v)
             for k, v in node.options.items()
         )
-        return cls(node.kind, node.name, tuple(sorted(options)))
+        return cls(node.name, _MarkupKind[node.kind], tuple(sorted(options)))
 
     def __str__(self) -> str:
         """Convenience stringification for reporting."""
-        if self.kind == "close":
+        if self.kind is _MarkupKind.close:
             return f"</{self.name}>"
         opts_str = "".join(f' {k}="{v}"' for k, v in self.options)
-        closer = "/" if self.kind == "standalone" else ""
+        closer = "/" if self.kind is _MarkupKind.standalone else ""
         return f"<{self.name}{opts_str}{closer}>"
 
 
