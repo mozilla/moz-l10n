@@ -102,22 +102,16 @@ class _Diff:
     extra_elements: set[_MarkupKey]
     missing_elements: set[_MarkupKey]
 
-    _last_source: Message | None = None
-    _last_target: Message | None = None
-    _last_format: Format | None = None
+    _cache_key: tuple[Message, Message, Format] | None = None
     _last_result: _Diff | None = None
 
     @classmethod
     def cached(cls, target: Message, source: Message, context: LintContext) -> _Diff:
         if (
-            source is not cls._last_source
-            or target is not cls._last_target
-            or context.resource_format is not cls._last_format
-            or cls._last_result is None
+            cls._last_result is None
+            or (source, target, context.resource_format) != cls._cache_key
         ):
-            cls._last_source = source
-            cls._last_target = target
-            cls._last_format = context.resource_format
+            cls._cache_key = (source, target, context.resource_format)
             cls._last_result = cls(target, source, context)
         return cls._last_result
 
